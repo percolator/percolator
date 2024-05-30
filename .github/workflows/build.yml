@@ -10,23 +10,23 @@ jobs:
   build-ubuntu:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4.2
     - name: preinstall
       run: sudo apt-get update && sudo apt-get install -y -o Acquire::Retries=3 libxml2-utils
     - name: create_dirs
-      run: mkdir -p ../my_rel ../my_build
+      run: mkdir -p ../release ../build
     - name: configure_and_make
-      run: ./admin/builders/ubuntu64_build.sh -s `pwd`/.. -r `pwd`/../my_rel -b `pwd`/../my_build
+      run: ./admin/builders/ubuntu64_build.sh -s `pwd`/.. -r `pwd`/../release -b `pwd`/../build
     - name: unit_tests
-      run: cd ../my_build/percolator && make test
+      run: cd ../build/percolator && make test
     - name: system_test  
-      run: cd ../my_build/percolator && sudo make install && make test-install
+      run: cd ../build/percolator && sudo make install && make test-install
 
 #  build-centos:
 #    runs-on: ubuntu-latest
 #    container: 'lukall/centos_runner:latest'
 #    steps:
-#    - uses: actions/checkout@v2
+#    - uses: actions/checkout@v4.2
 #    - name: create_dirs
 #      run: mkdir -p ../my_rel ../my_build
 #    - name: configure_and_make
@@ -40,15 +40,15 @@ jobs:
   build-osx:
     runs-on: macos-12
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4.2
     - name: create_dirs
-      run: mkdir -p ../my_rel ../my_build
+      run: mkdir -p ../release ../build
     - name: configure_and_make
-      run: admin/builders/osx64_build.sh  -s `pwd`/.. -r `pwd`/../my_rel -b `pwd`/../my_build
+      run: admin/builders/osx64_build.sh  -s `pwd`/.. -r `pwd`/../release -b `pwd`/../build
     - name: unit_tests
-      run: cd ../my_build/percolator && make test
+      run: cd ../build/percolator && make test
     - name: system_test  
-      run: cd ../my_build/percolator && sudo make install && make test-install
+      run: cd ../build/percolator && sudo make install && make test-install
 
 
   build-windows:
@@ -57,7 +57,7 @@ jobs:
       run:
         shell: cmd
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4.2
     - name: create_dirs
       run: CD .. || MKDIR my_rel my_build
     - name: configure_and_make

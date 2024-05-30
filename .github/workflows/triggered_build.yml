@@ -6,7 +6,7 @@ jobs:
   build-ubuntu:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4.2
     - name: preinstall
       run: sudo apt-get update && sudo apt-get install -y -o Acquire::Retries=3 libxml2-utils
     - name: create_dirs
@@ -18,7 +18,7 @@ jobs:
     - name: zip raw binary
       run: zip -j ../my_rel/percolator-noxml-ubuntu-portable.zip ../my_build/percolator-noxml/src/percolator
     - name: Upload packages
-      uses: actions/upload-artifact@v1
+      uses: actions/upload-artifact@v3
       with:
         name: ubuntu-packages
         path: ../my_rel
@@ -27,7 +27,7 @@ jobs:
 #    runs-on: ubuntu-latest
 #    container: 'lukall/centos_runner:latest'
 #    steps:
-#    - uses: actions/checkout@v2
+#    - uses: actions/checkout@v4.2
 #    - name: create_dirs
 #      run: mkdir -p ../my_rel ../my_build
 #    - name: configure_and_make
@@ -37,7 +37,7 @@ jobs:
 #    - name: zip raw binary
 #      run: zip -j ../my_rel/percolator-noxml-linux-portable.zip ../my_build/percolator-noxml/src/percolator
 #    - name: Upload packages
-#      uses: actions/upload-artifact@v1
+#      uses: actions/upload-artifact@v3
 #      with:
 #        name: centos-packages
 #        path: ../my_rel
@@ -45,7 +45,7 @@ jobs:
   build-osx:
     runs-on: macos-12
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4.2
     - name: create_dirs
       run: mkdir -p ../my_rel ../my_build
     - name: configure_and_make
@@ -55,7 +55,7 @@ jobs:
     - name: zip raw binary
       run: zip ../my_rel/percolator-noxml-osx-portable.zip ../my_build/percolator-noxml/src/percolator
     - name: Upload packages
-      uses: actions/upload-artifact@v1
+      uses: actions/upload-artifact@v3
       with:
         name: osx-packages
         path: ../my_rel
@@ -67,7 +67,7 @@ jobs:
       run:
         shell: cmd
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4.2
     - name: create_dirs
       run: MKDIR %homedrive%%homepath%\my_rel %homedrive%%homepath%\my_build
     - name: configure_and_make
