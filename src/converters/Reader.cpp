@@ -64,7 +64,6 @@ void Reader::init() {
 
   f_seq = ex_p->featureDescriptions();
   fss = ex_p->fragSpectrumScan();
-
   bool isMeta = false;
 
   if (po.readProteins) {
