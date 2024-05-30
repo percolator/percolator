@@ -1,5 +1,5 @@
-#include "Reader.h"
 #include <typeinfo>
+#include "Reader.h"
 
 const std::string Reader::aaAlphabet("ACDEFGHIKLMNPQRSTVWY");
 const std::string Reader::ambiguousAA("BZJX");
