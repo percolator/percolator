@@ -28,7 +28,7 @@ class Set : public Array<int> {
   Array<int> operator [](const Set & rhs) const {
     return Array<int>::operator [](rhs);
   }
-  const int & operator [](int k) const {
+  const int & operator [](std::size_t k) const {
     return Array<int>::operator [](k);
   }
 
