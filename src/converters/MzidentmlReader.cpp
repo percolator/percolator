@@ -1,3 +1,7 @@
+#include <memory> // For std::unique_ptr
+#include <xercesc/dom/DOM.hpp> // For xercesc::DOMDocument
+#include <xsd/cxx/xml/dom/auto-ptr.hxx> // For xsd::cxx::xml::dom::deleter
+
 #include "MzidentmlReader.h"
 
 static const XMLCh sequenceCollectionStr[] = {

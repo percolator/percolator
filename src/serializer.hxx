@@ -9,8 +9,8 @@
 #include <iosfwd>
 #include <memory> // std::unique_ptr
 
+#include <xercesc/dom/DOM.hpp>
 #include <xercesc/dom/DOMElement.hpp>
-
 #include <xsd/cxx/xml/dom/auto-ptr.hxx>
 
 class serializer_impl;

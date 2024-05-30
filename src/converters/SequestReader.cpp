@@ -1,3 +1,5 @@
+#include <xsd/cxx/xml/dom/auto-ptr.hxx> // For xsd::cxx::xml::dom::deleter
+
 #include "SequestReader.h"
 
 
