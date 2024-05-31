@@ -71,10 +71,10 @@ jobs:
       run: MKDIR ${{ env.GITHUB_WORKSPACE }}\..\my_rel ${{ env.GITHUB_WORKSPACE }}\..\my_build
     - name: configure_and_make
       run: |
-        CD ${{ env.GITHUB_WORKSPACE }}
+        CD ${{ env.GITHUB_WORKSPACE }}\..
         SET base_dir=%cd%
         ECHO %base_dir%
-        CALL percolator\admin\builders\nativew64_build.bat -s %base_dir% -r ${{ env.GITHUB_WORKSPACE }}\..\my_rel -b ${{ env.GITHUB_WORKSPACE }}\..\my_build
+        CALL percolator\admin\builders\nativew64_build.bat -s %base_dir% -r %base_dir%\my_rel -b %base_dir%\my_build
     - name: zip raw binary
       shell: pwsh
       run: Compress-Archive -Path "${env:GITHUB_WORKSPACE}\..\my_build\percolator-noxml\src\Release\*.exe" -DestinationPath "${env:GITHUB_WORKSPACE}\..\my_rel\percolator-noxml-windows-portable.zip"
