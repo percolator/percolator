@@ -72,7 +72,7 @@ jobs:
       run: |
          $baseDir = (Get-Location).Path
          echo "base_dir=$baseDir" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-     - name: create_dirs
+    - name: create_dirs
       run: MKDIR %base_dir%\release %base_dir%\build
     - name: configure_and_make
       run: |
