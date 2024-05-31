@@ -78,7 +78,7 @@ jobs:
       run: |
         ECHO admin\builders\nativew64_build.bat -s %base_dir% -r %base_dir%\release -b %base_dir%\build
         CALL admin\builders\nativew64_build.bat -s %base_dir% -r %base_dir%\release -b %base_dir%\build
-    - name: zip raw binary
+    - name: zip raw-binary
       shell: pwsh
       run: |
         Compress-Archive -Path "$env:base_dir\build\percolator-noxml\src\Release\*.exe" -DestinationPath "$env:base_dir\release\percolator-noxml-windows-portable.zip"
