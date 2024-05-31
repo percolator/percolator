@@ -17,9 +17,9 @@ FragSpectrumScanDatabaseTokyoDB::FragSpectrumScanDatabaseTokyoDB(std::string id)
   xdrrec_create_p xdrrec_create_ = reinterpret_cast<xdrrec_create_p> (::xdrrec_create);
   xdrrec_create_ (&xdr, 0, 0, reinterpret_cast<char*> (&buf), 0, &overflow);
   xdr.x_op = XDR_ENCODE;
-  std::auto_ptr< xml_schema::ostream<XDR> > tmpPtr(new xml_schema::ostream<XDR>(xdr)) ;
+  std::unique_ptr< xml_schema::ostream<XDR> > tmpPtr(new xml_schema::ostream<XDR>(xdr)) ;
   assert(tmpPtr.get());
-  oxdrp=tmpPtr;
+  oxdrp = std::move(tmpPtr);
 }
 
 FragSpectrumScanDatabaseTokyoDB::~FragSpectrumScanDatabaseTokyoDB()
@@ -61,7 +61,7 @@ void FragSpectrumScanDatabaseTokyoDB::terminate()
 }
 
 
-std::auto_ptr< ::percolatorInNs::fragSpectrumScan> FragSpectrumScanDatabaseTokyoDB::deserializeFSSfromBinary( char * value, int valueSize ) 
+std::unique_ptr< ::percolatorInNs::fragSpectrumScan> FragSpectrumScanDatabaseTokyoDB::deserializeFSSfromBinary( char * value, int valueSize ) 
 {
   xml_schema::buffer buf2;
   buf2.capacity(valueSize);
@@ -76,7 +76,7 @@ std::auto_ptr< ::percolatorInNs::fragSpectrumScan> FragSpectrumScanDatabaseTokyo
   xdr2.x_op = XDR_DECODE;
   xml_schema::istream<XDR> ixdr(xdr2);
   xdrrec_skiprecord(&xdr2);
-  std::auto_ptr< percolatorInNs::fragSpectrumScan> fss (new percolatorInNs::fragSpectrumScan(ixdr));
+  std::unique_ptr< percolatorInNs::fragSpectrumScan> fss (new percolatorInNs::fragSpectrumScan(ixdr));
   
   //TODO this gives too many arguments in MINGW
   //xdr_destroy (&xdr2);
@@ -91,15 +91,15 @@ std::auto_ptr< ::percolatorInNs::fragSpectrumScan> FragSpectrumScanDatabaseTokyo
   return fss;
 }
 
-std::auto_ptr< ::percolatorInNs::fragSpectrumScan> FragSpectrumScanDatabaseTokyoDB::getFSS( unsigned int scanNr ) 
+std::unique_ptr< ::percolatorInNs::fragSpectrumScan> FragSpectrumScanDatabaseTokyoDB::getFSS( unsigned int scanNr ) 
 {
   assert(bdb);
   int valueSize = 0;
   char * value = ( char * ) tcbdbget(bdb, ( const char* ) &scanNr, sizeof( scanNr ), &valueSize);
   if(!value) {
-    return std::auto_ptr< ::percolatorInNs::fragSpectrumScan> (NULL);
+    return std::unique_ptr< ::percolatorInNs::fragSpectrumScan> (nullptr);
   }
-  std::auto_ptr< ::percolatorInNs::fragSpectrumScan> ret(deserializeFSSfromBinary(value,valueSize));  
+  std::unique_ptr< ::percolatorInNs::fragSpectrumScan> ret(deserializeFSSfromBinary(value,valueSize));  
   free(value);
   return ret;
 }
@@ -120,7 +120,7 @@ void FragSpectrumScanDatabaseTokyoDB::print(serializer & ser)
     char * value = static_cast< char * > ( tcbdbcurval(cursor,&valueSize));
     if(value)
     {
-      std::auto_ptr< ::percolatorInNs::fragSpectrumScan> fss(deserializeFSSfromBinary(value,valueSize));
+      std::unique_ptr< ::percolatorInNs::fragSpectrumScan> fss(deserializeFSSfromBinary(value,valueSize));
       ser.next ( PERCOLATOR_IN_NAMESPACE, "fragSpectrumScan", *fss);
       free(value);
     }
@@ -130,31 +130,27 @@ void FragSpectrumScanDatabaseTokyoDB::print(serializer & ser)
   tcbdbcurdel(cursor);
 }
 
-void FragSpectrumScanDatabaseTokyoDB::printTab(ostream &tabOutputStream) {
-  BDBCUR *cursor;
-  char *key;
-  assert(bdb);
-  cursor = tcbdbcurnew(bdb);
-  assert(cursor);
-  tcbdbcurfirst(cursor);
-  // using tcbdbcurkey3 is probably faster
-  int keySize;
-  int valueSize;
-  while (( key = static_cast< char * > ( tcbdbcurkey(cursor,&keySize)) ) != 0 ) 
-  {
-    char * value = static_cast< char * > ( tcbdbcurval(cursor,&valueSize));
-    if(value)
-    {
-      std::auto_ptr< ::percolatorInNs::fragSpectrumScan> fss(deserializeFSSfromBinary(value,valueSize));
-      printTabFss(fss, tabOutputStream);
-      free(value);
+void FragSpectrumScanDatabaseTokyoDB::printTab(std::ostream &tabOutputStream) {
+    BDBCUR *cursor;
+    char *key;
+    assert(bdb);
+    cursor = tcbdbcurnew(bdb);
+    assert(cursor);
+    tcbdbcurfirst(cursor);
+    int keySize;
+    int valueSize;
+    while ((key = static_cast<char*>(tcbdbcurkey(cursor, &keySize))) != 0) {
+        char *value = static_cast<char*>(tcbdbcurval(cursor, &valueSize));
+        if (value) {
+            std::unique_ptr< ::percolatorInNs::fragSpectrumScan> fss(deserializeFSSfromBinary(value, valueSize));
+            printTabFss(fss, tabOutputStream);
+            free(value);
+        }
+        free(key);
+        tcbdbcurnext(cursor);
     }
-    free(key);
-    tcbdbcurnext(cursor);
-  }
-  tcbdbcurdel(cursor);
+    tcbdbcurdel(cursor);
 }
-
 void FragSpectrumScanDatabaseTokyoDB::putFSS( ::percolatorInNs::fragSpectrumScan & fss ) 
 {   
   assert(bdb);

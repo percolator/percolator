@@ -33,8 +33,12 @@ set XERCES_64_BASE=xerces-c-3.1.1-x86_64-windows-vc-10.0
 set XERCES_64_URL=https://archive.apache.org/dist/xerces/c/3/binaries/%XERCES_64_BASE%.zip
 
 ::: XSD
-set XSD_BASE=xsd-3.3.0-i686-windows
-set XSD_URL=https://www.codesynthesis.com/download/xsd/3.3/windows/i686/%XSD_BASE%.zip
+::: set XSD_BASE=xsd-3.3.0-i686-windows
+::: set XSD_URL=https://www.codesynthesis.com/download/xsd/3.3/windows/i686/%XSD_BASE%.zip
+set XSD_BASE=xsd-4.2.0-x86_64-windows10
+set XSD_URL=https://www.codesynthesis.com/download/xsd/4.2/windows/windows10/x86_64/%XSD_BASE%.zip
+set LIBXSD_BASE=libxsd-4.2.0-windows
+set LIBXSD_URL=https://www.codesynthesis.com/download/xsd/4.2/windows/windows10/x86_64/%LIBXSD_BASE%.zip
 
 ::: SQLite3
 set SQLITE_SRC_BASE=sqlite-amalgamation-3080200

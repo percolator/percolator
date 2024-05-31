@@ -97,9 +97,9 @@ TEST_F(SetHandlerTest, TestGetOptionalFields)
     EXPECT_EQ(0, sh.getOptionalFieldsEx("", fields));
     EXPECT_EQ(0, sh.getOptionalFieldsEx("id\tlabel", fields));
     EXPECT_EQ(1, sh.getOptionalFieldsEx("id\tlabel\tScanNr", fields));
-    fields.empty();
+    (void)fields.empty();
     EXPECT_EQ(1, sh.getOptionalFieldsEx("id\tlabel\tfoo\tdm\tbar", fields));
-    fields.empty();
+    (void)fields.empty();
     string const realWorldHeader =
         "SpecId\tLabel\tScanNr\tExpMass\tCalcMass\tdeltLCn\tdeltCn"
         "\tRefactoredXCorr\tNegLog10PValue\tNegLog10ResEvPValue"

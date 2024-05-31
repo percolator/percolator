@@ -103,7 +103,8 @@ istream & operator >>(istream & is, Matrix & rhs)
   if ( c != ':' )
     throw Matrix::MatrixFormatException();
 
-  is >> rhs.rows;
+  // Commented away this statement 240312
+  // is >> rhs.rows;
 
   is >> c;
   if ( c != ')' )

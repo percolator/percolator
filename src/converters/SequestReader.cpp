@@ -1,3 +1,5 @@
+#include <xsd/cxx/xml/dom/auto-ptr.hxx> // For xsd::cxx::xml::dom::deleter
+
 #include "SequestReader.h"
 
 
@@ -107,61 +109,55 @@ void SequestReader::addFeatureDescriptions(bool doEnzyme)
 
 }
 
-
 void SequestReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemType & item,
         ::percolatorInNs::fragSpectrumScan::experimentalMass_type experimentalMass,
         bool isDecoy, unsigned useScanNumber, boost::shared_ptr<FragSpectrumScanDatabase> database,
         const std::string & fn) {
 
-  std::auto_ptr< percolatorInNs::features > features_p(new percolatorInNs::features());
+  std::unique_ptr<percolatorInNs::features> features_p(new percolatorInNs::features());
   percolatorInNs::features::feature_sequence & f_seq = features_p->feature();
 
   if (!item.calculatedMassToCharge().present()) {
     ostringstream temp;
     temp << "Error: calculatedMassToCharge attribute not found in PSM "
-    << boost::lexical_cast<string > (item.id())  << std::endl;
+    << boost::lexical_cast<string>(item.id()) << std::endl;
     throw MyException(temp.str());
   }
 
   std::string peptideSeq = peptideMap[item.peptide_ref().get()]->PeptideSequence();
   std::string peptideId = item.peptide_ref().get();
-  std::vector< std::string > proteinIds;
+  std::vector<std::string> proteinIds;
   std::string __flankN = "";
   std::string __flankC = "";
 
-  try
-  {
-
-    BOOST_FOREACH (const ::mzIdentML_ns::PeptideEvidenceRefType &pepEv_ref, item.PeptideEvidenceRef())
-    {
+  try {
+    BOOST_FOREACH (const ::mzIdentML_ns::PeptideEvidenceRefType &pepEv_ref, item.PeptideEvidenceRef()) {
       std::string ref_id = pepEv_ref.peptideEvidence_ref().c_str();
       ::mzIdentML_ns::PeptideEvidenceType *pepEv = peptideEvidenceMap[ref_id];
-      //NOTE check that there are not quimera peptides
       if (peptideId != std::string(pepEv->peptide_ref())) {
-	      std::cerr << "Warning : The PSM " << boost::lexical_cast<string > (item.id())
-		        << " contains different chimeric peptide sequences. "
-		        << peptideMap[pepEv->peptide_ref()]->PeptideSequence() << " and " << peptideSeq
-		        << " only the proteins that contain the first peptide will be included in the PSM..\n" << std::endl;
+        std::cerr << "Warning: The PSM " << boost::lexical_cast<string>(item.id())
+                  << " contains different chimeric peptide sequences. "
+                  << peptideMap[pepEv->peptide_ref()]->PeptideSequence() << " and " << peptideSeq
+                  << " only the proteins that contain the first peptide will be included in the PSM.\n" << std::endl;
       } else {
-	      __flankN = boost::lexical_cast<string > (pepEv->pre());
-	      __flankC = boost::lexical_cast<string > (pepEv->post());
-	      if (__flankN == "?") {__flankN = "-";} //MSGF+ sometimes outputs questionmarks here
-	      if (__flankC == "?") {__flankC = "-";}
-	      std::string proteinid = boost::lexical_cast<string > (pepEv->dBSequence_ref());
-	      mzIdentML_ns::SequenceCollectionType::DBSequence_type *proteinObj = proteinMap[proteinid];
-	      std::string proteinName = boost::lexical_cast<string > (proteinObj->accession());
-	      proteinIds.push_back(proteinName);
+        __flankN = boost::lexical_cast<string>(pepEv->pre());
+        __flankC = boost::lexical_cast<string>(pepEv->post());
+        if (__flankN == "?") { __flankN = "-"; }
+        if (__flankC == "?") { __flankC = "-"; }
+        std::string proteinid = boost::lexical_cast<string>(pepEv->dBSequence_ref());
+        mzIdentML_ns::SequenceCollectionType::DBSequence_type *proteinObj = proteinMap[proteinid];
+        std::string proteinName = boost::lexical_cast<string>(proteinObj->accession());
+        proteinIds.push_back(proteinName);
       }
     }
 
-    if(__flankC.empty() || __flankN.empty()) {
+    if (__flankC.empty() || __flankN.empty()) {
       ostringstream temp;
-      temp << "Error : The PSM " << boost::lexical_cast<string > (item.id()) << " is ill-formed." << std::endl;
+      temp << "Error: The PSM " << boost::lexical_cast<string>(item.id()) << " is ill-formed." << std::endl;
       throw MyException(temp.str());
     }
 
     if (po.iscombined && !po.reversedFeaturePattern.empty()) {
-      //NOTE taking the highest ranked PSM protein for combined search
       isDecoy = proteinIds.front().find(po.reversedFeaturePattern, 0) != std::string::npos;
     }
 
@@ -184,23 +180,22 @@ void SequestReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemTy
     double ionTotal = 0.0;
     double dM = massDiff(observed_mass, theoretic_mass, static_cast<unsigned int>(charge));
 
-
     BOOST_FOREACH (const ::mzIdentML_ns::CVParamType & cv, item.cvParam()) {
-	    if (cv.value().present()) {
-	      std::string param_name(cv.name().c_str());
-	      if (sequestFeatures.count(param_name)) {
-	        switch (sequestFeatures.at(param_name)) {
-	          case 0: lnrSP = boost::lexical_cast<double>(cv.value().get().c_str()); break;
-	          case 1: deltaCN = boost::lexical_cast<double>(cv.value().get().c_str());break;
-	          case 2: xCorr = boost::lexical_cast<double>(cv.value().get().c_str());break;
-	          case 3: Sp = boost::lexical_cast<double>(cv.value().get().c_str());break;
-	          case 4: ionMatched = boost::lexical_cast<double>(cv.value().get().c_str());break;
-	          case 5: ionTotal = boost::lexical_cast<double>(cv.value().get().c_str());break;
-	        }
-	      } else {
-	        std::cerr << "Error  : an unmapped Sequest parameter " << param_name << " was not found." << std::endl;
-	      }
-	    }
+      if (cv.value().present()) {
+        std::string param_name(cv.name().c_str());
+        if (sequestFeatures.count(param_name)) {
+          switch (sequestFeatures.at(param_name)) {
+            case 0: lnrSP = boost::lexical_cast<double>(cv.value().get().c_str()); break;
+            case 1: deltaCN = boost::lexical_cast<double>(cv.value().get().c_str()); break;
+            case 2: xCorr = boost::lexical_cast<double>(cv.value().get().c_str()); break;
+            case 3: Sp = boost::lexical_cast<double>(cv.value().get().c_str()); break;
+            case 4: ionMatched = boost::lexical_cast<double>(cv.value().get().c_str()); break;
+            case 5: ionTotal = boost::lexical_cast<double>(cv.value().get().c_str()); break;
+          }
+        } else {
+          std::cerr << "Error: An unmapped Sequest parameter " << param_name << " was not found." << std::endl;
+        }
+      }
     }
 
     f_seq.push_back(log(max(1.0, lnrSP)));
@@ -220,7 +215,7 @@ void SequestReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemTy
       f_seq.push_back(enzyme_->isEnzymatic(peptideNoMods.at(0), peptideNoMods.at(2)) ? 1.0 : 0.0);
       f_seq.push_back(enzyme_->isEnzymatic(peptideNoMods.at(peptideNoMods.size() - 3), peptideNoMods.at(peptideNoMods.size() - 1)) ? 1.0 : 0.0);
       std::string peptide2 = peptideNoMods.substr(2, peptideNoMods.size() - 4);
-      f_seq.push_back((double) enzyme_->countEnzymatic(peptide2));
+      f_seq.push_back(static_cast<double>(enzyme_->countEnzymatic(peptide2)));
     }
 
     if (po.calcPTMs) {
@@ -236,52 +231,48 @@ void SequestReader::createPSM(const ::mzIdentML_ns::SpectrumIdentificationItemTy
     percolatorInNs::occurence::flankN_type flankN = peptideSeqWithFlanks.substr(0, 1);
     percolatorInNs::occurence::flankC_type flankC = peptideSeqWithFlanks.substr(peptideSeqWithFlanks.size() - 1, 1);
 
-    // Strip peptide from termini and modifications
     std::string peptideS = peptideSeq;
     for (unsigned int ix = 0; ix < peptideSeq.size(); ++ix) {
       if (freqAA.find(peptideSeq[ix]) == string::npos) {
         if (ptmMap.count(peptideSeq[ix]) == 0) {
-	   ostringstream temp;
-          temp << "Error : Peptide sequence " << peptideSeqWithFlanks
-                  << " contains modification " << peptideSeq[ix] << " that is not specified by a \"-p\" argument" << std::endl;
+          ostringstream temp;
+          temp << "Error: Peptide sequence " << peptideSeqWithFlanks
+               << " contains modification " << peptideSeq[ix] << " that is not specified by a \"-p\" argument" << std::endl;
           throw MyException(temp.str());
         }
         peptideSeq.erase(ix--, 1);
       }
     }
 
-    std::auto_ptr< percolatorInNs::peptideType > peptide_p(new percolatorInNs::peptideType(peptideSeq));
-    // Register the ptms
+    std::unique_ptr<percolatorInNs::peptideType> peptide_p(new percolatorInNs::peptideType(peptideSeq));
     for (unsigned int ix = 0; ix < peptideS.size(); ++ix) {
       if (freqAA.find(peptideS[ix]) == string::npos) {
         int accession = ptmMap[peptideS[ix]];
-        std::auto_ptr< percolatorInNs::uniMod > um_p (new percolatorInNs::uniMod(accession));
-        std::auto_ptr< percolatorInNs::modificationType >  mod_p( new percolatorInNs::modificationType(static_cast<int>(ix)));
-        mod_p->uniMod(um_p);
-        peptide_p->modification().push_back(mod_p);      
-        peptideS.erase(ix--,1);      
+        std::unique_ptr<percolatorInNs::uniMod> um_p(new percolatorInNs::uniMod(accession));
+        std::unique_ptr<percolatorInNs::modificationType> mod_p(new percolatorInNs::modificationType(static_cast<int>(ix)));
+        mod_p->uniMod(std::move(um_p)); // Use std::move to transfer ownership
+        peptide_p->modification().push_back(std::move(mod_p)); // Use std::move to transfer ownership
+        peptideS.erase(ix--, 1);
       }
     }
 
-    ::percolatorInNs::peptideSpectrumMatch* tmp_psm = new ::percolatorInNs::peptideSpectrumMatch
-            (features_p, peptide_p, psmId, isDecoy, observed_mass, theoretic_mass, charge);
-    std::auto_ptr< ::percolatorInNs::peptideSpectrumMatch > psm_p(tmp_psm);
+    std::unique_ptr<percolatorInNs::peptideSpectrumMatch> psm_p(new percolatorInNs::peptideSpectrumMatch(
+      std::move(features_p), std::move(peptide_p), psmId, isDecoy, observed_mass, theoretic_mass, charge));
 
-    for (std::vector< std::string >::const_iterator i = proteinIds.begin(); i != proteinIds.end(); ++i) {
-      std::auto_ptr< percolatorInNs::occurence > oc_p(new percolatorInNs::occurence(*i, flankN, flankC));
-      psm_p->occurence().push_back(oc_p);
+    for (const std::string &proteinId : proteinIds) {
+      std::unique_ptr<percolatorInNs::occurence> oc_p(new percolatorInNs::occurence(proteinId, flankN, flankC));
+      psm_p->occurence().push_back(std::move(oc_p)); // Use std::move to transfer ownership
     }
 
-    database->savePsm(useScanNumber, psm_p);
+    database->savePsm(useScanNumber, std::move(psm_p)); // Use std::move to transfer ownership
   }
-  // Try-Catch statement to find potential errors among the features.
-  catch(std::exception const& e)
-  {
+  catch(std::exception const& e) {
     ostringstream temp;
-    temp << "Error : parsing PSM: " << boost::lexical_cast<string > (item.id())
-    << "\nThe error was: " << e.what() << std::endl;
+    temp << "Error: parsing PSM: " << boost::lexical_cast<string>(item.id())
+         << "\nThe error was: " << e.what() << std::endl;
     throw MyException(temp.str());
   }
 
   return;
 }
+

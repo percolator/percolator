@@ -338,6 +338,8 @@ ostream & operator <<(ostream & os, const Vector & rhs)
   return os;
 }
 
+// Commented away this statement 240312
+/*
 istream & operator >>(istream & is, Vector & rhs)
 {
   char c;
@@ -375,6 +377,7 @@ istream & operator >>(istream & is, Vector & rhs)
 
   return is;
 }
+*/
 
 double operator *(const Array<double> & lhs, const Array<double> & rhs)
 {

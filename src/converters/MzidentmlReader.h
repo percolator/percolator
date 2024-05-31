@@ -18,7 +18,7 @@
 #ifndef MZIDENTMLREADER_H
 #define MZIDENTMLREADER_H
 
-#include <Reader.h>
+#include "Reader.h"
 #include "FragSpectrumScanDatabase.h"
 #include "parser.hxx"
 #include "mzIdentML1.1.0.hxx"

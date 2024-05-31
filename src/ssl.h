@@ -36,30 +36,6 @@ class AlgIn {
     int negatives;
     double** vals;
     double* Y; /* labels */
-    double* C; /* cost associated with each example */
-    void setCost(double pos, double neg) {
-      int ix = 0;
-      for (; ix < negatives; ++ix) {
-        C[ix] = neg;
-      }
-      for (; ix < negatives + positives; ++ix) {
-        C[ix] = pos;
-      }
-    }
-};
-
-/* Data: Input examples are stored in sparse (Compressed Row Storage) format */
-struct data {
-    int m; /* number of examples */
-    int l; /* number of labeled examples */
-    int u; /* number of unlabeled examples l+u = m */
-    int n; /* number of features */
-    int nz; /* number of non-zeros */
-    double* val; /* data values (nz elements) [CRS format] */
-    int* rowptr; /* n+1 vector [CRS format] */
-    int* colind; /* nz elements [CRS format] */
-    double* Y; /* labels */
-    double* C; /* cost associated with each example */
 };
 
 struct vector_double { /* defines a vector of doubles */

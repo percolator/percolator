@@ -308,6 +308,6 @@ void CommandLineParser::findOption(char** argv, int& index, int argc) {
 }
 
 std::string& CommandLineParser::rtrim(std::string &s) {
-  s.erase(std::find_if(s.rbegin(), s.rend(), std::not1(std::ptr_fun<int, int>(std::isspace))).base(), s.end());
+  s.erase(std::find_if(s.rbegin(), s.rend(), [](unsigned char ch) { return !std::isspace(ch); }).base(), s.end());
   return s;
 }
