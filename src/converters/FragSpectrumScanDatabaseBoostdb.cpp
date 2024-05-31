@@ -34,18 +34,18 @@ void FragSpectrumScanDatabaseBoostdb::terminate()
   bdb = 0;
 }
 
-std::unique_ptr< ::percolatorInNs::fragSpectrumScan> FragSpectrumScanDatabaseBoostdb::getFSS( unsigned int scanNr ) 
+std::unique_ptr< ::percolatorInNs::fragSpectrumScan> FragSpectrumScanDatabaseBoostdb::getFSS(unsigned int scanNr) 
 {
-  mapdb::const_iterator it;
-  it = bdb->find(scanNr);
-  if(it == bdb->end()){
-    return std::unique_ptr< ::percolatorInNs::fragSpectrumScan> (NULL);
-  }
-  std::istringstream istr (it->second);
-  binary_iarchive ia (istr);
-  xml_schema::istream<binary_iarchive> is (ia);
-  std::unique_ptr< ::percolatorInNs::fragSpectrumScan> ret (new ::percolatorInNs::fragSpectrumScan (is)); 
-  return ret;      
+    mapdb::const_iterator it;
+    it = bdb->find(scanNr);
+    if (it == bdb->end()) {
+        return std::unique_ptr< ::percolatorInNs::fragSpectrumScan>(nullptr);
+    }
+    std::istringstream istr(it->second);
+    binary_iarchive ia(istr);
+    xml_schema::istream<binary_iarchive> is(ia);
+    std::unique_ptr< ::percolatorInNs::fragSpectrumScan> ret(new ::percolatorInNs::fragSpectrumScan(is)); 
+    return ret;      
 }
 
 void FragSpectrumScanDatabaseBoostdb::print(serializer & ser) 
