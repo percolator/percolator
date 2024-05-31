@@ -87,4 +87,4 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: windows-packages
-        path: ${{ env.base_dir }}\release\percolator-noxml-windows-portable.zip    
+        path: ${{ env.base_dir }}\release\   
