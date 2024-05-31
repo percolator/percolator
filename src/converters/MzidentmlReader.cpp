@@ -1,3 +1,7 @@
+#include <memory> // For std::unique_ptr
+#include <xercesc/dom/DOM.hpp> // For xercesc::DOMDocument
+#include <xsd/cxx/xml/dom/auto-ptr.hxx> // For xsd::cxx::xml::dom::deleter
+
 #include "MzidentmlReader.h"
 
 static const XMLCh sequenceCollectionStr[] = {
@@ -61,19 +65,24 @@ void MzidentmlReader::getMaxMinCharge(const std::string &fn, bool isDecoy) {
     ifs.open(fn.c_str());
     parser p;
     bool validateSchema = true;
-    xml_schema::dom::auto_ptr<xercesc::DOMDocument> doc
-        (p.start(ifs, fn.c_str(), validateSchema, schemaDefinition, schema_major, 
-                 schema_minor, scheme_namespace));
+
+    std::unique_ptr<xercesc::DOMDocument, xsd::cxx::xml::dom::deleter<xercesc::DOMDocument>> doc(nullptr, xsd::cxx::xml::dom::deleter<xercesc::DOMDocument>());
+
+    // Ensure parser::start returns the correct type or wrap the result with the correct deleter
+    std::unique_ptr<xercesc::DOMDocument> tempDoc = p.start(ifs, fn.c_str(), validateSchema, schemaDefinition, schema_major, schema_minor, scheme_namespace);
+    doc.reset(tempDoc.release()); // Transfer ownership and apply the custom deleter
 
     // MT: This seems to be a bit slow for doing nothing
-    for (doc = p.next(); doc.get() != 0
-            && !XMLString::equals(spectrumIdentificationResultStr, doc->getDocumentElement()->getTagName()); doc = p.next()) {
-      // Let's skip some sub trees that we are not interested, e.g. AnalysisCollection
+    for (std::unique_ptr<xercesc::DOMDocument> tempDoc = p.next(); tempDoc.get() != nullptr
+        && !XMLString::equals(spectrumIdentificationResultStr, tempDoc->getDocumentElement()->getTagName()); tempDoc = p.next()) {
+      doc.reset(tempDoc.release()); // Transfer ownership and apply the custom deleter
     }
+    
     // For each SpectrumIdentificationResult
     int itemCount = 1;
-    for (; doc.get() != 0 && XMLString::equals(spectrumIdentificationResultStr,
-            doc->getDocumentElement()->getTagName()); doc = p.next()) {
+    for (auto tempDoc = p.next(); tempDoc.get() != nullptr && XMLString::equals(spectrumIdentificationResultStr,
+            tempDoc->getDocumentElement()->getTagName()); tempDoc = p.next()) {
+      doc.reset(tempDoc.release()); // Transfer ownership and apply the custom deleter
       ::mzIdentML_ns::SpectrumIdentificationResultType specIdResult(*doc->getDocumentElement());
       // For each SpectrumIdentificationItem
       BOOST_FOREACH(const ::mzIdentML_ns::SpectrumIdentificationItemType & item, specIdResult.SpectrumIdentificationItem()) {
@@ -101,6 +110,7 @@ void MzidentmlReader::getMaxMinCharge(const std::string &fn, bool isDecoy) {
   return;
 }
 
+
 void MzidentmlReader::searchEngineSpecificParsing(
     const ::mzIdentML_ns::SpectrumIdentificationItemType & item, 
     int itemCount) {
@@ -118,13 +128,18 @@ void MzidentmlReader::read(const std::string &fn, bool isDecoy,
     ifs.exceptions(ifstream::badbit | ifstream::failbit);
     ifs.open(fn.c_str());
     parser p;
-    xml_schema::dom::auto_ptr<xercesc::DOMDocument> doc
-            (p.start(ifs, fn.c_str(), true, schemaDefinition, schema_major, schema_minor, scheme_namespace));
+    
+    std::unique_ptr<xercesc::DOMDocument, xsd::cxx::xml::dom::deleter<xercesc::DOMDocument>> doc;
+
+    // Ensure parser::start returns the correct type or wrap the result with the correct deleter
+    auto tempDoc = p.start(ifs, fn.c_str(), true, schemaDefinition, schema_major, schema_minor, scheme_namespace);
+    doc.reset(tempDoc.release()); // Transfer ownership and apply the custom deleter
 
     //NOTE wouldnt be  better to use the get tag by Name to jump SequenceCollenction directly?
-    while (doc.get() != 0 && !XMLString::equals(sequenceCollectionStr,
+    while (doc.get() != nullptr && !XMLString::equals(sequenceCollectionStr,
             doc->getDocumentElement()->getTagName())) {
-      doc = p.next(); // Let's skip some sub trees that we are not interested, e.g. AuditCollection
+      auto tempDoc = p.next();
+      doc.reset(tempDoc.release()); // Transfer ownership and apply the custom deleter
     }
 
     assert(doc.get());
@@ -156,16 +171,17 @@ void MzidentmlReader::read(const std::string &fn, bool isDecoy,
       peptideEvidenceMap.insert(std::make_pair(peptideE.id(), peptE));
     }
 
-    for (doc = p.next(); doc.get() != 0 && !XMLString::equals(spectrumIdentificationResultStr,
-            doc->getDocumentElement()->getTagName()); doc = p.next()) {
-      // Let's skip some sub trees that we are not interested, e.g. AnalysisCollection
+    for (auto tempDoc = p.next(); tempDoc.get() != nullptr && !XMLString::equals(spectrumIdentificationResultStr,
+            tempDoc->getDocumentElement()->getTagName()); tempDoc = p.next()) {
+      doc.reset(tempDoc.release()); // Transfer ownership and apply the custom deleter
     }
 
     unsigned scanNumber = 0;
     bool useRankedScanNumbers = false;  	/* True scan numbers are used,
     										if they can't be found, use ranked scan numbers from 1 and up. */
-    for (; doc.get() != 0 && XMLString::equals(spectrumIdentificationResultStr,
-            doc->getDocumentElement()->getTagName()); doc = p.next()) {
+    for (auto tempDoc = p.next(); tempDoc.get() != nullptr && XMLString::equals(spectrumIdentificationResultStr,
+            tempDoc->getDocumentElement()->getTagName()); tempDoc = p.next()) {
+      doc.reset(tempDoc.release()); // Transfer ownership and apply the custom deleter
       ::mzIdentML_ns::SpectrumIdentificationResultType specIdResult(*doc->getDocumentElement());
       assert(specIdResult.SpectrumIdentificationItem().size() > 0);
       int numberHitsSpectra = 0;

@@ -61,12 +61,12 @@ TEST_F(OptionTest, CheckBasicOptionParsing)
 
     parseArgv(argv);
 
-    EXPECT_TRUE(parser.optionSet("aShortOption"));
-    EXPECT_TRUE(parser.optionSet("longOption"));
-    EXPECT_TRUE(parser.optionSet("integerOption"));
-    EXPECT_TRUE(parser.optionSet("numberOption"));
-    EXPECT_FALSE(parser.optionSet("stringOption"));
-    EXPECT_FALSE(parser.optionSet("experimental"));
+    EXPECT_TRUE(parser.isOptionSet("aShortOption"));
+    EXPECT_TRUE(parser.isOptionSet("longOption"));
+    EXPECT_TRUE(parser.isOptionSet("integerOption"));
+    EXPECT_TRUE(parser.isOptionSet("numberOption"));
+    EXPECT_FALSE(parser.isOptionSet("stringOption"));
+    EXPECT_FALSE(parser.isOptionSet("experimental"));
 
     EXPECT_EQ("1", parser.options["aShortOption"]);
     EXPECT_EQ("0", parser.options["longOption"]);
@@ -76,7 +76,7 @@ TEST_F(OptionTest, CheckBasicOptionParsing)
     // Default values aren't set by the parser.
     EXPECT_EQ("", parser.options["stringOptions"]);
     // You can't look up options by their short names.
-    EXPECT_FALSE(parser.optionSet("a"));
+    EXPECT_FALSE(parser.isOptionSet("a"));
 }
 
 TEST_F(OptionTest, CheckThrowOnInvalidOption)

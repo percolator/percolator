@@ -38,9 +38,9 @@ public:
   
   virtual void terminate();
   
-  virtual std::auto_ptr< ::percolatorInNs::fragSpectrumScan> deserializeFSSfromBinary( char * value, int valueSize );
+  virtual std::unique_ptr< ::percolatorInNs::fragSpectrumScan> deserializeFSSfromBinary( char * value, int valueSize );
   
-  virtual std::auto_ptr< ::percolatorInNs::fragSpectrumScan> getFSS( unsigned int scanNr );
+  virtual std::unique_ptr< ::percolatorInNs::fragSpectrumScan> getFSS( unsigned int scanNr );
   
   virtual void print(serializer & ser);
   
@@ -52,7 +52,7 @@ private:
           
   XDR xdr;
   xml_schema::buffer buf;
-  std::auto_ptr< xml_schema::ostream<XDR> > oxdrp;
+  std::unique_ptr< xml_schema::ostream<XDR> > oxdrp;
   TCBDB* bdb;
 };
 

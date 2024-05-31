@@ -78,16 +78,16 @@ bool PickedProteinCaller::parseOptions(int argc, char** argv) {
   cmd.parseArgs(argc, argv);
 
   // process options
-  if (cmd.optionSet("verbose")) {
+  if (cmd.isOptionSet("verbose")) {
     Globals::getInstance()->setVerbose(cmd.getInt("verbose", 0, 10));
   }
-  if (cmd.optionSet("database")) {
+  if (cmd.isOptionSet("database")) {
     protein_db_file_ = cmd.options["database"];
   }
-  if (cmd.optionSet("peptide-in")) {
+  if (cmd.isOptionSet("peptide-in")) {
     peptide_input_file_ = cmd.options["peptide-in"];
   }
-  if (cmd.optionSet("protein-out")) {
+  if (cmd.isOptionSet("protein-out")) {
     protein_output_file_ = cmd.options["protein-out"];
   }
   

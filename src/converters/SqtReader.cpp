@@ -25,7 +25,7 @@ SqtReader::~SqtReader()
 
 void SqtReader::readPSM(bool isDecoy, const std::string &in, int match,  
 			std::string& fileId, boost::shared_ptr<FragSpectrumScanDatabase> database) {
-  std::auto_ptr< percolatorInNs::features >  features_p( new percolatorInNs::features ());
+  auto features_p = std::make_unique<percolatorInNs::features>();
   unsigned int scan;
   int charge;
   double observedMassCharge;
@@ -153,25 +153,26 @@ void SqtReader::readPSM(bool isDecoy, const std::string &in, int match,
   // Strip peptide from termini and modifications 
   std::string peptideSequence = peptide.substr(2, peptide.size()- 4);
   std::string peptideSeqNoMods = peptideNoMods.substr(2, peptideNoMods.size()- 4);
-  std::auto_ptr< percolatorInNs::peptideType > peptide_p( new percolatorInNs::peptideType(peptideSeqNoMods) );
+  auto peptide_p = std::make_unique<percolatorInNs::peptideType>(peptideSeqNoMods);
+
   // Register the ptms
-  for (unsigned int ix = 0;ix < peptideSequence.size();++ix) {
-    if (freqAA.find(peptideSequence[ix]) == string::npos) {
-      std::auto_ptr< percolatorInNs::modificationType >  mod_p( new percolatorInNs::modificationType(static_cast<int>(ix)));
-      if (peptideSequence[ix] == '[') {
-        unsigned int posEnd = static_cast<unsigned int>(peptideSequence.substr(ix).find_first_of(']'));
-        std::string modAcc = peptideSequence.substr(ix + 1, posEnd - 1);
-        std::auto_ptr< percolatorInNs::freeMod > fm_p (new percolatorInNs::freeMod(modAcc));
-        mod_p->freeMod(fm_p);
-        peptideSequence.erase(ix--, posEnd + 1);
-      } else {
-        int accession = ptmMap[peptideSequence[ix]];
-        std::auto_ptr< percolatorInNs::uniMod > um_p (new percolatorInNs::uniMod(accession));
-        mod_p->uniMod(um_p);  
-        peptideSequence.erase(ix--,1);
-      }
-      peptide_p->modification().push_back(mod_p);    
-    }  
+  for (unsigned int ix = 0; ix < peptideSequence.size(); ++ix) {
+    if (freqAA.find(peptideSequence[ix]) == std::string::npos) {
+        std::unique_ptr<percolatorInNs::modificationType> mod_p(new percolatorInNs::modificationType(static_cast<int>(ix)));
+        if (peptideSequence[ix] == '[') {
+            unsigned int posEnd = static_cast<unsigned int>(peptideSequence.substr(ix).find_first_of(']'));
+            std::string modAcc = peptideSequence.substr(ix + 1, posEnd - 1);
+            std::unique_ptr<percolatorInNs::freeMod> fm_p(new percolatorInNs::freeMod(modAcc));
+            mod_p->freeMod(*fm_p); // Dereference the unique_ptr
+            peptideSequence.erase(ix--, posEnd + 1);
+        } else {
+            int accession = ptmMap[peptideSequence[ix]];
+            std::unique_ptr<percolatorInNs::uniMod> um_p(new percolatorInNs::uniMod(accession));
+            mod_p->uniMod(*um_p); // Dereference the unique_ptr
+            peptideSequence.erase(ix--, 1);
+        }
+        peptide_p->modification().push_back(*mod_p); // Dereference the unique_ptr
+    }
   }
   
   if (po.iscombined) {
@@ -187,17 +188,18 @@ void SqtReader::readPSM(bool isDecoy, const std::string &in, int match,
   
   unsigned int rank = static_cast<unsigned int>(match + 1);
   std::string psmId = createPsmId(fileId, observedMassCharge, scan, charge, rank);
-  
-  std::auto_ptr< percolatorInNs::peptideSpectrumMatch > psm_p(
-      new percolatorInNs::peptideSpectrumMatch(features_p, peptide_p, psmId, 
-          isDecoy, observedMassCharge, calculatedMassToCharge, charge));
+
+  auto psm_p = std::make_unique<percolatorInNs::peptideSpectrumMatch>(
+    std::move(features_p),
+    std::move(peptide_p),
+    psmId, isDecoy, observedMassCharge, calculatedMassToCharge, charge);
 
   for ( std::vector< std::string >::const_iterator i = proteinIds.begin(); i != proteinIds.end(); ++i ) {
-    std::auto_ptr< percolatorInNs::occurence >  oc_p( new percolatorInNs::occurence (*i,flankN, flankC)  );
-    psm_p->occurence().push_back(oc_p);
+    std::unique_ptr< percolatorInNs::occurence >  oc_p( new percolatorInNs::occurence (*i,flankN, flankC)  );
+    psm_p->occurence().push_back(std::move(oc_p));
   }
   
-  database->savePsm(scan, psm_p);
+  database->savePsm(scan, std::move(psm_p));
 }
 
 void SqtReader::getMaxMinCharge(const std::string &fn, bool isDecoy)

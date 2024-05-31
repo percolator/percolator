@@ -159,36 +159,36 @@ bool Interface::parseOpt(int argc, char **argv,const std::string &usage)
   cmd.parseArgs(argc, argv);
   // now query the parsing results
 
-  if (cmd.optionSet("verbose")) {
+  if (cmd.isOptionSet("verbose")) {
     Globals::getInstance()->setVerbose(cmd.getInt("verbose", 0, 10));
   }
   if (VERB > 0) {
     cerr << extendedGreeter();
   }
 
-  if (cmd.optionSet("outputTab")) outputFN = cmd.options["outputTab"];
-  if (cmd.optionSet("outputXML")) {
+  if (cmd.isOptionSet("outputTab")) outputFN = cmd.options["outputTab"];
+  if (cmd.isOptionSet("outputXML")) {
     xmlOutput = true;
     outputFN = cmd.options["outputXML"];
   }
-  if (cmd.optionSet("outputXMLstdout")) xmlOutput = true;
+  if (cmd.isOptionSet("outputXMLstdout")) xmlOutput = true;
   
   //option e has been changed, see above
-  if (cmd.optionSet("enzyme")) {
+  if (cmd.isOptionSet("enzyme")) {
     parseOptions.enzymeString = cmd.options["enzyme"];
   }
-  if (cmd.optionSet("id-with-exp-mass")) parseOptions.expMassInPsmId = true;
-  if (cmd.optionSet("PNGaseF")) parseOptions.pngasef = true;
-  if (cmd.optionSet("aa-freq")) parseOptions.calcAAFrequencies = true;
-  if (cmd.optionSet("PTM")) parseOptions.calcPTMs = true;
-  if (cmd.optionSet("matches")) {
+  if (cmd.isOptionSet("id-with-exp-mass")) parseOptions.expMassInPsmId = true;
+  if (cmd.isOptionSet("PNGaseF")) parseOptions.pngasef = true;
+  if (cmd.isOptionSet("aa-freq")) parseOptions.calcAAFrequencies = true;
+  if (cmd.isOptionSet("PTM")) parseOptions.calcPTMs = true;
+  if (cmd.isOptionSet("matches")) {
     int m = cmd.getInt("matches", 1, 30000);
     parseOptions.hitsPerSpectrum=m;
   }
-  if (cmd.optionSet("ms2-file")) spectrumFile = cmd.options["ms2-file"];
-  if (cmd.optionSet("isotope")) parseOptions.monoisotopic = true;
+  if (cmd.isOptionSet("ms2-file")) spectrumFile = cmd.options["ms2-file"];
+  if (cmd.isOptionSet("isotope")) parseOptions.monoisotopic = true;
   
-  if (cmd.optionSet("psm-annotation")) {
+  if (cmd.isOptionSet("psm-annotation")) {
     std::vector<std::string> strs;
     boost::split(strs, cmd.options["psm-annotation"], boost::is_any_of(":,"));
     if (strs.size()<2) {cerr << "Scheme is malformated" << endl; return 0;}
@@ -200,11 +200,11 @@ bool Interface::parseOpt(int argc, char **argv,const std::string &usage)
     }
   }
   
-  if (cmd.optionSet("pattern")) {
+  if (cmd.isOptionSet("pattern")) {
     parseOptions.reversedFeaturePattern = cmd.options["pattern"];
   }
   
-  if (cmd.optionSet("databases")) {
+  if (cmd.isOptionSet("databases")) {
     //NOTE I do not like this, I should make two parameters, one for target db and another one for decoy db
     std::vector<std::string> strs;
     boost::split(strs, cmd.options["databases"], boost::is_any_of(","));
@@ -214,11 +214,11 @@ bool Interface::parseOpt(int argc, char **argv,const std::string &usage)
     parseOptions.readProteins = true;
   }
   
-  if (cmd.optionSet("cleavages")) parseOptions.missed_cleavages = static_cast<unsigned int>(cmd.getInt("cleavages", 0, 10));
-  if (cmd.optionSet("min-length")) parseOptions.peptidelength = static_cast<unsigned int>(cmd.getInt("min-length",4,20));
-  if (cmd.optionSet("max-length")) parseOptions.maxpeplength = static_cast<unsigned int>(cmd.getInt("max-length",6,100));
-  if (cmd.optionSet("min-mass")) parseOptions.minmass = cmd.getInt("min-mass",100,1000);
-  if (cmd.optionSet("max-mass")) parseOptions.maxmass = cmd.getInt("max-mass",100,10000);
+  if (cmd.isOptionSet("cleavages")) parseOptions.missed_cleavages = static_cast<unsigned int>(cmd.getInt("cleavages", 0, 10));
+  if (cmd.isOptionSet("min-length")) parseOptions.peptidelength = static_cast<unsigned int>(cmd.getInt("min-length",4,20));
+  if (cmd.isOptionSet("max-length")) parseOptions.maxpeplength = static_cast<unsigned int>(cmd.getInt("max-length",6,100));
+  if (cmd.isOptionSet("min-mass")) parseOptions.minmass = cmd.getInt("min-mass",100,1000);
+  if (cmd.isOptionSet("max-mass")) parseOptions.maxmass = cmd.getInt("max-mass",100,10000);
   
   if (cmd.arguments.size() > 0) {
     targetFN = cmd.arguments[0];

@@ -34,7 +34,6 @@ limitations under the License.
 #include "CrossValidation.h"
 #include "DataSet.h"
 #include "Enzyme.h"
-#include "FidoInterface.h"
 #include "Globals.h"
 #include "MyException.h"
 #include "Normalizer.h"
@@ -111,7 +110,7 @@ class Caller {
     unsigned int numIterations_, maxPSMs_, nestedXvalBins_, numThreads_;
     double selectedCpos_, selectedCneg_;
     bool reportEachIteration_, quickValidation_, trainBestPositive_,
-        skipNormalizeScores_, analytics_;
+        skipNormalizeScores_, analytics_, use_reset_alg_, use_composition_match_;
 
     // reporting parameters
     std::string call_;
@@ -123,6 +122,7 @@ class Caller {
     void calcAndOutputResult(Scores& allScores, XMLInterface& xmlInterface);
 
     void calculatePSMProb(Scores& allScores, bool uniquePeptideRun);
+    void writeResults(Scores& allScores, bool unique, bool writeOutput);
     void calculateProteinProbabilities(Scores& allScores);
     void checkIsWritable(const std::string& filePath);
 };

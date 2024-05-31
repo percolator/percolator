@@ -252,8 +252,8 @@ void Scores::postMergeStep() {
 }
 
 double Scores::calcScore(const double* feat, const std::vector<double>& w) const {
-    register std::size_t ix = FeatureNames::getNumFeatures();
-    register double score = w[ix];
+    std::size_t ix = FeatureNames::getNumFeatures();
+    double score = w[ix];
     for (; ix--;) {
         score += feat[ix] * w[ix];
     }
@@ -286,6 +286,31 @@ void Scores::scoreAndAddPSM(ScoreHolder& sh,
         scores_.push_back(sh);
     }
 }
+
+int Scores::calcBalancedFDR(double treshold) {
+    double c_decoy(0.5), c_target(0.0), factor( nullTargetWinProb_ / ( 1.0 - nullTargetWinProb_ ) );
+    for_each(scores_.begin(), scores_.end(), [&](ScoreHolder& score) {
+        if (score.isDecoy()) {
+            c_decoy += 1.0;
+        } else {
+            c_target += 1.0;
+        }
+        score.q = ( c_target / c_decoy ) * factor;
+    });
+    reverse(scores_.begin(), scores_.end());
+    double previous_q = 1.0;
+    for_each(scores_.begin(), scores_.end(), [&](ScoreHolder& score) {
+        previous_q = std::min(score.q, previous_q);
+        score.q = previous_q;
+    });
+    reverse(scores_.begin(), scores_.end());
+
+    // Calcultaing the number of target PSMs with q-value less than treshold
+    ScoreHolder limit(treshold, 1);
+    auto upper = lower_bound(scores_.begin(), scores_.end(), limit);
+    return upper - scores_.begin();
+}
+
 
 void Scores::print(int label, std::ostream& os) {
     std::vector<ScoreHolder>::iterator scoreIt = scores_.begin();
@@ -540,11 +565,23 @@ void Scores::normalizeScores(double fdr, std::vector<double>& weights) {
 
 /**
  * Calculates the SVM cost/score of each PSM and sorts them
+ * and calculate q values for each PSM
  * @param w normal vector used for SVM cost
  * @param fdr FDR threshold specified by user (default 0.01)
  * @return number of true positives
  */
 int Scores::calcScores(std::vector<double>& w, double fdr, bool skipDecoysPlusOne) {
+    onlyCalcScores(w);
+    return calcQ(fdr, skipDecoysPlusOne);
+}
+
+/**
+ * Calculates the SVM cost/score of each PSM and sorts them
+ * @param w normal vector used for SVM cost
+ * @param fdr FDR threshold specified by user (default 0.01)
+ * @return 0 on successfull execution
+ */
+int Scores::onlyCalcScores(std::vector<double>& w) {
     std::size_t ix;
     std::vector<ScoreHolder>::iterator scoreIt = scores_.begin();
     for (; scoreIt != scores_.end(); ++scoreIt) {
@@ -565,8 +602,9 @@ int Scores::calcScores(std::vector<double>& w, double fdr, bool skipDecoysPlusOn
             cerr << "Too few scores to display top and bottom PSMs (" << scores_.size() << " scores found)." << endl;
         }
     }
-    return calcQ(fdr, skipDecoysPlusOne);
+    return 0;
 }
+
 
 void Scores::getScoreLabelPairs(std::vector<pair<double, bool> >& combined) {
     combined.clear();
@@ -610,7 +648,8 @@ void Scores::generateNegativeTrainingSet(AlgIn& data, const double cneg) {
         if (scoreIt->isDecoy()) {
             data.vals[ix2] = scoreIt->pPSM->features;
             data.Y[ix2] = -1;
-            data.C[ix2++] = cneg;
+            // data.C[ix2] = cneg;
+            ix2++;
         }
     }
     data.negatives = static_cast<int>(ix2);
@@ -634,7 +673,8 @@ void Scores::generatePositiveTrainingSet(AlgIn& data, const double fdr,
             if (scoreIt->q <= fdr) {
                 data.vals[ix2] = scoreIt->pPSM->features;
                 data.Y[ix2] = 1;
-                data.C[ix2++] = cpos;
+                // data.C[ix2] = cpos;
+                ix2++;
                 ++p;
             }
         }

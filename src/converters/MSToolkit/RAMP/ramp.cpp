@@ -1610,8 +1610,12 @@ RAMPREAL* readPeaks(RAMPFILE* pFI, ramp_fileoffset_t lScanIndex) {
             isCompressed = 0;
           } else {
             const char* pEndAttrValue;
-            pEndAttrValue = strchr(pBeginData
-                + strlen("compressionType=\"") + 1, '\"');
+            const char* buffer = pBeginData + strlen("compressionType=\"") + 1;
+            if ( buffer && buffer[0] != '\0') {
+              pEndAttrValue = strchr(buffer, '\"');
+            } else {
+              pEndAttrValue = nullptr;
+            }
             int len = static_cast<int>(pEndAttrValue - pBeginData);
             fprintf(stderr,
                     "%.*s Unsupported compression type\n",

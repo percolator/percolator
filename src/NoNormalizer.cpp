@@ -20,6 +20,7 @@
 #define isfinite _finite
 #endif
 #include <math.h>
+#undef round
 #include <vector>
 #include <string>
 
