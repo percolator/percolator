@@ -74,12 +74,15 @@ jobs:
         CD ..
         SET base_dir=%cd%
         ECHO %base_dir%
+        ECHO percolator\admin\builders\nativew64_build.bat -s %base_dir% -r %base_dir%\percolator\my_rel -b %base_dir%\percolator\my_build
         CALL percolator\admin\builders\nativew64_build.bat -s %base_dir% -r %base_dir%\percolator\my_rel -b %base_dir%\percolator\my_build
     - name: zip raw binary
       shell: pwsh
-      run: Compress-Archive -Path "${env:GITHUB_WORKSPACE}\my_build\percolator-noxml\src\Release\*.exe" -DestinationPath "${env:GITHUB_WORKSPACE}\my_rel\percolator-noxml-windows-portable.zip"
+      run: |
+        ECHO Compress-Archive -Path "${env:GITHUB_WORKSPACE}\my_build\percolator-noxml\src\Release\*.exe" -DestinationPath "${env:GITHUB_WORKSPACE}\my_rel\percolator-noxml-windows-portable.zip"
+        Compress-Archive -Path "${env:GITHUB_WORKSPACE}\my_build\percolator-noxml\src\Release\*.exe" -DestinationPath "${env:GITHUB_WORKSPACE}\my_rel\percolator-noxml-windows-portable.zip"
     - name: Upload packages
       uses: actions/upload-artifact@v3
       with:
         name: windows-packages
-        path: ${{ env.GITHUB_WORKSPACE }}\my_rel\percolator-noxml-windows-portable.zip
+        path: my_rel\percolator-noxml-windows-portable.zip
