@@ -68,10 +68,10 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: create_dirs
-      run: MKDIR ${{ env.GITHUB_WORKSPACE }}\..\my_rel ${{ env.GITHUB_WORKSPACE }}\..\my_build
+      run: MKDIR ..\my_rel ..\my_build
     - name: configure_and_make
       run: |
-        CD ${{ env.GITHUB_WORKSPACE }}\..
+        CD ..
         SET base_dir=%cd%
         ECHO %base_dir%
         CALL percolator\admin\builders\nativew64_build.bat -s %base_dir% -r %base_dir%\my_rel -b %base_dir%\my_build
