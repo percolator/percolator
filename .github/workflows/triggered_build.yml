@@ -70,8 +70,8 @@ jobs:
     - name: set_base_dir
       run: |
         CD ..
-        SET base_dir=%cd%
-        ECHO base_dir=%base_dir%>> %GITHUB_ENV%
+        $baseDir = (Get-Location).Path
+        echo "base_dir=$baseDir" >> $env:GITHUB_ENV
     - name: create_dirs
       run: MKDIR %base_dir%\release %base_dir%\build
     - name: configure_and_make
@@ -81,10 +81,9 @@ jobs:
     - name: zip raw binary
       shell: pwsh
       run: |
-        Compress-Archive -Path "%base_dir%\build\percolator-noxml\src\Release\*.exe" -DestinationPath "%base_dir%\release\percolator-noxml-windows-portable.zip"
+        Compress-Archive -Path "$env:base_dir\build\percolator-noxml\src\Release\*.exe" -DestinationPath "$env:base_dir\release\percolator-noxml-windows-portable.zip"
     - name: Upload packages
       uses: actions/upload-artifact@v3
       with:
         name: windows-packages
-        path: "%base_dir%\\release\\percolator-noxml-windows-portable.zip"
-    
+        path: ${{ env.base_dir }}\release\percolator-noxml-windows-portable.zip    
