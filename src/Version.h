@@ -23,23 +23,23 @@ limitations under the License.
 #endif
 
 #ifndef VERSION_MINOR
-   #define VERSION_MINOR "06"
+   #define VERSION_MINOR "07"
 #endif
 
 #ifndef VERSION_PATCH
-   #define VERSION_PATCH "0"
+   #define VERSION_PATCH "1"
 #endif
 
 #ifndef VERSION
-  #define VERSION "3.06.0"
+  #define VERSION "3.07.1"
 #endif
 
 #ifndef VERSION_NAME
-  #define VERSION_NAME "v3-06"
+  #define VERSION_NAME "v3-07"
 #endif
 
 #ifndef LVERSION_NAME
-  #define LVERSION_NAME L"v3-06"
+  #define LVERSION_NAME L"v3-07"
 #endif
 
 #endif /*VERSION_H_*/
