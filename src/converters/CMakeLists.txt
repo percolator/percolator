@@ -357,6 +357,8 @@ link_directories(${PERCOLATOR_SOURCE_DIR}/src)
 add_library(perclibrary_part STATIC ${perc_in_xsdfiles} ${perc_out_xsdfiles}
 	    ../Option.cpp ../Enzyme.cpp ../Globals.cpp ../MassHandler.cpp ../serializer.cxx ../parser.cxx ../Logger.cpp ../MyException.cpp ../TmpDir.cpp)
 
+ADD_DEPENDENCIES(perclibrary_part generate_perc_xsdfiles)
+
 # compile converter base files
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})

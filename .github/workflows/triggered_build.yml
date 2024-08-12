@@ -23,24 +23,37 @@ jobs:
         name: ubuntu-packages
         path: ${{ github.workspace }}/rel
 
-#  build-centos:
-#    runs-on: ubuntu-latest
-#    container: 'lukall/centos_runner:latest'
-#    steps:
-#    - uses: actions/checkout@v4
-#    - name: create_dirs
-#      run: mkdir -p ../my_rel ../my_build
-#    - name: configure_and_make
-#      run: ./admin/builders/centos64_build.sh -s `pwd`/.. -r `pwd`/../my_rel -b `pwd`/../my_build
-#    - name: test
-#      run: cd ../my_build/percolator && make install && make test ARGS="-V"
-#    - name: zip raw binary
-#      run: zip -j ../my_rel/percolator-noxml-linux-portable.zip ../my_build/percolator-noxml/src/percolator
-#    - name: Upload packages
-#      uses: actions/upload-artifact@v3
-#      with:
-#        name: centos-packages
-#        path: ../my_rel
+  build-centos:
+    runs-on: ubuntu-latest
+    container: 'lukall/centos_runner:latest'
+    steps:
+    - uses: actions/checkout@v4
+    - name: environment fixes
+      run: |
+        # CentOS7 EOL fix for mirrors: https://serverfault.com/questions/1161816/mirrorlist-centos-org-no-longer-resolve/1161847#1161847
+        sed -i s/mirror.centos.org/vault.centos.org/g /etc/yum.repos.d/*.repo
+        sed -i s/^#.*baseurl=http/baseurl=http/g /etc/yum.repos.d/*.repo
+        sed -i s/^mirrorlist=http/#mirrorlist=http/g /etc/yum.repos.d/*.repo
+        # for some reason the checkout action inside a container does not check out to the github.workspace variable
+        mkdir -p $(dirname ${{ github.workspace }})
+        ln -s $(pwd) ${{ github.workspace }}
+        # install sudo
+        yum install sudo -y
+    - name: create_dirs
+      run: mkdir -p ${{ github.workspace }}/release ${{ github.workspace }}/../build
+    - name: configure_and_make
+      run: |
+        ./admin/builders/centos64_build.sh -s ${{ github.workspace }}/.. -r ${{ github.workspace }}/release -b ${{ github.workspace }}/../build
+    - name: test
+      run: |
+        cd -P ${{ github.workspace }}/../build/percolator && make install && make test ARGS="-V"
+    - name: zip raw binary
+      run: zip -j ${{ github.workspace }}/release/percolator-noxml-linux-portable.zip $(dirname ${{ github.workspace }})/build/percolator-noxml/src/percolator
+    - name: Upload packages
+      uses: actions/upload-artifact@v3
+      with:
+        name: centos-packages
+        path: ${{ github.workspace }}/release
 
   build-osx:
     runs-on: macos-15
