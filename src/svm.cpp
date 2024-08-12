@@ -1,5 +1,4 @@
-#include <math.h>
-#undef round
+#include <cmath>
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>

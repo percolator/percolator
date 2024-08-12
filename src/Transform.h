@@ -17,8 +17,7 @@
 #ifndef TRANSFORM_H_
 #define TRANSFORM_H_
 
-#include <math.h>
-#undef round
+#include <cmath>
 
 class Transform {
   public:

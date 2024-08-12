@@ -7,8 +7,7 @@
  * \brief Object for mapping a peptide to its parent protein.
  ****************************************************************************/
 
-#include <math.h>
-#undef round
+#include <cmath>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

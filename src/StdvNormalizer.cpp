@@ -19,8 +19,7 @@
 #include <float.h>
 #define isfinite _finite
 #endif
-#include <math.h>
-#undef round
+#include <cmath>
 #include <vector>
 #include <string>
 

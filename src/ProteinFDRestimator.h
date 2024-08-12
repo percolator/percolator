@@ -55,8 +55,6 @@
 #include <map>
 #include <set>
 #include <assert.h>
-#include <math.h>
-#undef round
 #include <cmath>
 
 
