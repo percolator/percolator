@@ -15,8 +15,11 @@
 
  *******************************************************************************/
 #include <iostream>
-#include <math.h>
-#undef round
+#ifdef WIN32
+#include <float.h>
+#define isfinite _finite
+#endif
+#include <cmath>
 #include <vector>
 #include <string>
 

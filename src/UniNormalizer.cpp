@@ -16,8 +16,7 @@
  *******************************************************************************/
 #include <vector>
 #include <iostream>
-#include <math.h>
-#undef round
+#include <cmath>
 #include <algorithm>
 using namespace std;
 #include "Normalizer.h"

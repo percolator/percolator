@@ -6,8 +6,7 @@
  * \file PeptideConstraint.cpp
  * \brief Object for holding the peptide constraint information.
  ****************************************************************************/
-#include <math.h>
-#undef round
+#include <cmath>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

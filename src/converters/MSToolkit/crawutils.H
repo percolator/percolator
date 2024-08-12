@@ -20,8 +20,7 @@
 #include <string>
 #include <stdlib.h>
 #include <stdio.h>
-#include <math.h>
-#undef round
+#include <cmath>
 #include <assert.h>
 #include <time.h>
 #include <string.h>
@@ -121,11 +120,6 @@ typedef std::pair< IdxGroupType, IdxGroupType > TwoGroupsType;
 typedef fpos_t f_off;
 #include <io.h>
 #endif 
-
-
-#ifndef __GNUC__
-double round(double n);
-#endif
 
 
 ///Struct for comparing two floats using < operator
