@@ -16,10 +16,6 @@
 #include <algorithm>
 #include <functional>
 
-//class Set;
-using namespace std;
-
-
 
 template <typename T>
 class Array 
@@ -29,7 +25,7 @@ public:
   Array(int n) : data(static_cast<std::size_t>(n)){};
   Array(std::size_t n) : data(n) {};
   Array(int n, const T & element) : data(std::size_t(n), element){};
-  Array(const vector<T> & newvector) : data(newvector){};
+  Array(const std::vector<T> & newvector) : data(newvector){};
   Array():data() {};
 
   // explicit Array(int n);
@@ -46,14 +42,13 @@ public:
   virtual T & operator [] (std::size_t k);
   virtual Array<T> operator [](const Array<int> & rhs) const;
 
-  //Set operator ==(const T & rhs) const;
   bool operator ==(const Array<T> & rhs) const;
 
   Array<int> sort();
   Array<int> sortA();
   
-  vector<T> getVector();
-  vector<T> getVector() const;
+  std::vector<T> getVector();
+  std::vector<T> getVector() const;
 
   virtual void add(const T & element);
   virtual void append(const Array<T> & elements);
@@ -124,7 +119,7 @@ protected:
   // error checking functions
   void boundsCheck(int i) const;
 
-  vector<T> data;
+  std::vector<T> data;
 };
 
 // non-member error checking functions
@@ -136,17 +131,13 @@ template <typename T>
 Array<T> concatonate(const Array<T> & lhs, const Array<T> & rhs);
 
 template <typename T>
-ostream & operator <<(ostream & os, const Array<T> & rhs);
+std::ostream & operator <<(std::ostream & os, const Array<T> & rhs);
 
 template <typename T>
-ostream & operator >>(ostream & os, Array<T> & rhs);
+std::ostream & operator >>(std::ostream & os, Array<T> & rhs);
 
-//#include "Set.h"
-//#include "Array.cpp"
-
-
-// member functions
-class Set;
+// NOTE: template classes cannot be separated into .h and .cpp
+// e.g. see https://stackoverflow.com/questions/8752837/undefined-reference-to-template-class-constructor
 
 template <typename T>
 const T & Array<T>::operator [] (int k) const
@@ -303,7 +294,7 @@ Array<T> concatonate(const Array<T> & lhs, const Array<T> & rhs)
 }
 
 template <typename T>
-ostream & operator <<(ostream & os, const Array<T> & rhs)
+std::ostream & operator <<(std::ostream & os, const Array<T> & rhs)
 {
   if ( rhs.size() == 0 )
     {
@@ -330,7 +321,7 @@ ostream & operator <<(ostream & os, const Array<T> & rhs)
 }
 
 template <typename T>
-istream & operator >>(istream & is, Array<T> & rhs)
+std::istream & operator >>(std::istream & is, Array<T> & rhs)
 {
   char delim;
   is >> delim;
@@ -364,22 +355,6 @@ istream & operator >>(istream & is, Array<T> & rhs)
   return is;
 }
 
-// template <typename T>
-// Set Array<T>::operator ==(const T & rhs) const
-// {
-//   Set result;
-// 
-//   for (int k=0; k<size(); k++)
-//     {
-//       if ( (*this)[k] == rhs )
-// 	{
-// 	  result.add(k);
-// 	}
-//     }
-// 
-//   return result;
-// }
-
 template <typename T>
 bool Array<T>::operator ==(const Array<T> & rhs) const {
   if ( size() != rhs.size() )
@@ -395,12 +370,12 @@ bool Array<T>::operator ==(const Array<T> & rhs) const {
 
 template <typename T>
 Array<int> Array<T>::sort() {
-  vector<pair<T, int> > sortie(size());
+  std::vector<std::pair<T, int> > sortie(size());
   for (std::size_t k = 0; k < size(); k++) {
-    sortie[k] = pair<T, int>( (*this)[k], k);
+    sortie[k] = std::pair<T, int>( (*this)[k], k);
   }
 
-  ::sort( sortie.begin(), sortie.end() , std::greater<std::pair<T, int> >() );
+  std::sort( sortie.begin(), sortie.end() , std::greater<std::pair<T, int> >() );
   
   Array<int> result(static_cast<int>(size()));
   for (std::size_t k = 0; k < size(); k++) {
@@ -412,13 +387,13 @@ Array<int> Array<T>::sort() {
 
 template <typename T>
 Array<int> Array<T>::sortA() {
-  vector<pair<T, int> > sortie(size());
+  std::vector<std::pair<T, int> > sortie(size());
 
   for (int k = 0; k < size(); k++) {
-    sortie[k] = pair<T, int>( (*this)[k], k);
+    sortie[k] = std::pair<T, int>( (*this)[k], k);
   }
 
-  ::sort(sortie.begin(), sortie.end());
+  std::sort(sortie.begin(), sortie.end());
   
   Array<int> result(size());
   for (std::size_t k = 0; k < size(); k++) {
@@ -430,15 +405,14 @@ Array<int> Array<T>::sortA() {
 }
 
 template <typename T>
-vector<T> Array<T>::getVector() {
-  return data;
+std::vector<T> Array<T>::getVector() {
+  return this->data;
 }
 
 template <typename T>
-vector<T> Array<T>::getVector() const {
-  return data;
+std::vector<T> Array<T>::getVector() const {
+  return this->data;
 }
-
 
 #endif
 

@@ -6,6 +6,7 @@
 #include <cmath>
 #include "Set.h"
 #include "Numerical.h"
+#include "Array.h"
 
 class Vector
 {

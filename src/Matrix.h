@@ -6,6 +6,7 @@
 
 #include "Vector.h"
 #include "MyException.h"
+#include "Array.h"
 
 class Matrix
 {
