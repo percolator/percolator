@@ -21,6 +21,7 @@
 #include <vector>
 
 #include "BaseSpline.h"
+#include "Array.h"
 
 class LogisticRegression : public BaseSpline {
   public:

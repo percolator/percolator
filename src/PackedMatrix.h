@@ -9,6 +9,7 @@
 #define _PackedMatrix_H
 
 #include "PackedVector.h"
+#include "Array.h"
 
 class PackedMatrix
 {

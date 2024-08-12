@@ -71,17 +71,17 @@ Set Set::reindexToFind(const Set& base) {
   Set C;
 
   if ( base.isEmpty() ) {
-    cerr << "Empty base in reindex-- set size is " << size() << endl;
+    std::cerr << "Empty base in reindex-- set size is " << size() << std::endl;
     throw InvalidBaseException();
   }
 
   int lastFind = 0;
   for (Set::Iterator iter = begin(); iter != end(); iter++) {
     int loc = base.findHelper(lastFind, static_cast<int>(base.size()-1), *iter);
-    //cout << "\t\t\tOld school " << (base == *iter) << endl;
+    //std::cout << "\t\t\tOld school " << (base == *iter) << std::endl;
     if ( loc == -1 ) {
       // skips an element of iter
-      cerr << "skipped in reindex-- set size is " << size() << endl;
+      std::cerr << "skipped in reindex-- set size is " << size() << std::endl;
       throw InvalidBaseException();
     }
     //cout << "\t\t\tfound " << loc << endl;
