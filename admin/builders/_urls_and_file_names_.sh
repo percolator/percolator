@@ -9,7 +9,7 @@
 mac_os_xsd='xsd-4.0.0+dep'
 mac_os_xsd_url='https://www.codesynthesis.com/download/xsd/4.0/'${mac_os_xsd}'.tar.bz2'
 # -- xerces --
-mac_os_xerces='xerces-c-3.2.3'
+mac_os_xerces='xerces-c-3.2.5'
 mac_os_xerces_url='https://archive.apache.org/dist/xerces/c/3/sources/'${mac_os_xerces}'.tar.gz'
 
 #

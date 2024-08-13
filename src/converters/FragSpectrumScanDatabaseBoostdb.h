@@ -41,7 +41,7 @@ public:
   
   virtual void terminate();
   
-  virtual std::auto_ptr< ::percolatorInNs::fragSpectrumScan> getFSS( unsigned int scanNr );
+  virtual std::unique_ptr< ::percolatorInNs::fragSpectrumScan> getFSS( unsigned int scanNr );
   
   virtual void print(serializer & ser);
   
@@ -49,7 +49,7 @@ public:
   
   virtual void putFSS( ::percolatorInNs::fragSpectrumScan & fss );
   
-  virtual auto_ptr<fragSpectrumScan> deserializeFSSfromBinary(char* value,int valueSize){throw MyException("deserializeFSSfromBinary is not implemented");};
+  virtual unique_ptr<fragSpectrumScan> deserializeFSSfromBinary(char* value,int valueSize){throw MyException("deserializeFSSfromBinary is not implemented");};
   
 private:
  

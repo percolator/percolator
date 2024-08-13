@@ -25,6 +25,7 @@
 #include "LogisticRegression.h"
 #include "PseudoRandom.h"
 
+
 class PosteriorEstimator {
  public:
   PosteriorEstimator(){};
@@ -35,9 +36,15 @@ class PosteriorEstimator {
   static void estimatePEP(std::vector<std::pair<double, bool> >& combined,
           bool usePi0, double pi0, std::vector<double>& peps,
 		      bool include_negative = false);
-  static void estimatePEPGeneralized(std::vector<std::pair<double, bool> >& combined,
-				 std::vector<double>& peps,
-				 bool include_negative = false);
+  static void estimateTradPEP(std::vector<std::pair<double, bool> >& combined,
+          double decoyMultFactor, std::vector<double>& peps,
+		      bool include_negative = false);
+  static void estimateTrad(vector<pair<double, bool> >& combined,
+                                  LogisticRegression& lr);
+  static void binDataTrad(const vector<pair<double, bool> >& combined,
+          vector<double>& medians, vector<double> & negatives, vector<double> & sizes);
+
+
   static void getPValues(const std::vector<std::pair<double, bool> >& combined,
                          std::vector<double>& p);
   static void getQValues(double pi0,
@@ -53,10 +60,6 @@ class PosteriorEstimator {
   static void setReversed(bool status) {
 	  reversed = status;
   }
-  static void setGeneralized(bool general) {
-	  competition = general;
-	  assert(!(general && pvalInput));
-  }
   static void setNegative(bool negative) {
     includeNegativesInResult = negative;
   }
@@ -67,9 +70,6 @@ class PosteriorEstimator {
   void finishStandalone(std::vector<std::pair<double, bool> >& combined,
                         const std::vector<double>& peps,
                         const std::vector<double>& p, double pi0);
-  void finishStandaloneGeneralized(std::vector<std::pair<double, bool> >& combined,
-                        const std::vector<double>& peps);
-
   static void getMixMaxCounts(const std::vector<std::pair<double, bool> >& combined,
                        std::vector<double>& h_w_le_z,
                        std::vector<double>& h_z_le_z);
@@ -83,7 +83,7 @@ class PosteriorEstimator {
 
   // used for standalone execution
   std::string targetFile, decoyFile;
-  static bool reversed, pvalInput, competition, includeNegativesInResult, usePi0_;
+  static bool reversed, pvalInput, includeNegativesInResult, competition, usePi0_;
   std::string resultFileName;
 };
 

@@ -29,7 +29,8 @@ if(NOT WITHOUT_GTEST)
                      ${CMAKE_CURRENT_BINARY_DIR}/googletest-build
                      EXCLUDE_FROM_ALL)
     set(GTEST_INCLUDE_DIRS "${gtest_SOURCE_DIR}/include")
-    set(GTEST_BOTH_LIBRARIES gtest gtestmain)
+#    set(GTEST_BOTH_LIBRARIES gtest gtestmain)
+    set(GTEST_BOTH_LIBRARIES GTest::gtest GTest::gtest_main)
     message(STATUS "GoogleTest has been installed succesfully: ${GTEST_INCLUDE_DIRS}.")
   endif(GTEST_FOUND)
 
@@ -43,11 +44,10 @@ if(NOT WITHOUT_GTEST)
   include_directories(${GTEST_INCLUDE_DIRS}
       ${Boost_INCLUDE_DIRS}
       ${PERCOLATOR_SOURCE_DIR}/src
-      ${PERCOLATOR_SOURCE_DIR}/src/fido
+      # ${PERCOLATOR_SOURCE_DIR}/src/fido
       ${CMAKE_BINARY_DIR}/src)
   add_executable(gtest_unit
       Unit_tests_Percolator_main.cpp
-      UnitTest_Percolator_Fido.cpp
       UnitTest_Percolator_Option.cpp
       UnitTest_Percolator_TabReader.cpp
       UnitTest_Percolator_SetHandler.cpp
@@ -55,7 +55,7 @@ if(NOT WITHOUT_GTEST)
       UnitTest_Percolator_Scores.cpp
       UnitTest_Percolator_CrossValidation.cpp)
   # Link with all required libraries
-  set(UNIT_TEST_LIBRARIES perclibrary blas fido)
+  set(UNIT_TEST_LIBRARIES perclibrary blas)
   if(NOT MSVC)
     set(UNIT_TEST_LIBRARIES ${UNIT_TEST_LIBRARIES} pthread)
     if(APPLE)

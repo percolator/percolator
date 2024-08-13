@@ -168,7 +168,7 @@ int DataSet::readPsm(const std::string& line, const unsigned int lineNr,
   unsigned int numFeatures = static_cast<unsigned int>(FeatureNames::getNumFeatures());
   double* featureRow = featurePool.allocate();
   myPsm->features = featureRow;
-  for (register unsigned int j = 0; j < numFeatures; j++) {
+  for (unsigned int j = 0; j < numFeatures; j++) {
     featureRow[j] = reader.readDouble();
     if (!isfinite(featureRow[j])) {
       ostringstream oss;

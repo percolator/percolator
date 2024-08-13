@@ -339,9 +339,9 @@ double ProteinFDRestimator::estimatePi0HG(unsigned N,unsigned targets,unsigned c
   }
   //normalization
   double sum = (double)std::accumulate(logprob.rbegin(), logprob.rend(), 0.0);
-  std::transform(logprob.begin(), logprob.end(), 
-		 logprob.begin(), std::bind2nd(std::divides<double> (),sum));
-  
+    std::transform(logprob.begin(), logprob.end(), logprob.begin(),
+                   [sum](double val) { return val / sum; });
+      
   //exp probability
   for(unsigned i = 0; i < logprob.size(); i++)
     finalprob += logprob[i] * i;
