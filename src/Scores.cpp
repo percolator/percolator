@@ -40,6 +40,7 @@ using namespace boost::algorithm;
 #include "Scores.h"
 #include "SetHandler.h"
 #include "ssl.h"
+#include "IsotonicPEP.h"
 
 inline bool operator>(const ScoreHolder& one, const ScoreHolder& other) {
     return (one.score > other.score) || (one.score == other.score && one.pPSM->scan > other.pPSM->scan) || (one.score == other.score && one.pPSM->scan == other.pPSM->scan && one.pPSM->expMass > other.pPSM->expMass) || (one.score == other.score && one.pPSM->scan == other.pPSM->scan && one.pPSM->expMass == other.pPSM->expMass && one.label > other.label);
@@ -853,15 +854,50 @@ void Scores::checkSeparationAndSetPi0() {
     }
 }
 
-void Scores::calcPep() {
-    std::vector<pair<double, bool> > combined;
-    getScoreLabelPairs(combined);
+void Scores::calcPep(const bool isotonic) {
+    if (isotonic) {
+        std::vector<double> target_q;
+        for (auto& sh : scores_) {
+            if (sh.isTarget()) {
+                target_q.push_back(sh.q);
+            }
+        }
+        cerr << "Hullo" << endl;
+        IsotonicPEP reg;
+        auto target_pep = reg.q_to_pep(target_q);
+        cerr << "Hullo" << endl;
 
-    std::vector<double> peps;
-    // Logistic regression on the data
-    PosteriorEstimator::estimatePEP(combined, usePi0_, pi0_, peps, true);
-    for (size_t ix = 0; ix < scores_.size(); ix++) {
-        scores_[ix].pep = peps[ix];
+        // Move PEPs to scoreholders. The PEPs are only defined for target, 
+        // We use interpolation for decoys.
+        // Add elements avoiding overflow problems if last sh is a decoy
+        target_pep.push_back(1.0); target_q.push_back(1.0);
+        auto it_pep = target_pep.begin();
+        auto it_q = target_q.begin();
+        double l_q(0.0), l_pep(0.0);
+        cerr << "Hullo" << endl;
+        for (auto& sh : scores_) {
+            if (sh.isTarget()) {
+                sh.pep = *it_pep;
+                l_pep = *it_pep;
+                l_q = *it_q;
+                it_pep++; it_q++;
+            } else {
+                double pep = reg.interpolate(sh.q,l_q,*it_q,l_pep,*it_pep);
+                sh.pep = pep;
+            }
+        }
+        cerr << "Hullo" << endl;
+
+    } else {
+        std::vector<pair<double, bool> > combined;
+        getScoreLabelPairs(combined);
+
+        std::vector<double> peps;
+        // Logistic regression on the data
+        PosteriorEstimator::estimatePEP(combined, usePi0_, pi0_, peps, true);
+        for (size_t ix = 0; ix < scores_.size(); ix++) {
+            scores_[ix].pep = peps[ix];
+        }
     }
 }
 

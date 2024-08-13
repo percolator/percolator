@@ -25,9 +25,9 @@
 #include <stdexcept>
 #include <cmath>      // for std::abs
 
-class IsotonicRegression {
+class IsotonicPEP {
 public:
-    IsotonicRegression() = default;
+    IsotonicPEP() = default;
 
     // Method to perform isotonic regression
     std::vector<double> fit_transform(const std::vector<double>& y) {
@@ -35,12 +35,16 @@ public:
             throw std::invalid_argument("Input vector 'y' is empty.");
         }
 
+        cerr << "in iso" << endl;
         std::vector<double> solution = y;
         std::vector<int> level_start(y.size());
+        cerr << "really?" << endl;
 
         for (size_t i = 0; i < y.size(); ++i) {
             level_start[i] = i;
         }
+
+        cerr << "time to run" << endl;
 
         for (size_t i = 1; i < solution.size(); ++i) {
             if (solution[i] < solution[i - 1]) {
@@ -51,16 +55,17 @@ public:
                 double sum = 0.0;
                 int start = level_start[j];
                 int count = i - start + 1;
-                for (int k = start; k <= i; ++k) {
+                for (size_t k = start; k <= i; ++k) {
                     sum += solution[k];
                 }
                 double average = sum / count;
-                for (int k = start; k <= i; ++k) {
+                for (size_t k = start; k <= i; ++k) {
                     solution[k] = average;
                 }
                 level_start[i] = start;
             }
         }
+        cerr << "done core" << endl;
 
         // Clip the values to be within the bounds [0, 1]
         for (auto& val : solution) {
@@ -84,16 +89,25 @@ public:
         }
 
         // Calculate differences between consecutive qn values
-        std::vector<double> raw_pep(qn.size() - 1);
-        std::adjacent_difference(qn.begin(), qn.end(), raw_pep.begin());
-        raw_pep.erase(raw_pep.begin());  // Remove the first element (which is meaningless)
+
+        std::vector<double> raw_pep(qn.size());
+        for (size_t i = 1; i < qn.size(); ++i) {
+            raw_pep[i] = qn[i] - qn[i - 1];
+        }
+        raw_pep.erase(raw_pep.begin());  // Remove the first element
 
         // Append an additional element (1.0) to match the original array size
         raw_pep.push_back(1.0);
 
         // Perform isotonic regression on the differences
+        cerr << "go iso" << endl;
         std::vector<double> pep_iso = fit_transform(raw_pep);
         return pep_iso;
+    }
+
+    double interpolate(const double q_value, const double q1, const double q2, const double pep1, const double pep2) const {
+        double interp_pep = pep1 + (q_value - q1) * (pep2 - pep1) / (q2 - q1);
+        return interp_pep;
     }
 
     // Getter method to interpolate and retrieve PEP for a given q-value
@@ -119,7 +133,7 @@ public:
             double pep2 = pep_iso[idx];
 
             // Linear interpolation
-            double interp_pep = pep1 + (q_value - q1) * (pep2 - pep1) / (q2 - q1);
+            double interp_pep = interpolate(q_value, q1, q2, pep1, pep2);
             return interp_pep;
         }
     }

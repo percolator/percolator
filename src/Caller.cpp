@@ -41,6 +41,7 @@ Caller::Caller() :
     psmResultFN_(""), peptideResultFN_(""), proteinResultFN_(""),
     decoyPsmResultFN_(""), decoyPeptideResultFN_(""), decoyProteinResultFN_(""),
     analytics_(true), use_reset_alg_(false), use_composition_match_(false),
+    use_isotonic_pep_(false),
     xmlPrintDecoys_(false), xmlPrintExpMass_(true), reportUniquePeptides_(true),
     reportPepXML_(false),
     targetDecoyCompetition_(false), useMixMax_(false), inputSearchType_("auto"),
@@ -336,6 +337,10 @@ bool Caller::parseOptions(int argc, char **argv) {
       "Run an implementation of the Percolator-RESET Algorithm.",
       "", TRUE_IF_SET);
   cmd.defineOption(Option::EXPERIMENTAL_FEATURE,
+      "iso-pep",
+      "Serive PEPs using isotonic regression insted of using non parametric regression.",
+      "", TRUE_IF_SET);
+  cmd.defineOption(Option::EXPERIMENTAL_FEATURE,
       "composition-match",
       "Run an implementation of the Percolator-RESET psmsAndPeptides with target-decoy matching based on composition.",
       "", TRUE_IF_SET);
@@ -445,6 +450,9 @@ bool Caller::parseOptions(int argc, char **argv) {
   }
   if (cmd.isOptionSet("composition-match")) {
     use_composition_match_ = true;
+  }
+  if (cmd.isOptionSet("iso-pep")) {
+    use_isotonic_pep_ = true;
   }
   if (cmd.isOptionSet("xml-in")) {
     tabInput_ = false;
@@ -720,8 +728,7 @@ void Caller::calculatePSMProb(Scores& allScores, bool isUniquePeptideRun){
               << " with q<" << testFdr_ << "." << endl;
     std::cerr << "Calculating posterior error probabilities (PEPs)." << std::endl;
   }
-
-  allScores.calcPep();
+  allScores.calcPep(use_isotonic_pep_);
   writeResults(allScores, isUniquePeptideRun, writeOutput);
 }
 
