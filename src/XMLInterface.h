@@ -50,6 +50,7 @@
   #include <xercesc/parsers/XercesDOMParser.hpp>
   #include <xercesc/sax/HandlerBase.hpp>
   #include <xercesc/util/PlatformUtils.hpp>
+  #include <xsd/cxx/xml/dom/auto-ptr.hxx>
   #include "percolator_in.hxx"
 #endif //XML_SUPPORT
 

@@ -5,7 +5,7 @@
 #define _Set_H
 
 #include "Array.h"
-#include "Random.h"
+//#include "Random.h"
 
 class Set : public Array<int> {
  public:
@@ -28,7 +28,7 @@ class Set : public Array<int> {
   Array<int> operator [](const Set & rhs) const {
     return Array<int>::operator [](rhs);
   }
-  const int & operator [](int k) const {
+  const int & operator [](std::size_t k) const {
     return Array<int>::operator [](k);
   }
 
@@ -52,9 +52,9 @@ class Set : public Array<int> {
     return FullSet(value, value);
   }
   
-  int randomElement() const {
-    return (*this)[static_cast<int>(Random::lcg_rand() % size())];
-  }
+  // int randomElement() const {
+  //  return (*this)[static_cast<int>(Random::lcg_rand() % size())];
+  // }
 
  private:
   bool verify() const;

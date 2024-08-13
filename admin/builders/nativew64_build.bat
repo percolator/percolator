@@ -108,6 +108,10 @@ if not exist "%XSD_DIR%" (
   echo Downloading and installing CodeSynthesis XSD
   call :downloadfile %XSD_URL% %INSTALL_DIR%\xsd.zip
   %ZIP_EXE% x "%INSTALL_DIR%\xsd.zip" -o"%INSTALL_DIR%" > NUL
+  call :downloadfile %LIBXSD_URL% %INSTALL_DIR%\libxsd.zip
+  %ZIP_EXE% x "%INSTALL_DIR%\libxsd.zip" -o"%INSTALL_DIR%" > NUL
+  echo Moving files from %LIBXSD_BASE%\include\ to %XSD_BASE%
+  xcopy "%INSTALL_DIR%\%LIBXSD_BASE%\include\*" "%INSTALL_DIR%\%XSD_BASE%\" /s /e /y /i
 )
 
 ::: Needed for converters package :::

@@ -8,6 +8,7 @@
  ****************************************************************************/
 
 #include <math.h>
+#undef round
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

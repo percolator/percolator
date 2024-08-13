@@ -93,7 +93,7 @@ public:
   Vector operator [](const Set & rhs) const;
 
   friend ostream & operator <<(ostream & os, const Vector & rhs);
-  friend istream & operator >>(istream & is, Vector & rhs);
+  //friend istream & operator >>(istream & is, Vector & rhs);
   
   double norm() const
   {

@@ -12,6 +12,7 @@
 #define PEPTIDE_CONSTRAINT_H
 
 #include <math.h>
+#undef round
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

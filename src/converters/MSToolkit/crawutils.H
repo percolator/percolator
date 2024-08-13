@@ -21,6 +21,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
+#undef round
 #include <assert.h>
 #include <time.h>
 #include <string.h>

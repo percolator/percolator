@@ -497,12 +497,12 @@ bool Protein::readRawSequence
       raw_sequence[i_seq] = static_cast<char>(a_char);
       i_seq++;
     }
-    if (i_seq >= max_chars) {
+    if (i_seq >= (max_chars-1)) {
       return_value = false;
       break;
     }
   }
-  raw_sequence[i_seq] = '\0';
+  raw_sequence[i_seq] = static_cast<char>('\0');
   *sequence_length = i_seq; // chris added
 
   return(return_value);

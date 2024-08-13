@@ -543,6 +543,7 @@ void BaseSpline::solveInPlace(PackedMatrix& mat, PackedVector& res) {
   return;
 }
 
+
 void BaseSpline::testPerformance(){
   cout << "\nTesting performance for fido:\n";
   PackedVector v;

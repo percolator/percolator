@@ -57,41 +57,32 @@ const std::string Globals::getXMLDir(bool isConverter) {
   if (isConverter) keyName += L"converters-";
   keyName += LVERSION_NAME;
   HKEY hKey;
-  RegOpenKeyExW(HKEY_LOCAL_MACHINE, keyName.c_str(), 0, KEY_READ, &hKey);
-
-  WCHAR szBuffer[512];
-  DWORD dwBufferSize = sizeof(szBuffer);
-  ULONG nError;
-  std::wstring strValueName = L"";
-  nError = RegQueryValueExW(hKey, strValueName.c_str(), 0, NULL, (LPBYTE)szBuffer, &dwBufferSize);
-  if (ERROR_SUCCESS == nError)
-  {
-    char szcBuffer[512];
-    char DefChar = ' ';
-    WideCharToMultiByte(CP_ACP,0,szBuffer,-1, szcBuffer,512,&DefChar, NULL);
-    out = szcBuffer;
-    out += "\\";
-    out += WRITABLE_DIR;
-  } else {
-    
-    keyName = L"Software\\Wow6432Node\\Percolator\\percolator-";
-    if (isConverter) keyName += L"converters-";
-    keyName += LVERSION_NAME;
-    RegOpenKeyExW(HKEY_LOCAL_MACHINE, keyName.c_str(), 0, KEY_READ, &hKey);
-
+  if (RegOpenKeyExW(HKEY_LOCAL_MACHINE, keyName.c_str(), 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
     WCHAR szBuffer[512];
     DWORD dwBufferSize = sizeof(szBuffer);
-    ULONG nError;
-    std::wstring strValueName = L"";
-    nError = RegQueryValueExW(hKey, strValueName.c_str(), 0, NULL, (LPBYTE)szBuffer, &dwBufferSize);
-    if (ERROR_SUCCESS == nError)
-    {
+    if (RegQueryValueExW(hKey, NULL, 0, NULL, (LPBYTE)szBuffer, &dwBufferSize) == ERROR_SUCCESS) {
       char szcBuffer[512];
-      char DefChar = ' ';
-      WideCharToMultiByte(CP_ACP,0,szBuffer,-1, szcBuffer,512,&DefChar, NULL);
+      WideCharToMultiByte(CP_ACP, 0, szBuffer, -1, szcBuffer, 512, NULL, NULL);
       out = szcBuffer;
       out += "\\";
       out += WRITABLE_DIR;
+    }
+    RegCloseKey(hKey);
+  } else {
+    keyName = L"Software\\Wow6432Node\\Percolator\\percolator-";
+    if (isConverter) keyName += L"converters-";
+    keyName += LVERSION_NAME;
+    if (RegOpenKeyExW(HKEY_LOCAL_MACHINE, keyName.c_str(), 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+      WCHAR szBuffer[512];
+      DWORD dwBufferSize = sizeof(szBuffer);
+      if (RegQueryValueExW(hKey, NULL, 0, NULL, (LPBYTE)szBuffer, &dwBufferSize) == ERROR_SUCCESS) {
+        char szcBuffer[512];
+        WideCharToMultiByte(CP_ACP, 0, szBuffer, -1, szcBuffer, 512, NULL, NULL);
+        out = szcBuffer;
+        out += "\\";
+        out += WRITABLE_DIR;
+      }
+      RegCloseKey(hKey);
     }
   }
 #endif

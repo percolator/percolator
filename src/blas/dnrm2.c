@@ -1,4 +1,5 @@
 #include <math.h>  /* Needed for fabs() and sqrt() */
+#undef round
 #include "blas.h"
 
 #ifdef __cplusplus

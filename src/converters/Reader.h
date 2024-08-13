@@ -31,9 +31,11 @@
 #include <algorithm>
 #include <limits>
 #include <vector>
+#include <memory> // For std::unique_ptr
 
 #include <xercesc/dom/DOM.hpp>
 #include <xercesc/util/XMLString.hpp>
+#include <xsd/cxx/xml/dom/auto-ptr.hxx>
 #include <xsd/cxx/xml/string.hxx>
 #include <boost/algorithm/string.hpp> 
 #include <boost/assign/list_of.hpp>
