@@ -7,6 +7,7 @@ while getopts “s:b:r:t:” OPTION; do
         t) branch=${OPTARG};;
         r) release_dir=${OPTARG};;
         b) build_dir=${OPTARG};;
+        d) build_type=${OPTARG};;
         \?) echo "Invalid option: -${OPTARG}" >&2;;
     esac
 done
@@ -17,6 +18,9 @@ if [[ ! -z `echo -e "$(lsb_release -r)" | gawk '($2>="22.04"){print
     sudo apt-get -y install libcurl4-openssl-dev;
 fi
 
+if [[ -z ${build_type} ]]; then
+    build_type="Release";
+fi
 if [[ -z ${build_dir} ]]; then
     build_dir="$(mktemp -d --tmpdir ubuntu_build_XXXX)";
 fi
@@ -102,7 +106,7 @@ mkdir -p $build_dir/percolator-noxml $build_dir/percolator $build_dir/converters
 cd $build_dir/percolator-noxml;
 echo "cmake percolator-noxml.....";
 (set -x;
-    cmake -DTARGET_ARCH=amd64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DXML_SUPPORT=OFF $src_dir/percolator;
+    cmake -DTARGET_ARCH=amd64 -DCMAKE_BUILD_TYPE=${build_type} -DCMAKE_INSTALL_PREFIX=/usr -DXML_SUPPORT=OFF $src_dir/percolator;
 )
 #-----make------
 echo "make percolator (this will take few minutes).....";
@@ -113,7 +117,7 @@ make -j 4 package;
 cd $build_dir/percolator;
 echo "cmake percolator.....";
 (set -x;
-    cmake -DTARGET_ARCH=amd64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DGOOGLE_TEST=1 -DCMAKE_PREFIX_PATH="${build_dir}/${ubuntu_xerces}/;${build_dir}/${ubuntu_xsd}/" -DXML_SUPPORT=ON $src_dir/percolator;
+    cmake -DTARGET_ARCH=amd64 -DCMAKE_BUILD_TYPE=${build_type} -DCMAKE_INSTALL_PREFIX=/usr -DGOOGLE_TEST=1 -DCMAKE_PREFIX_PATH="${build_dir}/${ubuntu_xerces}/;${build_dir}/${ubuntu_xsd}/" -DXML_SUPPORT=ON $src_dir/percolator;
 )
 #-----make------
 echo "make percolator (this will take few minutes).....";
@@ -125,7 +129,7 @@ cd $build_dir/converters
 #-----cmake-----
 echo "cmake converters.....";
 (set -x;
-    cmake -DTARGET_ARCH=amd64 -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="${build_dir}/${ubuntu_xerces}/;${build_dir}/${ubuntu_xsd}/" -DSERIALIZE="TokyoCabinet" $src_dir/percolator/src/converters;
+    cmake -DTARGET_ARCH=amd64 -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=${build_type} -DCMAKE_PREFIX_PATH="${build_dir}/${ubuntu_xerces}/;${build_dir}/${ubuntu_xsd}/" -DSERIALIZE="TokyoCabinet" $src_dir/percolator/src/converters;
 )
 #-----make------
 echo "make converters (this will take few minutes).....";
