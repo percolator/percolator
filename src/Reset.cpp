@@ -12,16 +12,16 @@
 
 // From Algorithm S3 of the percolator-RESET supplementary material
 // s - the probability of assigning a decoy to the training set (default: s = 1/2)
-int Reset::splitIntoTrainAndTest(std::vector<ScoreHolder*> &allScores, vector<ScoreHolder*> &train, vector<ScoreHolder*> &test, double fractionTraining) {
+int Reset::splitIntoTrainAndTest(Scores &allScores, vector<ScoreHolder*> &train, vector<ScoreHolder*> &test, double fractionTraining) {
 
     for(auto& pScore : allScores) {
-        if (pScore->isTarget()) {
-            train.push_back(pScore);
-            test.push_back(pScore);
+        if (pScore.isTarget()) {
+            train.push_back(&pScore);
+            test.push_back(&pScore);
         } else if (PseudoRandom::lcg_uniform_rand() < fractionTraining) {
-            train.push_back(pScore);
+            train.push_back(&pScore);
         } else {
-            test.push_back(pScore);
+            test.push_back(&pScore);
         }
     }
     return 0;
@@ -120,34 +120,6 @@ int onlyCalcScores(std::vector<ScoreHolder*> &scores, std::vector<double>& w) {
 int calcScores(std::vector<ScoreHolder*> &scores, std::vector<double>& w, double fdr, bool skipDecoysPlusOne) {
     onlyCalcScores(scores, w);
     return calcBalancedFDR(scores, fdr, skipDecoysPlusOne);
-}
-
-// Sets init direction to the feature giving best discrimination
-int setInitDirection(vector<double>& w, vector<ScoreHolder*>& scores, double nullTargetWinProb, double selectionFDR) {
-    int maxIds(-1), maxDir(0), maxSign(0);
-
-    for (size_t ix = 0; ix < w.size(); ix++) {
-        for(auto& scorePtr : scores) {
-            scorePtr->score = scorePtr->pPSM->features[ix];
-        }
-        std::sort(scores.begin(), scores.end(), [](const ScoreHolder* a, const ScoreHolder* b) { return a->score > b->score; });
-        for (int dir = 1; dir > -2; dir -= 2) {
-            int numId = calcBalancedFDR(scores, nullTargetWinProb, selectionFDR);
-            if (numId > maxIds) {
-                maxIds = numId;
-                maxDir = ix;
-                maxSign = dir;
-            }
-            if(dir == 1) {
-                std::reverse(scores.begin(), scores.end());
-            }
-        }
-    }
-    for (size_t ix = 0; ix < w.size(); ix++) {
-        w[ix] = 0;
-    }
-    w[maxDir] = static_cast<double>(maxSign);
-    return calcScores(scores, w, selectionFDR, false);
 }
 
 void getScoreLabelPairs(std::vector<ScoreHolder*> scores, std::vector<pair<double, bool> >& combined) {
@@ -260,21 +232,22 @@ int Reset::evaluateTestSet(Scores &psms, vector<ScoreHolder*> &test, double test
     return peptidesUnderFDR;
 }
 
-int Reset::reset(Scores &psms, Scores &outS, double selectionFDR, SanityCheck* pCheck, double fractionTraining, unsigned int decoysPerTarget, std::vector<double>& w, bool use_composition_match) {
-    (void) pCheck;
+int Reset::reset(Scores &psms, Scores &outS, double selectionFDR, SanityCheck* pCheck, double fractionTraining, unsigned int decoysPerTarget, std::vector<double>& w, bool useCompositionMatch) {
+
     w_ = w;
     CompositionSorter sorter;
 
     // select the representative peptides to train on
-    std::vector<ScoreHolder*> winnerPeptides;
+    Scores winnerPeptides(false);
 
-    if (use_composition_match) {
+    if (useCompositionMatch) {
         cerr << "Starting reset: psmAndPeptide" << endl;   
         sorter.psmAndPeptide(psms, winnerPeptides, decoysPerTarget);
     } else {
         cerr << "Starting reset: psmsOnly" << endl;   
         sorter.psmsOnly(psms, winnerPeptides);
     }
+    winnerPeptides.recalculateSizes();
     std::cerr << "Splitting into train/test" << endl;
 
     // Setting up the training and test sets
@@ -283,8 +256,6 @@ int Reset::reset(Scores &psms, Scores &outS, double selectionFDR, SanityCheck* p
     std::vector<ScoreHolder*> train(false), test(false);
     splitIntoTrainAndTest(winnerPeptides, train, test, fractionTraining);
     double trainNullTargetWinProb(factor/(1.0 + decoysPerTarget)), testNullTargetWinProb(1/factor);
-
-    // setInitDirection(w_, train, trainNullTargetWinProb, selectionFDR); done before this?
 
     // Initialize the input for the SVM
 

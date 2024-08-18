@@ -35,7 +35,7 @@ class Reset {
     int reset(Scores &psms, Scores &output, double selectionFDR, SanityCheck* pCheck, double fractionTraining, unsigned int decoysPerTarget, std::vector<double> &w, bool use_composition_match = false);
     int iterationOfReset(vector<ScoreHolder*> &train, double nullTargetWinProb, double selectionFDR);
     int evaluateTestSet(Scores &psms, vector<ScoreHolder*> &test, double testNullTargetWinProb, double selectionFDR);
-    int splitIntoTrainAndTest(std::vector<ScoreHolder*> &allScores, std::vector<ScoreHolder*> &train, std::vector<ScoreHolder*> &test, double fractionTrain);
+    int splitIntoTrainAndTest(Scores &allScores, std::vector<ScoreHolder*> &train, std::vector<ScoreHolder*> &test, double fractionTrain);
 
  protected:
     int gridSearchC(vector<ScoreHolder*> &train, const double nullTargetWinProb, const double selectionFDR);
