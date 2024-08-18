@@ -131,17 +131,11 @@ endif(XML_SUPPORT)
 # COMPILE INTERNAL LIBRARIES
 ###############################################################################
 
-#COMPILE FIDO
-# add_subdirectory(fido)
-
 #COMPILE PICKED PROTEIN
 add_subdirectory(picked_protein)
 
 #INCLUDE PERCOLATOR HEADERS
 include_directories(.)
-
-#INCLUDE FIDO HEADERS FOR PERCLIBRARY
-# include_directories(fido)
 
 #INCLUDE PICKED PROTEIN HEADERS FOR PERCLIBRARY
 include_directories(picked_protein)

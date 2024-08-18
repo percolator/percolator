@@ -44,7 +44,6 @@ if(NOT WITHOUT_GTEST)
   include_directories(${GTEST_INCLUDE_DIRS}
       ${Boost_INCLUDE_DIRS}
       ${PERCOLATOR_SOURCE_DIR}/src
-      # ${PERCOLATOR_SOURCE_DIR}/src/fido
       ${CMAKE_BINARY_DIR}/src)
   add_executable(gtest_unit
       Unit_tests_Percolator_main.cpp

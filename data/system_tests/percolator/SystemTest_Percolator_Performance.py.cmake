@@ -105,7 +105,6 @@ if xmlSupport:
   psmFile = os.path.join(pathToOutputData,"PERCOLATOR_psms.txt")
   peptideFile = os.path.join(pathToOutputData,"PERCOLATOR_peptides.txt")
   proteinFile = os.path.join(pathToOutputData,"PERCOLATOR_proteins.txt")
-  # proteinFileFido = os.path.join(pathToOutputData,"PERCOLATOR_proteins-fido.txt")
 
   # number of significant psms within boundaries
   success=checkNumberOfSignificant("psms",psmFile,1137) and success
@@ -113,8 +112,6 @@ if xmlSupport:
   success=checkNumberOfSignificant("peptides",peptideFile,924) and success
   # number of significant proteins within boundaries for picked-protein
   success=checkNumberOfSignificant("proteins",proteinFile,340) and success
-  # number of significant proteins within boundaries for fido (poorly calibrated)
-  # success=checkNumberOfSignificant("proteins-fido",proteinFileFido,526) and success
   # psm: pi0 within boundaries
   success=checkPi0("psms",psmFile,0.8435) and success
   # peptides: pi0 within boundaries
@@ -131,7 +128,6 @@ print("- PERCOLATOR TAB FORMAT")
 psmFile = os.path.join(pathToOutputData,"PERCOLATOR_tab_psms.txt")
 peptideFile = os.path.join(pathToOutputData,"PERCOLATOR_tab_peptides.txt")
 proteinFile = os.path.join(pathToOutputData,"PERCOLATOR_tab_proteins.txt")
-# proteinFileFido = os.path.join(pathToOutputData,"PERCOLATOR_tab_proteins-fido.txt")
 
 # number of significant psms within boundaries
 success=checkNumberOfSignificant("psms",psmFile,1137) and success
@@ -139,8 +135,6 @@ success=checkNumberOfSignificant("psms",psmFile,1137) and success
 success=checkNumberOfSignificant("peptides",peptideFile,924) and success
 # number of significant proteins within boundaries for picked-protein
 success=checkNumberOfSignificant("proteins",proteinFile,340) and success
-# number of significant proteins within boundaries for fido (poorly calibrated)
-# success=checkNumberOfSignificant("proteins-fido",proteinFileFido,526) and success
 # psm: pi0 within boundaries
 success=checkPi0("psms",psmFile,0.8435) and success
 # peptides: pi0 within boundaries

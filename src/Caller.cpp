@@ -620,7 +620,7 @@ bool Caller::parseOptions(int argc, char **argv) {
 
   if (cmd.isOptionSet("protein-decoy-pattern")) protEstimatorDecoyPrefix_ = cmd.options["protein-decoy-pattern"];
 
-  if (cmd.isOptionSet("fido-protein") || cmd.isOptionSet("picked-protein")) {
+  if (cmd.isOptionSet("picked-protein")) {
 
     ProteinProbEstimator::setCalcProteinLevelProb(true);
 
@@ -629,8 +629,6 @@ bool Caller::parseOptions(int argc, char **argv) {
     bool protEstimatorTrivialGrouping = true; // cannot be set on cmd line
     double protEstimatorAbsenceRatio = 1.0;
     double protEstimatorPeptideQvalThreshold = -1.0;
-
-    protEstimatorOutputEmpirQVal = cmd.isOptionSet("fido-empirical-protein-q");
 
     if (cmd.isOptionSet("spectral-counting-fdr")) {
       protEstimatorPeptideQvalThreshold = cmd.getDouble("spectral-counting-fdr", 0.0, 1.0);
