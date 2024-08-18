@@ -88,7 +88,11 @@ private:
 
 ## Code Formatting
 
-- **Indentation**: Use 4 spaces for indentation. Avoid tabs.
+We use the [Chromium C++](https://chromium.googlesource.com/chromium/src/+/refs/heads/main/styleguide/c++/c++.md) formatting. Note that most files have not been formatted in this manner yet. This reformatting will be applied step-wise.
+
+Below are the most important rules:
+
+- **Indentation**: Use 2 spaces for indentation. Avoid tabs.
 - **Line Length**: Limit lines to 80 characters where possible.
 - **Braces**: 
   - Place opening braces on the same line as the control statement or function declaration.
