@@ -35,7 +35,7 @@ This style guide outlines the coding standards and best practices for developing
 ## Naming Conventions
 
 - **Variables**: Use `camelCase` for variables (e.g., `totalCount`, `userName`).
-- **Member variables**: Use `camelCase` followed by an underscore for member variables (e.g., `totalCount_`, `userName_`).
+- **Member variables**: Use `camelCase` followed by an underscore for member variables (e.g., `totalCount_`, `userName_`). N.B.: for structs, do not add the underscore.
 - **Functions**: Use `camelCase` for function names (e.g., `getUserName()`, `calculateSum()`).
 - **Classes**: Use `PascalCase` for class names (e.g., `UserAccount`, `DataManager`).
 - **Constants**: Use `ALL_CAPS_WITH_UNDERSCORES` for constants (e.g., `MAX_BUFFER_SIZE`).
