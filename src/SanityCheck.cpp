@@ -29,7 +29,7 @@ using namespace std;
 // In most sence a place holder as very little logic is build-in in this case
 
 SanityCheck::SanityCheck() :
-  initPositives_(0), pTestset(NULL), pTrainset(NULL), concatenatedSearch_(true),
+  initPositives_(0), pTestset_(NULL), pTrainset_(NULL), concatenatedSearch_(true),
   test_fdr_(0.01), initial_train_fdr_(0.01) {
 }
 
@@ -78,8 +78,8 @@ int SanityCheck::getInitDirection(vector<Scores>& testset,
                                   vector<vector<double> > & w,
                                   double test_fdr,
                                   double initial_train_fdr) {
-  pTestset = &testset;
-  pTrainset = &trainset;
+  pTestset_ = &testset;
+  pTrainset_ = &trainset;
   test_fdr_= test_fdr;
   initial_train_fdr_ = initial_train_fdr;
   if (initWeightFN.size() > 0) {
@@ -103,7 +103,7 @@ int SanityCheck::getInitDirection(vector<Scores>& testset,
   }
   initPositives_ = 0;
   for (size_t set = 0; set < w.size(); ++set) {
-    initPositives_ += (*pTestset)[set].calcScores(w[set], test_fdr);
+    initPositives_ += (*pTestset_)[set].calcScores(w[set], test_fdr);
   }
   return initPositives_;
 }
@@ -115,8 +115,8 @@ int SanityCheck::getInitDirection(Scores& scores,
                                   double initial_train_fdr) {
   test_fdr_= test_fdr;
   initial_train_fdr_ = initial_train_fdr;
-  pTrainset = new std::vector<Scores>();
-  pTrainset->push_back(scores);
+  pTrainset_ = new std::vector<Scores>();
+  pTrainset_->push_back(scores);
 
   if (initWeightFN.size() > 0) {
     vector<double> ww(FeatureNames::getNumFeatures() + 1);
@@ -198,17 +198,17 @@ void SanityCheck::getDefaultDirection(vector<double>& w) {
 }
 
 void SanityCheck::calcInitDirection(vector<double>& wSet, size_t set) {
-  (*pTrainset)[set].getInitDirection(initial_train_fdr_, wSet);
+  (*pTrainset_)[set].getInitDirection(initial_train_fdr_, wSet);
 }
 
 bool SanityCheck::validateDirection(vector<vector<double> >& w) {
-  if (!pTestset) {
+  if (!pTestset_) {
     cerr << "SanityCheck wrongly configured" << endl;
     return false;
   }
   int overFDR = 0;
   for (size_t set = 0; set < w.size(); ++set) {
-    overFDR += (*pTestset)[set].calcScores(w[set], test_fdr_);
+    overFDR += (*pTestset_)[set].calcScores(w[set], test_fdr_);
   }
   if (overFDR <= 0) {
     cerr << "No targets found with q<" << test_fdr_ << endl;
