@@ -1078,6 +1078,12 @@ int Caller::run() {
     exit(EXIT_FAILURE);
 
   if (useResetAlgorithm_) {
+    Scores winnerPeptides(false);
+    Reset resetAlg;
+    unsigned int decoysPerTarget = 1;
+    resetAlg.retainRepresentatives(allScores, winnerPeptides, selectionFdr_,
+                                   decoysPerTarget, useCompositionMatch_);
+    allScores = winnerPeptides;
     if (VERB > 0) {
       std::cerr << "Running the Percolator-RESET algorithm." << std::endl;
     }
@@ -1086,11 +1092,9 @@ int Caller::run() {
     std::cerr << "Selecting best separating single variable." << std::endl;
     sc.getInitDirection(allScores, pNorm_, w, selectionFdr_,
                         initialSelectionFdr_);
-    Scores output(false);
 
-    Reset resetAlg;
-    resetAlg.reset(allScores, output, selectionFdr_, pCheck_, 0.5, 1, w,
-                   useCompositionMatch_);
+    Scores output(false);
+    resetAlg.reset(allScores, output, selectionFdr_, pCheck_, 0.5, 1, w);
 
     // allScores.normalizeScores(selectionFdr_); Probably not needed
     writeResults(output, false, true);

@@ -32,9 +32,10 @@ class Reset {
         options_.mfnitermax = MFNITERMAX;
     };
     ~Reset() { if (pSVMInput_ != nullptr) delete pSVMInput_;};
-    int reset(Scores &psms, Scores &output, double selectionFDR, SanityCheck* pCheck, double fractionTraining, unsigned int decoysPerTarget, std::vector<double> &w, bool use_composition_match = false);
+    void retainRepresentatives(const Scores &psms, Scores &winnerPeptides, double selectionFDR, unsigned int decoysPerTarget, bool useCompositionMatch);
+    int reset(Scores &psms, Scores &output, double selectionFDR, SanityCheck* pCheck, double fractionTraining, unsigned int decoysPerTarget, std::vector<double> &w);
     int iterationOfReset(vector<ScoreHolder*> &train, double nullTargetWinProb, double selectionFDR);
-    int evaluateTestSet(Scores &psms, vector<ScoreHolder*> &test, double testNullTargetWinProb, double selectionFDR);
+    int evaluateTestSet(vector<ScoreHolder*> &test, double testNullTargetWinProb, double selectionFDR);
     int splitIntoTrainAndTest(Scores &allScores, std::vector<ScoreHolder*> &train, std::vector<ScoreHolder*> &test, double fractionTrain);
 
  protected:

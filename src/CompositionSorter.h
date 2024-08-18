@@ -21,12 +21,12 @@ class Scores;
 class CompositionSorter {
     public:
         // int addPSMs(Scores& psms, bool useTDC=true); 
-        int addPSMs(Scores& psms, bool useTDC=false); 
+        int addPSMs(const Scores& psms, bool useTDC=false); 
         std::string generateCompositionSignature(const std::string& peptide);
         int sortScorePerPeptide();
         int inCompositionCompetition(Scores& bestScoreHolders, unsigned int decoysPerTarget=1);
-        int psmAndPeptide(Scores& scores, Scores& winnerPeptides, unsigned int decoysPerTarget=1);
-        int psmsOnly(Scores& scores, Scores& winnerPeptides);
+        int psmAndPeptide(const Scores& scores, Scores& winnerPeptides, unsigned int decoysPerTarget=1);
+        int psmsOnly(const Scores& scores, Scores& winnerPeptides);
     protected:
         std::unordered_map<std::string, std::map<std::string,std::vector<ScoreHolder*>>, DJB2Hash> compositionToPeptidesToScore_;
 };
