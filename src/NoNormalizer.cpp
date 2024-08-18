@@ -36,7 +36,7 @@ NoNormalizer::~NoNormalizer() {
 }
 
 void NoNormalizer::unnormalizeweight(const std::vector<double>& in, 
-    std::vector<double>& out) {
+    std::vector<double>& out) const {
   unsigned int i = 0;
   for (; i < numFeatures+1; i++) {
     out[i] = in[i];
@@ -44,7 +44,7 @@ void NoNormalizer::unnormalizeweight(const std::vector<double>& in,
 }
 
 void NoNormalizer::normalizeweight(const std::vector<double>& in, 
-    std::vector<double>& out) {
+    std::vector<double>& out) const {
   size_t i = 0;
   for (; i < numFeatures+1; i++) {
     out[i] = in[i];

@@ -26,8 +26,8 @@ class UniNormalizer : public Normalizer { // virtual Normalizer
                       size_t numRetentionFeatures);
   virtual void updateSet(vector<double*> & featuresV, size_t offset,
                          size_t numFeatures);
-  void unnormalizeweight(const vector<double>& in, vector<double>& out);
-  void normalizeweight(const vector<double>& in, vector<double>& out);
+  void unnormalizeweight(const vector<double>& in, vector<double>& out) const;
+  void normalizeweight(const vector<double>& in, vector<double>& out) const;
 };
 
 #endif /*UNINORMALIZER_H_*/

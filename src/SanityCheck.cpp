@@ -74,7 +74,7 @@ void SanityCheck::checkAndSetDefaultDir() {
 
 int SanityCheck::getInitDirection(vector<Scores>& testset,
                                   vector<Scores>& trainset,
-                                  Normalizer* pNorm,
+                                  const Normalizer* pNorm,
                                   vector<vector<double> > & w,
                                   double test_fdr,
                                   double initial_train_fdr) {
@@ -109,7 +109,7 @@ int SanityCheck::getInitDirection(vector<Scores>& testset,
 }
 
 int SanityCheck::getInitDirection(Scores& scores,
-                                  Normalizer* pNorm,
+                                  const Normalizer* pNorm,
                                   vector<double> & w,
                                   double test_fdr,
                                   double initial_train_fdr) {

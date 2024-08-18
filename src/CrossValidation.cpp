@@ -72,7 +72,7 @@ CrossValidation::~CrossValidation() {
  * @return number of positives for initial setup
  */
 int CrossValidation::preIterationSetup(Scores& fullset, SanityCheck* pCheck, 
-    Normalizer* pNorm, FeatureMemoryPool& featurePool) {
+    const Normalizer* pNorm, FeatureMemoryPool& featurePool) {
   assert(nestedXvalBins_ >= 1u);
   // One input set per (nested) cross validation bin, to be reused multiple times
   for (unsigned int set = 0; set < numFolds_ * nestedXvalBins_; ++set) {
@@ -156,7 +156,7 @@ void CrossValidation::initializeGridSearch(double targetDecoySizeRatio) {
  * Train the SVM using several cross validation iterations
  * @param pNorm Normalization object
  */
-void CrossValidation::train(Normalizer* pNorm) {
+void CrossValidation::train(const Normalizer* pNorm) {
 
   if (VERB > 0) {
     cerr << "---Training with Cpos";
@@ -244,8 +244,7 @@ void CrossValidation::train(Normalizer* pNorm) {
  *        hyperplane from SVM
  * @return Estimation of number of true positives
  */
-int CrossValidation::doStep(Normalizer* pNorm, double selectionFdr) {
-  (void) pNorm; // Avoid compiler warning
+int CrossValidation::doStep(const Normalizer* pNorm, double selectionFdr) {
   // Setup
   options pOptions;
   pOptions.lambda = 1.0;
@@ -484,7 +483,7 @@ void CrossValidation::printSetWeights(ostream & weightStream, unsigned int set) 
  * @param w_ normal vector
  */
 void CrossValidation::printRawSetWeights(ostream & weightStream, unsigned int set, 
-                                      Normalizer * pNorm) {
+                                      const Normalizer * pNorm) {
   vector<double> ww(FeatureNames::getNumFeatures() + 1);
   pNorm->unnormalizeweight(weights_[set], ww);
   weightStream << ww[0];
@@ -496,7 +495,7 @@ void CrossValidation::printRawSetWeights(ostream & weightStream, unsigned int se
 
 // used to save weights for reuse as weight input file
 void CrossValidation::printAllWeights(ostream & weightStream, 
-                                      Normalizer * pNorm) {
+                                      const Normalizer * pNorm) {
   weightStream << "# This file contains the weights from each cross validation bin from percolator training" << endl;
   weightStream << "# First line is the feature names, followed by normalized weights, and the raw weights of bin 1" << endl;
   weightStream << "# This is repeated for the other bins" << endl;
@@ -507,7 +506,7 @@ void CrossValidation::printAllWeights(ostream & weightStream,
 }
 
 void CrossValidation::getAvgWeights(std::vector<double>& weights, 
-                                    Normalizer * pNorm) {
+                                    const Normalizer * pNorm) {
   vector<double> ww(FeatureNames::getNumFeatures() + 1);
   
   weights.resize(FeatureNames::getNumFeatures() + 1);
@@ -552,7 +551,7 @@ void CrossValidation::printAllWeightsColumns(ostream & weightStream) {
 }
 
 void CrossValidation::printAllRawWeightsColumns(ostream & weightStream, 
-                                      Normalizer * pNorm) {
+                                      const Normalizer * pNorm) {
   std::cerr << "Learned raw SVM weights for the " << numFolds_ 
             << " cross-validation splits:" << std::endl;
   std::vector< std::vector<double> > ww = weights_;

@@ -29,7 +29,7 @@ UniNormalizer::~UniNormalizer() {
 }
 
 void UniNormalizer::unnormalizeweight(const vector<double>& in, vector<
-    double> & out) {
+    double> & out) const {
   double sum = 0;
   unsigned int i = 0;
   for (; i < numFeatures; i++) {
@@ -40,7 +40,7 @@ void UniNormalizer::unnormalizeweight(const vector<double>& in, vector<
 }
 
 void UniNormalizer::normalizeweight(const vector<double>& in, vector<
-    double> & out) {
+    double> & out) const {
   double sum = 0;
   size_t i = 0;
   for (; i < numFeatures; i++) {
