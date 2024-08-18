@@ -28,10 +28,10 @@ class SanityCheck {
   void readWeights(istream& weightStream, vector<double>& w);
   void checkAndSetDefaultDir();
   int getInitDirection(vector<Scores>& testset,
-                       vector<Scores> &trainset, Normalizer* pNorm,
+                       vector<Scores> &trainset, const Normalizer* pNorm,
                        vector<vector<double> >& w, double test_fdr,
                        double initial_train_fdr);
-  int getInitDirection(Scores& scores, Normalizer* pNorm,
+  int getInitDirection(Scores& scores, const Normalizer* pNorm,
                        vector<double>& w, double test_fdr,
                        double initial_train_fdr);
   

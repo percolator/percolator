@@ -51,15 +51,15 @@ class CrossValidation {
   ~CrossValidation();
   
   int preIterationSetup(Scores & fullset, SanityCheck * pCheck, 
-                        Normalizer* pNorm, FeatureMemoryPool& featurePool);
+                        const Normalizer* pNorm, FeatureMemoryPool& featurePool);
   
-  void train(Normalizer* pNorm);
+  void train(const Normalizer* pNorm);
   
   void postIterationProcessing(Scores & fullset, SanityCheck * pCheck);
   
-  void printAllWeights(ostream & weightStream, Normalizer* pNorm);
+  void printAllWeights(ostream & weightStream, const Normalizer* pNorm);
   
-  void getAvgWeights(std::vector<double>& weights, Normalizer* pNorm);
+  void getAvgWeights(std::vector<double>& weights, const Normalizer* pNorm);
   
   void inline setSelectedCpos(double cpos) { selectedCpos_ = cpos; }
   double inline getSelectedCpos() { return selectedCpos_; }
@@ -115,14 +115,14 @@ class CrossValidation {
                      options& pOptions, std::vector< std::vector<Scores> >& nestedTestScoresVec,
                      const vector<double>& cpos_vec, 
                      const vector<double>& cfrac_vec);
-  int doStep(Normalizer* pNorm, double selectionFdr);
+  int doStep(const Normalizer* pNorm, double selectionFdr);
   
   void printSetWeights(ostream & weightStream, unsigned int set);
   void printRawSetWeights(ostream & weightStream, unsigned int set, 
-                       Normalizer* pNorm);
+                       const Normalizer* pNorm);
   
   void printAllWeightsColumns(ostream & weightStream);
-  void printAllRawWeightsColumns(ostream & weightStream, Normalizer* pNorm);
+  void printAllRawWeightsColumns(ostream & weightStream, const Normalizer* pNorm);
   static void printAllWeightsColumns(std::vector< std::vector<double> > weightMatrix, 
                               ostream & weightStream);
 };

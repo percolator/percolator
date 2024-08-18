@@ -37,7 +37,7 @@ StdvNormalizer::~StdvNormalizer() {
 }
 
 void StdvNormalizer::unnormalizeweight(const std::vector<double>& in, 
-    std::vector<double>& out) {
+    std::vector<double>& out) const {
   double sum = 0;
   unsigned int i = 0;
   for (; i < numFeatures; i++) {
@@ -48,7 +48,7 @@ void StdvNormalizer::unnormalizeweight(const std::vector<double>& in,
 }
 
 void StdvNormalizer::normalizeweight(const std::vector<double>& in, 
-    std::vector<double>& out) {
+    std::vector<double>& out) const {
   double sum = 0;
   size_t i = 0;
   for (; i < numFeatures; i++) {
