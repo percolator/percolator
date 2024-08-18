@@ -83,7 +83,7 @@ class SanityCheck {
   // positive integer = feature number,
   // negative integer = lower score better
   
-  vector<Scores> *pTestset, *pTrainset;
+  vector<Scores> *pTestset_, *pTrainset_;
   
   //this vector is meant to have the initial directions givn in the pin.xml
   static vector<double> default_weights;
