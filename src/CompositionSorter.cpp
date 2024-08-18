@@ -132,7 +132,7 @@ void incVector(std::vector<size_t>& sizes, size_t s) {
 }
 
 
-int CompositionSorter::inCompositionCompetition(std::vector<ScoreHolder*>& bestScoreHolders, unsigned int decoysPerTarget) {
+int CompositionSorter::inCompositionCompetition(Scores& bestScoreHolders, unsigned int decoysPerTarget) {
     // Sort the PSMs for each peptide in decending order of score
     CompositionSorter::sortScorePerPeptide();
 
@@ -200,14 +200,13 @@ int CompositionSorter::inCompositionCompetition(std::vector<ScoreHolder*>& bestS
         }       
         // Sort each group in compositionGroups based on the ScoreHolder's score
         // and add it to bestScoreHolders
-        bestScoreHolders.clear();
         for (auto& group : compositionGroups) {
             if (group.empty())
                 continue; 
             std::sort(group.begin(), group.end(), [](const ScoreHolder* a, const ScoreHolder* b) -> bool {
                 return a->score > b->score; // Sort in descending order of score
             });
-            bestScoreHolders.push_back(group.front()); // Add the highest-scoring ScoreHolder
+            bestScoreHolders.addScoreHolder(*(group.front())); // Add the highest-scoring ScoreHolder
             // cerr << "Added pepide, " << group.front()->pPSM->getPeptideSequence() << ", with label=" << group.front()->label << " from a composition group with " << group.size() << " members." << endl; 
         }
     }
@@ -226,7 +225,7 @@ int CompositionSorter::inCompositionCompetition(std::vector<ScoreHolder*>& bestS
 
     int numTargets = 0;
     for (const auto pSH : bestScoreHolders) {
-        if (pSH->label>0) numTargets++;
+        if (pSH.label>0) numTargets++;
     }
     if (VERB>1)
         cerr << "Composition Matching ends with " << bestScoreHolders.size() << " peptides, whereof " << numTargets << " is target peptides." << endl;
@@ -234,7 +233,7 @@ int CompositionSorter::inCompositionCompetition(std::vector<ScoreHolder*>& bestS
 }
 
 
-int CompositionSorter::psmAndPeptide(Scores& scores, std::vector<ScoreHolder *>& winnerPeptides, unsigned int decoysPerTarget) {
+int CompositionSorter::psmAndPeptide(Scores& scores, Scores& winnerPeptides, unsigned int decoysPerTarget) {
     //    psmLevelCompetition(); // Should be handled by the reader?
 
     // Populate the structure with the winning PSMs
@@ -247,7 +246,7 @@ int CompositionSorter::psmAndPeptide(Scores& scores, std::vector<ScoreHolder *>&
 }
 
 
-int CompositionSorter::psmsOnly(Scores& scores, std::vector<ScoreHolder *>& winnerPeptides) {
+int CompositionSorter::psmsOnly(Scores& scores, Scores& winnerPeptides) {
     // Use an unordered_map (hash map) to store the best ScoreHolder for each peptide sequence
     std::unordered_map<std::string, ScoreHolder*> bestScoreHolders;
 
@@ -261,10 +260,8 @@ int CompositionSorter::psmsOnly(Scores& scores, std::vector<ScoreHolder *>& winn
     }
 
     // Collect the best ScoreHolders into a result vector
-    winnerPeptides.clear();
-    winnerPeptides.reserve(bestScoreHolders.size());
     for (const auto& entry : bestScoreHolders) {
-        winnerPeptides.push_back(entry.second);
+        winnerPeptides.addScoreHolder(*(entry.second));
     }
 
     if (VERB>1)
