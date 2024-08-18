@@ -38,7 +38,15 @@ CrossValidation::CrossValidation(bool quickValidation,
     testFdr_(testFdr), selectionFdr_(selectionFdr), initialSelectionFdr_(initialSelectionFdr),
     selectedCpos_(selectedCpos), selectedCneg_(selectedCneg), niter_(niter),
     nestedXvalBins_(nestedXvalBins), trainBestPositive_(trainBestPositive),
-    numThreads_(numThreads), skipNormalizeScores_(skipNormalizeScores) {}
+    numThreads_(numThreads), skipNormalizeScores_(skipNormalizeScores) {
+  // initialize selectionFdr_ and initialSelectionFdr_ if they have not been set explicitly by the user.
+  if (selectionFdr_ <= 0.0) {
+    selectionFdr_ = testFdr_;
+    if (initialSelectionFdr_ <= 0.0) {
+      initialSelectionFdr_ = testFdr_;
+    }
+  }
+}
 
 CrossValidation::~CrossValidation() { 
   for (unsigned int set = 0; set < numFolds_ * nestedXvalBins_; ++set) {
@@ -53,18 +61,20 @@ CrossValidation::~CrossValidation() {
  * Sets up the SVM classifier: 
  * - divide dataset into training and test sets for each fold
  * - set parameters (fdr, soft margin)
+ * 
+ * Side effects: updates the following member variables:
+ * - `svmInputs_`
+ * - `trainScores_`, `testScores_`
+ * - `weights_`
+ * - `candidatesCpos_`, `candidatesCfrac_` and `classWeightsPerFold_` (in `initializeGridSearch`)
+ * 
  * @param w_ vector of SVM weights
  * @return number of positives for initial setup
  */
 int CrossValidation::preIterationSetup(Scores& fullset, SanityCheck* pCheck, 
     Normalizer* pNorm, FeatureMemoryPool& featurePool) {
   assert(nestedXvalBins_ >= 1u);
-  
-  // initialize weights vector for all folds
-  w_ = vector<vector<double> >(numFolds_, 
-           vector<double> (FeatureNames::getNumFeatures() + 1));
-
-  // One input set, to be reused multiple times
+  // One input set per (nested) cross validation bin, to be reused multiple times
   for (unsigned int set = 0; set < numFolds_ * nestedXvalBins_; ++set) {
     svmInputs_.push_back(new AlgIn(fullset.size(), static_cast<int>(FeatureNames::getNumFeatures()) + 1));
     assert( svmInputs_.back() );
@@ -72,15 +82,27 @@ int CrossValidation::preIterationSetup(Scores& fullset, SanityCheck* pCheck,
   
   trainScores_.resize(numFolds_, Scores(usePi0_));
   testScores_.resize(numFolds_, Scores(usePi0_));
-  
   fullset.createXvalSetsBySpectrum(trainScores_, testScores_, numFolds_, featurePool);
   
-  if (selectionFdr_ <= 0.0) {
-    selectionFdr_ = testFdr_;
-    if (initialSelectionFdr_ <= 0.0) {
-      initialSelectionFdr_ = testFdr_;
-    }
-  }
+  // initialize weights vector for all folds
+  weights_ = vector<vector<double> >(numFolds_, 
+           vector<double> (FeatureNames::getNumFeatures() + 1));
+  int numPositive = pCheck->getInitDirection(testScores_, trainScores_, pNorm, weights_, 
+                                         testFdr_, initialSelectionFdr_);
+  
+  initializeGridSearch(fullset.getTargetDecoySizeRatio());
+
+  return numPositive;
+}
+
+/** 
+ * Fill member variables with grid search parameters.
+ * 
+ * Side effects: updates the candidatesCpos_, candidatesCfrac_ and classWeightsPerFold_ member variables.
+ * 
+ * @param targetDecoySizeRatio ratio of target to decoy PSMs
+ */
+void CrossValidation::initializeGridSearch(double targetDecoySizeRatio) {
   if (selectedCpos_ > 0) {
     candidatesCpos_.push_back(selectedCpos_);
   } else {
@@ -94,55 +116,40 @@ int CrossValidation::preIterationSetup(Scores& fullset, SanityCheck* pCheck,
   if (selectedCpos_ > 0 && selectedCneg_ > 0) {
     candidatesCfrac_.push_back(selectedCneg_ / selectedCpos_);
   } else {
-    candidatesCfrac_.push_back(1.0 * fullset.getTargetDecoySizeRatio());
-    candidatesCfrac_.push_back(3.0 * fullset.getTargetDecoySizeRatio());
-    candidatesCfrac_.push_back(10.0 * fullset.getTargetDecoySizeRatio());
+    candidatesCfrac_.push_back(1.0 * targetDecoySizeRatio);
+    candidatesCfrac_.push_back(3.0 * targetDecoySizeRatio);
+    candidatesCfrac_.push_back(10.0 * targetDecoySizeRatio);
     if (VERB > 0) {
       cerr << "Selecting Cneg by cross-validation." << endl;
     }
   }
-  int numPositive = pCheck->getInitDirection(testScores_, trainScores_, pNorm, w_, 
-                                         testFdr_, initialSelectionFdr_);
-  
+
   // Form cpos, cneg pairs per nested CV fold
-  candidateCposCfrac cpCnFold;
+  CandidateCposCfrac cpCnFold;
   for (unsigned int set = 0; set < numFolds_; ++set) {
     for (int nestedSet = 0; nestedSet < nestedXvalBins_; nestedSet++) {
-      if(!quickValidation_) {
-        std::vector<double>::const_iterator itCpos = candidatesCpos_.begin();
-        for ( ; itCpos != candidatesCpos_.end(); ++itCpos) {
-          double cpos = *itCpos;
-          std::vector<double>::const_iterator itCfrac = candidatesCfrac_.begin();
-          for ( ; itCfrac != candidatesCfrac_.end(); ++itCfrac) {
-            double cfrac = *itCfrac;
-            cpCnFold.cpos = cpos;
-            cpCnFold.cfrac = cfrac;
-            cpCnFold.set = set;
-            cpCnFold.nestedSet = nestedSet;
-            cpCnFold.tp = 0;
-            cpCnFold.ww.clear();
-            for (int i = static_cast<int>(FeatureNames::getNumFeatures()) + 1; i--;) {
-              cpCnFold.ww.push_back(0);
-            }     
-            classWeightsPerFold_.push_back(cpCnFold);
-          }
+      std::vector<double> candidatesCpos = candidatesCpos_;
+      std::vector<double> candidatesCfrac = candidatesCfrac_;
+      if (quickValidation_) { // in quick validation, 
+        candidatesCpos = std::vector<double>(1, 1);
+        candidatesCfrac = std::vector<double>(1, 1);
+      }
+      for (double cpos : candidatesCpos) {
+        for (double cfrac : candidatesCfrac) {
+          cpCnFold.cpos = cpos;
+          cpCnFold.cfrac = cfrac;
+          cpCnFold.set = set;
+          cpCnFold.nestedSet = nestedSet;
+          cpCnFold.tp = 0;
+          cpCnFold.ww.clear();
+          for (int i = static_cast<int>(FeatureNames::getNumFeatures()) + 1; i--;) {
+            cpCnFold.ww.push_back(0);
+          }     
+          classWeightsPerFold_.push_back(cpCnFold);
         }
-      } else {
-        cpCnFold.cpos = 1;
-        cpCnFold.cfrac = 1;
-        cpCnFold.set = set;
-        cpCnFold.nestedSet = nestedSet;
-        cpCnFold.tp = 0;
-        cpCnFold.ww.clear();
-        for (int i = static_cast<int>(FeatureNames::getNumFeatures()) + 1; i--;) {
-          cpCnFold.ww.push_back(0);
-        }         
-        classWeightsPerFold_.push_back(cpCnFold);
       }
     }
   }
-    
-  return numPositive;
 }
 
 /** 
@@ -184,7 +191,7 @@ void CrossValidation::train(Normalizer* pNorm) {
     if (reportPerformanceEachIteration_) {
       int foundTestPositives = 0;
       for (size_t set = 0; set < numFolds_; ++set) {
-        foundTestPositives += testScores_[set].calcScores(w_[set], testFdr_);
+        foundTestPositives += testScores_[set].calcScores(weights_[set], testFdr_);
       }
       if (VERB > 1) {
         std::cerr << "Found " << foundTestPositives << " test set PSMs with q<" 
@@ -222,7 +229,7 @@ void CrossValidation::train(Normalizer* pNorm) {
   }
   foundPositives = 0;
   for (size_t set = 0; set < numFolds_; ++set) {
-    foundPositives += testScores_[set].calcScores(w_[set], testFdr_);
+    foundPositives += testScores_[set].calcScores(weights_[set], testFdr_);
   }
   if (VERB > 0) {
     std::cerr << "Found " << foundPositives << 
@@ -251,7 +258,7 @@ int CrossValidation::doStep(Normalizer* pNorm, double selectionFdr) {
   // FDR estimates is too restrictive for small datasets
   bool skipDecoysPlusOne = true; 
   for (std::size_t set = 0; set < numFolds_; ++set) {
-    trainScores_[set].calcScores(w_[set], selectionFdr, skipDecoysPlusOne);
+    trainScores_[set].calcScores(weights_[set], selectionFdr, skipDecoysPlusOne);
   }
   
   // Below implements the series of speedups detailed in the following:
@@ -295,8 +302,8 @@ int CrossValidation::doStep(Normalizer* pNorm, double selectionFdr) {
    }
 
 #pragma omp parallel for schedule(dynamic, 1) ordered 
-   for (int pairIdx = 0; pairIdx < classWeightsPerFold_.size(); pairIdx++){
-    candidateCposCfrac* cpCnFold = &classWeightsPerFold_[pairIdx];
+  for (int pairIdx = 0; pairIdx < classWeightsPerFold_.size(); pairIdx++){
+    CandidateCposCfrac* cpCnFold = &classWeightsPerFold_[pairIdx];
     AlgIn* svmInput = svmInputsVec[cpCnFold->set * nestedXvalBins_  + 
     static_cast<unsigned int>(cpCnFold->nestedSet)];
     trainCpCnPair(*cpCnFold, pOptions,svmInput);
@@ -313,7 +320,7 @@ int CrossValidation::doStep(Normalizer* pNorm, double selectionFdr) {
  * @param pOptions options for the SVM algorithm
  * @param svmInput training data for this particular nested CV fold
 */
-void CrossValidation::trainCpCnPair(candidateCposCfrac& cpCnFold,
+void CrossValidation::trainCpCnPair(CandidateCposCfrac& cpCnFold,
       options& pOptions, AlgIn* svmInput) {
 
   vector_double pWeights;
@@ -373,7 +380,7 @@ int CrossValidation::mergeCpCnPairs(double selectionFdr,
     unsigned int a = set * numCpCnPairsPerSet;
     unsigned int b = (set+1) * numCpCnPairsPerSet;
     int tp = 0;
-    std::vector<candidateCposCfrac>::iterator itCpCnPair;
+    std::vector<CandidateCposCfrac>::iterator itCpCnPair;
     std::map<std::pair<double, double>, int> intermediateResults;
     for (itCpCnPair = classWeightsPerFold_.begin() + a; itCpCnPair < classWeightsPerFold_.begin() + b; itCpCnPair++) {
       tp = nestedTestScoresVec[set][static_cast<std::size_t>(itCpCnPair->nestedSet)].calcScores(itCpCnPair->ww, testFdr_, skipDecoysPlusOne);
@@ -382,7 +389,7 @@ int CrossValidation::mergeCpCnPairs(double selectionFdr,
       if (nestedXvalBins_ <= 1) {
         if(tp >= bestTruePoses[set]){
           bestTruePoses[set] = tp;
-          w_[set] = itCpCnPair->ww;
+          weights_[set] = itCpCnPair->ww;
           bestCposes[set] = itCpCnPair->cpos;
           bestCfracs[set] = itCpCnPair->cfrac;
         }
@@ -434,26 +441,26 @@ int CrossValidation::mergeCpCnPairs(double selectionFdr,
       L2_SVM_MFN(*svmInput, pOptions, pWeights, Outputs, bestCposes[set], bestCposes[set] * bestCfracs[set]);
     
       for (std::size_t i = FeatureNames::getNumFeatures() + 1; i--;) {
-        w_[set][i] = pWeights.vec[i];
+        weights_[set][i] = pWeights.vec[i];
       }
     }
   }
 
   double bestTruePos = 0;
   for (set = 0; set < numFolds_; ++set) {
-    bestTruePos += trainScores_[set].calcScores(w_[set], testFdr_);
+    bestTruePos += trainScores_[set].calcScores(weights_[set], testFdr_);
   }
   return static_cast<int>(bestTruePos / (numFolds_ - 1));
 }
 
 void CrossValidation::postIterationProcessing(Scores& fullset,
                                               SanityCheck* pCheck) {
-  if (!pCheck->validateDirection(w_)) {
+  if (!pCheck->validateDirection(weights_)) {
     for (std::size_t set = 0; set < numFolds_; ++set) {
-      testScores_[set].calcScores(w_[0], selectionFdr_);
+      testScores_[set].calcScores(weights_[0], selectionFdr_);
     }
   }
-  fullset.merge(testScores_, selectionFdr_, skipNormalizeScores_, w_);
+  fullset.merge(testScores_, selectionFdr_, skipNormalizeScores_, weights_);
 }
 
 /**
@@ -465,9 +472,9 @@ void CrossValidation::printSetWeights(ostream & weightStream, unsigned int set) 
   weightStream << DataSet::getFeatureNames().getFeatureNames() << 
                   "\tm0" << std::endl;
   weightStream.precision(3);
-  weightStream << w_[set][0];
+  weightStream << weights_[set][0];
   for (unsigned int ix = 1; ix < FeatureNames::getNumFeatures() + 1; ix++) {
-    weightStream << "\t" << fixed << setprecision(4) << w_[set][ix];
+    weightStream << "\t" << fixed << setprecision(4) << weights_[set][ix];
   }
   weightStream << endl;
 }
@@ -480,7 +487,7 @@ void CrossValidation::printSetWeights(ostream & weightStream, unsigned int set) 
 void CrossValidation::printRawSetWeights(ostream & weightStream, unsigned int set, 
                                       Normalizer * pNorm) {
   vector<double> ww(FeatureNames::getNumFeatures() + 1);
-  pNorm->unnormalizeweight(w_[set], ww);
+  pNorm->unnormalizeweight(weights_[set], ww);
   weightStream << ww[0];
   for (unsigned int ix = 1; ix < FeatureNames::getNumFeatures() + 1; ix++) {
     weightStream << "\t" << fixed << setprecision(4) << ww[ix];
@@ -505,10 +512,10 @@ void CrossValidation::getAvgWeights(std::vector<double>& weights,
   vector<double> ww(FeatureNames::getNumFeatures() + 1);
   
   weights.resize(FeatureNames::getNumFeatures() + 1);
-  for (size_t set = 0; set < w_.size(); ++set) {
-    pNorm->unnormalizeweight(w_[set], ww);
+  for (size_t set = 0; set < weights_.size(); ++set) {
+    pNorm->unnormalizeweight(weights_[set], ww);
     for (unsigned int ix = 0; ix < FeatureNames::getNumFeatures() + 1; ix++) {
-      weights[ix] += ww[ix] / static_cast<double>(w_.size());
+      weights[ix] += ww[ix] / static_cast<double>(weights_.size());
     }
   }
 }
@@ -542,16 +549,16 @@ void CrossValidation::printAllWeightsColumns(
 void CrossValidation::printAllWeightsColumns(ostream & weightStream) {
   std::cerr << "Learned normalized SVM weights for the " << numFolds_ 
             << " cross-validation splits:" << std::endl;
-  printAllWeightsColumns(w_, weightStream);
+  printAllWeightsColumns(weights_, weightStream);
 }
 
 void CrossValidation::printAllRawWeightsColumns(ostream & weightStream, 
                                       Normalizer * pNorm) {
   std::cerr << "Learned raw SVM weights for the " << numFolds_ 
             << " cross-validation splits:" << std::endl;
-  std::vector< std::vector<double> > ww = w_;
-  for (size_t set = 0; set < w_.size(); ++set) {
-    pNorm->unnormalizeweight(w_[set], ww[set]);
+  std::vector< std::vector<double> > ww = weights_;
+  for (size_t set = 0; set < weights_.size(); ++set) {
+    pNorm->unnormalizeweight(weights_[set], ww[set]);
   }
   printAllWeightsColumns(ww, weightStream);
 }

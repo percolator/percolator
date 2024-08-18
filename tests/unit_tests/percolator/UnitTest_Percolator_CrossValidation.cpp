@@ -42,7 +42,7 @@ public:
         return doStep(pNorm, selectionFdr);
     }
     std::vector< std::vector<double> > const& weights(void) const {
-        return w_;
+        return weights_;
     }
 };
 
