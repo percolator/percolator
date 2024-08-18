@@ -48,7 +48,7 @@ jobs:
       run: |
         cd -P ${{ github.workspace }}/../build/percolator && make install && make test ARGS="-V"
     - name: zip raw binary
-      run: zip -j ${{ github.workspace }}/release/percolator-noxml-linux-portable.zip $(dirname ${{ github.workspace }})/build/percolator-noxml/src/percolator
+      run: zip -j ${{ github.workspace }}/release/percolator-noxml-linux-portable.zip ${{ github.workspace }}/../build/percolator-noxml/src/percolator
     - name: Upload packages
       uses: actions/upload-artifact@v3
       with:
