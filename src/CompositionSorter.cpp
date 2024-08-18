@@ -76,11 +76,11 @@ std::string CompositionSorter::generateCompositionSignature(const std::string& p
     return signature;
 }
 
-int CompositionSorter::addPSMs(Scores& scores, bool useTDC) {
+int CompositionSorter::addPSMs(const Scores& scores, bool useTDC) {
     if (useTDC) {
         std::vector<ScoreHolder*> scoreHolders;
-        for (auto& scr : scores) {
-            scoreHolders.push_back(&scr);
+        for (const auto& scr : scores) {
+            scoreHolders.push_back(const_cast<ScoreHolder*>(&scr));
         }
         targetDecoyCompetition(scoreHolders);
         for (auto& pScr : scoreHolders) {
@@ -91,10 +91,10 @@ int CompositionSorter::addPSMs(Scores& scores, bool useTDC) {
             // cerr << "Pushed back " << peptide << " with signature " << signature << " there are now " << compositionToPeptidesToScore_[signature][peptide].size() << " such peptides" << endl;
         }
     } else {
-        for (auto& scr : scores) {
+        for (const auto& scr : scores) {
             std::string peptide = scr.getPSM()->getPeptideSequence();
             std::string signature = generateCompositionSignature(peptide);
-            compositionToPeptidesToScore_[signature][peptide].push_back(&scr);
+            compositionToPeptidesToScore_[signature][peptide].push_back(const_cast<ScoreHolder*>(&scr));
         }
     }
     return 0;
@@ -233,7 +233,7 @@ int CompositionSorter::inCompositionCompetition(Scores& bestScoreHolders, unsign
 }
 
 
-int CompositionSorter::psmAndPeptide(Scores& scores, Scores& winnerPeptides, unsigned int decoysPerTarget) {
+int CompositionSorter::psmAndPeptide(const Scores& scores, Scores& winnerPeptides, unsigned int decoysPerTarget) {
     //    psmLevelCompetition(); // Should be handled by the reader?
 
     // Populate the structure with the winning PSMs
@@ -246,7 +246,7 @@ int CompositionSorter::psmAndPeptide(Scores& scores, Scores& winnerPeptides, uns
 }
 
 
-int CompositionSorter::psmsOnly(Scores& scores, Scores& winnerPeptides) {
+int CompositionSorter::psmsOnly(const Scores& scores, Scores& winnerPeptides) {
     // Use an unordered_map (hash map) to store the best ScoreHolder for each peptide sequence
     std::unordered_map<std::string, ScoreHolder*> bestScoreHolders;
 

@@ -226,6 +226,9 @@ class Scores {
   std::vector<ScoreHolder>::iterator begin() { return scores_.begin(); }
   std::vector<ScoreHolder>::iterator end() { return scores_.end(); }
   
+  std::vector<ScoreHolder>::const_iterator begin() const { return scores_.begin(); }
+  std::vector<ScoreHolder>::const_iterator end() const { return scores_.end(); }
+  
   double calcScore(const double* features, const std::vector<double>& w) const;
   void scoreAndAddPSM(ScoreHolder& sh, const std::vector<double>& rawWeights,
                       FeatureMemoryPool& featurePool);

@@ -1,28 +1,39 @@
 include(FetchContent)
 
+set (CMAKE_CXX_STANDARD 14)
+set (CMAKE_CXX_STANDARD_REQUIRED YES)
+add_compile_options(-frtti)
+
 if(WIN32)
     set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 endif()
 
+set(BUILD_SHARED_LIBS OFF)
+
 # =============================
 # Fetch or find GoogleTest
 # =============================
-find_package(GTest QUIET)
-if(NOT GTest_FOUND)
-    message(STATUS "GoogleTest not found, downloading it...")
+message(STATUS "Fetching GoogleTest...")
+set(BUILD_GTEST ON)
+set(INSTALL_GTEST OFF)
+set(BUILD_GMOCK OFF)
 
-    if(WIN32)
-        # Ensures gtest uses the same runtime library as the rest of your project
-        set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
-    endif()
+FetchContent_Declare(
+  googletest
+  GIT_REPOSITORY https://github.com/google/googletest.git
+  GIT_TAG release-1.12.1
+)
+FetchContent_Populate(googletest)
 
-    FetchContent_Declare(
-      googletest
-      GIT_REPOSITORY https://github.com/google/googletest.git
-      GIT_TAG release-1.12.1
-    )
-    FetchContent_MakeAvailable(googletest)
-endif()
+# This is the correct way to build the actual library
+add_subdirectory(${googletest_SOURCE_DIR} ${googletest_BINARY_DIR})
+
+# Optional: apply RTTI to gtest explicitly (not usually needed if add_compile_options is set globally)
+# target_compile_options(gtest PRIVATE -frtti)
+# target_compile_options(gtest_main PRIVATE -frtti)
+
+enable_testing()
+include(GoogleTest)
 
 # =============================
 # Fetch or find Eigen3

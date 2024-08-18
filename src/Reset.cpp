@@ -207,8 +207,8 @@ int Reset::iterationOfReset(vector<ScoreHolder*> &train, double nullTargetWinPro
     return calcBalancedFDR(train, nullTargetWinProb, selectionFDR);
 }
 
-int Reset::evaluateTestSet(Scores &psms, vector<ScoreHolder*> &test, double testNullTargetWinProb, double selectionFDR) {
-    (void) psms;
+int Reset::evaluateTestSet(vector<ScoreHolder*> &test, double testNullTargetWinProb, double selectionFDR) {
+
     onlyCalcScores(test, w_); // Sorts the scores in descending order
     std::sort(test.begin(),test.end(), [](const ScoreHolder* a, const ScoreHolder* b) { return a->score > b->score; }); // Do we realy need this?
     int peptidesUnderFDR = calcBalancedFDR(test, testNullTargetWinProb, selectionFDR);
@@ -232,13 +232,8 @@ int Reset::evaluateTestSet(Scores &psms, vector<ScoreHolder*> &test, double test
     return peptidesUnderFDR;
 }
 
-int Reset::reset(Scores &psms, Scores &outS, double selectionFDR, SanityCheck* pCheck, double fractionTraining, unsigned int decoysPerTarget, std::vector<double>& w, bool useCompositionMatch) {
-
-    w_ = w;
+void Reset::retainRepresentatives(const Scores &psms, Scores &winnerPeptides, double selectionFDR, unsigned int decoysPerTarget, bool useCompositionMatch) {
     CompositionSorter sorter;
-
-    // select the representative peptides to train on
-    Scores winnerPeptides(false);
 
     if (useCompositionMatch) {
         cerr << "Starting reset: psmAndPeptide" << endl;   
@@ -248,6 +243,12 @@ int Reset::reset(Scores &psms, Scores &outS, double selectionFDR, SanityCheck* p
         sorter.psmsOnly(psms, winnerPeptides);
     }
     winnerPeptides.recalculateSizes();
+}
+
+int Reset::reset(Scores &winnerPeptides, Scores &outS, double selectionFDR, SanityCheck* pCheck, double fractionTraining, unsigned int decoysPerTarget, std::vector<double>& w) {
+
+    w_ = w;
+
     std::cerr << "Splitting into train/test" << endl;
 
     // Setting up the training and test sets
@@ -268,9 +269,8 @@ int Reset::reset(Scores &psms, Scores &outS, double selectionFDR, SanityCheck* p
 
     gridSearchC(train, trainNullTargetWinProb, selectionFDR);
 
-    for (unsigned int i = 0; i < numIterations; i++) {    
-        // unsigned int foundPositives = iterationOfReset(train, trainNullTargetWinProb, selectionFDR);
-        iterationOfReset(train, trainNullTargetWinProb, selectionFDR);
+    for (unsigned int i = 0; i < numIterations; i++) {
+        unsigned int foundPositives = iterationOfReset(train, trainNullTargetWinProb, selectionFDR);
     }
     if (VERB>1) std::cerr << "Training Done!" << endl;
 
@@ -285,7 +285,7 @@ int Reset::reset(Scores &psms, Scores &outS, double selectionFDR, SanityCheck* p
         }
     }
     
-    int underFDR = evaluateTestSet(psms, test, testNullTargetWinProb, selectionFDR);
+    int underFDR = evaluateTestSet(test, testNullTargetWinProb, selectionFDR);
     cerr << "Test set evaluation finds " << underFDR << " peptides under a FDR of " << selectionFDR << endl;
 
     for (ScoreHolder* ptr : test) {
