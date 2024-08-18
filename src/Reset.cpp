@@ -12,25 +12,6 @@
 
 // From Algorithm S3 of the percolator-RESET supplementary material
 // s - the probability of assigning a decoy to the training set (default: s = 1/2)
-int Reset::splitIntoTrainAndTest(Scores &allScores, Scores &train, Scores &test, double fractionTraining) {
-
-    std::for_each(allScores.begin(), allScores.end(), [&](const ScoreHolder& score) {
-        // cerr << score.score << " " << score.isTarget() << endl;
-        if (score.isTarget()) {
-            train.addScoreHolder(score);
-            test.addScoreHolder(score);
-        } else if (PseudoRandom::lcg_uniform_rand() < fractionTraining) {
-            train.addScoreHolder(score);
-        } else {
-            test.addScoreHolder(score);
-        }
-    });
-    return 0;
-}
-
-// Same as above but testing with pointers to SH instead of the direct objects 
-// From Algorithm S3 of the percolator-RESET supplementary material
-// s - the probability of assigning a decoy to the training set (default: s = 1/2)
 int Reset::splitIntoTrainAndTest(std::vector<ScoreHolder*> &allScores, vector<ScoreHolder*> &train, vector<ScoreHolder*> &test, double fractionTraining) {
 
     for(auto& pScore : allScores) {
