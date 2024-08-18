@@ -40,7 +40,7 @@ Caller::Caller() :
     tabOutputFN_(""), xmlOutputFN_(""), pepXMLOutputFN_(""),weightOutputFN_(""),
     psmResultFN_(""), peptideResultFN_(""), proteinResultFN_(""),
     decoyPsmResultFN_(""), decoyPeptideResultFN_(""), decoyProteinResultFN_(""),
-    analytics_(true), use_reset_alg_(false), use_composition_match_(false),
+    analytics_(true), useResetAlgorithm_(false), useCompositionMatch_(false),
     xmlPrintDecoys_(false), xmlPrintExpMass_(true), reportUniquePeptides_(true),
     reportPepXML_(false),
     targetDecoyCompetition_(false), useMixMax_(false), inputSearchType_("auto"),
@@ -441,10 +441,10 @@ bool Caller::parseOptions(int argc, char **argv) {
     analytics_ = false;
   }
   if (cmd.isOptionSet("reset-algorithm")) {
-    use_reset_alg_ = true;
+    useResetAlgorithm_ = true;
   }
   if (cmd.isOptionSet("composition-match")) {
-    use_composition_match_ = true;
+    useCompositionMatch_ = true;
   }
   if (cmd.isOptionSet("xml-in")) {
     tabInput_ = false;
@@ -970,7 +970,7 @@ int Caller::run() {
   if(!loadAndNormalizeData(getDataInStream(fileStream), xmlInterface, setHandler, allScores))
     exit(EXIT_FAILURE);
 
-  if (use_reset_alg_) {
+  if (useResetAlgorithm_) {
     if (VERB > 0) {
       std::cerr << "Running the Percolator-RESET algorithm." << std::endl;
     }
@@ -981,7 +981,7 @@ int Caller::run() {
     Scores output(false);
 
     Reset resetAlg;
-    resetAlg.reset(allScores, output, selectionFdr_, pCheck_, 0.5, 1, w, use_composition_match_);
+    resetAlg.reset(allScores, output, selectionFdr_, pCheck_, 0.5, 1, w, useCompositionMatch_);
 
     // allScores.normalizeScores(selectionFdr_); Probably not needed
     writeResults(output, false, true);
