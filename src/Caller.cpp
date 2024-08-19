@@ -29,8 +29,14 @@
 #include <omp.h>
 #endif
 
+#include "CrossValidation.h"
+#include "DataSet.h"
 #include "Analytics.h"
+#include "MyException.h"
+#include "Option.h"
+#include "PickedProteinInterface.h"
 #include "Reset.h"
+#include "ValidateTabFile.h"
 using namespace std;
 
 Caller::Caller()
