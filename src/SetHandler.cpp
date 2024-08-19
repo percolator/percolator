@@ -38,7 +38,7 @@ void SetHandler::reset() {
  * @param label DataSet label
  * @return index of matching DataSet
  */
-unsigned int SetHandler::getSubsetIndexFromLabel(int label) {
+unsigned int SetHandler::getSubsetIndexFromLabel(LabelType label) {
   for (unsigned int ix = 0; ix < subsets_.size(); ++ix) {
     if (subsets_[ix]->getLabel() == label) return ix;
   }
@@ -55,7 +55,7 @@ void SetHandler::push_back_dataset( DataSet * ds ) {
   subsets_.push_back(ds);
 }
 
-void SetHandler::populateScoresWithPSMs(vector<ScoreHolder> &scores, int label) {
+void SetHandler::populateScoresWithPSMs(vector<ScoreHolder> &scores, LabelType label) {
   subsets_[getSubsetIndexFromLabel(label)]->fillScores(scores);
 }
 
@@ -73,7 +73,7 @@ void SetHandler::normalizeFeatures(Normalizer*& pNorm) {
   pNorm->normalizeSet(featuresV, rtFeaturesV);
 }
 
-int SetHandler::getLabel(int setPos) {
+LabelType const SetHandler::getLabel(int setPos) {
   assert(setPos >= 0 && setPos < (signed int)subsets_.size());
   return subsets_[static_cast<std::size_t>(setPos)]->getLabel();
 }
@@ -212,10 +212,10 @@ void SetHandler::readPSMs(istream& dataStream, std::string& psmLine,
     std::vector<OptionalField>& optionalFields) {
   DataSet* targetSet = new DataSet();
   assert(targetSet);
-  targetSet->setLabel(1);
+  targetSet->setLabel(LabelType::TARGET);
   DataSet* decoySet = new DataSet();
   assert(decoySet);
-  decoySet->setLabel(-1);
+  decoySet->setLabel(LabelType::DECOY);
   
   unsigned int lineNr = (hasInitialValueRow ? 3u : 2u);
   if (psmLine.size() == 0) {
@@ -315,9 +315,9 @@ void SetHandler::addQueueToSets(
     DataSet* targetSet, DataSet* decoySet) {
   while (!subsetPSMs.empty()) {
     PSMDescriptionPriority psmPriority = subsetPSMs.top();
-    if (psmPriority.label == 1) {
+    if (psmPriority.label == LabelType::TARGET) {
       targetSet->registerPsm(psmPriority.psm);
-    } else if (psmPriority.label == -1) {
+    } else if (psmPriority.label == LabelType::DECOY) {
       decoySet->registerPsm(psmPriority.psm);
     } else {
       std::cerr << "Warning: the PSM " << psmPriority.psm->getId()

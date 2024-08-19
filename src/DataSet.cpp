@@ -106,7 +106,7 @@ void DataSet::readPsm(const std::string& line, const unsigned int lineNr,
   registerPsm(myPsm);
 }
 
-int DataSet::readPsm(const std::string& line, const unsigned int lineNr,
+LabelType DataSet::readPsm(const std::string& line, const unsigned int lineNr,
     const std::vector<OptionalField>& optionalFields, bool readProteins,
     PSMDescription*& myPsm, FeatureMemoryPool& featurePool, std::string decoyPrefix) {
   TabReader reader(line);
@@ -114,7 +114,7 @@ int DataSet::readPsm(const std::string& line, const unsigned int lineNr,
   
   myPsm = new PSMDescription();
   myPsm->setId(reader.readString());
-  int label = reader.readInt();
+  LabelType label = reader.readInt() == 1 ? LabelType::TARGET : LabelType::DECOY;
   
   bool hasScannr = false;
   std::vector<OptionalField>::const_iterator it = optionalFields.begin();
@@ -229,7 +229,7 @@ int DataSet::readPsm(const std::string& line, const unsigned int lineNr,
     proteins.swap(myPsm->proteinIds); // shrink to fit
   }
 
-  if (label == -1) {
+  if (label == LabelType::DECOY) {
     for (auto const& proteinId: myPsm->proteinIds) { 
       bool startsWithDecoyPrefix = (proteinId.rfind(decoyPrefix, 0) == 0);
       if (!startsWithDecoyPrefix && VERB > 1 && !decoyWarningTripped_) {
@@ -245,8 +245,8 @@ int DataSet::readPsm(const std::string& line, const unsigned int lineNr,
 
 void DataSet::registerPsm(PSMDescription* myPsm) {
   switch (label_) {
-    case 1: { break; };
-    case -1: { break; };
+    case LabelType::TARGET: { break; };
+    case LabelType::DECOY: { break; };
     default:  { throw MyException("ERROR : Reading PSM, class DataSet has not been initiated\
     to neither target nor decoy label\n");}
   }

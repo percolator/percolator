@@ -106,8 +106,8 @@ TEST_F(CrossValidationTest, doStepTest)
 
     DataSet *targets = new DataSet();
     DataSet *decoys = new DataSet();
-    targets->setLabel(+1);
-    decoys->setLabel(-1);
+    targets->setLabel(LabelType::TARGET);
+    decoys->setLabel(LabelType::DECOY);
     for (int i = 0 ; i < 2 * N ; ++i) {
         PSMDescription *psm = new PSMDescription();
         psm->features = new double[2];

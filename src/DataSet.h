@@ -52,8 +52,8 @@ class DataSet {
   
   void initFeatureTables(const unsigned int numFeatures);
   
-  void inline setLabel(int l) { label_ = l; }
-  int inline getLabel() const { return label_; }
+  void inline setLabel(LabelType l) { label_ = l; }
+  LabelType inline getLabel() const { return label_; }
   
   unsigned int inline getSize() const { return static_cast<unsigned int>(psms_.size()); }
     
@@ -75,7 +75,7 @@ class DataSet {
   void readPsm(const std::string& line, const unsigned int lineNr,
                const std::vector<OptionalField>& optionalFields, 
                FeatureMemoryPool& featurePool, std::string decoyPrefix);
-  static int readPsm(const std::string& line, const unsigned int lineNr,
+  static LabelType readPsm(const std::string& line, const unsigned int lineNr,
     const std::vector<OptionalField>& optionalFields, bool readProteins,
     PSMDescription*& myPsm, FeatureMemoryPool& featurePool, std::string decoyPrefix);
   
@@ -84,7 +84,7 @@ class DataSet {
  protected:   
   
   std::vector<PSMDescription*> psms_;
-  int label_;
+  LabelType label_;
   
   static FeatureNames featureNames_;
   static bool decoyWarningTripped_;

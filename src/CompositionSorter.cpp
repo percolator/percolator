@@ -162,7 +162,7 @@ int CompositionSorter::inCompositionCompetition(Scores& bestScoreHolders, unsign
                 continue;
             }
             ScoreHolder* firstScoreHolder = scoreHolders.front(); // This is the best scoring PSM for the peptide
-            if (firstScoreHolder->label > 0) {
+            if (firstScoreHolder->isTarget()) {
                 targets.push_back(firstScoreHolder);
                 numTargetPeptides++;
                 incVector(compNumTargetSizeStat, numberOfPeptidesInComposition);
@@ -225,7 +225,7 @@ int CompositionSorter::inCompositionCompetition(Scores& bestScoreHolders, unsign
 
     int numTargets = 0;
     for (const auto pSH : bestScoreHolders) {
-        if (pSH.label>0) numTargets++;
+        if (pSH.isTarget()) numTargets++;
     }
     if (VERB>1)
         cerr << "Composition Matching ends with " << bestScoreHolders.size() << " peptides, whereof " << numTargets << " is target peptides." << endl;

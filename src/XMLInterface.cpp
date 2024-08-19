@@ -153,9 +153,9 @@ int XMLInterface::readAndScorePin(istream& dataStream, std::vector<double>& rawW
         bool readProteins = true;
         if (rawWeights.empty()) {
             auto targetSet = std::make_unique<DataSet>();
-            targetSet->setLabel(1);
+            targetSet->setLabel(LabelType::TARGET);
             auto decoySet = std::make_unique<DataSet>();
-            decoySet->setLabel(-1);
+            decoySet->setLabel(LabelType::DECOY);
 
             bool concatenatedSearch = true;
 
@@ -185,7 +185,7 @@ int XMLInterface::readAndScorePin(istream& dataStream, std::vector<double>& rawW
                         if (subsetPSMs.size() < setHandler.getMaxPSMs() || randIdx < upperLimit) {
                             PSMDescriptionPriority psmPriority;
                             psmPriority.psm = readPsm(psm, fragSpectrumScan.scanNumber(), readProteins, setHandler.getFeaturePool());
-                            psmPriority.label = (psm.isDecoy() ? -1 : 1);
+                            psmPriority.label = (psm.isDecoy() ? LabelType::DECOY : LabelType::TARGET);
                             psmPriority.priority = randIdx;
                             subsetPSMs.push(psmPriority);
                             if (subsetPSMs.size() > setHandler.getMaxPSMs()) {
@@ -243,7 +243,7 @@ int XMLInterface::readAndScorePin(istream& dataStream, std::vector<double>& rawW
                 percolatorInNs::fragSpectrumScan fragSpectrumScan(*doc->getDocumentElement());
                 for (const auto& psm : fragSpectrumScan.peptideSpectrumMatch()) {
                     ScoreHolder sh;
-                    sh.label = (psm.isDecoy() ? -1 : 1);
+                    sh.label = (psm.isDecoy() ? LabelType::DECOY : LabelType::TARGET);
                     sh.pPSM = readPsm(psm, fragSpectrumScan.scanNumber(), readProteins, setHandler.getFeaturePool());
 
                     allScores.scoreAndAddPSM(sh, rawWeights, setHandler.getFeaturePool());

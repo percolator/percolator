@@ -274,13 +274,13 @@ void Scores::scoreAndAddPSM(ScoreHolder& sh,
     featurePool.deallocate(sh.pPSM->features);
     sh.pPSM->deleteRetentionFeatures();
 
-    if (sh.label == 1) {
+    if (sh.isTarget()) {
         ++totalNumberOfTargets_;
-    } else if (sh.label == -1) {
+    } else if (sh.isDecoy()) {
         ++totalNumberOfDecoys_;
     }
 
-    if (sh.label != 1 && sh.label != -1) {
+    if (!sh.isTarget() && !sh.isDecoy()) {
         std::cerr << "Warning: the PSM " << sh.pPSM->getId()
                   << " has a label not in {1,-1} and will be ignored." << std::endl;
         PSMDescription::deletePtr(sh.pPSM);
@@ -308,13 +308,13 @@ int Scores::calcBalancedFDR(double treshold) {
     reverse(scores_.begin(), scores_.end());
 
     // Calcultaing the number of target PSMs with q-value less than treshold
-    ScoreHolder limit(treshold, 1);
+    ScoreHolder limit(treshold, LabelType::TARGET);
     auto upper = lower_bound(scores_.begin(), scores_.end(), limit);
     return upper - scores_.begin();
 }
 
 
-void Scores::print(int label, std::ostream& os) {
+void Scores::print(LabelType label, std::ostream& os) {
     std::vector<ScoreHolder>::iterator scoreIt = scores_.begin();
     os << "PSMId\t";
     if (PSMDescription::hasSpectrumFileName()) {
@@ -344,10 +344,10 @@ void Scores::print(int label, std::ostream& os) {
 
 void Scores::populateWithPSMs(SetHandler& setHandler) {
     scores_.clear();
-    setHandler.populateScoresWithPSMs(scores_, 1);
-    setHandler.populateScoresWithPSMs(scores_, -1);
-    totalNumberOfTargets_ = static_cast<unsigned int>(setHandler.getSizeFromLabel(1));
-    totalNumberOfDecoys_ = static_cast<unsigned int>(setHandler.getSizeFromLabel(-1));
+    setHandler.populateScoresWithPSMs(scores_, LabelType::TARGET);
+    setHandler.populateScoresWithPSMs(scores_, LabelType::DECOY);
+    totalNumberOfTargets_ = static_cast<unsigned int>(setHandler.getSizeFromLabel(LabelType::TARGET));
+    totalNumberOfDecoys_ = static_cast<unsigned int>(setHandler.getSizeFromLabel(LabelType::DECOY));
     targetDecoySizeRatio_ = (double)totalNumberOfTargets_ / totalNumberOfDecoys_;
 
     if (VERB > 1) {
@@ -705,11 +705,11 @@ void Scores::weedOutRedundant(std::map<std::string, unsigned int>& peptideSpecCo
      */
 
     std::string previousPeptide = "";
-    int previousLabel = 0;
+    LabelType previousLabel = LabelType::UNDEFINED;
     size_t lastWrittenIdx = 0u;
     for (size_t idx = 0u; idx < scores_.size(); ++idx) {
         std::string currentPeptide = scores_.at(idx).pPSM->getPeptideSequence();
-        int currentLabel = scores_.at(idx).label;
+        LabelType currentLabel = scores_.at(idx).label;
         if (currentPeptide != previousPeptide || currentLabel != previousLabel) {
             // insert as a new score
             scores_.at(lastWrittenIdx++) = scores_.at(idx);

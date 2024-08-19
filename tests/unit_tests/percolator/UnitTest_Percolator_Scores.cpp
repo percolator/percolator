@@ -61,7 +61,7 @@ TEST_F(ScoreHolderTest, CheckOrderingFunctions)
     for (int i = 0 ; i < 5 ; ++i) {
         PSMDescription *pPSM = new PSMDescription(psmNames[i]);
         pPSM->scan = (i + 2) % 5;
-        scores.push_back(ScoreHolder(1.0 + i, +1, pPSM));
+        scores.push_back(ScoreHolder(1.0 + i, LabelType::TARGET, pPSM));
     }
     std::sort(scores.begin(), scores.end(), lexicOrderProb());
     ASSERT_TRUE(checkOrder(&scores, 1.0, 2.0, 3.0, 4.0, 5.0));
@@ -75,7 +75,7 @@ TEST_F(ScoreHolderTest, CheckOrderingFunctions)
         PSMDescription *pPSM = new PSMDescription(psmNames[i]);
         pPSM->specFileNr = 3 + i / 2;
         pPSM->scan = i / 2;
-        scores.push_back(ScoreHolder(1.0 + i, +1, pPSM));
+        scores.push_back(ScoreHolder(1.0 + i, LabelType::TARGET, pPSM));
     }
     std::sort(scores.begin(), scores.end(), OrderScanHash());
     for (int i = 0 ; i < 5 ; ++i) {
@@ -90,7 +90,7 @@ TEST_F(ScoreHolderTest, CheckOrderingFunctions)
         PSMDescription *pPSM = new PSMDescription(psmNames[i]);
         pPSM->specFileNr = i / 2;
         pPSM->scan = (i + 2) % 5;
-        scores.push_back(ScoreHolder(1.0 + i, +1, pPSM));
+        scores.push_back(ScoreHolder(1.0 + i, LabelType::TARGET, pPSM));
     }
     std::sort(scores.begin(), scores.end(), OrderScanMassCharge());
     ASSERT_TRUE(checkOrder(&scores, 1.0, 2.0, 4.0, 3.0, 5.0));
@@ -101,7 +101,7 @@ TEST_F(ScoreHolderTest, CheckOrderingFunctions)
     for (int i = 0 ; i < 5 ; ++i) {
         PSMDescription *pPSM = new PSMDescription();
         pPSM->scan = 2 - i / 2;
-        scores.push_back(ScoreHolder(1.0 + i, (i % 2 ? +1 : -1), pPSM));
+        scores.push_back(ScoreHolder(1.0 + i, (i % 2 ? LabelType::TARGET : LabelType::DECOY), pPSM));
     }
     std::sort(scores.begin(), scores.end(), OrderScanLabel());
     ASSERT_TRUE(checkOrder(&scores, 5.0, 4.0, 3.0, 2.0, 1.0));
@@ -114,7 +114,7 @@ TEST_F(ScoreHolderTest, CheckOrderingFunctions)
         PSMDescription *pPSM = new PSMDescription();
         pPSM->specFileNr = i / 2;
         pPSM->scan = 2 - i / 2;
-        scores.push_back(ScoreHolder(1.0 + i, (i % 2 ? +1 : -1), pPSM));
+        scores.push_back(ScoreHolder(1.0 + i, (i % 2 ? LabelType::TARGET : LabelType::DECOY), pPSM));
     }
     std::sort(scores.begin(), scores.end(), OrderScanLabel());
     ASSERT_TRUE(checkOrder(&scores, 2.0, 1.0, 4.0, 3.0, 5.0));
@@ -132,7 +132,7 @@ TEST_F(ScoreHolderTest, CheckUniquenessFilter)
     for (int i = 0 ; i < 5 ; ++i) {
         PSMDescription *pPSM = new PSMDescription(psmNames[i]);
         pPSM->scan = i / 2;
-        scores.push_back(ScoreHolder(1.0 + i, +1, pPSM));
+        scores.push_back(ScoreHolder(1.0 + i, LabelType::TARGET, pPSM));
     }
     ASSERT_EQ(5, scores.size());
     scores.erase(std::unique(scores.begin(), scores.end(), UniqueScanLabel()),
@@ -148,7 +148,7 @@ TEST_F(ScoreHolderTest, CheckUniquenessFilter)
         PSMDescription *pPSM = new PSMDescription(psmNames[i]);
         pPSM->specFileNr = i / 3;
         pPSM->scan = i / 2;
-        scores.push_back(ScoreHolder(1.0 + i, +1, pPSM));
+        scores.push_back(ScoreHolder(1.0 + i, LabelType::TARGET, pPSM));
     }
     ASSERT_EQ(5, scores.size());
     scores.erase(std::unique(scores.begin(), scores.end(), UniqueScanLabel()),
@@ -183,8 +183,8 @@ TEST_F(ScoresTest, CheckPopulating)
     SetHandler setHandler(0);
     DataSet *set1 = new DataSet();
     DataSet *set2 = new DataSet();
-    set1->setLabel(+1);
-    set2->setLabel(-1);
+    set1->setLabel(LabelType::TARGET);
+    set2->setLabel(LabelType::DECOY);
     for (int i = 0 ; i < 5 ; ++i) {
         PSMDescription *psm;
         psm = new PSMDescription(psmNames[i]);
@@ -216,8 +216,8 @@ TEST_F(ScoresTest, CheckPopulatingEmpty)
     EXPECT_THROW(scores.populateWithPSMs(setHandler), MyException);
     DataSet *set1 = new DataSet();
     DataSet *set2 = new DataSet();
-    set1->setLabel(+1);
-    set2->setLabel(-1);
+    set1->setLabel(LabelType::TARGET);
+    set2->setLabel(LabelType::DECOY);
     setHandler.push_back_dataset(set1);
     setHandler.push_back_dataset(set2);
     EXPECT_THROW(scores.populateWithPSMs(setHandler), MyException);

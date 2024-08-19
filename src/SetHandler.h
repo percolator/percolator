@@ -47,7 +47,7 @@ using namespace std;
 struct PSMDescriptionPriority {
   PSMDescription* psm;
   size_t priority;
-  int label;
+  LabelType label;
   
   bool operator<(const PSMDescriptionPriority& psmp) const {
     return (priority < psmp.priority);
@@ -86,16 +86,16 @@ class SetHandler {
     DataSet* targetSet, DataSet* decoySet);
   
   void writeTab(const std::string& dataFN, SanityCheck* pCheck);
-  void populateScoresWithPSMs(std::vector<ScoreHolder> &scores, int label);
+  void populateScoresWithPSMs(std::vector<ScoreHolder> &scores, LabelType label);
   void normalizeFeatures(Normalizer*& pNorm);
   
-  int getLabel(int setPos);
-  inline int getSizeFromLabel(int label) {
+  LabelType const getLabel(int setPos);
+  inline int getSizeFromLabel(LabelType label) {
     return static_cast<int>(subsets_[getSubsetIndexFromLabel(label)]->getSize());
   }
   
   inline DataSet* getSubset(unsigned int ix) { return (subsets_[ix]); }
-  inline DataSet* getSubsetFromLabel(int label) {
+  inline DataSet* getSubsetFromLabel(LabelType label) {
     return (subsets_[getSubsetIndexFromLabel(label)]);
   }
   
@@ -111,7 +111,7 @@ class SetHandler {
   FeatureMemoryPool featurePool_;
   std::string decoyPrefix_; // Used to determine if a psm is a decoy
   
-  unsigned int getSubsetIndexFromLabel(int label);
+  unsigned int getSubsetIndexFromLabel(LabelType label);
   static inline std::string &rtrim(std::string &s);
   
   int getOptionalFields(const std::string& headerLine, 
