@@ -38,6 +38,18 @@
 
 class Scores;
 
+enum class LabelType {
+  DECOY = -1,
+  UNDEFINED = 0,
+  TARGET = 1,
+  PSEUDO_TARGET = 2 // used for RESET algorithm
+};
+
+inline std::ostream& operator<<(std::ostream& os, LabelType label) {
+  os << static_cast<int>(label);
+  return os;
+}
+
 /*
 * ScoreHolder is a class that provides a way to assign score value to a
 * PSMDescription and have a way to compare PSMs based on the assigned
@@ -51,19 +63,19 @@ class ScoreHolder {
  public:
   double score, q, pep, p;
   PSMDescription* pPSM;
-  int label;
+  LabelType label;
   
-  ScoreHolder() : score(0.0), q(0.0), pep(0.0), p(0.0), label(0), pPSM(NULL) {}
-  ScoreHolder(const double s, const int l, PSMDescription* psm = NULL) :
+  ScoreHolder() : score(0.0), q(0.0), pep(0.0), p(0.0), label(LabelType::UNDEFINED), pPSM(NULL) {}
+  ScoreHolder(const double s, const LabelType l, PSMDescription* psm = NULL) :
     score(s), q(0.0), pep(0.0), p(0.0), label(l), pPSM(psm) {}
   virtual ~ScoreHolder() {}
   
   std::pair<double, bool> toPair() const { 
-    return pair<double, bool> (score, label > 0); 
+    return pair<double, bool> (score, isTarget()); 
   }
   
-  inline bool isTarget() const { return label != -1; }
-  inline bool isDecoy() const { return label == -1; }
+  inline bool isTarget() const { return label == LabelType::TARGET || label == LabelType::PSEUDO_TARGET; }
+  inline bool isDecoy() const { return label == LabelType::DECOY; }
   inline PSMDescription* getPSM() const { return pPSM; }
   void printPSM(ostream& os, bool printDecoys, bool printExpMass);
   void printPepXML(ostream& os, map<char,float> &aaWeight, int index);
@@ -263,7 +275,7 @@ class Scores {
   unsigned getQvaluesBelowLevel(double level);
   
   
-  void print(int label, std::ostream& os = std::cout);
+  void print(LabelType label, std::ostream& os = std::cout);
     
   inline double getPi0() const { return pi0_; }
   inline double getTargetDecoySizeRatio() const { 

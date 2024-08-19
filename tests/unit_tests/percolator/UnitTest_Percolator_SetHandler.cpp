@@ -75,14 +75,14 @@ TEST_F(SetHandlerTest, TestSubsetStoring)
     SetHandler sh(0);
     TrackedDataSet *pos = new TrackedDataSet();
     TrackedDataSet *neg = new TrackedDataSet();
-    pos->setLabel(+1);
-    neg->setLabel(-1);
+    pos->setLabel(LabelType::TARGET);
+    neg->setLabel(LabelType::DECOY);
     DeletionTracker::reset();
     sh.push_back_dataset(pos);
     sh.push_back_dataset(neg);
     EXPECT_EQ(0, DeletionTracker::deletionCount);
-    EXPECT_EQ(pos, sh.getSubsetFromLabel(+1));
-    EXPECT_EQ(neg, sh.getSubsetFromLabel(-1));
+    EXPECT_EQ(pos, sh.getSubsetFromLabel(LabelType::TARGET));
+    EXPECT_EQ(neg, sh.getSubsetFromLabel(LabelType::DECOY));
 
     sh.reset();
     EXPECT_EQ(2, DeletionTracker::deletionCount);

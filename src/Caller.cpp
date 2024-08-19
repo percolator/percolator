@@ -828,13 +828,13 @@ void Caller::writeResults(Scores& allScores,
   }
   if (!targetFN.empty()) {
     ofstream targetStream(targetFN.c_str(), ios::out);
-    allScores.print(NORMAL, targetStream);
+    allScores.print(LabelType::TARGET, targetStream);
   } else if (writeOutput) {
-    allScores.print(NORMAL);
+    allScores.print(LabelType::TARGET);
   }
   if (!decoyFN.empty()) {
     ofstream decoyStream(decoyFN.c_str(), ios::out);
-    allScores.print(SHUFFLED, decoyStream);
+    allScores.print(LabelType::DECOY, decoyStream);
   }
 }
 
@@ -1078,27 +1078,21 @@ int Caller::run() {
     exit(EXIT_FAILURE);
 
   if (useResetAlgorithm_) {
+    if (VERB > 0) {
+      std::cerr << "Running the Percolator-RESET algorithm." << std::endl;
+    }
     Scores winnerPeptides(false);
     Reset resetAlg;
     unsigned int decoysPerTarget = 1;
     resetAlg.retainRepresentatives(allScores, winnerPeptides, selectionFdr_,
                                    decoysPerTarget, useCompositionMatch_);
     allScores = winnerPeptides;
-    if (VERB > 0) {
-      std::cerr << "Running the Percolator-RESET algorithm." << std::endl;
-    }
-    vector<double> w(DataSet::getNumFeatures() + 1, 0.0);
-    SanityCheck sc;
-    std::cerr << "Selecting best separating single variable." << std::endl;
-    sc.getInitDirection(allScores, pNorm_, w, selectionFdr_,
-                        initialSelectionFdr_);
 
-    Scores output(false);
-    resetAlg.reset(allScores, output, selectionFdr_, pCheck_, 0.5, 1, w);
-
-    // allScores.normalizeScores(selectionFdr_); Probably not needed
-    writeResults(output, false, true);
-    return 1;
+    // TODO:
+    // - use ScoreHolder.label == -2 to indicate pseudo targets
+    // - apply decoy factor in FDR calculations
+    // - reset ScoreHolder.label from -2 to -1 after training is done
+    // - apply decoy factor in FDR calculations
   }
 
   CrossValidation crossValidation(
@@ -1109,6 +1103,18 @@ int Caller::run() {
 
   int firstNumberOfPositives = crossValidation.preIterationSetup(
       allScores, pCheck_, pNorm_, setHandler.getFeaturePool());
+
+  if (useResetAlgorithm_) {
+    vector<double> w;
+    crossValidation.getAvgWeights(w, pNorm_);
+    Reset resetAlg;
+    Scores output(false);
+    resetAlg.reset(allScores, output, selectionFdr_, pCheck_, 0.5, 1, w);
+
+    // allScores.normalizeScores(selectionFdr_); Probably not needed
+    writeResults(output, false, true);
+    return 1;
+  }
 
   if (VERB > 0) {
     cerr << "Found " << firstNumberOfPositives << " test set positives with q<"

@@ -61,12 +61,6 @@ limitations under the License.
  */
 class Caller {
    public:
-    enum SetHandlerType {
-        NORMAL = 1,
-        SHUFFLED = -1,
-        SHUFFLED_TEST = 2,
-        SHUFFLED_THRESHOLD = 3
-    };
 
     Caller();
     virtual ~Caller();
