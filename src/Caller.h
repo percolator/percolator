@@ -60,65 +60,68 @@ limitations under the License.
  *
  */
 class Caller {
-   public:
+ public:
+  Caller();
+  virtual ~Caller();
 
-    Caller();
-    virtual ~Caller();
+  static string greeter();
+  string extendedGreeter();
+  bool parseOptions(int argc, char** argv);
+  int run();
 
-    static string greeter();
-    string extendedGreeter();
-    bool parseOptions(int argc, char** argv);
-    int run();
+ protected:
+  Normalizer* pNorm_;
+  SanityCheck* pCheck_;
+  ProteinProbEstimator* protEstimator_;
+  Enzyme* enzyme_;
 
-   protected:
-    Normalizer* pNorm_;
-    SanityCheck* pCheck_;
-    ProteinProbEstimator* protEstimator_;
-    Enzyme* enzyme_;
+  // file input parameters
+  bool tabInput_;
+  bool readStdIn_;
+  std::string inputFN_;
+  std::vector<std::string> inputFNs_;
+  bool xmlSchemaValidation_;
+  std::string protEstimatorDecoyPrefix_;
 
-    // file input parameters
-    bool tabInput_;
-    bool readStdIn_;
-    std::string inputFN_;
-    std::vector<std::string> inputFNs_;
-    bool xmlSchemaValidation_;
-    std::string protEstimatorDecoyPrefix_;
+  // file output parameters
+  std::string tabOutputFN_, xmlOutputFN_, pepXMLOutputFN_;
+  std::string weightOutputFN_;
+  std::string psmResultFN_, peptideResultFN_, proteinResultFN_;
+  std::string decoyPsmResultFN_, decoyPeptideResultFN_, decoyProteinResultFN_;
+  bool xmlPrintDecoys_, xmlPrintExpMass_;
+  bool outputRT_ = false;
 
-    // file output parameters
-    std::string tabOutputFN_, xmlOutputFN_, pepXMLOutputFN_;
-    std::string weightOutputFN_;
-    std::string psmResultFN_, peptideResultFN_, proteinResultFN_;
-    std::string decoyPsmResultFN_, decoyPeptideResultFN_, decoyProteinResultFN_;
-    bool xmlPrintDecoys_, xmlPrintExpMass_;
-    bool outputRT_ = false;
+  // report level parameters
+  bool reportUniquePeptides_;
+  bool reportPepXML_;
+  bool targetDecoyCompetition_;
+  bool useMixMax_;
+  std::string inputSearchType_;
 
-    // report level parameters
-    bool reportUniquePeptides_;
-    bool reportPepXML_;
-    bool targetDecoyCompetition_;
-    bool useMixMax_;
-    std::string inputSearchType_;
+  // SVM / cross validation parameters
+  double selectionFdr_, initialSelectionFdr_, testFdr_;
+  unsigned int numIterations_, maxPSMs_, nestedXvalBins_, numThreads_;
+  double selectedCpos_, selectedCneg_;
+  bool reportEachIteration_, quickValidation_, trainBestPositive_,
+      skipNormalizeScores_, analytics_, useResetAlgorithm_,
+      useCompositionMatch_, useIrlsPep_, useInterpolatingPep_, usePavaPep_;
 
-    // SVM / cross validation parameters
-    double selectionFdr_, initialSelectionFdr_, testFdr_;
-    unsigned int numIterations_, maxPSMs_, nestedXvalBins_, numThreads_;
-    double selectedCpos_, selectedCneg_;
-    bool reportEachIteration_, quickValidation_, trainBestPositive_,
-        skipNormalizeScores_, analytics_, useResetAlgorithm_, useCompositionMatch_, useIrlsPep_, useInterpolatingPep_, usePavaPep_;
+  // reporting parameters
+  std::string call_;
 
-    // reporting parameters
-    std::string call_;
+  Timer timer;
 
-    Timer timer;
+  std::istream& getDataInStream(std::ifstream& fileStream);
+  bool loadAndNormalizeData(std::istream& dataStream,
+                            XMLInterface& xmlInterface,
+                            SetHandler& setHandler,
+                            Scores& allScores);
+  void calcAndOutputResult(Scores& allScores, XMLInterface& xmlInterface);
 
-    std::istream& getDataInStream(std::ifstream& fileStream);
-    bool loadAndNormalizeData(std::istream& dataStream, XMLInterface& xmlInterface, SetHandler& setHandler, Scores& allScores);
-    void calcAndOutputResult(Scores& allScores, XMLInterface& xmlInterface);
-
-    void calculatePSMProb(Scores& allScores, bool uniquePeptideRun);
-    void writeResults(Scores& allScores, bool unique, bool writeOutput);
-    void calculateProteinProbabilities(Scores& allScores);
-    void checkIsWritable(const std::string& filePath);
+  void calculatePSMProb(Scores& allScores, bool uniquePeptideRun);
+  void writeResults(Scores& allScores, bool unique, bool writeOutput);
+  void calculateProteinProbabilities(Scores& allScores);
+  void checkIsWritable(const std::string& filePath);
 };
 
 #endif /*CALLER_H_*/
