@@ -31,19 +31,14 @@ limitations under the License.
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
-#include "CrossValidation.h"
-#include "DataSet.h"
+
 #include "Enzyme.h"
 #include "Globals.h"
-#include "MyException.h"
 #include "Normalizer.h"
-#include "Option.h"
-#include "PickedProteinInterface.h"
 #include "ProteinProbEstimator.h"
 #include "SanityCheck.h"
 #include "Scores.h"
 #include "SetHandler.h"
-#include "ValidateTabFile.h"
 #include "XMLInterface.h"
 
 #define NO_BOOST_DATE_TIME_INLINE
