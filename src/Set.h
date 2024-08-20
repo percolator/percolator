@@ -50,10 +50,6 @@ class Set : public Array<int> {
   static Set SingletonSet(int value) {
     return FullSet(value, value);
   }
-  
-  // int randomElement() const {
-  //  return (*this)[static_cast<int>(Random::lcg_rand() % size())];
-  // }
 
  private:
   bool verify() const;
