@@ -270,3 +270,15 @@ int CompositionSorter::psmsOnly(const Scores& scores, Scores& winnerPeptides) {
 
     return 0;
 }
+
+void CompositionSorter::retainRepresentatives(const Scores &psms, Scores &winnerPeptides, double selectionFDR, unsigned int decoysPerTarget, bool useCompositionMatch) {
+    CompositionSorter sorter;
+
+    if (useCompositionMatch) {
+        cerr << "Starting reset: psmAndPeptide" << endl;   
+        sorter.psmAndPeptide(psms, winnerPeptides, decoysPerTarget);
+    } else {
+        cerr << "Starting reset: psmsOnly" << endl;   
+        sorter.psmsOnly(psms, winnerPeptides);
+    }
+}

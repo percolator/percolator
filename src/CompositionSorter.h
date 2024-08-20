@@ -27,6 +27,7 @@ class CompositionSorter {
         int inCompositionCompetition(Scores& bestScoreHolders, unsigned int decoysPerTarget=1);
         int psmAndPeptide(const Scores& scores, Scores& winnerPeptides, unsigned int decoysPerTarget=1);
         int psmsOnly(const Scores& scores, Scores& winnerPeptides);
+        static void retainRepresentatives(const Scores &psms, Scores &winnerPeptides, double selectionFDR, unsigned int decoysPerTarget, bool useCompositionMatch);
     protected:
         std::unordered_map<std::string, std::map<std::string,std::vector<ScoreHolder*>>, DJB2Hash> compositionToPeptidesToScore_;
 };
