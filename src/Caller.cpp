@@ -29,13 +29,13 @@
 #include <omp.h>
 #endif
 
+#include "CompositionSorter.h"
 #include "CrossValidation.h"
 #include "DataSet.h"
 #include "Analytics.h"
 #include "MyException.h"
 #include "Option.h"
 #include "PickedProteinInterface.h"
-#include "Reset.h"
 #include "ValidateTabFile.h"
 using namespace std;
 
@@ -1123,10 +1123,10 @@ int Caller::run() {
                         initialSelectionFdr_);
 
     Scores winnerPeptides(false);
-    Reset resetAlg;
     unsigned int decoysPerTarget = 1;
-    resetAlg.retainRepresentatives(allScores, winnerPeptides, selectionFdr_,
-                                   decoysPerTarget, useCompositionMatch_);
+    CompositionSorter::retainRepresentatives(allScores, winnerPeptides,
+                                             selectionFdr_, decoysPerTarget,
+                                             useCompositionMatch_);
     allScores = winnerPeptides;
     decoyFractionTraining = 0.5;
 
