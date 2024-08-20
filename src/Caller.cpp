@@ -1112,6 +1112,16 @@ int Caller::run() {
     if (VERB > 0) {
       std::cerr << "Running the Percolator-RESET algorithm." << std::endl;
     }
+
+    // find initial scoring direction for selecting best PSM per peptide
+    if (VERB > 1) {
+      std::cerr << "Selecting best separating single variable." << std::endl;
+    }
+    SanityCheck sc;
+    vector<double> w(DataSet::getNumFeatures() + 1, 0.0);
+    sc.getInitDirection(allScores, pNorm_, w, selectionFdr_,
+                        initialSelectionFdr_);
+
     Scores winnerPeptides(false);
     Reset resetAlg;
     unsigned int decoysPerTarget = 1;
