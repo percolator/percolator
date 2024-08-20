@@ -48,7 +48,7 @@ void Scores::merge(std::vector<Scores>& sv,
   for (; cvBinScores != sv.end(); cvBinScores++, weights++) {
     sort(cvBinScores->begin(), cvBinScores->end(), greater<ScoreHolder>());
     cvBinScores->checkSeparationAndSetPi0();
-    cvBinScores->calcQ(fdr);
+    cvBinScores->calcQvals(fdr);
     if (!skipNormalizeScores) {
       cvBinScores->normalizeScores(fdr, *weights);
     }
@@ -105,31 +105,6 @@ void Scores::scoreAndAddPSM(ScoreHolder& sh,
   } else {
     scores_.push_back(sh);
   }
-}
-
-int Scores::calcBalancedFDR(double treshold) {
-  double c_decoy(0.5), c_target(0.0),
-      factor(nullTargetWinProb_ / (1.0 - nullTargetWinProb_));
-  for_each(scores_.begin(), scores_.end(), [&](ScoreHolder& score) {
-    if (score.isDecoy()) {
-      c_decoy += 1.0;
-    } else {
-      c_target += 1.0;
-    }
-    score.q = (c_target / c_decoy) * factor;
-  });
-  reverse(scores_.begin(), scores_.end());
-  double previous_q = 1.0;
-  for_each(scores_.begin(), scores_.end(), [&](ScoreHolder& score) {
-    previous_q = std::min(score.q, previous_q);
-    score.q = previous_q;
-  });
-  reverse(scores_.begin(), scores_.end());
-
-  // Calcultaing the number of target PSMs with q-value less than treshold
-  ScoreHolder limit(treshold, LabelType::TARGET);
-  auto upper = lower_bound(scores_.begin(), scores_.end(), limit);
-  return upper - scores_.begin();
 }
 
 void Scores::print(LabelType label, std::ostream& os) {
@@ -439,11 +414,11 @@ void Scores::normalizeScores(double fdr, std::vector<double>& weights) {
  * @param fdr FDR threshold specified by user (default 0.01)
  * @return number of true positives
  */
-int Scores::calcScores(std::vector<double>& w,
+int Scores::calcScoresAndQvals(std::vector<double>& w,
                        double fdr,
                        bool skipDecoysPlusOne) {
-  onlyCalcScores(w);
-  return calcQ(fdr, skipDecoysPlusOne);
+  calcScores(w);
+  return calcQvals(fdr, skipDecoysPlusOne);
 }
 
 /**
@@ -452,7 +427,7 @@ int Scores::calcScores(std::vector<double>& w,
  * @param fdr FDR threshold specified by user (default 0.01)
  * @return 0 on successfull execution
  */
-int Scores::onlyCalcScores(std::vector<double>& w) {
+int Scores::calcScores(std::vector<double>& w) {
   std::size_t ix;
   std::vector<ScoreHolder>::iterator scoreIt = scores_.begin();
   for (; scoreIt != scores_.end(); ++scoreIt) {
@@ -489,7 +464,7 @@ void Scores::getScoreLabelPairs(std::vector<pair<double, bool> >& combined) {
  * @param fdr FDR threshold specified by user (default 0.01)
  * @return number of true positives
  */
-int Scores::calcQ(double fdr, bool skipDecoysPlusOne) {
+int Scores::calcQvals(double fdr, bool skipDecoysPlusOne) {
   assert(totalNumberOfDecoys_ + totalNumberOfTargets_ == size());
 
   std::vector<pair<double, bool> > combined;
@@ -674,7 +649,7 @@ int Scores::getInitDirection(const double initialSelectionFdr,
       if (i == 1) {
         reverse(scores_.begin(), scores_.end());
       }
-      int positives = calcQ(initialSelectionFdr, skipDecoysPlusOne);
+      int positives = calcQvals(initialSelectionFdr, skipDecoysPlusOne);
       if (positives > bestPositives) {
         bestPositives = positives;
         bestFeature = static_cast<int>(featNo);

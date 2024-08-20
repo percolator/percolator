@@ -53,41 +53,39 @@ class AlgIn;
  */
 class Scores {
  public:
+  using iterator = std::vector<ScoreHolder>::iterator;
+  using const_iterator = std::vector<ScoreHolder>::const_iterator;
+
   Scores(bool usePi0)
       : usePi0_(usePi0),
         pi0_(1.0),
         targetDecoySizeRatio_(1.0),
         nullTargetWinProb_(0.5),
         totalNumberOfDecoys_(0),
-        totalNumberOfTargets_(0),
-        decoyPtr_(NULL),
-        targetPtr_(NULL) {}
-  ~Scores() {}
-  void merge(vector<Scores>& sv,
+        totalNumberOfTargets_(0) {}
+
+  void merge(std::vector<Scores>& sv,
              double fdr,
              bool skipNormalizeScores,
              std::vector<std::vector<double> >& all_w);
   void postMergeStep();
 
-  std::vector<ScoreHolder>::iterator begin() { return scores_.begin(); }
-  std::vector<ScoreHolder>::iterator end() { return scores_.end(); }
-
-  std::vector<ScoreHolder>::const_iterator begin() const {
-    return scores_.begin();
-  }
-  std::vector<ScoreHolder>::const_iterator end() const { return scores_.end(); }
+  iterator begin() { return scores_.begin(); }
+  iterator end() { return scores_.end(); }
+  const_iterator begin() const { return scores_.begin(); }
+  const_iterator end() const { return scores_.end(); }
 
   double calcScore(const double* features, const std::vector<double>& w) const;
   void scoreAndAddPSM(ScoreHolder& sh,
                       const std::vector<double>& rawWeights,
                       FeatureMemoryPool& featurePool);
-  int calcScores(vector<double>& w, double fdr, bool skipDecoysPlusOne = false);
-  int onlyCalcScores(vector<double>& w);
-  int calcQ(double fdr, bool skipDecoysPlusOne = false);
-  void recalculateDescriptionOfCorrect(const double fdr);
+  int calcScoresAndQvals(vector<double>& w,
+                         double fdr,
+                         bool skipDecoysPlusOne = false);
+  int calcScores(vector<double>& w);
+  int calcQvals(double fdr, bool skipDecoysPlusOne = false);
   void calcPep(const bool spline = false, const bool interpol = false, const bool from_q = false);
-  int calcBalancedFDR(double treshhold);
-
+ 
   void populateWithPSMs(SetHandler& setHandler);
 
   int getInitDirection(const double initialSelectionFdr,
@@ -159,15 +157,12 @@ class Scores {
   std::vector<ScoreHolder> scores_;
   std::map<PSMDescription*, std::vector<PSMDescription*> > peptidePsmMap_;
 
-  double* decoyPtr_;
-  double* targetPtr_;
-
   void reorderFeatureRows(
       FeatureMemoryPool& featurePool,
       bool isTarget,
       boost::unordered_map<double*, double*>& movedAddresses,
       size_t& idx);
-  void getScoreLabelPairs(std::vector<pair<double, bool> >& combined);
+  void getScoreLabelPairs(std::vector<std::pair<double, bool> >& combined);
   void checkSeparationAndSetPi0();
   bool is_output_rt_ = false;
 };
