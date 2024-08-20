@@ -241,7 +241,7 @@ int CompositionSorter::psmAndPeptide(const Scores& scores, Scores& winnerPeptide
 
     // Split out tuples of peptides of identical composition, and select the most high scoring peptide in each tuple
     inCompositionCompetition(winnerPeptides, decoysPerTarget);
-
+    winnerPeptides.recalculateSizes();
     return 0;
 }
 
@@ -263,6 +263,7 @@ int CompositionSorter::psmsOnly(const Scores& scores, Scores& winnerPeptides) {
     for (const auto& entry : bestScoreHolders) {
         winnerPeptides.addScoreHolder(*(entry.second));
     }
+    winnerPeptides.recalculateSizes();
 
     if (VERB>1)
         cerr << "Selected the best scoring PSM for each of the " << winnerPeptides.size() << " peptides from a dataset of " << scores.size() << " PSMs." << endl;

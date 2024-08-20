@@ -53,7 +53,8 @@ class CrossValidation {
                   unsigned int nestedXvalBins,
                   bool trainBestPositive,
                   unsigned int numThreads,
-                  bool skipNormalizeScores);
+                  bool skipNormalizeScores,
+                  double decoyFractionTraining);
 
   ~CrossValidation();
 
@@ -111,6 +112,8 @@ class CrossValidation {
 
   bool trainBestPositive_;
   bool skipNormalizeScores_;
+
+  double decoyFractionTraining_;
 
   const static double requiredIncreaseOver2Iterations_;
 

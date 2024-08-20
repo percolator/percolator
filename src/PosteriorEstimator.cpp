@@ -456,7 +456,9 @@ void PosteriorEstimator::getMixMaxCounts(const vector<pair<double, bool> >& comb
  */
 void PosteriorEstimator::getQValues(double pi0, 
     const vector<pair<double, bool> >& combined, vector<double>& q,
-    bool skipDecoysPlusOne) {
+    bool skipDecoysPlusOne, double nullTargetWinProb) {
+  double decoyFactor = nullTargetWinProb / (1.0 - nullTargetWinProb);
+
   std::vector<double> h_w_le_z, h_z_le_z; // N_{w<=z} and N_{z<=z}
   if (pi0 < 1.0) {
     getMixMaxCounts(combined, h_w_le_z, h_z_le_z);
@@ -499,7 +501,7 @@ void PosteriorEstimator::getQValues(double pi0,
       if (includeNegativesInResult) {
         targetQueue += decoyQueue;
       }
-      fdr = (n_z_ge_w * pi0 + E_f1_mod_run_tot) / (double)((std::max)(1, n_w_ge_w));
+      fdr = (n_z_ge_w * pi0 + E_f1_mod_run_tot) / (double)((std::max)(1, n_w_ge_w)) * decoyFactor;
       for (int i = 0; i < targetQueue; ++i) {
         q.push_back((std::min)(fdr, 1.0));
       }
