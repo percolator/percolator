@@ -266,9 +266,9 @@ void Scores::createXvalSetsBySpectrum(std::vector<Scores>& train,
        it != scores_.end(); ++it) {
     const unsigned int curScan = (*it).pPSM->scan;
     ScoreHolder sh = (*it);
+
     // if current score is from a different spectra than the one encountered in
     // the previous iteration, choose new fold
-
     if (previousSpectrum != curScan) {
       randIndex = PseudoRandom::lcg_rand() % xval_fold;
       // allow only indexes of folds that are non-full
@@ -276,15 +276,17 @@ void Scores::createXvalSetsBySpectrum(std::vector<Scores>& train,
         randIndex = PseudoRandom::lcg_rand() % xval_fold;
       }
     }
-    // insert
-    for (unsigned int i = 0; i < xval_fold; ++i) {
+
+    if (decoyFractionTraining < 1.0 && sh.label == LabelType::DECOY &&
+        PseudoRandom::lcg_uniform_rand() > decoyFractionTraining) {
       // From Algorithm S3 of the percolator-RESET supplementary material
       // decoyFractionTraining - the probability of assigning a decoy to the
       // training set
-      if (decoyFractionTraining < 1.0 && sh.label == LabelType::DECOY &&
-          PseudoRandom::lcg_uniform_rand() > decoyFractionTraining) {
-        sh.label = LabelType::PSEUDO_TARGET;
-      }
+      sh.label = LabelType::PSEUDO_TARGET;
+    }
+
+    // insert
+    for (unsigned int i = 0; i < xval_fold; ++i) {
       if (i == randIndex) {
         test[i].addScoreHolder(sh);
       } else {
