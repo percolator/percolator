@@ -31,9 +31,6 @@ class SanityCheck {
                        vector<Scores> &trainset, const Normalizer* pNorm,
                        vector<vector<double> >& w, double test_fdr,
                        double initial_train_fdr);
-  int getInitDirection(Scores& scores, const Normalizer* pNorm,
-                       vector<double>& w, double test_fdr,
-                       double initial_train_fdr);
   
   virtual bool validateDirection(vector<vector<double> >& w);
   void resetDirection(vector<vector<double> >& w);
@@ -69,8 +66,6 @@ class SanityCheck {
   
  protected:
   virtual void getDefaultDirection(vector<vector<double> >& w);
-  void getDefaultDirection(vector<double>& w);
-
   virtual void calcInitDirection(vector<double>& wSet, size_t set);
   
   int initPositives_;

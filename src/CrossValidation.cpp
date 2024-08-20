@@ -220,7 +220,7 @@ void CrossValidation::train(const Normalizer* pNorm) {
       int foundTestPositives = 0;
       for (size_t set = 0; set < numFolds_; ++set) {
         foundTestPositives +=
-            testScores_[set].calcScores(weights_[set], testFdr_);
+            testScores_[set].calcScoresAndQvals(weights_[set], testFdr_);
       }
       if (VERB > 1) {
         std::cerr << "Found " << foundTestPositives << " test set PSMs with q<"
@@ -259,7 +259,7 @@ void CrossValidation::train(const Normalizer* pNorm) {
   }
   foundPositives = 0;
   for (size_t set = 0; set < numFolds_; ++set) {
-    foundPositives += testScores_[set].calcScores(weights_[set], testFdr_);
+    foundPositives += testScores_[set].calcScoresAndQvals(weights_[set], testFdr_);
   }
   if (VERB > 0) {
     std::cerr << "Found " << foundPositives << " test set PSMs with q<"
@@ -287,7 +287,7 @@ int CrossValidation::doStep(const Normalizer* pNorm, double selectionFdr) {
   // FDR estimates is too restrictive for small datasets
   bool skipDecoysPlusOne = true;
   for (std::size_t set = 0; set < numFolds_; ++set) {
-    trainScores_[set].calcScores(weights_[set], selectionFdr,
+    trainScores_[set].calcScoresAndQvals(weights_[set], selectionFdr,
                                  skipDecoysPlusOne);
   }
 
@@ -433,7 +433,7 @@ int CrossValidation::mergeCpCnPairs(
          itCpCnPair < classWeightsPerFold_.begin() + b; itCpCnPair++) {
       tp = nestedTestScoresVec[set][static_cast<std::size_t>(
                                         itCpCnPair->nestedSet)]
-               .calcScores(itCpCnPair->ww, testFdr_, skipDecoysPlusOne);
+               .calcScoresAndQvals(itCpCnPair->ww, testFdr_, skipDecoysPlusOne);
       intermediateResults[std::make_pair(itCpCnPair->cpos,
                                          itCpCnPair->cfrac)] += tp;
       itCpCnPair->tp = tp;
@@ -503,7 +503,7 @@ int CrossValidation::mergeCpCnPairs(
 
   double bestTruePos = 0;
   for (set = 0; set < numFolds_; ++set) {
-    bestTruePos += trainScores_[set].calcScores(weights_[set], testFdr_);
+    bestTruePos += trainScores_[set].calcScoresAndQvals(weights_[set], testFdr_);
   }
   return static_cast<int>(bestTruePos / (numFolds_ - 1));
 }
@@ -533,14 +533,14 @@ void CrossValidation::postIterationProcessing(Scores& fullset,
       }
       newTestScores.setNullTargetWinProb(testNullTargetWinProb);
       newTestScores.recalculateSizes();
-      testScores_[set] = newTestScores;
+      testScores_[set] = std::move(newTestScores);
     }
     fullset.setNullTargetWinProb(testNullTargetWinProb);
   }
 
   if (!pCheck->validateDirection(weights_)) {
     for (std::size_t set = 0; set < numFolds_; ++set) {
-      testScores_[set].calcScores(weights_[0], selectionFdr_);
+      testScores_[set].calcScoresAndQvals(weights_[0], selectionFdr_);
     }
   }
   fullset.merge(testScores_, selectionFdr_, skipNormalizeScores_, weights_);

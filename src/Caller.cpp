@@ -795,7 +795,7 @@ void Caller::calculatePSMProb(Scores& allScores, bool isUniquePeptideRun) {
     std::cerr << "Calculating q values." << std::endl;
   }
 
-  int foundPSMs = allScores.calcQ(testFdr_);
+  int foundPSMs = allScores.calcQvals(testFdr_);
 
   if (VERB > 0 && writeOutput) {
     if (useMixMax_) {
@@ -1094,16 +1094,19 @@ int Caller::run() {
       std::cerr << "Selecting best separating single variable." << std::endl;
     }
     SanityCheck sc;
-    vector<double> w(DataSet::getNumFeatures() + 1, 0.0);
-    sc.getInitDirection(allScores, pNorm_, w, selectionFdr_,
-                        initialSelectionFdr_);
+    std::vector<std::vector<double>> ww(
+        1, std::vector<double>(DataSet::getNumFeatures() + 1, 0.0));
+    std::vector<Scores> tmpScoreVector(1, std::move(allScores));
+    sc.getInitDirection(tmpScoreVector, tmpScoreVector, pNorm_, ww,
+                        selectionFdr_, initialSelectionFdr_);
+    allScores = std::move(tmpScoreVector.at(0));
 
     Scores winnerPeptides(false);
     unsigned int decoysPerTarget = 1;
     CompositionSorter::retainRepresentatives(allScores, winnerPeptides,
                                              selectionFdr_, decoysPerTarget,
                                              useCompositionMatch_);
-    allScores = winnerPeptides;
+    allScores = std::move(winnerPeptides);
     decoyFractionTraining = 0.5;
 
     // TODO:
@@ -1186,7 +1189,7 @@ int Caller::run() {
     }
 
     allScores.postMergeStep();
-    allScores.calcQ(selectionFdr_);
+    allScores.calcQvals(selectionFdr_);
     allScores.normalizeScores(selectionFdr_, rawWeights);
   }
 
