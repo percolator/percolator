@@ -36,15 +36,6 @@ class PosteriorEstimator {
   static void estimatePEP(std::vector<std::pair<double, bool> >& combined,
           bool usePi0, double pi0, std::vector<double>& peps,
 		      bool include_negative = false);
-  static void estimateTradPEP(std::vector<std::pair<double, bool> >& combined,
-          double decoyMultFactor, std::vector<double>& peps,
-		      bool include_negative = false);
-  static void estimateTrad(vector<pair<double, bool> >& combined,
-                                  LogisticRegression& lr);
-  static void binDataTrad(const vector<pair<double, bool> >& combined,
-          vector<double>& medians, vector<double> & negatives, vector<double> & sizes);
-
-
   static void getPValues(const std::vector<std::pair<double, bool> >& combined,
                          std::vector<double>& p);
   static void getQValues(double pi0,

@@ -120,54 +120,6 @@ void PosteriorEstimator::estimatePEP(vector<pair<double, bool> >& combined,
   partial_sum(peps.rbegin(), peps.rend(), peps.rbegin(), mymin);
 }
 
-void PosteriorEstimator::estimateTradPEP(
-                                     vector<pair<double, bool> >& combined,
-                                     double factor, vector<double>& peps,
-				       bool include_negative) {
-  // Logistic regression on the data
-  size_t nTargets = 0, nDecoys = 0;
-  LogisticRegression lr;
-  estimateTrad(combined, lr);
-  vector<double> xvals(0);
-  vector<pair<double, bool> >::const_iterator elem = combined.begin();
-  for (; elem != combined.end(); ++elem)
-    if (elem->second) {
-      xvals.push_back(elem->first);
-      ++nTargets;
-    } else {
-      if (include_negative) {
-        xvals.push_back(elem->first);
-      }
-      ++nDecoys;
-    }
-  lr.predict(xvals, peps);
-#define OUTPUT_DEBUG_FILES
-#undef OUTPUT_DEBUG_FILES
-#ifdef OUTPUT_DEBUG_FILES
-  ofstream drFile("decoyRate.all", ios::out), xvalFile("xvals.all", ios::out);
-  ostream_iterator<double> drIt(drFile, "\n"), xvalIt(xvalFile, "\n");
-  copy(peps.begin(), peps.end(), drIt);
-  copy(xvals.begin(), xvals.end(), xvalIt);
-#endif
-  double top = min(1.0, factor
-      * exp(*max_element(peps.begin(), peps.end())));
-  vector<double>::iterator pep = peps.begin();
-  bool crap = false;
-  for (; pep != peps.end(); ++pep) {
-    if (crap) {
-      *pep = top;
-      continue;
-    }
-    *pep = factor * exp(*pep);
-    if (*pep >= top) {
-      *pep = top;
-      crap = true;
-    }
-  }
-  partial_sum(peps.rbegin(), peps.rend(), peps.rbegin(), mymin);
-}
-
-
 void PosteriorEstimator::estimate(vector<pair<double, bool> >& combined,
     LogisticRegression& lr, bool usePi0, double pi0) {
   // switch sorting order if we do not use mix-max
@@ -280,74 +232,6 @@ void PosteriorEstimator::finishStandalone(
     resultstream.close();
   }
 }
-void PosteriorEstimator::estimateTrad(vector<pair<double, bool> >& combined,
-                                  LogisticRegression& lr) {
-  // switch sorting order
-  if (!reversed) {
-    reverse(combined.begin(), combined.end());
-  }
-  vector<double> medians, negatives, sizes;
-  binDataTrad(combined, medians, negatives, sizes);
-  lr.setData(medians, negatives, sizes);
-  lr.roughnessPenaltyIRLS();
-  // restore sorting order
-  if (!reversed) {
-    reverse(combined.begin(), combined.end());
-  }
-}
-
-
-void PosteriorEstimator::binDataTrad(
-                                 const vector<pair<double, bool> >& combined,
-                                 vector<double>& medians,
-                                 vector<double> & negatives,
-                                 vector<double> & sizes) {
-  // Create bins and count number of negatives in each bin
-  size_t binsLeft = noIntervals;
-  double targetedBinSize = max(floor(combined.size()
-      / (double)(noIntervals)), 1.0);
-  vector<pair<double, bool> >::const_iterator combinedIter =
-      combined.begin();
-  size_t firstIx, pastIx = 0;
-  while (pastIx < combined.size()) {
-    while (((combined.size() - pastIx) / targetedBinSize < binsLeft)
-        && binsLeft > 1) {
-      --binsLeft;
-    }
-    double binSize =
-        max((combined.size() - pastIx) / (double)(binsLeft--), 1.0);
-    firstIx = pastIx;
-    pastIx = min(combined.size(), (size_t)(firstIx + binSize));
-    // Handle ties
-    while ((pastIx < combined.size()) && (combined[pastIx - 1].first
-        == combined[pastIx].first)) {
-      ++pastIx;
-    }
-    int inBin = pastIx - firstIx;
-    assert(inBin > 0);
-    int negInBin = count_if(combinedIter, combinedIter + inBin, IsDecoy());
-    combinedIter += inBin;
-    double median = combined[firstIx + inBin / 2].first;
-    if (medians.size() > 0 && *(medians.rbegin()) == median) {
-      *(sizes.rbegin()) += inBin;
-      *(negatives.rbegin()) += negInBin;
-    } else {
-      medians.push_back(median);
-      sizes.push_back(inBin);
-      negatives.push_back(negInBin);
-    }
-    if (VERB > 3) {
-          cerr << "Median = " << median << ", Num psms = " << inBin
-          << ", Num decoys = " << negInBin << endl;
-    }
-  }
-  if (VERB > 2) {
-    cerr << "Binned data into " << medians.size()
-      << " bins for PEP calcuation" << endl;
-  }
-}
-
-
 
 /*
  * If pi0 == 1.0 this is equal to the "traditional" binning
