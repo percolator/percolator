@@ -115,13 +115,6 @@ int onlyCalcScores(std::vector<ScoreHolder*> &scores, std::vector<double>& w) {
     return 0;
 }
 
-// This function assign score to all score holders based on the weight vector w
-// and sorts the score holders in decending order and reports the number of scor holders over a FDR treshold.
-int calcScores(std::vector<ScoreHolder*> &scores, std::vector<double>& w, double fdr, bool skipDecoysPlusOne) {
-    onlyCalcScores(scores, w);
-    return calcBalancedFDR(scores, fdr, skipDecoysPlusOne);
-}
-
 void getScoreLabelPairs(std::vector<ScoreHolder*> scores, std::vector<pair<double, bool> >& combined) {
     combined.clear(); // Clear the combined vector first
     // Use a lambda function to transform each ScoreHolder pointer to a pair<double, bool>
@@ -242,7 +235,6 @@ void Reset::retainRepresentatives(const Scores &psms, Scores &winnerPeptides, do
         cerr << "Starting reset: psmsOnly" << endl;   
         sorter.psmsOnly(psms, winnerPeptides);
     }
-    winnerPeptides.recalculateSizes();
 }
 
 int Reset::reset(Scores &winnerPeptides, Scores &outS, double selectionFDR, SanityCheck* pCheck, double fractionTraining, unsigned int decoysPerTarget, std::vector<double>& w) {

@@ -42,7 +42,8 @@ CrossValidation::CrossValidation(bool quickValidation,
                                  unsigned int nestedXvalBins,
                                  bool trainBestPositive,
                                  unsigned int numThreads,
-                                 bool skipNormalizeScores)
+                                 bool skipNormalizeScores,
+                                 double decoyFractionTraining)
     : quickValidation_(quickValidation),
       usePi0_(usePi0),
       reportPerformanceEachIteration_(reportPerformanceEachIteration),
@@ -55,7 +56,8 @@ CrossValidation::CrossValidation(bool quickValidation,
       nestedXvalBins_(nestedXvalBins),
       trainBestPositive_(trainBestPositive),
       numThreads_(numThreads),
-      skipNormalizeScores_(skipNormalizeScores) {
+      skipNormalizeScores_(skipNormalizeScores),
+      decoyFractionTraining_(decoyFractionTraining) {
   // initialize selectionFdr_ and initialSelectionFdr_ if they have not been set
   // explicitly by the user.
   if (selectionFdr_ <= 0.0) {
@@ -103,8 +105,10 @@ int CrossValidation::preIterationSetup(Scores& fullset,
     assert(svmInputs_.back());
   }
 
+  unsigned int decoysPerTarget = 1u;  // TODO: make this a command line argument
   fullset.createXvalSetsBySpectrum(trainScores_, testScores_, numFolds_,
-                                   featurePool);
+                                   featurePool, decoyFractionTraining_,
+                                   decoysPerTarget);
 
   // initialize weights vector for all folds
   weights_ = vector<vector<double> >(
@@ -505,6 +509,34 @@ int CrossValidation::mergeCpCnPairs(
 
 void CrossValidation::postIterationProcessing(Scores& fullset,
                                               SanityCheck* pCheck) {
+  if (decoyFractionTraining_ < 1.0) {
+    // with RESET 1 decoy: decoysPerTarget = 1 and decoyFractionTraining = 0.5,
+    // then factor = 1.5 and testNullTargetWinProb = 2/3 (and decoyFactor = 2)
+    //
+    // with RESET 2 decoys: decoysPerTarget = 2 and decoyFractionTraining = 0.5,
+    // then factor = 2 and testNullTargetWinProb = 1/2 (and decoyFactor = 1)
+    unsigned int decoysPerTarget = 1u;  // TODO: make this a command line argument
+    double factor =
+        (decoysPerTarget + 1) - decoyFractionTraining_ * decoysPerTarget;
+    double testNullTargetWinProb = 1.0 / factor;
+
+    for (std::size_t set = 0; set < numFolds_; ++set) {
+      Scores newTestScores(false);
+      for (ScoreHolder& sh : testScores_[set]) {
+        if (sh.label == LabelType::DECOY) continue;
+
+        if (sh.label == LabelType::PSEUDO_TARGET) {
+          sh.label = LabelType::DECOY;
+        }
+        newTestScores.addScoreHolder(sh);
+      }
+      newTestScores.setNullTargetWinProb(testNullTargetWinProb);
+      newTestScores.recalculateSizes();
+      testScores_[set] = newTestScores;
+    }
+    fullset.setNullTargetWinProb(testNullTargetWinProb);
+  }
+
   if (!pCheck->validateDirection(weights_)) {
     for (std::size_t set = 0; set < numFolds_; ++set) {
       testScores_[set].calcScores(weights_[0], selectionFdr_);

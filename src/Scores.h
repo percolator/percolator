@@ -57,7 +57,7 @@ class Scores {
       : usePi0_(usePi0),
         pi0_(1.0),
         targetDecoySizeRatio_(1.0),
-        nullTargetWinProb_(1.0),
+        nullTargetWinProb_(0.5),
         totalNumberOfDecoys_(0),
         totalNumberOfTargets_(0),
         decoyPtr_(NULL),
@@ -94,8 +94,10 @@ class Scores {
                        std::vector<double>& direction);
   void createXvalSetsBySpectrum(std::vector<Scores>& train,
                                 std::vector<Scores>& test,
-                                const unsigned int xval_fold,
-                                FeatureMemoryPool& featurePool);
+                                unsigned int xval_fold,
+                                FeatureMemoryPool& featurePool,
+                                double decoyFractionTraining = 1.0,
+                                unsigned int decoysPerTarget = 1u);
 
   void generatePositiveTrainingSet(AlgIn& data,
                                    const double fdr,

@@ -1107,6 +1107,7 @@ int Caller::run() {
                             setHandler, allScores))
     exit(EXIT_FAILURE);
 
+  double decoyFractionTraining = 1.0;
   if (useResetAlgorithm_) {
     if (VERB > 0) {
       std::cerr << "Running the Percolator-RESET algorithm." << std::endl;
@@ -1117,34 +1118,20 @@ int Caller::run() {
     resetAlg.retainRepresentatives(allScores, winnerPeptides, selectionFdr_,
                                    decoysPerTarget, useCompositionMatch_);
     allScores = winnerPeptides;
+    decoyFractionTraining = 0.5;
 
     // TODO:
-    // - use ScoreHolder.label == -2 to indicate pseudo targets
-    // - apply decoy factor in FDR calculations
-    // - reset ScoreHolder.label from -2 to -1 after training is done
-    // - apply decoy factor in FDR calculations
+    // - apply decoy factor in PosteriorEstimator::estimatePEP
   }
 
   CrossValidation crossValidation(
       quickValidation_, reportEachIteration_, testFdr_, selectionFdr_,
       initialSelectionFdr_, selectedCpos_, selectedCneg_, numIterations_,
       useMixMax_, nestedXvalBins_, trainBestPositive_, numThreads_,
-      skipNormalizeScores_);
+      skipNormalizeScores_, decoyFractionTraining);
 
   int firstNumberOfPositives = crossValidation.preIterationSetup(
       allScores, pCheck_, pNorm_, setHandler.getFeaturePool());
-
-  if (useResetAlgorithm_) {
-    vector<double> w;
-    crossValidation.getAvgWeights(w, pNorm_);
-    Reset resetAlg;
-    Scores output(false);
-    resetAlg.reset(allScores, output, selectionFdr_, pCheck_, 0.5, 1, w);
-
-    // allScores.normalizeScores(selectionFdr_); Probably not needed
-    writeResults(output, false, true);
-    return 1;
-  }
 
   if (VERB > 0) {
     cerr << "Found " << firstNumberOfPositives << " test set positives with q<"

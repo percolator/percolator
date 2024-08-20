@@ -23,7 +23,7 @@ enum class LabelType {
   DECOY = -1,
   UNDEFINED = 0,
   TARGET = 1,
-  PSEUDO_TARGET = 2 // used for RESET algorithm
+  PSEUDO_TARGET = 2  // used for RESET algorithm
 };
 
 inline std::ostream& operator<<(std::ostream& os, LabelType label) {
