@@ -17,15 +17,9 @@
 
 #include "CrossValidation.h"
 
-// number of folds for cross validation
-const unsigned int CrossValidation::numFolds_ = 3u;
 #ifdef _OPENMP
 #include <omp.h>
 #include <algorithm>
-const unsigned int CrossValidation::numAlgInObjects_ =
-    CrossValidation::numFolds_;
-#else
-const unsigned int CrossValidation::numAlgInObjects_ = 1u;
 #endif
 // checks cross validation convergence in case of quickValidation_
 const double CrossValidation::requiredIncreaseOver2Iterations_ = 0.01;
@@ -43,7 +37,8 @@ CrossValidation::CrossValidation(bool quickValidation,
                                  bool trainBestPositive,
                                  unsigned int numThreads,
                                  bool skipNormalizeScores,
-                                 double decoyFractionTraining)
+                                 double decoyFractionTraining,
+                                 unsigned int numFolds)
     : quickValidation_(quickValidation),
       usePi0_(usePi0),
       reportPerformanceEachIteration_(reportPerformanceEachIteration),
@@ -57,7 +52,8 @@ CrossValidation::CrossValidation(bool quickValidation,
       trainBestPositive_(trainBestPositive),
       numThreads_(numThreads),
       skipNormalizeScores_(skipNormalizeScores),
-      decoyFractionTraining_(decoyFractionTraining) {
+      decoyFractionTraining_(decoyFractionTraining),
+      numFolds_(numFolds) {
   // initialize selectionFdr_ and initialSelectionFdr_ if they have not been set
   // explicitly by the user.
   if (selectionFdr_ <= 0.0) {
@@ -259,7 +255,8 @@ void CrossValidation::train(const Normalizer* pNorm) {
   }
   foundPositives = 0;
   for (size_t set = 0; set < numFolds_; ++set) {
-    foundPositives += testScores_[set].calcScoresAndQvals(weights_[set], testFdr_);
+    foundPositives +=
+        testScores_[set].calcScoresAndQvals(weights_[set], testFdr_);
   }
   if (VERB > 0) {
     std::cerr << "Found " << foundPositives << " test set PSMs with q<"
@@ -288,7 +285,7 @@ int CrossValidation::doStep(const Normalizer* pNorm, double selectionFdr) {
   bool skipDecoysPlusOne = true;
   for (std::size_t set = 0; set < numFolds_; ++set) {
     trainScores_[set].calcScoresAndQvals(weights_[set], selectionFdr,
-                                 skipDecoysPlusOne);
+                                         skipDecoysPlusOne);
   }
 
   // Below implements the series of speedups detailed in the following:
@@ -334,6 +331,11 @@ int CrossValidation::doStep(const Normalizer* pNorm, double selectionFdr) {
       nestedTrainScores[nestedFold].generateNegativeTrainingSet(*svmInput, 1.0);
       nestedTrainScores[nestedFold].generatePositiveTrainingSet(
           *svmInput, selectionFdr, 1.0, trainBestPositive_);
+      if ((VERB > 2) && (nestedXvalBins_ > 1u)) {
+        cerr << "Split " << set + 1 << " nested fold " << nestedFold
+             << ": Training with " << svmInput->positives << " positives and "
+             << svmInput->negatives << " negatives" << std::endl;
+      }
       svmInputsVec.push_back(svmInput);
     }
   }
@@ -502,7 +504,8 @@ int CrossValidation::mergeCpCnPairs(
 
   double bestTruePos = 0;
   for (int set = 0; set < static_cast<int>(numFolds_); ++set) {
-    bestTruePos += trainScores_[set].calcScoresAndQvals(weights_[set], testFdr_);
+    bestTruePos +=
+        trainScores_[set].calcScoresAndQvals(weights_[set], testFdr_);
   }
   return static_cast<int>(bestTruePos / (numFolds_ - 1));
 }
@@ -515,7 +518,8 @@ void CrossValidation::postIterationProcessing(Scores& fullset,
     //
     // with RESET 2 decoys: decoysPerTarget = 2 and decoyFractionTraining = 0.5,
     // then factor = 2 and testNullTargetWinProb = 1/2 (and decoyFactor = 1)
-    unsigned int decoysPerTarget = 1u;  // TODO: make this a command line argument
+    unsigned int decoysPerTarget =
+        1u;  // TODO: make this a command line argument
     double factor =
         (decoysPerTarget + 1) - decoyFractionTraining_ * decoysPerTarget;
     double testNullTargetWinProb = 1.0 / factor;
@@ -523,7 +527,8 @@ void CrossValidation::postIterationProcessing(Scores& fullset,
     for (std::size_t set = 0; set < numFolds_; ++set) {
       Scores newTestScores(false);
       for (ScoreHolder& sh : testScores_[set]) {
-        if (sh.label == LabelType::DECOY) continue;
+        if (sh.label == LabelType::DECOY)
+          continue;
 
         if (sh.label == LabelType::PSEUDO_TARGET) {
           sh.label = LabelType::DECOY;

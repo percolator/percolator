@@ -32,12 +32,12 @@ public:
                       unsigned int niter, bool usePi0,
                       unsigned int nestedXvalBins, bool trainBestPositive,
                       unsigned int numThreads, bool skipNormalizeScores, 
-                      double decoyFractionTraining)
+                      double decoyFractionTraining, unsigned int numFolds)
         : CrossValidation(quickValidation, reportPerformanceEachIteration,
                           testFdr, selectionFdr, initialSelectionFdr,
                           selectedCpos, selectedCneg, niter, usePi0,
                           nestedXvalBins, trainBestPositive, numThreads,
-                          skipNormalizeScores, decoyFractionTraining) { }
+                          skipNormalizeScores, decoyFractionTraining, numFolds) { }
     virtual ~CrossValidationEx() { }
     int doStepEx(Normalizer* pNorm, double selectionFdr) {
         return doStep(pNorm, selectionFdr);
@@ -95,7 +95,8 @@ TEST_F(CrossValidationTest, doStepTest)
                                   false,   // trainBestPositive
                                   1,       // numThreads
                                   false,   // skipNormalizeScores
-                                  1.0);    // decoyFractionTraining
+                                  1.0,     // decoyFractionTraining
+                                  3u);     // numFolds
 
     FeatureNames::setNumFeatures(2);
     SetHandler setHandler(0);
