@@ -1084,6 +1084,7 @@ int Caller::run() {
     exit(EXIT_FAILURE);
 
   double decoyFractionTraining = 1.0;
+  unsigned int numFolds = 3u;
   if (useResetAlgorithm_) {
     if (VERB > 0) {
       std::cerr << "Running the Percolator-RESET algorithm." << std::endl;
@@ -1107,7 +1108,25 @@ int Caller::run() {
                                              selectionFdr_, decoysPerTarget,
                                              useCompositionMatch_);
     allScores = std::move(winnerPeptides);
+
+    bool useSingleFold = true;
     decoyFractionTraining = 0.5;
+    if (useSingleFold) {
+      // From Algorithm S3 of the percolator-RESET supplementary material
+      // decoyFractionTraining - the probability of assigning a decoy to the
+      // training set
+      std::for_each(allScores.begin(), allScores.end(), [&](ScoreHolder& sh) {
+        if (sh.isDecoy() &&
+            PseudoRandom::lcg_uniform_rand() > decoyFractionTraining) {
+          sh.label = LabelType::PSEUDO_TARGET;
+        }
+      });
+
+      // we do not necessarily need multiple folds with RESET because the pseudo
+      // targets take care of the overfitting.
+      numFolds = 1u;
+      nestedXvalBins_ = 3u;
+    }
 
     // TODO:
     // - apply decoy factor in PosteriorEstimator::estimatePEP
@@ -1117,7 +1136,7 @@ int Caller::run() {
       quickValidation_, reportEachIteration_, testFdr_, selectionFdr_,
       initialSelectionFdr_, selectedCpos_, selectedCneg_, numIterations_,
       useMixMax_, nestedXvalBins_, trainBestPositive_, numThreads_,
-      skipNormalizeScores_, decoyFractionTraining);
+      skipNormalizeScores_, decoyFractionTraining, numFolds);
 
   int firstNumberOfPositives = crossValidation.preIterationSetup(
       allScores, pCheck_, pNorm_, setHandler.getFeaturePool());

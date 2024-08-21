@@ -54,7 +54,8 @@ class CrossValidation {
                   bool trainBestPositive,
                   unsigned int numThreads,
                   bool skipNormalizeScores,
-                  double decoyFractionTraining);
+                  double decoyFractionTraining,
+                  unsigned int numFolds);
 
   ~CrossValidation();
 
@@ -117,8 +118,7 @@ class CrossValidation {
 
   const static double requiredIncreaseOver2Iterations_;
 
-  const static unsigned int numFolds_;
-  const static unsigned int numAlgInObjects_;
+  unsigned int numFolds_;  // number of folds for cross validation
   std::vector<Scores> trainScores_, testScores_;
   std::vector<double> candidatesCpos_, candidatesCfrac_;
 
@@ -142,7 +142,7 @@ class CrossValidation {
   void printAllWeightsColumns(ostream& weightStream);
   void printAllRawWeightsColumns(ostream& weightStream,
                                  const Normalizer* pNorm);
-  static void printAllWeightsColumns(
+  void printAllWeightsColumns(
       std::vector<std::vector<double> > weightMatrix,
       ostream& weightStream);
 };

@@ -252,7 +252,10 @@ void Scores::createXvalSetsBySpectrum(std::vector<Scores>& train,
       }
     }
 
-    if (decoyFractionTraining < 1.0 && sh.label == LabelType::DECOY &&
+    // if we use multiple folds with RESET, assign 1-decoyFractionTraining as
+    // pseudo targets.
+    if (xval_fold > 1u && decoyFractionTraining < 1.0 &&
+        sh.label == LabelType::DECOY &&
         PseudoRandom::lcg_uniform_rand() > decoyFractionTraining) {
       // From Algorithm S3 of the percolator-RESET supplementary material
       // decoyFractionTraining - the probability of assigning a decoy to the
@@ -264,7 +267,8 @@ void Scores::createXvalSetsBySpectrum(std::vector<Scores>& train,
     for (unsigned int i = 0; i < xval_fold; ++i) {
       if (i == randIndex) {
         test[i].addScoreHolder(sh);
-      } else {
+      }
+      if (i != randIndex || xval_fold == 1) {
         train[i].addScoreHolder(sh);
       }
     }
@@ -414,8 +418,8 @@ void Scores::normalizeScores(double fdr, std::vector<double>& weights) {
  * @return number of true positives
  */
 int Scores::calcScoresAndQvals(std::vector<double>& w,
-                       double fdr,
-                       bool skipDecoysPlusOne) {
+                               double fdr,
+                               bool skipDecoysPlusOne) {
   calcScores(w);
   return calcQvals(fdr, skipDecoysPlusOne);
 }
