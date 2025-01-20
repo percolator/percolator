@@ -338,7 +338,7 @@ bool Caller::parseOptions(int argc, char **argv) {
       "", TRUE_IF_SET);
   cmd.defineOption(Option::EXPERIMENTAL_FEATURE,
       "iso-pep",
-      "Serive PEPs using isotonic regression insted of using non parametric regression.",
+      "Calculate PEPs using isotonic regression insted of using non parametric regression.",
       "", TRUE_IF_SET);
   cmd.defineOption(Option::EXPERIMENTAL_FEATURE,
       "composition-match",
