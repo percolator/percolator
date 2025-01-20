@@ -10,7 +10,7 @@ jobs:
       matrix:
         include:
           - name: percolator
-            percolator_cmake_args: " "
+            percolator_cmake_args: "-DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DGOOGLE_TEST=0 -DXML_SUPPORT=OFF"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
