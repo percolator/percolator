@@ -22,12 +22,12 @@ RUN cmake ${percolator_cmake_args} /percolator
 RUN make
 RUN make install
 
-FROM docker.io/library/ubuntu:24.04
+FROM docker.io/library/ubuntu:24.04 AS runtime
 
 RUN apt-get update && apt-get install -y \
-    libboost-system \
-    libboost-filesystem \
-    libboost-thread \
+    libboost-system-dev \
+    libboost-filesystem-dev \
+    libboost-thread-dev \
     libbz2-1.0 \
     libcurl4-openssl-dev \
     libgomp1 \
