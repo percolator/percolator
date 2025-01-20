@@ -3,6 +3,9 @@ ARG percolator_cmake_args="-DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/us
 
 RUN apt-get update && apt-get install -y 
 
+# Remove the system gtest libraries (if installed)
+RUN apt-get remove --purge -y libgtest-dev && apt-get autoremove -y
+
 RUN apt-get install -y build-essential g++ make cmake gawk
 
 RUN apt-get install -y \
