@@ -10,6 +10,8 @@ RUN apt-get install -y -o Acquire::Retries=3 libxml2-utils
 RUN echo '#!/bin/bash\nshift\nexec "$@"' > /usr/bin/sudo && \
     chmod +x /usr/bin/sudo
 
+RUN sudo apt-get -y install g++ make cmake gawk
+
 RUN mkdir -p /release /build
 COPY / /percolator
 
