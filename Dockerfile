@@ -4,6 +4,12 @@ ARG percolator_cmake_args="-DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/us
 RUN apt-get update && apt-get install -y 
 
 RUN apt-get install -y -o Acquire::Retries=3 libxml2-utils
+
+# Create a "fake sudo" script that simply strips off the word 'sudo'
+# and then runs the rest of the command as-is.
+RUN echo '#!/bin/bash\nshift\nexec "$@"' > /usr/bin/sudo && \
+    chmod +x /usr/bin/sudo
+
 RUN mkdir -p /release /build
 COPY / /percolator
 
