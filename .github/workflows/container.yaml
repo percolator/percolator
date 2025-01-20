@@ -31,7 +31,7 @@ jobs:
         id: metadata_action_id
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/percolator/${{ matrix.name }}
+          images: ghcr.io/${{ github.repository_owner }}//${{ matrix.name }}
           flavor: |
             latest=auto
           tags: |
