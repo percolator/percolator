@@ -6,7 +6,7 @@ RUN apt-get update && apt-get install -y
 # Remove the system gtest libraries (if installed)
 RUN apt-get remove --purge -y libgtest-dev && apt-get autoremove -y
 
-RUN apt-get install -y build-essential g++ make cmake gawk
+RUN apt-get install -y build-essential g++ make cmake gawk git ca-certificates
 
 RUN apt-get install -y \
     libboost-filesystem-dev \
