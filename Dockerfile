@@ -9,7 +9,8 @@ COPY / /percolator
 
 WORKDIR /
 
-RUN ./admin/builders/ubuntu64_build.sh -s / -r /release -b /build
+RUN pwd
+RUN /percolator/admin/builders/ubuntu64_build.sh -s / -r /release -b /build
 
 FROM docker.io/library/ubuntu:24.04
 
