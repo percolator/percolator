@@ -6,8 +6,9 @@ RUN apt-get update && apt-get install -y
 RUN apt-get install -y g++ make cmake gawk
 
 RUN apt-get install -y \
-      libboost-system1.74.0 \
-      libboost-thread1.74.0 
+    libboost-system1.74.0 \
+    libboost-filesystem1.74.0 \
+    libboost-thread1.74.0 
 
 RUN apt-get install -y -o Acquire::Retries=3 libxml2-utils
 
@@ -25,8 +26,9 @@ RUN make install
 FROM docker.io/library/ubuntu:24.04
 
 RUN apt-get update && apt-get install -y \
-      libboost-system1.74.0 \
-      libboost-thread1.74.0 \
+    libboost-system1.74.0 \
+    libboost-filesystem1.74.0 \
+    libboost-thread1.74.0 \
       libbz2-1.0 \
       libcurl4t64 \
       libgomp1 \
