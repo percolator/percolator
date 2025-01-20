@@ -1,4 +1,4 @@
-name: Build and push percolator container image
+name: Build and push container image
 on: workflow_dispatch
 jobs:
   build_push_container:
@@ -31,7 +31,7 @@ jobs:
         id: metadata_action_id
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/${{ github.repository_owner }}//${{ matrix.name }}
+          images: ghcr.io/${{ github.repository_owner }}/${{ matrix.name }}
           flavor: |
             latest=auto
           tags: |
