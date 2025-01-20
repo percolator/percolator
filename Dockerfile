@@ -10,14 +10,13 @@ RUN apt-get install -y -o Acquire::Retries=3 libxml2-utils
 RUN echo '#!/bin/bash\nshift\nexec "$@"' > /usr/bin/sudo && \
     chmod +x /usr/bin/sudo
 
-RUN sudo apt-get -y install g++ make cmake gawk
+RUN apt-get install -y g++ make cmake gawk
 
 RUN mkdir -p /release /build
 COPY / /percolator
 
 WORKDIR /
 
-RUN pwd
 RUN /percolator/admin/builders/ubuntu64_build.sh -s / -r /release -b /build
 
 FROM docker.io/library/ubuntu:24.04
