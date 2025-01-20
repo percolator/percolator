@@ -1,9 +1,9 @@
-FROM docker.io/library/ubuntu:24.04 as builder
+FROM docker.io/library/ubuntu:24.04 AS builder
 ARG percolator_cmake_args="-DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DGOOGLE_TEST=0 -DXML_SUPPORT=OFF"
 
 RUN apt-get update && apt-get install -y 
 
-RUN apt-get install -y g++ make cmake gawk
+RUN apt-get install -y build-essential g++ make cmake gawk
 
 RUN apt-get install -y \
     libboost-filesystem-dev \
@@ -29,7 +29,7 @@ RUN apt-get update && apt-get install -y \
     libboost-filesystem \
     libboost-thread \
     libbz2-1.0 \
-    libcurl4t64 \
+    libcurl4-openssl-dev \
     libgomp1 \
     zlib1g
 
