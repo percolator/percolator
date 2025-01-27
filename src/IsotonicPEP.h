@@ -103,46 +103,6 @@ public:
         return result;
     }
 
-    std::vector<double> fit_transform_old(const std::vector<double>& y) {
-        if (y.empty()) {
-            throw std::invalid_argument("Input vector 'y' is empty.");
-        }
-
-        std::vector<double> solution = y;
-        std::vector<int> level_start(y.size());
-
-        for (size_t i = 0; i < y.size(); ++i) {
-            level_start[i] = i;
-        }
-
-        for (size_t i = 1; i < solution.size(); ++i) {
-            if (solution[i] < solution[i - 1]) {
-                int j = i;
-                while (j > 0 && solution[level_start[j - 1]] > solution[i]) {
-                    --j;
-                }
-                double sum = 0.0;
-                int start = level_start[j];
-                int count = i - start + 1;
-                for (size_t k = start; k <= i; ++k) {
-                    sum += solution[k];
-                }
-                double average = sum / count;
-                for (size_t k = start; k <= i; ++k) {
-                    solution[k] = average;
-                }
-                level_start[i] = start;
-            }
-        }
-        cerr << "done core" << endl;
-
-        // Clip the values to be within the bounds [0, 1]
-        for (auto& val : solution) {
-            if (val < 0.0) val = 0.0;
-            if (val > 1.0) val = 1.0;
-        }
-        return solution;
-    }
 
     std::vector<double> q_to_pep(const std::vector<double>& q_values) {
         qs = q_values;
@@ -168,7 +128,6 @@ public:
         raw_pep.push_back(1.0);
 
         // Perform isotonic regression on the differences
-//        std::vector<double> pep_iso = fit_transform_old(raw_pep);
         std::vector<double> pep_iso = isotonic_regression_pava(raw_pep);
 //        for (size_t i = 0; i < qn.size()-1; ++i) {
 //            cerr << i << " " << q_values[i] << " " << qn[i] << " " << raw_pep[i] << " " << pep_iso[i] << endl;
