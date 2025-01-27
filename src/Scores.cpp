@@ -862,10 +862,8 @@ void Scores::calcPep(const bool isotonic) {
                 target_q.push_back(sh.q);
             }
         }
-        cerr << "Hullo" << endl;
         IsotonicPEP reg;
         auto target_pep = reg.q_to_pep(target_q);
-        cerr << "Hullo" << endl;
 
         // Move PEPs to scoreholders. The PEPs are only defined for target, 
         // We use interpolation for decoys.
@@ -874,10 +872,10 @@ void Scores::calcPep(const bool isotonic) {
         auto it_pep = target_pep.begin();
         auto it_q = target_q.begin();
         double l_q(0.0), l_pep(0.0);
-        cerr << "Hullo" << endl;
         for (auto& sh : scores_) {
             if (sh.isTarget()) {
                 sh.pep = *it_pep;
+                // remember last (l_) pep and q for interpolation
                 l_pep = *it_pep;
                 l_q = *it_q;
                 it_pep++; it_q++;
@@ -886,8 +884,6 @@ void Scores::calcPep(const bool isotonic) {
                 sh.pep = pep;
             }
         }
-        cerr << "Hullo" << endl;
-
     } else {
         std::vector<pair<double, bool> > combined;
         getScoreLabelPairs(combined);
