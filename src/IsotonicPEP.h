@@ -25,14 +25,16 @@
 #include <stdexcept>
 #include <cmath>      // for std::abs
 
-struct Block {
-    double sum;
-    int count;
-    double avg;
-};
-
 
 class IsotonicPEP {
+
+protected:
+    struct Block {
+        double sum;
+        int count;
+        double avg;
+    };
+
 public:
     IsotonicPEP() = default;
 
@@ -120,13 +122,11 @@ public:
         // Calculate differences between consecutive qn values
 
         std::vector<double> raw_pep(qn.size());
-        for (size_t i = 0; i < qn.size()-1; ++i) {
-            raw_pep[i] = qn[i+1] - qn[i];
+        raw_pep[0] = qn[0];
+        for (size_t i = 1; i < qn.size(); ++i) {
+            raw_pep[i] = qn[i] - qn[i-1];
         }
         
-        // Append an additional element (1.0) to match the original array size
-        raw_pep.push_back(1.0);
-
         // Perform isotonic regression on the differences
         std::vector<double> pep_iso = isotonic_regression_pava(raw_pep);
 //        for (size_t i = 0; i < qn.size()-1; ++i) {
