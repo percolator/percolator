@@ -233,7 +233,7 @@ class Scores {
   int onlyCalcScores(vector<double>& w);
   int calcQ(double fdr, bool skipDecoysPlusOne = false);
   void recalculateDescriptionOfCorrect(const double fdr);
-  void calcPep(const bool isotonic = false);
+  void calcPep(const bool spline = false, const bool interpol = false);
   int calcBalancedFDR(double treshhold);
   
   void populateWithPSMs(SetHandler& setHandler);

@@ -418,6 +418,25 @@ public:
         return result;
     }
 
+    // Variant that produces a piecewise-linear function in logit space:
+    std::vector<double> pepRegression(
+        const std::vector<double>& x,
+        const std::vector<double>& y
+    ) const
+    {
+        if (x.size() != y.size()) {
+            throw std::invalid_argument("pepRegressionWithInterpolation: x.size() != y.size()");
+        }
+        // 1) Merge consecutive y so each block average is in [0,1]
+        std::vector<double> mergedY = createBlocksInUnitIntervalAndUnfold(y);
+
+        // 2) Interpolate in logit space. This uses x for the piecewise-linear stepping.
+        //    'logisticIsotonicInterpolation' merges in logit space, then
+        //    does linear interpolation between block centers (in x).
+        std::vector<double> result = logisticIsotonicInterpolation(x, mergedY);
+        return result;
+    }
+
     double interpolate(const double q_value, const double q1, const double q2, const double pep1, const double pep2) const {
         double interp_pep = pep1 + (q_value - q1) * (pep2 - pep1) / (q2 - q1);
         return interp_pep;
@@ -446,9 +465,32 @@ public:
         
         // Perform isotonic regression on the differences
         std::vector<double> pep_iso = pepRegression(raw_pep);
-//        for (size_t i = 0; i < qn.size()-1; ++i) {
-//            cerr << i << " " << q_values[i] << " " << qn[i] << " " << raw_pep[i] << " " << pep_iso[i] << endl;
-//        }
+        return pep_iso;
+    }
+
+    std::vector<double> qns_to_pep(const std::vector<double>& q_values, const std::vector<double>& scores) {
+        qs = q_values;
+
+        // Generate the qn values as q-values multiplied by their respective indices
+        std::vector<double> qn(q_values.size());
+        std::vector<int> indices(q_values.size());
+        std::iota(indices.begin(), indices.end(), 1);  // Generate indices starting from 1
+
+        for (size_t i = 0; i < q_values.size(); ++i) {
+            qn[i] = q_values[i] * indices[i];
+            assert((i == q_values.size()-1) || (q_values[i] <=  q_values[i+1]) );
+        }
+
+        // Calculate differences between consecutive qn values
+
+        std::vector<double> raw_pep(qn.size());
+        raw_pep[0] = qn[0];
+        for (size_t i = 1; i < qn.size(); ++i) {
+            raw_pep[i] = qn[i] - qn[i-1];
+        }
+        
+        // Perform isotonic regression on the differences
+        std::vector<double> pep_iso = pepRegression(raw_pep, scores);
         return pep_iso;
     }
 

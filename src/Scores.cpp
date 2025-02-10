@@ -854,17 +854,19 @@ void Scores::checkSeparationAndSetPi0() {
     }
 }
 
-void Scores::calcPep(const bool isotonic) {
-    if (isotonic) {
-        std::vector<double> target_q;
+void Scores::calcPep(const bool spline, const bool interp) {
+    if (!spline) {
+        std::vector<double> target_q, sc;
         for (auto& sh : scores_) {
             if (sh.isTarget()) {
                 target_q.push_back(sh.q);
+                sc.push_back(sh.score);
             }
         }
         IsotonicPEP reg;
-        auto target_pep = reg.q_to_pep(target_q);
-
+        auto target_pep = interp
+                            ? reg.q_to_pep(target_q)
+                            : reg.qns_to_pep(target_q, sc);
         // Move PEPs to scoreholders. The PEPs are only defined for target, 
         // We use interpolation for decoys.
         // Add elements avoiding overflow problems if last sh is a decoy

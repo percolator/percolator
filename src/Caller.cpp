@@ -41,7 +41,7 @@ Caller::Caller() :
     psmResultFN_(""), peptideResultFN_(""), proteinResultFN_(""),
     decoyPsmResultFN_(""), decoyPeptideResultFN_(""), decoyProteinResultFN_(""),
     analytics_(true), use_reset_alg_(false), use_composition_match_(false),
-    use_isotonic_pep_(false),
+    use_spline_pep_(false), use_interpolating_pep_(false),
     xmlPrintDecoys_(false), xmlPrintExpMass_(true), reportUniquePeptides_(true),
     reportPepXML_(false),
     targetDecoyCompetition_(false), useMixMax_(false), inputSearchType_("auto"),
@@ -337,8 +337,12 @@ bool Caller::parseOptions(int argc, char **argv) {
       "Run an implementation of the Percolator-RESET Algorithm.",
       "", TRUE_IF_SET);
   cmd.defineOption(Option::EXPERIMENTAL_FEATURE,
-      "iso-pep",
-      "Calculate PEPs using isotonic regression insted of using non parametric regression.",
+      "spline-pep",
+      "Calculate PEPs using spline regression.",
+      "", TRUE_IF_SET);
+  cmd.defineOption(Option::EXPERIMENTAL_FEATURE,
+      "ip-pep",
+      "Calculate PEPs using isotonic regression with interpolation.",
       "", TRUE_IF_SET);
   cmd.defineOption(Option::EXPERIMENTAL_FEATURE,
       "composition-match",
@@ -451,8 +455,11 @@ bool Caller::parseOptions(int argc, char **argv) {
   if (cmd.isOptionSet("composition-match")) {
     use_composition_match_ = true;
   }
-  if (cmd.isOptionSet("iso-pep")) {
-    use_isotonic_pep_ = true;
+  if (cmd.isOptionSet("spline-pep")) {
+    use_spline_pep_ = true;
+  }
+  if (cmd.isOptionSet("ip-pep")) {
+    use_interpolating_pep_ = true;
   }
   if (cmd.isOptionSet("xml-in")) {
     tabInput_ = false;
@@ -728,7 +735,7 @@ void Caller::calculatePSMProb(Scores& allScores, bool isUniquePeptideRun){
               << " with q<" << testFdr_ << "." << endl;
     std::cerr << "Calculating posterior error probabilities (PEPs)." << std::endl;
   }
-  allScores.calcPep(use_isotonic_pep_);
+  allScores.calcPep(use_spline_pep_, use_interpolating_pep_);
   writeResults(allScores, isUniquePeptideRun, writeOutput);
 }
 
