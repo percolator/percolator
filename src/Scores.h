@@ -50,8 +50,8 @@ class Scores;
 class ScoreHolder {
  public:
   double score, q, pep, p;
-  PSMDescription* pPSM;
   int label;
+  PSMDescription* pPSM;
   
   ScoreHolder() : score(0.0), q(0.0), pep(0.0), p(0.0), label(0), pPSM(NULL) {}
   ScoreHolder(const double s, const int l, PSMDescription* psm = NULL) :
