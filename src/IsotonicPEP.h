@@ -535,7 +535,7 @@ protected:
         }
 
         // leftover
-        if (!currentBlock.empty()) {
+        if (currentCount>0) {
             double avg = currentSum / currentCount;
             // If out of [0,1], clip
             if (avg < 0.0) avg = 0.0;
