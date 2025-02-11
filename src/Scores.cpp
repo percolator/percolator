@@ -865,8 +865,8 @@ void Scores::calcPep(const bool spline, const bool interp) {
         }
         IsotonicPEP reg;
         auto target_pep = interp
-                            ? reg.q_to_pep(target_q)
-                            : reg.qns_to_pep(target_q, sc);
+                            ? reg.qns_to_pep(target_q, sc)
+                            : reg.q_to_pep(target_q);
         // Move PEPs to scoreholders. The PEPs are only defined for target, 
         // We use interpolation for decoys.
         // Add elements avoiding overflow problems if last sh is a decoy
