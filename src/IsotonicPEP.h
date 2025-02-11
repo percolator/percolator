@@ -538,8 +538,8 @@ protected:
         if (currentCount>0) {
             double avg = currentSum / currentCount;
             // If out of [0,1], clip
-            if (avg < 0.0) avg = 0.0;
-            if (avg > 1.0) avg = 1.0;
+            if (avg < 0.0) avg = 1e-10;
+            if (avg > 1.0) avg = 1.0 - 1e-10;
 
             // Instead of returning single avg, we might simply fill them with 'avg'
             // or just store them as is. You can choose your approach.
