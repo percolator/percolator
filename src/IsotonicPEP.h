@@ -522,10 +522,9 @@ protected:
         for (double val : y) {
             currentSum   += val;
             currentCount += 1;
-            currentBlock.push_back(val);
-
             double avg = currentSum / currentCount;
             if (avg > 0.0 && avg < 1.0) {
+                std::vector<double> currentBlock(currentCount, avg);
                 // finalize
                 blocks.push_back(currentBlock);
                 // reset
