@@ -420,8 +420,8 @@ public:
 
     // Variant that produces a piecewise-linear function in logit space:
     std::vector<double> pepRegression(
-        const std::vector<double>& x,
-        const std::vector<double>& y
+        const std::vector<double>& y,
+        const std::vector<double>& x
     ) const
     {
         if (x.size() != y.size()) {
