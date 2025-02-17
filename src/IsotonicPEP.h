@@ -24,6 +24,7 @@
 #include <numeric>    // for std::iota
 #include <stdexcept>
 #include <cmath>      // for std::abs
+#include <limits>
 #include <iostream>
 
 
@@ -63,22 +64,20 @@ public:
 
     /**
      * Perform standard PAVA (pool-adjacent-violators) to enforce a non-decreasing sequence
-     * on the input 'values'.  The 'counts' array indicates how many times each 'value'
-     * is repeated. If omitted, each point is assumed to have count=1.
+     * on the input 'values'.  
+     * Here we extended the method to also merge block if average is outside 
+     * the range [min_value, max_value] 
      *
-     * Returns an expanded vector with length = sum(counts).
      * Each final "block" is repeated block.count times in the output.
      *
      * Typically used in 1D for y-values only.
      */
-    virtual std::vector<double> pavaNonDecreasing(
+    virtual std::vector<double> pavaNonDecreasingRanged(
         const std::vector<double>& values,
-        const std::vector<int>& counts
+        const double min_value = std::numeric_limits<double>::min(),
+        const double max_value = std::numeric_limits<double>::max()
     ) const
     {
-        if (values.size() != counts.size()) {
-            throw std::invalid_argument("pavaNonDecreasing: values.size() != counts.size()");
-        }
         const int n = static_cast<int>(values.size());
         if (n == 0) {
             return {};
@@ -96,19 +95,18 @@ public:
 
         // 1. Left to right
         for (int i = 0; i < n; ++i) {
-            double sum_i = values[i] * counts[i];
-            MergeBlock newBlock { sum_i, counts[i], values[i] };
+            MergeBlock newBlock { values[i], 1, values[i] };
             stack.push_back(newBlock);
 
             // 2. Merge while there's a violation of non-decreasing
             while (stack.size() > 1) {
                 auto &top    = stack.back();
                 auto &secTop = stack[stack.size() - 2];
+                double mergedSum   = secTop.sum + top.sum;
+                int    mergedCount = secTop.count + top.count;
+                double mergedAvg   = mergedSum / mergedCount;
 
-                if (secTop.avg > top.avg) {
-                    double mergedSum   = secTop.sum + top.sum;
-                    int    mergedCount = secTop.count + top.count;
-                    double mergedAvg   = mergedSum / mergedCount;
+                if (( secTop.avg > top.avg) || ( mergedAvg < min_value ) || ( mergedAvg > max_value )) {
                     stack.pop_back();
                     stack.pop_back();
                     stack.push_back({ mergedSum, mergedCount, mergedAvg });
@@ -123,8 +121,9 @@ public:
         result.reserve(n); // approximate; actual size = sum(counts)
 
         for (auto &b : stack) {
+            double val = max( min(b.avg, max_value), min_value);
             for (int c = 0; c < b.count; ++c) {
-                result.push_back(b.avg);
+                result.push_back(val);
             }
         }
         return result;
@@ -153,9 +152,11 @@ public:
      * This does *not* strictly minimize the usual isotonic objective, but
      * might give you smoother transitions.
      */
-    virtual std::vector<double> pavaNonDecreasingInterpolation(
+    virtual std::vector<double> pavaNonDecreasingInterpolationRanged(
         const std::vector<double>& x,
-        const std::vector<double>& y
+        const std::vector<double>& y,
+        const double min_y = std::numeric_limits<double>::min(),
+        const double max_y = std::numeric_limits<double>::max()
     ) const
     {
         if (x.size() != y.size()) {
@@ -181,26 +182,28 @@ public:
 
         // 2. Standard PAVA merges in non-decreasing order
         //    We'll keep them in "blocks" but get a new final stack.
+        //    Here we extended the method to also merge block if average is outside 
+        //    the range [min_value, max_value] 
         std::vector<ExtBlock> stack;
         stack.reserve(n);
 
         for (auto &b : blocks) {
             stack.push_back(b);
 
-            // Merge while there's a violation
+            // Merge while there's a violation or out of range
             while (stack.size() > 1) {
                 auto &top    = stack.back();
                 auto &secTop = stack[stack.size()-2];
-                if (secTop.avg > top.avg) {
-                    double newSum   = secTop.sum + top.sum;
-                    int    newCount = secTop.count + top.count;
-                    double newAvg   = newSum / newCount;
+                double mergedSum   = secTop.sum + top.sum;
+                int    mergedCount = secTop.count + top.count;
+                double mergedAvg   = mergedSum / mergedCount;
+                if (( secTop.avg > top.avg) || ( mergedAvg < min_y ) || ( mergedAvg > max_y )) {
                     int    sIdx     = secTop.startIdx;
                     int    eIdx     = top.endIdx;
                     stack.pop_back();
                     stack.pop_back();
                     stack.push_back({
-                        newSum, newCount, newAvg, sIdx, eIdx
+                        mergedSum, mergedCount, mergedAvg, sIdx, eIdx
                     });
                 } else {
                     break;
@@ -246,6 +249,7 @@ public:
                     if (t > 1.0) t = 1.0;
                     result[i] = curAvg + t*(nextAvg - curAvg);
                 }
+                result[i] = max( min(result[i], max_y), min_y);
             }
         }
 
@@ -254,167 +258,20 @@ public:
 };
 
 
-/**
- * Derived class that applies logistic transformations
- * around the base IsotonicRegression’s PAVA routines.
- *
- * - We have clampProbability(), logistic(), logit()
- * - logisticIsotonicRegression(...) => stepwise-constant in logit space
- * - logisticIsotonicInterpolation(...) => piecewise-linear in logit space
- */
-class LogisticIsotonicRegression : public IsotonicRegression
-{
-protected:
-    static double clampProbability(double p, double eps = 1e-12)
-    {
-        if (p < eps)       return eps;
-        if (p > 1.0 - eps) return 1.0 - eps;
-        return p;
-    }
-
-    static double logistic(double x)
-    {
-        // 1 / (1 + e^-x)
-        return 1.0 / (1.0 + std::exp(-x));
-    }
-
-    static double logit(double p)
-    {
-        p = clampProbability(p);
-        return std::log(p / (1.0 - p));
-    }
-
-public:
-    LogisticIsotonicRegression() = default;
-    virtual ~LogisticIsotonicRegression() = default;
-
-    /**
-     * logisticIsotonicRegression:
-     *   - Input y-values (which might be outside [0,1])
-     *   - Optionally "clip" or "merge" them externally if needed
-     *   - Convert each y_i to logit, run pavaNonDecreasing in logit-space,
-     *     then convert back with logistic().
-     *
-     * If 'counts' is empty, we assume each y has count=1.
-     */
-    virtual std::vector<double> logisticIsotonicRegression(
-        const std::vector<double>& y,
-        const std::vector<int>& counts = {}
-    ) const
-    {
-        const int n = static_cast<int>(y.size());
-        if (n == 0) {
-            return {};
-        }
-
-        // If no counts given, assume 1 for each
-        std::vector<int> c;
-        if (counts.empty()) {
-            c.resize(n, 1);
-        } else {
-            c = counts;
-        }
-
-        // 1. Convert y => logit (with clamp)
-        std::vector<double> logitVals(n);
-        for (int i = 0; i < n; ++i) {
-            double p = clampProbability(y[i]);
-            logitVals[i] = logit(p);
-        }
-
-        // 2. PAVA in logit space
-        std::vector<double> mergedLogits = pavaNonDecreasing(logitVals, c);
-        // mergedLogits has size = sum(c).
-
-        // 3. Convert back => logistic
-        std::vector<double> result(mergedLogits.size());
-        for (size_t i = 0; i < mergedLogits.size(); ++i) {
-            result[i] = logistic(mergedLogits[i]);
-        }
-
-        return result;
-    }
-
-
-    /**
-     * logisticIsotonicInterpolation:
-     *   - Similar idea, but we do the "interpolation" variant in logit space.
-     *   - We rely on pavaNonDecreasingInterpolation(...) in the *base class*,
-     *     but we pass it the logit-transformed values. Then we re-transform back
-     *     with logistic().
-     *
-     *   Here we need x as well, for the interpolation.
-     *
-     *   In actual usage, you might have more steps, e.g. merging blocks until
-     *   they're in [0,1]. But let's keep it simpler here.
-     */
-    virtual std::vector<double> logisticIsotonicInterpolation(
-        const std::vector<double>& x,
-        const std::vector<double>& y
-    ) const
-    {
-        if (x.size() != y.size()) {
-            throw std::invalid_argument("logisticIsotonicInterpolation: x.size() != y.size()");
-        }
-        const int n = static_cast<int>(y.size());
-        if (n == 0) {
-            return {};
-        }
-
-        // 1. logit-transform y
-        std::vector<double> logitVals(n);
-        for (int i = 0; i < n; ++i) {
-            double p = clampProbability(y[i]);
-            logitVals[i] = logit(p);
-        }
-
-        // 2. Use the base interpolation method, which merges in real space
-        //    but we treat "logitVals" as the data to be made isotonic.
-        //    So the "non-decreasing" constraint is in logit space.
-        //    We pass x, logitVals to pavaNonDecreasingInterpolation.
-        //
-        //    This will produce a piecewise-linear function in logit space
-        //    across the x-centers.
-        std::vector<double> logitInterp = pavaNonDecreasingInterpolation(x, logitVals);
-
-        // 3. Convert back => logistic
-        std::vector<double> result(n);
-        for (int i = 0; i < n; ++i) {
-            result[i] = logistic(logitInterp[i]);
-        }
-        return result;
-    }
-};
-
 
 /**
- * Inherits from LogisticIsotonicRegression and
+ * Inherits IsotonicRegression and
  * adds any specialized pre-processing or "PEP" logic.
- *
- * For example:
- *   - Merging consecutive y until each block average is in [0,1]
- *   - Then calling logisticIsotonicRegression(...) from the parent
- *     or logisticIsotonicInterpolation(...), etc.
  */
-class IsotonicPEP : public LogisticIsotonicRegression
+class IsotonicPEP : public IsotonicRegression
 {
 public:
     IsotonicPEP() = default;
     virtual ~IsotonicPEP() = default;
 
-    /**
-     * Example: "pepRegression" that merges consecutive points
-     * so that each block has an average in [0,1], then does
-     * logistic isotonic regression.
-     */
     std::vector<double> pepRegression(const std::vector<double>& y) const
     {
-        // 1. Merge consecutive points so each block's average is in [0,1].
-        std::vector<double> mergedY = createBlocksInUnitIntervalAndUnfold(y);
-
-        // 2. Now call parent's logistic method on the merged data.
-        //    The data is length(mergedY) now. Each point has count=1.
-        std::vector<double> result = logisticIsotonicRegression(mergedY);
+        std::vector<double> result = pavaNonDecreasingRanged(y, 0.0, 1.0);
         return result;
     }
 
@@ -427,13 +284,7 @@ public:
         if (x.size() != y.size()) {
             throw std::invalid_argument("pepRegressionWithInterpolation: x.size() != y.size()");
         }
-        // 1) Merge consecutive y so each block average is in [0,1]
-        std::vector<double> mergedY = createBlocksInUnitIntervalAndUnfold(y);
-
-        // 2) Interpolate in logit space. This uses x for the piecewise-linear stepping.
-        //    'logisticIsotonicInterpolation' merges in logit space, then
-        //    does linear interpolation between block centers (in x).
-        std::vector<double> result = logisticIsotonicInterpolation(x, mergedY);
+        std::vector<double> result = pavaNonDecreasingInterpolationRanged(x, y, 0.0, 1.0);
         return result;
     }
 
@@ -492,69 +343,6 @@ public:
         // Perform isotonic regression on the differences
         std::vector<double> pep_iso = pepRegression(raw_pep, scores);
         return pep_iso;
-    }
-
-protected:
-    /**
-     * Merge consecutive y[i] so that each partial block average is in [0,1].
-     * Then "unfold" back into a single vector. (This is a simplified approach.)
-     *
-     * For example, if you have data:
-     *   y = [-0.2, 0.1, 0.05, 1.2, 0.5]
-     * you might accumulate: 
-     *   block1 => [-0.2, 0.1, 0.05] => sum= -0.05 => avg= -0.0167 => still out of [0,1]
-     *   (just a conceptual example, you might keep going until it falls in range or clip).
-     *
-     * The approach shown: "accumulate until average is in [0,1], then finalize block".
-     * If leftover is out, we clip it. Finally, we flatten blocks back into a single vector.
-     */
-    std::vector<double> createBlocksInUnitIntervalAndUnfold(const std::vector<double>& y) const
-    {
-        std::vector<std::vector<double>> blocks;
-        blocks.reserve(y.size());
-
-        double currentSum   = 0.0;
-        int    currentCount = 0;
-
-        std::vector<double> currentBlock;
-        currentBlock.reserve(y.size()); 
-
-        for (double val : y) {
-            currentSum   += val;
-            currentCount += 1;
-            double avg = currentSum / currentCount;
-            if (avg > 0.0 && avg < 1.0) {
-                std::vector<double> currentBlock(currentCount, avg);
-                // finalize
-                blocks.push_back(currentBlock);
-                // reset
-                currentSum   = 0.0;
-                currentCount = 0;
-                currentBlock.clear();
-            }
-        }
-
-        // leftover
-        if (currentCount>0) {
-            double avg = currentSum / currentCount;
-            // If out of [0,1], clip
-            if (avg < 0.0) avg = 1e-10;
-            if (avg > 1.0) avg = 1.0 - 1e-10;
-
-            // Instead of returning single avg, we might simply fill them with 'avg'
-            // or just store them as is. You can choose your approach.
-            // For simplicity, let's store them all as 'avg'.
-            std::vector<double> clippedBlock(currentCount, avg);
-            blocks.push_back(clippedBlock);
-        }
-
-        // "Unfold" all blocks into a single vector
-        std::vector<double> result;
-        for (auto &b : blocks) {
-            result.insert(result.end(), b.begin(), b.end());
-        }
-
-        return result;
     }
 
 protected:
