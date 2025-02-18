@@ -106,7 +106,8 @@ public:
                 int    mergedCount = secTop.count + top.count;
                 double mergedAvg   = mergedSum / mergedCount;
 
-                if (( secTop.avg > top.avg) || ( mergedAvg < min_value ) || ( mergedAvg > max_value )) {
+                // if (( secTop.avg > top.avg) || ( mergedAvg < min_value ) || ( mergedAvg > max_value )) {
+                if ( secTop.avg > top.avg) {
                     stack.pop_back();
                     stack.pop_back();
                     stack.push_back({ mergedSum, mergedCount, mergedAvg });
@@ -197,7 +198,8 @@ public:
                 double mergedSum   = secTop.sum + top.sum;
                 int    mergedCount = secTop.count + top.count;
                 double mergedAvg   = mergedSum / mergedCount;
-                if (( secTop.avg > top.avg) || ( mergedAvg < min_y ) || ( mergedAvg > max_y )) {
+                // if (( secTop.avg > top.avg) || ( mergedAvg < min_y ) || ( mergedAvg > max_y )) {
+                if ( secTop.avg > top.avg ) {
                     int    sIdx     = secTop.startIdx;
                     int    eIdx     = top.endIdx;
                     stack.pop_back();
@@ -250,6 +252,7 @@ public:
                     result[i] = curAvg + t*(nextAvg - curAvg);
                 }
                 result[i] = max( min(result[i], max_y), min_y);
+                assert((i < 1) || ( result[i-1] <= result[i] ));
             }
         }
 
