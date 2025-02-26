@@ -894,9 +894,14 @@ void Scores::calcPep(const bool spline, const bool interp, const bool from_q) {
                 sc.push_back(sh.score);
             }
             IsotonicPEP reg;
-            auto target_pep = interp
+            auto peps = interp
                                 ? reg.tdc_to_pep(is_decoy, sc)
                                 : reg.tdc_to_pep(is_decoy);
+            auto it_pep = peps.begin();
+            for (auto& sh : scores_) {
+                sh.pep = *it_pep;
+                it_pep++;
+            }
         }
     } else {
         std::vector<pair<double, bool> > combined;
