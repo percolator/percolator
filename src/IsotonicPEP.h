@@ -348,6 +348,36 @@ public:
         return pep_iso;
     }
 
+    std::vector<double> tdc_to_pep(const std::vector<double>& is_decoy, const std::vector<double>& scores = {}) {
+
+        double epsilon=1e-20;
+        auto is_dec = is_decoy;
+        is_dec.insert(is_dec.begin(),0.5);
+
+        std::vector<double> decoy_rate;
+        if (!scores.empty()) {
+            auto sc = scores;
+            sc.insert(sc.begin(),sc[0]);
+            decoy_rate = pepRegression(is_dec, sc);    
+        } else {
+            decoy_rate = pepRegression(is_dec);
+        }
+        decoy_rate.erase(decoy_rate.begin());
+
+        std::vector<double> pep_iso;
+
+        for (auto& dp : decoy_rate) {
+            if (dp > 1. - epsilon)
+                dp = 1. - epsilon;
+            double pep = dp / ( 1 - dp );
+            if (pep > 1.)
+                pep = 1.;
+            pep_iso.push_back(pep);
+        }
+        return pep_iso;
+    }
+   
+
 protected:
     std::vector<double> qs;
     std::vector<double> pep_iso;

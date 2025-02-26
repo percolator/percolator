@@ -41,7 +41,7 @@ Caller::Caller() :
     psmResultFN_(""), peptideResultFN_(""), proteinResultFN_(""),
     decoyPsmResultFN_(""), decoyPeptideResultFN_(""), decoyProteinResultFN_(""),
     analytics_(true), use_reset_alg_(false), use_composition_match_(false),
-    use_spline_pep_(false), use_interpolating_pep_(false),
+    use_spline_pep_(false), use_interpolating_pep_(false), use_pep_from_q_(false),
     xmlPrintDecoys_(false), xmlPrintExpMass_(true), reportUniquePeptides_(true),
     reportPepXML_(false),
     targetDecoyCompetition_(false), useMixMax_(false), inputSearchType_("auto"),
@@ -345,6 +345,10 @@ bool Caller::parseOptions(int argc, char **argv) {
       "Calculate PEPs using isotonic regression with interpolation.",
       "", TRUE_IF_SET);
   cmd.defineOption(Option::EXPERIMENTAL_FEATURE,
+        "pep-from-q",
+        "Calculate PEPs from q-values.",
+        "", TRUE_IF_SET);
+  cmd.defineOption(Option::EXPERIMENTAL_FEATURE,
       "composition-match",
       "Run an implementation of the Percolator-RESET psmsAndPeptides with target-decoy matching based on composition.",
       "", TRUE_IF_SET);
@@ -461,6 +465,10 @@ bool Caller::parseOptions(int argc, char **argv) {
   if (cmd.isOptionSet("ip-pep")) {
     use_interpolating_pep_ = true;
   }
+  if (cmd.isOptionSet("pep-from-q")) {
+    use_pep_from_q_ = true;
+  }
+
   if (cmd.isOptionSet("xml-in")) {
     tabInput_ = false;
     inputFN_ = cmd.options["xml-in"];
@@ -735,7 +743,7 @@ void Caller::calculatePSMProb(Scores& allScores, bool isUniquePeptideRun){
               << " with q<" << testFdr_ << "." << endl;
     std::cerr << "Calculating posterior error probabilities (PEPs)." << std::endl;
   }
-  allScores.calcPep(use_spline_pep_, use_interpolating_pep_);
+  allScores.calcPep(use_spline_pep_, use_interpolating_pep_, use_pep_from_q_);
   writeResults(allScores, isUniquePeptideRun, writeOutput);
 }
 
