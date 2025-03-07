@@ -24,21 +24,8 @@ if [[ ! -d /Applications/XCode.app ]]
     exit 1
 fi
 
-#if [[ ! -d /Applications/PackageMaker.app ]]
-#  then
-#    echo "Apple developer PackageManager is required and expected in the "
-#    echo "/Applications folder. If you have moved it elsewhere, please change this script"
-#    echo ""
-#    echo "It is part of the Auxiliary tools for XCode - Late July 2012"
-#    echo "Yes, 2012! since then Apple moved to the app store and requires"
-#    echo "packages and dmgs to be build differently. "
-#    echo "However, the old packagemaker still works with 10.11"
-#    echo
-#    echo "You can find it here: "
-#    echo "http://adcdownload.apple.com/Developer_Tools/auxiliary_tools_for_xcode__late_july_2012/xcode44auxtools6938114a.dmg"
-#    echo ""
-#    exit 1
-#fi
+# get current architecture
+ARCH=$(uname -m)
 
 package_manager_installed=true
 if [[ -d /opt/local/var/macports ]]
@@ -113,7 +100,7 @@ cd ${build_dir}
 	curl -k -O ${mac_os_xerces_url}
 	tar xzf ${mac_os_xerces}.tar.gz
 	cd ${mac_os_xerces}/
-	./configure CFLAGS="-arch x86_64" CXXFLAGS="-arch x86_64" --disable-dynamic --enable-transcoder-iconv --disable-network --disable-threads
+	./configure CFLAGS="-arch ${ARCH}" CXXFLAGS="-arch ${ARCH}" --disable-dynamic --enable-transcoder-iconv --disable-network --disable-threads
 	make -j 2
 	sudo make install
 #fi
@@ -162,21 +149,21 @@ mkdir -p ${release_dir}
 mkdir -p ${build_dir}/percolator-noxml
 cd ${build_dir}/percolator-noxml
 
-cmake -DTARGET_ARCH="x86_64" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local/ -DXML_SUPPORT=OFF -DCMAKE_PREFIX_PATH="/opt/local/;/usr/;/usr/local/;~/;/Library/Developer/CommandLineTools/usr/"  ${src_dir}/percolator
+cmake -DTARGET_ARCH="${ARCH}" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local/ -DXML_SUPPORT=OFF -DCMAKE_PREFIX_PATH="/opt/local/;/usr/;/usr/local/;~/;/Library/Developer/CommandLineTools/usr/"  ${src_dir}/percolator
 make -j 2
 make -j 2 package
 
 mkdir -p ${build_dir}/percolator
 cd ${build_dir}/percolator
 
-cmake -DTARGET_ARCH="x86_64" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local/ -DXML_SUPPORT=ON -DGOOGLE_TEST=1 -DCMAKE_PREFIX_PATH="${build_dir}/${mac_os_xerces}/;${build_dir}/${mac_os_xsd}/;/opt/local/;/usr/;/usr/local/;~/;/Library/Developer/CommandLineTools/usr/"  ${src_dir}/percolator
+cmake -DTARGET_ARCH="${ARCH}" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local/ -DXML_SUPPORT=ON -DGOOGLE_TEST=1 -DCMAKE_PREFIX_PATH="${build_dir}/${mac_os_xerces}/;${build_dir}/${mac_os_xsd}/;/opt/local/;/usr/;/usr/local/;~/;/Library/Developer/CommandLineTools/usr/"  ${src_dir}/percolator
 make -j 2
 make -j 2 package
 
 mkdir -p ${build_dir}/converters
 cd ${build_dir}/converters
 
-cmake -DTARGET_ARCH="x86_64" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local/ -DCMAKE_PREFIX_PATH="${build_dir}/${mac_os_xerces}/;${build_dir}/${mac_os_xsd}/;/opt/local/;/usr/;/usr/local/;~/;/Library/Developer/CommandLineTools/usr/" -DSERIALIZE="TokyoCabinet" ${src_dir}/percolator/src/converters
+cmake -DTARGET_ARCH="${ARCH}" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local/ -DCMAKE_PREFIX_PATH="${build_dir}/${mac_os_xerces}/;${build_dir}/${mac_os_xsd}/;/opt/local/;/usr/;/usr/local/;~/;/Library/Developer/CommandLineTools/usr/" -DSERIALIZE="TokyoCabinet" ${src_dir}/percolator/src/converters
 make -j 2
 make -j 2 package
 #--------------------------------------------
