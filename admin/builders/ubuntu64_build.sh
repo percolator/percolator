@@ -105,7 +105,7 @@ mkdir -p $build_dir/percolator-noxml $build_dir/percolator $build_dir/converters
 cd $build_dir/percolator-noxml;
 echo "cmake percolator-noxml.....";
 (set -x;
-    cmake -DTARGET_ARCH=${ARCH} -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DXML_SUPPORT=OFF $src_dir/percolator;
+    cmake -DTARGET_ARCH=${ARCH} -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DXML_SUPPORT=OFF $src_dir;
 )
 #-----make------
 echo "make percolator (this will take few minutes).....";
@@ -116,7 +116,7 @@ make -j 4 package;
 cd $build_dir/percolator;
 echo "cmake percolator.....";
 (set -x;
-    cmake -DTARGET_ARCH=${ARCH} -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DGOOGLE_TEST=1 -DCMAKE_PREFIX_PATH="${build_dir}/${ubuntu_xerces}/;${build_dir}/${ubuntu_xsd}/" -DXML_SUPPORT=ON $src_dir/percolator;
+    cmake -DTARGET_ARCH=${ARCH} -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DGOOGLE_TEST=1 -DCMAKE_PREFIX_PATH="${build_dir}/${ubuntu_xerces}/;${build_dir}/${ubuntu_xsd}/" -DXML_SUPPORT=ON $src_dir;
 )
 #-----make------
 echo "make percolator (this will take few minutes).....";
@@ -128,7 +128,7 @@ cd $build_dir/converters
 #-----cmake-----
 echo "cmake converters.....";
 (set -x;
-    cmake -DTARGET_ARCH=${ARCH} -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="${build_dir}/${ubuntu_xerces}/;${build_dir}/${ubuntu_xsd}/" -DSERIALIZE="TokyoCabinet" $src_dir/percolator/src/converters;
+    cmake -DTARGET_ARCH=${ARCH} -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="${build_dir}/${ubuntu_xerces}/;${build_dir}/${ubuntu_xsd}/" -DSERIALIZE="TokyoCabinet" $src_dir/src/converters;
 )
 #-----make------
 echo "make converters (this will take few minutes).....";
