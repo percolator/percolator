@@ -120,13 +120,10 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: create_dirs
-      run: MKDIR %GITHUB_WORKSPACE%\..\my_rel %GITHUB_WORKSPACE%\..\my_build
+      run: MKDIR %GITHUB_WORKSPACE%\release %GITHUB_WORKSPACE%\..\build
     - name: configure_and_make
       run: |
-        CD %GITHUB_WORKSPACE%
-        SET base_dir=%cd%
-        ECHO %base_dir%
-        CALL percolator\admin\builders\nativew64_build.bat -s %base_dir% -r %GITHUB_WORKSPACE%\..\my_rel -b %GITHUB_WORKSPACE%\..\my_build
+        CALL admin\builders\nativew64_build.bat -s %GITHUB_WORKSPACE%\.. -r %GITHUB_WORKSPACE%\release -b %GITHUB_WORKSPACE%\..\build
     # triggered_build.yml behaviour
     - name: zip raw binary
       if: github.event_name == 'workflow_dispatch'
