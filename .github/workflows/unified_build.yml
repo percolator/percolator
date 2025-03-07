@@ -128,7 +128,7 @@ jobs:
     - name: zip raw binary
       if: github.event_name == 'workflow_dispatch'
       shell: pwsh
-      run: Compress-Archive -Path "${env:GITHUB_WORKSPACE}\..\build\percolator-noxml\src\Release\*.exe" -DestinationPath "${env:GITHUB_WORKSPACE}\release\percolator-noxml-windows-portable.zip"
+      run: Compress-Archive -Path "${env:GITHUB_WORKSPACE}\..\build\percolator-noxml\src\Release\*.exe" -DestinationPath "${env:GITHUB_WORKSPACE}\release\percolator-noxml-windows-portable.zip" -Verbose
     - name: Upload packages
       if: github.event_name == 'workflow_dispatch'  
       uses: actions/upload-artifact@v4
