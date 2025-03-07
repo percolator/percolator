@@ -50,7 +50,7 @@ void GoogleAnalytics::httpRequest(const std::string& url, const std::string& dat
   // Establish TCP connection to host on port 80
   io_service service;
   ip::tcp::resolver resolver(service);
-  ip::tcp::resolver::iterator endpoint = resolver.resolve(ip::tcp::resolver::query(host, "80"));
+  ip::tcp::resolver::results_type endpoint = resolver.resolve(host, "80");
   ip::tcp::socket sock(service);
   connect(sock, endpoint);
   
