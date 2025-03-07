@@ -18,7 +18,7 @@ set BOOST_URL=https://archives.boost.io/release/1.87.0/source/boost_1_87_0.7z
 set NSIS_URL=https://downloads.sourceforge.net/project/nsis/NSIS 3/3.10/nsis-3.10-setup.exe
 
 ::: Python
-set PYTHON_URL=https://www.python.org/ftp/python/3.3.3/python-3.3.3.msi
+set PYTHON_URL=https://www.python.org/ftp/python/3.13.2/python-3.12.2.msi
 
 ::: Libxml
 set LIBXML_BASE=libxml2-2.7.8.win32

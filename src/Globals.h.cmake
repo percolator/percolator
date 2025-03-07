@@ -80,7 +80,7 @@ limitations under the License.
 #endif
 
 #ifdef _MSC_VER
-  #ifndef isfinite
+  #ifndef isfinite  && _MSC_VER < 1900 
     #define isfinite _finite
   #endif
 #endif
