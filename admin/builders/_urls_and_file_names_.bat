@@ -7,7 +7,7 @@ set ZIP_URL=https://downloads.sourceforge.net/sevenzip/7z920.exe
 
 ::: CMake
 set CMAKE_VERSION=3.31.6
-set CMAKE_BASE=cmake-%CMAKE_VERSION%-win32-x86
+set CMAKE_BASE=cmake-%CMAKE_VERSION%-x86_64
 set CMAKE_URL=https://github.com/Kitware/CMake/releases/download/v%CMAKE_VERSION%/%CMAKE_BASE%.zip
 
 ::: Boost
