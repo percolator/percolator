@@ -145,6 +145,7 @@ elseif(TOKYODB)
     message(FATAL_ERROR "The package Tokyo Cabinet has not been found")
   endif(TokyoCabinet_FOUND)
   include_directories(${TokyoCabinet_INCLUDE_DIR})
+  LINK_DIRECTORIES(${TokyoCabinet_LIBRARIES})
 
   find_package(BZip2 REQUIRED)
   if(BZIP2_FOUND)
