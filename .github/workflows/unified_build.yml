@@ -63,7 +63,7 @@ jobs:
         path: ${{ github.workspace }}/../release
 
   build-osx:
-    runs-on: macos-12
+    runs-on: macos-13
     steps:
     - uses: actions/checkout@v4
     - name: create_dirs
