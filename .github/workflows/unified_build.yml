@@ -15,9 +15,9 @@ jobs:
     - name: preinstall
       run: sudo apt-get update && sudo apt-get install -y -o Acquire::Retries=3 libxml2-utils
     - name: create_dirs
-      run: mkdir -p ${{ github.workspace }}/../release ${{ github.workspace }}/../build
+      run: mkdir -p ${{ github.workspace }}/release ${{ github.workspace }}/build
     - name: configure_and_make
-      run: ./admin/builders/ubuntu64_build.sh -s ${{ github.workspace }}/.. -r ${{ github.workspace }}/../release -b ${{ github.workspace }}/../build
+      run: ./admin/builders/ubuntu64_build.sh -s ${{ github.workspace }}/.. -r ${{ github.workspace }}/release -b ${{ github.workspace }}/build
     - name: unit_tests
       run: cd ${{ github.workspace }}/../build/percolator && sudo make install && make test ARGS="-V"
     # legacy build.yml behaviour
@@ -27,13 +27,13 @@ jobs:
     # triggered_build.yml behaviour
     - name: zip raw binary
       if: github.event_name == 'workflow_dispatch'
-      run: zip -j ${{ github.workspace }}/../release/percolator-noxml-ubuntu-portable.zip ${{ github.workspace }}/../build/percolator-noxml/src/percolator
+      run: zip -j ${{ github.workspace }}/release/percolator-noxml-ubuntu-portable.zip ${{ github.workspace }}/build/percolator-noxml/src/percolator
     - name: Upload packages
       if: github.event_name == 'workflow_dispatch'
       uses: actions/upload-artifact@v4
       with:
         name: ubuntu-packages
-        path: ${{ github.workspace }}/../release
+        path: ${{ github.workspace }}/release
 
   build-ubuntu-arm:
     runs-on: ubuntu-22.04-arm
@@ -42,25 +42,25 @@ jobs:
     - name: preinstall
       run: sudo apt-get update && sudo apt-get install -y -o Acquire::Retries=3 libxml2-utils
     - name: create_dirs
-      run: mkdir -p ${{ github.workspace }}/../release ${{ github.workspace }}/../build
+      run: mkdir -p ${{ github.workspace }}/release ${{ github.workspace }}/build
     - name: configure_and_make
-      run: ./admin/builders/ubuntu64_build.sh -s ${{ github.workspace }}/.. -r ${{ github.workspace }}/../release -b ${{ github.workspace }}/../build
+      run: ./admin/builders/ubuntu64_build.sh -s ${{ github.workspace }}/.. -r ${{ github.workspace }}/release -b ${{ github.workspace }}/build
     - name: unit_tests
-      run: cd ${{ github.workspace }}/../build/percolator && sudo make install && make test ARGS="-V"
+      run: cd ${{ github.workspace }}/build/percolator && sudo make install && make test ARGS="-V"
     # legacy build.yml behaviour
     - name: system_test  
       if: github.event_name == 'push' || github.event_name == 'pull_request'
-      run: cd ../build/percolator && sudo make install && make test-install
+      run: cd build/percolator && sudo make install && make test-install
     # triggered_build.yml behaviour
     - name: zip raw binary
       if: github.event_name == 'workflow_dispatch'
-      run: zip -j ${{ github.workspace }}/../release/percolator-noxml-ubuntu-portable-arm64.zip ${{ github.workspace }}/../build/percolator-noxml/src/percolator
+      run: zip -j ${{ github.workspace }}/release/percolator-noxml-ubuntu-portable-arm64.zip ${{ github.workspace }}/build/percolator-noxml/src/percolator
     - name: Upload packages
       if: github.event_name == 'workflow_dispatch'
       uses: actions/upload-artifact@v4
       with:
         name: ubuntu-arm-packages
-        path: ${{ github.workspace }}/../release
+        path: ${{ github.workspace }}/release
 
   build-osx:
     runs-on: macos-13
