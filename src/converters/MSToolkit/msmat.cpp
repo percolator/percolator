@@ -1582,12 +1582,12 @@ msmat * test_msmat ( int argc , char ** argv ) {
 
   return(msmat);
 
-  strcpy(fname_o,fname);
-  strcpy(fname_ti,fname);
-  strcpy(fname_sg,fname);
-  strcat(fname_o,".out.msmat");
-  strcat(fname_ti,".ti.msmat");
-  strcat(fname_sg,".sg.msmat");
+  strncpy(fname_o,fname,128);
+  strncpy(fname_ti,fname,128);
+  strncpy(fname_sg,fname,128);
+  strncat(fname_o,".out.msmat",11);
+  strncat(fname_ti,".ti.msmat",10);
+  strncat(fname_sg,".sg.msmat",10);
 
   FILE * o_file, *ti_file, *sg_file;
 
@@ -1651,9 +1651,9 @@ int msmat_open( msmat ** test_msmat_p, file_info & m_info , sparse_level s ) {
   }
   else {
     //std::cerr << "strcpy( " << tmp_fname << "," << fname << ")" << std::endl;
-    strcpy(tmp_fname,fname);
+    strncpy(tmp_fname,fname,sizeof(tmp_fname));
     //std::cerr << "tmp_fname is " << tmp_fname << std::endl;
-    strcat(tmp_fname,".msmat");
+    strncat(tmp_fname,".msmat",7);
     //std::cerr << "tmp_fname is " << tmp_fname << std::endl;
     //std::cerr << "stat of " << tmp_fname << std::endl;
     if ( stat(tmp_fname,&statbuf) == 0 ) {

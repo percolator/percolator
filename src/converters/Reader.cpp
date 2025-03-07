@@ -785,7 +785,7 @@ void Reader::readRetentionTime(const std::string &filename) {
   Spectrum s;
   r.setFilter(MS2);
   char* cstr = new char[filename.size() + 1];
-  strcpy(cstr, filename.c_str());
+  strncpy(cstr, filename.c_str(), filename.size() + 1);
   // read first spectrum
   r.readFile(cstr, s);
   while (s.getScanNumber() != 0) {

@@ -1,7 +1,7 @@
 ###############################################################################
 # NAME AND VERSION
 ###############################################################################
-cmake_minimum_required (VERSION 2.6)
+cmake_minimum_required (VERSION 3.10)
 
 if(APPLE AND ${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION} VERSION_GREATER 3.0)
   # Identify AppleClang's COMPILER_ID as AppleClang instead of just Clang
@@ -17,8 +17,13 @@ include("${PERCOLATOR_SOURCE_DIR}/CommonCMake.txt")
 # PREPARING TO INSTALL
 ###############################################################################
 IF(APPLE)
-  # Fix linking on 10.14+. See https://stackoverflow.com/questions/54068035
-  LINK_DIRECTORIES(/usr/local/lib)
+  execute_process(
+    COMMAND brew --prefix
+    OUTPUT_VARIABLE BREW_PREFIX
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+  )
+  # Add the lib directory to LINK_DIRECTORIES
+  link_directories("${BREW_PREFIX}/lib")
 ENDIF()
 
 my_set(CMAKE_BUILD_TYPE "Release" "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel.")
@@ -145,6 +150,7 @@ elseif(TOKYODB)
     message(FATAL_ERROR "The package Tokyo Cabinet has not been found")
   endif(TokyoCabinet_FOUND)
   include_directories(${TokyoCabinet_INCLUDE_DIR})
+  #LINK_DIRECTORIES(${TokyoCabinet_LIBRARIES})
 
   find_package(BZip2 REQUIRED)
   if(BZIP2_FOUND)

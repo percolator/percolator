@@ -7,7 +7,7 @@ MSObject::MSObject(){
   vSpectrum = new vector<Spectrum>;
   fileName="";
   fileType=Unspecified;
-	for(int i=0;i<16;i++)	strcpy(header.header[i],"\0");
+	for(int i=0;i<16;i++)	strncpy(header.header[i],"\0", sizeof(header.header[i]));
 };
 
 MSObject::~MSObject(){
@@ -24,7 +24,7 @@ MSObject::MSObject(const MSObject& m){
 
   fileType = m.fileType;
   fileName = m.fileName;
-	for(i=0;i<16;i++)	strcpy(header.header[i],m.header.header[i]);
+	for(i=0;i<16;i++)	strncpy(header.header[i],m.header.header[i], sizeof(header.header[i]));
 
 };
 
@@ -38,7 +38,7 @@ MSObject& MSObject::operator=(const MSObject& m){
     };
     fileType = m.fileType;
     fileName = m.fileName;
-		for(i=0;i<16;i++)	strcpy(header.header[i],m.header.header[i]);
+		for(i=0;i<16;i++)	strncpy(header.header[i],m.header.header[i], sizeof(header.header[i]));
   };
   return *this;
 };
@@ -52,7 +52,7 @@ bool MSObject::addToHeader(char* c){
 	if(strlen(c)>127) return false;
 	for(int i=0;i<16;i++){
 		if(header.header[i][0]=='\0'){
-			strcpy(header.header[i],c);
+			strncpy(header.header[i], c, sizeof(header.header[i]));
 			return true;
 		};
 	};
@@ -63,7 +63,7 @@ bool MSObject::addToHeader(string s){
 	if(s.size()>127) return false;
 	for(int i=0;i<16;i++){
 		if(header.header[i][0]=='\0'){
-			strcpy(header.header[i],&s[0]);
+			strncpy(header.header[i],&s[0],sizeof(header.header[i]));
 			return true;
 		};
 	};
@@ -81,7 +81,7 @@ Peak_T& MSObject::at(unsigned int i, unsigned int j){
 void MSObject::clear(){
   delete vSpectrum;
   vSpectrum = new vector<Spectrum>;
-	for(int i=0;i<16;i++) strcpy(header.header[i],"\0");
+	for(int i=0;i<16;i++) strncpy(header.header[i],"\0", 2);
 };
 
 MSHeader& MSObject::getHeader(){
@@ -89,7 +89,7 @@ MSHeader& MSObject::getHeader(){
 };
 
 void MSObject::setHeader(const MSHeader& h){
-	for(int i=0;i<16;i++)	strcpy(header.header[i],h.header[i]);
+	for(int i=0;i<16;i++)	strncpy(header.header[i],h.header[i], sizeof(header.header[i]));
 };
 
 int MSObject::size(){

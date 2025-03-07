@@ -6,24 +6,24 @@
 set ZIP_URL=https://downloads.sourceforge.net/sevenzip/7z920.exe
 
 ::: CMake
-set CMAKE_VERSION=3.17.1
-set CMAKE_BASE=cmake-%CMAKE_VERSION%-win32-x86
+set CMAKE_VERSION=3.31.6
+set CMAKE_BASE=cmake-%CMAKE_VERSION%-windows-x86_64
 set CMAKE_URL=https://github.com/Kitware/CMake/releases/download/v%CMAKE_VERSION%/%CMAKE_BASE%.zip
 
 ::: Boost
-set BOOST_BASE=boost_1_73_0
-set BOOST_URL=https://sourceforge.net/projects/boost/files/boost/1.73.0/boost_1_73_0.7z/download
+set BOOST_BASE=boost_1_87_0
+set BOOST_URL=https://archives.boost.io/release/1.87.0/source/boost_1_87_0.7z
 
 ::: NSIS
-set NSIS_URL=https://sourceforge.net/projects/nsis/files/NSIS 3/3.03/nsis-3.03-setup.exe/download
+set NSIS_URL=https://downloads.sourceforge.net/project/nsis/NSIS 3/3.10/nsis-3.10-setup.exe
 
 ::: Python
-set PYTHON_URL=https://www.python.org/ftp/python/3.3.3/python-3.3.3.msi
+set PYTHON_URL=https://www.python.org/ftp/python/3.4.4/python-3.4.4.msi
 
 ::: Libxml
 set LIBXML_BASE=libxml2-2.7.8.win32
 set LIBXML_URL=http://xmlsoft.org/sources/win32/%LIBXML_BASE%.zip
-set ICONV_URL=https://sourceforge.net/projects/gettext/files/libiconv-win32/1.9.1/libiconv-1.9.1.bin.woe32.zip/download
+set ICONV_URL=https://downloads.sourceforge.net/project/gettext/libiconv-win32/1.9.1/libiconv-1.9.1.bin.woe32.zip
 set GETTEXT_URL=https://ftp.gnu.org/gnu/gettext/gettext-runtime-0.13.1.bin.woe32.zip
 
 ::: XercesC
@@ -50,7 +50,7 @@ set SQLITE_64_SRC_URL=https://sqlite.org/2015/%SQLITE_64_SRC_BASE%.zip
 set SQLITE_64_DLL_URL=https://system.data.sqlite.org/blobs/1.0.96.0/sqlite-netFx45-binary-x64-2012-1.0.96.0.zip
 
 ::: Zlib
-set ZLIB_URL=https://sourceforge.net/projects/libpng/files/zlib/1.2.8/zlib128-dll.zip/download
+set ZLIB_URL=https://downloads.sourceforge.net/project/libpng/zlib/1.2.8/zlib128-dll.zip
 
 set ZLIB_64_URL=https://nsis.sourceforge.io/mediawiki/images/b/bb/Zlib-1.2.8-win64-AMD64.zip
 

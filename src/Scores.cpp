@@ -52,10 +52,10 @@ inline bool operator<(const ScoreHolder& one, const ScoreHolder& other) {
 inline double truncateTo(double truncateMe, const char* length) {
     char truncated[64];
     char format[64];
-    strcpy(format, "%.");
-    strcat(format, length);
-    strcat(format, "lf\n");
-    sprintf(truncated, format, truncateMe);
+    strncpy(format, "%.", 3);
+    strncat(format, length, 64);
+    strncat(format, "lf\n", 4);
+    snprintf(truncated, sizeof(truncated), format, truncateMe);
     return atof(truncated);
 }
 

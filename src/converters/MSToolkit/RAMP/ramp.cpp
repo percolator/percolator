@@ -1181,7 +1181,8 @@ char* rampConstructInputPath(char* inbuf, // put the result here
     int i;
     const char* basename = basename_in;
     char* dir = strdup((dir_in && !loop) ? dir_in : "");
-    char* tmpbuf = (char*)malloc(strlen(dir) + strlen(basename) + 20);
+    size_t tmplen = strlen(dir) + strlen(basename) + 20;
+    char* tmpbuf = (char*)malloc(tmplen);
     char* append;
     if (*dir) { // make sure this is a directory, and not a directory+filename
       struct stat buf;
@@ -1208,18 +1209,18 @@ char* rampConstructInputPath(char* inbuf, // put the result here
     *tmpbuf = 0;
     if (dir != NULL && *dir != '\0') {
       int len_dir = (int)strlen(dir);
-      strcpy(tmpbuf, dir);
+      strncpy(tmpbuf, dir, tmplen);
       if (!isPathSeperator(tmpbuf[len_dir - 1])) {
         tmpbuf[len_dir] = '/';
         tmpbuf[len_dir + 1] = 0;
       }
     }
-    strcat(tmpbuf, basename);
+    strncat(tmpbuf, basename, tmplen);
     unCygwinify(tmpbuf); // no effect in Cygwin build
     append = tmpbuf + strlen(tmpbuf);
     for (i = 0; data_ext[i]; i++) {
       FILE* test;
-      strcpy(append, data_ext[i]);
+      strncpy(append, data_ext[i], tmplen - strlen(tmpbuf));
       test = fopen(tmpbuf, "r");
       if (test != NULL) {
         if (result) { // conflict! both mzXML and mzData are present
@@ -1236,7 +1237,7 @@ char* rampConstructInputPath(char* inbuf, // put the result here
       }
     }
     if (!result) { // failed - caller can complain about lack of .mzXML
-      strcpy(append, data_ext[0]);
+      strncpy(append, data_ext[0],tmplen - strlen(tmpbuf));
       result = strdup(tmpbuf);
     }
     if (basename_in == inbuf) { // same pointer
@@ -1244,7 +1245,7 @@ char* rampConstructInputPath(char* inbuf, // put the result here
     }
     free(tmpbuf);
     if ((int)strlen(result) < inbuflen) {
-      strcpy(inbuf, result);
+      strncpy(inbuf, result, static_cast<std::size_t>(inbuflen));
       free(result);
       result = inbuf;
     } else {
@@ -1270,13 +1271,13 @@ int rampValidateOrDeriveInputFilename(char* inbuf, int inbuflen,
     return 1;
   }
   tryName = (char*)malloc(len = strlen(inbuf) + strlen(spectrumName) + 12);
-  strcpy(tryName, inbuf);
+  strncpy(tryName, inbuf, len);
   fixPath(tryName, 1); // do any desired tweaks, searches etc - expect existence
   slash = findRightmostPathSeperator(tryName);
   if (!slash) {
     slash = tryName - 1;
   }
-  strcpy(slash + 1, spectrumName);
+  strncpy(slash + 1, spectrumName, len - (slash - tryName) - 1 );
   dot = strchr(slash + 1, '.');
   if (dot) {
     *dot = 0;

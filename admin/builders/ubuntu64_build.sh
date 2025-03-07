@@ -11,6 +11,9 @@ while getopts “s:b:r:t:” OPTION; do
     esac
 done
 
+# get current architecture
+ARCH=$(uname -m)
+
 sudo apt-get -y install gawk;
 if [[ ! -z `echo -e "$(lsb_release -r)" | gawk '($2>="22.04"){print
     $2}'` ]]; then
@@ -92,7 +95,7 @@ fi
 
 # end of section to remove
 sudo apt-get -y install libboost-dev libboost-filesystem-dev xsdcxx;
-sudo apt-get -y install libboost-system-dev libboost-thread-dev libsqlite3-dev libtokyocabinet-dev zlib1g-dev libbz2-dev;
+sudo apt-get -y install libboost-system-dev libboost-thread-dev libsqlite3-dev libtokyocabinet-dev zlib1g-dev libbz2-dev libtirpc-dev;
 
 #------------------------------------------------------------------------
 mkdir -p $build_dir/percolator-noxml $build_dir/percolator $build_dir/converters;
@@ -102,7 +105,7 @@ mkdir -p $build_dir/percolator-noxml $build_dir/percolator $build_dir/converters
 cd $build_dir/percolator-noxml;
 echo "cmake percolator-noxml.....";
 (set -x;
-    cmake -DTARGET_ARCH=amd64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DXML_SUPPORT=OFF $src_dir/percolator;
+    cmake -DTARGET_ARCH=${ARCH} -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DXML_SUPPORT=OFF $src_dir/percolator;
 )
 #-----make------
 echo "make percolator (this will take few minutes).....";
@@ -113,7 +116,7 @@ make -j 4 package;
 cd $build_dir/percolator;
 echo "cmake percolator.....";
 (set -x;
-    cmake -DTARGET_ARCH=amd64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DGOOGLE_TEST=1 -DCMAKE_PREFIX_PATH="${build_dir}/${ubuntu_xerces}/;${build_dir}/${ubuntu_xsd}/" -DXML_SUPPORT=ON $src_dir/percolator;
+    cmake -DTARGET_ARCH=${ARCH} -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DGOOGLE_TEST=1 -DCMAKE_PREFIX_PATH="${build_dir}/${ubuntu_xerces}/;${build_dir}/${ubuntu_xsd}/" -DXML_SUPPORT=ON $src_dir/percolator;
 )
 #-----make------
 echo "make percolator (this will take few minutes).....";
@@ -125,7 +128,7 @@ cd $build_dir/converters
 #-----cmake-----
 echo "cmake converters.....";
 (set -x;
-    cmake -DTARGET_ARCH=amd64 -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="${build_dir}/${ubuntu_xerces}/;${build_dir}/${ubuntu_xsd}/" -DSERIALIZE="TokyoCabinet" $src_dir/percolator/src/converters;
+    cmake -DTARGET_ARCH=${ARCH} -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="${build_dir}/${ubuntu_xerces}/;${build_dir}/${ubuntu_xsd}/" -DSERIALIZE="TokyoCabinet" $src_dir/percolator/src/converters;
 )
 #-----make------
 echo "make converters (this will take few minutes).....";
