@@ -17,10 +17,6 @@
 
 #include "DataSet.h"
 
-#ifdef WIN32
-#include <float.h>
-#define isfinite _finite
-#else
 #include <cmath>
 #endif
 
