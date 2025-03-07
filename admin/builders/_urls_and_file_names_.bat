@@ -15,7 +15,7 @@ set BOOST_BASE=boost_1_87_0
 set BOOST_URL=https://archives.boost.io/release/1.87.0/source/boost_1_87_0.7z
 
 ::: NSIS
-set NSIS_URL=https://downloads.sourceforge.net/project/nsis/NSIS\ 3/3.10/nsis-3.10-setup.exe
+set NSIS_URL=https://downloads.sourceforge.net/project/nsis/NSIS 3/3.10/nsis-3.10-setup.exe
 
 ::: Python
 set PYTHON_URL=https://www.python.org/ftp/python/3.3.3/python-3.3.3.msi
