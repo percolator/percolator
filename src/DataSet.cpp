@@ -16,9 +16,7 @@
  *******************************************************************************/
 
 #include "DataSet.h"
-
 #include <cmath>
-#endif
 
 FeatureNames DataSet::featureNames_;
 bool DataSet::decoyWarningTripped_ = false;
