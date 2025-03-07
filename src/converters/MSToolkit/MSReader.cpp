@@ -15,7 +15,7 @@ MSReader::MSReader(){
   highResMGF=false;
   iFType=0;
   iVersion=0;
-  for(int i=0;i<16;i++)	strcpy(header.header[i],"\0");
+  for(int i=0;i<16;i++)	strncpy(header.header[i],"\0", 2);
   headerIndex=0;
 
   #ifdef _MSC_VER2
@@ -30,7 +30,7 @@ MSReader::MSReader(){
   rawAvgCutoff=1000;
   rawLabel=false;
   rawUserFilterExact=true;
-  strcpy(rawUserFilter,"");
+  strncpy(rawUserFilter,"", sizeof(rawUserFilter));
   #endif
 
   #ifndef _NOSQLITE
@@ -78,7 +78,7 @@ int MSReader::openFile(const char *c,bool text){
 	else fileIn=fopen(c,"rb");
 
   if(fileIn==NULL) {
-		for(i=0;i<16;i++) strcpy(header.header[i],"\0");
+		for(i=0;i<16;i++) strncpy(header.header[i],"\0",2);
     headerIndex=0;
     fileType=Unspecified;
     return 1;
@@ -95,7 +95,7 @@ int MSReader::openFile(const char *c,bool text){
 		fseek(fileIn,0,0);
 
 		if(text){
-			for(i=0;i<16;i++) strcpy(header.header[i],"\0");
+			for(i=0;i<16;i++) strncpy(header.header[i],"\0",2);
 			headerIndex=0;
 		} else {
       fread(&iFType,4,1,fileIn);
@@ -282,12 +282,13 @@ bool MSReader::readFile(const char *c, bool text, Spectrum& s, int scNum){
 
       case 'H':
 	      //Header lines are recorded as strings up to 16 lines at 256 characters each
+        //FIXME: MSHeader::header is 16 x 128 not 16 x 256
 	      fgets(tstr,256,fileIn);
 	      if(!bDoneHeader) {
 	        tok=strtok(tstr," \t\n\r");
 	        tok=strtok(NULL,"\n\r");
-	        strcat(tok,"\n");
-	        if(headerIndex<16) strcpy(header.header[headerIndex++],tok);
+	        strncat(tok,"\n",2);
+	        if(headerIndex<16) strncpy(header.header[headerIndex++],tok, 128);
 	        else cout << "Header too big!!" << endl;
 	      }
 	      break;
@@ -604,25 +605,25 @@ void MSReader::writeSqlite(const char* c, MSObject& m, char* sha1Report)
   //create two tables (msRun and msScan)
   char zSql[8192];
 
-  strcpy(zSql, "create table msRun(id INTEGER primary key autoincrement not null,"
+  strncpy(zSql, "create table msRun(id INTEGER primary key autoincrement not null,"
 	 "filename VARCHAR(150), sha1Sum VARCHAR(100), creationTime VARCHAR(255), extractor VARCHAR(255),"
 	 "extractorVersion VARCHAR(100), instrumentType VARCHAR(100), instrumentVendor TEXT, instrumentSN TEXT,"
-	 "acquisitionMethod TEXT, originalFileType TEXT, separateDigestion CHAR(1), uploadDate TEXT, comment TEXT)");
+	 "acquisitionMethod TEXT, originalFileType TEXT, separateDigestion CHAR(1), uploadDate TEXT, comment TEXT)", sizeof(zSql));
   sql_stmt(zSql);
   zSql[0]='\0';
 
-  strcpy(zSql,"create table msScan(id INTEGER primary key autoincrement not null,"
+  strncpy(zSql,"create table msScan(id INTEGER primary key autoincrement not null,"
 	 "runID INTEGER, startScanNumber INTEGER, endScanNumber INTEGER, level INTEGER, precursorMZ REAL, precursorCharge INTEGER,"
-	 "preScanID INTEGER, preScanNumber INTEGER, retentionTime REAL, fragmentationType VARCHAR(100),isCentroid CHAR(1), peakCount INTEGER)");
+	 "preScanID INTEGER, preScanNumber INTEGER, retentionTime REAL, fragmentationType VARCHAR(100),isCentroid CHAR(1), peakCount INTEGER)", sizeof(zSql));
   sql_stmt(zSql);
   zSql[0]='\0';
 
-  strcpy(zSql, "create table msScanData(scanID INTEGER, peakMZ BLOB, peakIntensity BLOB)");
+  strncpy(zSql, "create table msScanData(scanID INTEGER, peakMZ BLOB, peakIntensity BLOB)", sizeof(zSql));
   sql_stmt(zSql);
   zSql[0]='\0';
 
-  strcpy(zSql,"create table MS2FileScanCharge(id INTEGER primary key autoincrement not null,"
-	 "scanID INTEGER, charge INTEGER, mass REAL)");
+  strncpy(zSql,"create table MS2FileScanCharge(id INTEGER primary key autoincrement not null,"
+	 "scanID INTEGER, charge INTEGER, mass REAL)", sizeof(zSql));
   sql_stmt(zSql);
   zSql[0]='\0';
 
@@ -649,7 +650,7 @@ void MSReader::writeSqlite(const char* c, MSObject& m, char* sha1Report)
 
 
   //insert into table msRun
-  sprintf(zSql,"insert into msRun(filename, sha1Sum, creationTime, extractor,extractorVersion, instrumentType) values('%s','%s','%s','%s','%s','%s')",
+  snprintf(zSql, sizeof(zSql), "insert into msRun(filename, sha1Sum, creationTime, extractor,extractorVersion, instrumentType) values('%s','%s','%s','%s','%s','%s')",
 	  c,
 	  sha1Report,
 	  fileCreateTime.c_str(),
@@ -829,7 +830,7 @@ void MSReader::appendFile(Spectrum& s)
   }
 
 
-  sprintf(zSql, "insert into msScan(runID,startScanNumber,endScanNumber,level,precursorMZ, precursorCharge,retentionTime,fragmentationType,peakCount) "
+  snprintf(zSql, sizeof(zSql), "insert into msScan(runID,startScanNumber,endScanNumber,level,precursorMZ, precursorCharge,retentionTime,fragmentationType,peakCount) "
 	  "values (1,%d, %d,%d, %f, %d, %f,'%s', %d)",
           s.getScanNumber(),
 	  s.getScanNumber(true),
@@ -846,7 +847,7 @@ void MSReader::appendFile(Spectrum& s)
   zSql[0]='\0';
 
   //get scanID
-  strcpy(zSql, "select MAX(id) from msScan");
+  strncpy(zSql, "select MAX(id) from msScan", sizeof(zSql));
   int rc,iRow, iCol;
   char** result;
 
@@ -866,7 +867,7 @@ void MSReader::appendFile(Spectrum& s)
    zSql[0]='\0';
 
    //insert into msScanData
-   sprintf(zSql, "insert into msScanData values(%d, ?, ?)",
+   snprintf(zSql, sizeof(zSql), "insert into msScanData values(%d, ?, ?)",
 	   lastScanID);
 
   sqlite3_stmt *pStmt;
@@ -902,7 +903,7 @@ void MSReader::appendFile(Spectrum& s)
 	    {
 	      chg = s.atZ(i).z;
 	      MH = s.getMZ()*chg-(chg-1)*1.008;
-	      sprintf(zSql, "insert into MS2FileScanCharge(scanID, charge, mass) values(%d, %d, %f)",
+	      snprintf(zSql, sizeof(zSql), "insert into MS2FileScanCharge(scanID, charge, mass) values(%d, %d, %f)",
 		     lastScanID,
 		     chg,
 		     MH);
@@ -917,7 +918,7 @@ void MSReader::appendFile(Spectrum& s)
 	    {
 	      chg=chgs.at(i);
 	      MH = s.getMZ()*chg -(chg-1)*1.008;
-	      sprintf(zSql, "insert into MS2FileScanCharge(scanID, charge, mass) values (%d, %d, %f)",
+	      snprintf(zSql, sizeof(zSql), "insert into MS2FileScanCharge(scanID, charge, mass) values (%d, %d, %f)",
 		     lastScanID,
 		     chg,
 		     MH);
@@ -1091,7 +1092,7 @@ bool MSReader::readSqlite(const char* c, Spectrum& s, int scNum)
       sql_stmt("PRAGMA temp_store=MEMORY");
 
       char zSql[1024];
-      strcpy(zSql, "select MAX(id),MAX(startScanNumber) from msScan");
+      strncpy(zSql, "select MAX(id),MAX(startScanNumber) from msScan",sizeof(zSql));
       int iRow, iCol, rc;
       char** result;
 
@@ -1123,7 +1124,7 @@ bool MSReader::readSqlite(const char* c, Spectrum& s, int scNum)
 	  return false;
 	}
 
-      sprintf(zSql, "select id from msScan where startScanNumber=%d", scNum);
+      snprintf(zSql, sizeof(zSql), "select id from msScan where startScanNumber=%d", scNum);
       int iRow, iCol;
       char** result;
 
@@ -1141,7 +1142,7 @@ bool MSReader::readSqlite(const char* c, Spectrum& s, int scNum)
 
 	}
 
-      sprintf(zSql, "select * from msScan, msScanData where startScanNumber=%d "
+      snprintf(zSql, sizeof(zSql), "select * from msScan, msScanData where startScanNumber=%d "
 	      "AND id=scanID", scNum);
       if(!executeSqlStmt(s,zSql))
 	cout<<scNum<<" can't be found in the database!"<<endl;
@@ -1155,7 +1156,7 @@ bool MSReader::readSqlite(const char* c, Spectrum& s, int scNum)
 	  if(curIndex > lastIndex)
 	    return false;
 
-	  sprintf(zSql, "select * from msScan, msScanData where id=%d "
+	  snprintf(zSql, sizeof(zSql), "select * from msScan, msScanData where id=%d "
 		  "AND id=scanID",curIndex);
 	  if(executeSqlStmt(s,zSql))
 	    break;
@@ -1220,7 +1221,7 @@ bool MSReader::executeSqlStmt(Spectrum& s, char* zSql)
 	readChargeTable(scanID,s);
 	s.setRTime((float)sqlite3_column_double(pStmt,9));
 
-	strcpy(actMethod,reinterpret_cast<const char*>(sqlite3_column_text(pStmt,10)));
+	strncpy(actMethod,reinterpret_cast<const char*>(sqlite3_column_text(pStmt,10)), sizeof(actMethod));
 	if(strcmp(actMethod,"CID") == 0)
 	  s.setActivationMethod(CID);
 	if(strcmp(actMethod, "ETD") == 0)
@@ -1255,7 +1256,7 @@ bool MSReader::executeSqlStmt(Spectrum& s, char* zSql)
 void MSReader::readChargeTable(int scanID, Spectrum& s)
 {
   char zSql[8192];
-  sprintf(zSql, "select charge, mass from MS2FileScanCharge where scanID=%d", scanID);
+  snprintf(zSql, sizeof(zSql), "select charge, mass from MS2FileScanCharge where scanID=%d", scanID);
   sqlite3_stmt *pStmt;
   int rc;
 
@@ -1594,7 +1595,7 @@ void MSReader::setLabel(bool b){
 
 void MSReader::setRawFilter(char *c){
   #ifdef _MSC_VER2
-  strcpy(rawUserFilter,c);
+  strncpy(rawUserFilter,c,sizeof(rawUserFilter));
   #endif
 }
 
@@ -1711,7 +1712,7 @@ void MSReader::writeTextSpec(FILE* fileOut, Spectrum& s) {
         fprintf(fileOut,"CHARGE=%d+\n",s.atZ(i).z);
         fprintf(fileOut,"TITLE=%s.%d.%d.%d %d %.4f\n","test",s.getScanNumber(),s.getScanNumber(true),s.atZ(i).z,i,s.getRTime());
         for(j=0;j<s.size();j++){
-		      sprintf(t,"%.*f",iIntensityPrecision,s.at(j).intensity);
+		      snprintf(t, sizeof(t),"%.*f",iIntensityPrecision,s.at(j).intensity);
 		      k=strlen(t);
 		      if(k>2 && iIntensityPrecision>0){
 		        if(t[0]=='0'){
@@ -1736,7 +1737,7 @@ void MSReader::writeTextSpec(FILE* fileOut, Spectrum& s) {
       }
       fprintf(fileOut,"TITLE=%s.%d.%d.%d %d %.4f\n","test",s.getScanNumber(),s.getScanNumber(true),s.atZ(0).z,0,s.getRTime());
       for(j=0;j<s.size();j++){
-		    sprintf(t,"%.*f",iIntensityPrecision,s.at(j).intensity);
+		    snprintf(t, sizeof(t),"%.*f",iIntensityPrecision,s.at(j).intensity);
 		    k=strlen(t);
 		    if(k>2 && iIntensityPrecision>0){
 		      if(t[0]=='0'){
@@ -1757,7 +1758,7 @@ void MSReader::writeTextSpec(FILE* fileOut, Spectrum& s) {
 
   //Only use this code if not writing MGF file
 	for(j=0;j<s.size();j++){
-		sprintf(t,"%.*f",iIntensityPrecision,s.at(j).intensity);
+		snprintf(t, sizeof(t),"%.*f",iIntensityPrecision,s.at(j).intensity);
 		k=strlen(t);
 		if(k>2 && iIntensityPrecision>0){
 			if(t[0]=='0'){
@@ -1990,8 +1991,8 @@ bool MSReader::readRawFile(const char *c, Spectrum &s, int scNum){
   double d;
   char chFilter[256];
   char curFilter[256];
-  strcpy(chFilter,"");
-  strcpy(curFilter,"");
+  strncpy(chFilter,"", sizeof(chFilter));
+  strncpy(curFilter,"", sizeof(curFilter));
 
   //For gathering averaged scans
   long FirstBkg1=0;
@@ -2237,7 +2238,7 @@ MSSpectrumType MSReader::EvaluateFilter(long scan, double *precursormz, char* ch
   thermoMZ=0.0;
 
 	m_Raw->GetFilterForScanNum(scan, &Filter);
-  strcpy(chFilter,W2A(Filter));
+  strncpy(chFilter,W2A(Filter),sizeof(chFilter));
   cFilter=chFilter;
 
   //Check for SRM tag - this isn't used yet, but keeping it for future needs

@@ -434,7 +434,7 @@ bool Protein::readTitleLine
   }
 
   // Store the rest of the line as the comment.
-  strcpy(description, &(id_line[strlen(name)+1]));
+  strncpy(description, &(id_line[strlen(name)+1]),LONGEST_LINE - 1);
 
   return(true);
 }
@@ -567,7 +567,7 @@ char* Protein::getId()
   char* copy_id = 
     (char *)malloc(sizeof(char)*id_length);
   
-  strcpy(copy_id, id_); 
+  strncpy(copy_id, id_, sizeof(char)*id_length); 
 
   return copy_id;
 }
@@ -596,7 +596,7 @@ void Protein::setId(
   char* copy_id = 
     (char *)malloc(sizeof(char)*id_length);
   id_ =
-    strcpy(copy_id, id);  
+    strncpy(copy_id, id, sizeof(char)*id_length);  
 }
 
 /**
@@ -614,7 +614,7 @@ char* Protein::getSequence(
   std::size_t sequence_length = strlen(sequence_) +1-offset; // +\0
   char * copy_sequence = 
     (char *)malloc(sizeof(char)*sequence_length);
-  return strcpy(copy_sequence, sequence_+offset);  
+  return strncpy(copy_sequence, sequence_+offset, sizeof(char)*sequence_length);  
 }
 
 /**
@@ -644,7 +644,7 @@ void Protein::setSequence(
   char * copy_sequence = 
     (char *)malloc(sizeof(char)*sequence_length);
   sequence_ =
-    strcpy(copy_sequence, sequence);  
+    strncpy(copy_sequence, sequence, sizeof(char)*sequence_length);  
 }
 
 /**
@@ -680,7 +680,7 @@ char* Protein::getAnnotation()
   std::size_t annotation_length = strlen(annotation_) +1; // +\0
   char * copy_annotation = 
     (char *)malloc(sizeof(char)*annotation_length);
-  return strcpy(copy_annotation, annotation_);  
+  return strncpy(copy_annotation, annotation_, sizeof(char)*annotation_length);  
 }
 
 /**
