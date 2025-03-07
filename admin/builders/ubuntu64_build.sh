@@ -58,7 +58,7 @@ fi
 cd ${src_dir}
 
 # read all urls and file names from a centralized kb file
-source percolator/admin/builders/_urls_and_file_names_.sh
+source admin/builders/_urls_and_file_names_.sh
 
 mkdir -p $build_dir
 cd ${build_dir}

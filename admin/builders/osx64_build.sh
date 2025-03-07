@@ -70,8 +70,8 @@ if [[ -z ${src_dir} ]]; then
       $package_manager install git;
     fi
     src_dir="$(mktemp -d -t src)";
-    git clone --branch "$1" https://github.com/percolator/percolator.git "${src_dir}/percolator";
-	src_dir="${src_dir}/percolator"
+    git clone --branch "$1" https://github.com/percolator/percolator.git "${src_dir}";
+	src_dir="${src_dir}"
   else
     # Might not work if we have symlinks in the way
     src_dir=$( cd "$( dirname "${BASH_SOURCE[0]}" )/../../../" && pwd )
@@ -149,21 +149,21 @@ mkdir -p ${release_dir}
 mkdir -p ${build_dir}/percolator-noxml
 cd ${build_dir}/percolator-noxml
 
-cmake -DTARGET_ARCH="${ARCH}" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local/ -DXML_SUPPORT=OFF -DCMAKE_PREFIX_PATH="/opt/homebrew/;/opt/local/;/usr/;/usr/local/;~/;/Library/Developer/CommandLineTools/usr/"  ${src_dir}/percolator
+cmake -DTARGET_ARCH="${ARCH}" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local/ -DXML_SUPPORT=OFF -DCMAKE_PREFIX_PATH="/opt/homebrew/;/opt/local/;/usr/;/usr/local/;~/;/Library/Developer/CommandLineTools/usr/"  ${src_dir}
 make -j 2
 make -j 2 package
 
 mkdir -p ${build_dir}/percolator
 cd ${build_dir}/percolator
 
-cmake -DTARGET_ARCH="${ARCH}" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local/ -DXML_SUPPORT=ON -DGOOGLE_TEST=1 -DCMAKE_PREFIX_PATH="${build_dir}/${mac_os_xerces}/;${build_dir}/${mac_os_xsd}/;/opt/homebrew/;/opt/local/;/usr/;/usr/local/;~/;/Library/Developer/CommandLineTools/usr/"  ${src_dir}/percolator
+cmake -DTARGET_ARCH="${ARCH}" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local/ -DXML_SUPPORT=ON -DGOOGLE_TEST=1 -DCMAKE_PREFIX_PATH="${build_dir}/${mac_os_xerces}/;${build_dir}/${mac_os_xsd}/;/opt/homebrew/;/opt/local/;/usr/;/usr/local/;~/;/Library/Developer/CommandLineTools/usr/"  ${src_dir}
 make -j 2
 make -j 2 package
 
 mkdir -p ${build_dir}/converters
 cd ${build_dir}/converters
 
-cmake -DTARGET_ARCH="${ARCH}" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local/ -DCMAKE_PREFIX_PATH="${build_dir}/${mac_os_xerces}/;${build_dir}/${mac_os_xsd}/;/opt/homebrew/;/opt/local/;/usr/;/usr/local/;~/;/Library/Developer/CommandLineTools/usr/" -DSERIALIZE="TokyoCabinet" ${src_dir}/percolator/src/converters
+cmake -DTARGET_ARCH="${ARCH}" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local/ -DCMAKE_PREFIX_PATH="${build_dir}/${mac_os_xerces}/;${build_dir}/${mac_os_xsd}/;/opt/homebrew/;/opt/local/;/usr/;/usr/local/;~/;/Library/Developer/CommandLineTools/usr/" -DSERIALIZE="TokyoCabinet" ${src_dir}/src/converters
 make -j 2
 make -j 2 package
 #--------------------------------------------
