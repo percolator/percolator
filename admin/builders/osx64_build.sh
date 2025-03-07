@@ -163,7 +163,7 @@ make -j 2 package
 mkdir -p ${build_dir}/converters
 cd ${build_dir}/converters
 
-cmake -DTARGET_ARCH="${ARCH}" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local/ -DCMAKE_PREFIX_PATH="${build_dir}/${mac_os_xerces}/;${build_dir}/${mac_os_xsd}/;/opt/local/;/usr/;/usr/local/;~/;/Library/Developer/CommandLineTools/usr/" -DSERIALIZE="TokyoCabinet" ${src_dir}/percolator/src/converters
+cmake -DTARGET_ARCH="${ARCH}" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local/ -DCMAKE_PREFIX_PATH="${build_dir}/${mac_os_xerces}/;${build_dir}/${mac_os_xsd}/;/opt/homebrew/;/opt/local/;/usr/;/usr/local/;~/;/Library/Developer/CommandLineTools/usr/" -DSERIALIZE="TokyoCabinet" ${src_dir}/percolator/src/converters
 make -j 2
 make -j 2 package
 #--------------------------------------------
