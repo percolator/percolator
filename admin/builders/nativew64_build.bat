@@ -74,9 +74,9 @@ set PYTHON_DIR=%INSTALL_DIR%\python
 CALL :getabspath PYTHON_DIR "%PYTHON_DIR%"
 if not exist "%PYTHON_DIR%" (
   echo Downloading and installing Python
-  call :downloadfile %PYTHON_URL% %INSTALL_DIR%\python.exe
+  call :downloadfile %PYTHON_URL% %INSTALL_DIR%\python.msi
   cd /D "%INSTALL_DIR%"
-  "%INSTALL_DIR%\python.exe" TARGETDIR="%PYTHON_DIR%" 
+  msiexec /i python.msi /quiet TARGETDIR="%PYTHON_DIR%" /Li python_install.log
 )
 setlocal
 set PATH=%PATH%;%PYTHON_DIR%
