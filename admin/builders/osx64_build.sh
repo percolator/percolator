@@ -40,7 +40,7 @@ elif [[ -f ${HOME}/bin/brew ]]
     package_manager=$HOME/bin/brew
     boost_install_options="boost"
     other_packages="cmake tokyo-cabinet lbzip2 pbzip2 lzlib libomp googletest"
-elif [[ -f /usr/local/bin/brew ]]
+elif [[ -f /usr/local/bin/brew || -f /opt/homebrew/bin/brew ]]
   then
     echo "[ Package manager ] : Homebrew "
     package_manager="brew"
