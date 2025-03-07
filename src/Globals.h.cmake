@@ -79,12 +79,6 @@ limitations under the License.
   #include <fcntl.h>
 #endif
 
-#ifdef _MSC_VER
-  #ifndef isfinite  && _MSC_VER < 1900 
-    #define isfinite _finite
-  #endif
-#endif
-
 
 
 #ifdef __APPLE__
