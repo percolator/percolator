@@ -55,7 +55,7 @@ if(NOT WITHOUT_GTEST)
       UnitTest_Percolator_Scores.cpp
       UnitTest_Percolator_CrossValidation.cpp)
   # Link with all required libraries
-  set(UNIT_TEST_LIBRARIES perclibrary blas)
+  set(UNIT_TEST_LIBRARIES perclibrary dblas)
   if(NOT MSVC)
     set(UNIT_TEST_LIBRARIES ${UNIT_TEST_LIBRARIES} pthread)
     if(APPLE)

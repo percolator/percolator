@@ -864,7 +864,7 @@ void Scores::calcPep(const bool spline, const bool interp, const bool from_q) {
                     sc.push_back(sh.score);
                 }
             }
-            IsotonicPEP reg;
+            InferPEP reg(true);
             auto target_pep = interp
                                 ? reg.qns_to_pep(target_q, sc)
                                 : reg.q_to_pep(target_q);
@@ -893,7 +893,7 @@ void Scores::calcPep(const bool spline, const bool interp, const bool from_q) {
                 is_decoy.push_back(sh.isTarget()? 0.: 1.);
                 sc.push_back(sh.score);
             }
-            IsotonicPEP reg;
+            InferPEP reg(true);
             auto peps = interp
                                 ? reg.tdc_to_pep(is_decoy, sc)
                                 : reg.tdc_to_pep(is_decoy);

@@ -70,8 +70,8 @@ include_directories(${Boost_INCLUDE_DIRS})
 #########################################
 # COMPILE BLAS
 #########################################
-add_subdirectory(blas)
-set (BLAS_LIBRARIES ${BLAS_LIBRARIES} blas)
+add_subdirectory(dblas)
+set (DBLAS_LIBRARIES ${DBLAS_LIBRARIES} dblas)
 
 ###############################################################################
 # RUN CODESYNTHESIS
@@ -105,6 +105,31 @@ if(XML_SUPPORT)
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
   )
 endif(XML_SUPPORT)
+
+###############################################################################
+# PULL Eigen
+###############################################################################
+
+include(FetchContent)
+
+# Avoid Eigen's conflicting 'blas' target
+set(EIGEN_BUILD_BLAS OFF CACHE BOOL "" FORCE)
+set(EIGEN_BUILD_TESTING OFF CACHE BOOL "" FORCE)
+set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
+set(EIGEN_BUILD_DOC OFF CACHE BOOL "" FORCE)
+set(EIGEN_BUILD_PKGCONFIG OFF CACHE BOOL "" FORCE)
+
+# Avoid adding Eigen's blas directory (explicitly ignore it)
+set(EIGEN_DISABLE_BLAS ON CACHE BOOL "Disable Eigen's BLAS build" FORCE)
+
+FetchContent_Declare(
+  eigen
+  GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git
+  GIT_TAG 3.4.0
+)
+
+FetchContent_MakeAvailable(eigen)
+include_directories(${eigen_SOURCE_DIR})
 
 
 #############################################################################
@@ -173,7 +198,7 @@ ELSE(CRUX)
   endif()
 
   # SET LIBRARIES FOR PERCOLATOR
-  set(COMMON_LIBRARIES perclibrary ${BLAS_LIBRARIES} picked_protein ${XERCESC_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${CURL_LIBRARIES} ${RPC_LIBRARIES})
+  set(COMMON_LIBRARIES perclibrary ${DBLAS_LIBRARIES} picked_protein ${XERCESC_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${CURL_LIBRARIES} ${RPC_LIBRARIES})
   if(NOT MSVC)
     if(APPLE)
       set(COMMON_LIBRARIES ${COMMON_LIBRARIES} ${OpenMP_CXX_LIBRARIES})
