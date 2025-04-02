@@ -337,7 +337,7 @@ bool Caller::parseOptions(int argc, char **argv) {
       "Run an implementation of the Percolator-RESET Algorithm.",
       "", TRUE_IF_SET);
   cmd.defineOption(Option::EXPERIMENTAL_FEATURE,
-      "spline-pep",
+      "irls-pep",
       "Calculate PEPs using spline regression.",
       "", TRUE_IF_SET);
   cmd.defineOption(Option::EXPERIMENTAL_FEATURE,
