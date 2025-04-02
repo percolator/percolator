@@ -11,6 +11,11 @@
 #include <iostream>
 #include <Eigen/Dense>
 
+template <typename T>
+const T& clamp(const T& v, const T& lo, const T& hi) {
+    return (v < lo) ? lo : (hi < v) ? hi : v;
+}
+
 class IsotonicRegression {
 public:
     IsotonicRegression() = default;
@@ -107,10 +112,9 @@ protected:
 public:
     std::vector<double> fit_y(const std::vector<double>& y, double min_val, double max_val) const override
     { return pavaNonDecreasingRanged(y, min_val, max_val); }
-    std::vector<double> fit_xy(const std::vector<double>& x, const std::vector<double>& y,
-                               double min_val, double max_val) const override {;};
+    std::vector<double> fit_xy(const std::vector<double>&/* x */, const std::vector<double>& y,
+                               double min_val, double max_val) const override { return fit_y(y, min_val, max_val); };
 
-private:
 };
 
 
@@ -125,7 +129,7 @@ public:
         int n = y.size();
         std::vector<double> x(n);
         std::iota(x.begin(), x.end(), 0);
-        return fit_xy(x, y);
+        return fit_xy(x, y, min_val, max_val);
     }
         
     std::vector<double> fit_xy(const std::vector<double>& x, const std::vector<double>& y,
@@ -147,7 +151,12 @@ public:
         Eigen::VectorXd coeffs = nnls(B, yvec);
     
         Eigen::VectorXd yfit = B * coeffs;
-        return std::vector<double>(yfit.data(), yfit.data() + yfit.size());
+        std::vector<double> result(yfit.size());
+        // auto ret = std::vector<double>(yfit.data(), yfit.data() + yfit.size());
+        std::transform(yfit.data(), yfit.data() + yfit.size(), result.begin(), [&](double v) {
+            return clamp(v, min_val, max_val);
+        });
+        return result;
     }
                 
 private:
@@ -156,8 +165,8 @@ private:
     void create_knots(const std::vector<double>& x) const;
     Eigen::VectorXd nnls(const Eigen::MatrixXd& A, const Eigen::VectorXd& b) const;
 
-    int degree_;
-    int num_knots_;
+    size_t degree_;
+    size_t num_knots_;
     mutable std::vector<double> knots_;
 };
 
@@ -223,16 +232,16 @@ Eigen::VectorXd IsplineRegression::nnls(const Eigen::MatrixXd& A, const Eigen::V
 
         passive_set[idx] = true;
         std::vector<int> active;
-        for (int i = 0; i < passive_set.size(); ++i)
+        for (size_t i = 0; i < passive_set.size(); ++i)
             if (passive_set[i]) active.push_back(i);
 
         Eigen::MatrixXd A_active(A.rows(), active.size());
-        for (int i = 0; i < active.size(); ++i)
+        for (size_t i = 0; i < active.size(); ++i)
             A_active.col(i) = A.col(active[i]);
 
         Eigen::VectorXd z = A_active.colPivHouseholderQr().solve(b);
 
-        for (int i = 0; i < active.size(); ++i)
+        for (size_t i = 0; i < active.size(); ++i)
             x[active[i]] = std::max(0.0, z[i]);
 
         w = A.transpose() * (b - A * x);

@@ -854,9 +854,9 @@ void Scores::checkSeparationAndSetPi0() {
     }
 }
 
-void Scores::calcPep(const bool spline, const bool interp, const bool from_q) {
+void Scores::calcPep(const bool spline, const bool interp, const bool pava) {
     if (!spline) {
-        if (from_q) {
+        if (pava) {
             std::vector<double> target_q, sc;
             for (auto& sh : scores_) {
                 if (sh.isTarget()) {
@@ -864,7 +864,7 @@ void Scores::calcPep(const bool spline, const bool interp, const bool from_q) {
                     sc.push_back(sh.score);
                 }
             }
-            InferPEP reg(true);
+            InferPEP reg(false);
             auto target_pep = interp
                                 ? reg.qns_to_pep(target_q, sc)
                                 : reg.q_to_pep(target_q);
