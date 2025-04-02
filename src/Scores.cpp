@@ -151,11 +151,11 @@ void ScoreHolder::printPepXML(ostream& os, map<char, float>& aaWeight, int index
     std::string id = pPSM->getId();
     /* Get scan ids */
     unsigned int scan = pPSM->scan;
-    unsigned int native_id = scan - 1;
+    // unsigned int native_id = scan - 1;
     /* Get charge */
     std::string assumed_charge = getCharge(id);
     /* Get RT */
-    double RT = pPSM->getRetentionTime();
+    // double RT = pPSM->getRetentionTime();
     /*  uncalibrated_precursor_neutral_mass ? */
     double expMass = pPSM->expMass;
     /*  precursor_neutral_mass ? */
@@ -642,7 +642,7 @@ int Scores::calcQ(double fdr, bool skipDecoysPlusOne) {
     return numPos;
 }
 
-void Scores::generateNegativeTrainingSet(AlgIn& data, const double cneg) {
+void Scores::generateNegativeTrainingSet(AlgIn& data, const double /* cneg */) {
     std::size_t ix2 = 0;
     std::vector<ScoreHolder>::const_iterator scoreIt = scores_.begin();
     for (; scoreIt != scores_.end(); ++scoreIt) {
@@ -657,7 +657,7 @@ void Scores::generateNegativeTrainingSet(AlgIn& data, const double cneg) {
 }
 
 void Scores::generatePositiveTrainingSet(AlgIn& data, const double fdr,
-                                         const double cpos, const bool trainBestPositive) {
+                                         const double /* cpos */, const bool trainBestPositive) {
     std::size_t ix2 = static_cast<std::size_t>(data.negatives);
     int p = 0;
 

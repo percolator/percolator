@@ -7,7 +7,7 @@ const Matrix & Matrix::operator =(const Array<Array<double> > & rhs)
 {
   // note: this will not accept arrays with no rows
   Matrix temp(static_cast<int>(rhs.size()), static_cast<int>(rhs[0].size()));
-  for (int k=0; k<rhs.size(); k++)
+  for (size_t k=0; k<rhs.size(); k++)
     {
       temp.rows[k] = Vector(rhs[k]);
     }
@@ -38,7 +38,7 @@ Vector operator *(const Matrix & lhs, const Vector & rhs)
 
   Array<double> result( lhs.numRows() );
 
-  int k;
+  size_t k;
   for (k=0; k<lhs.numRows(); k++)
     {
       result[k] = lhs[k] * rhs;
@@ -58,7 +58,7 @@ Vector operator *(const Vector & lhs, const Matrix & rhs)
 void Matrix::displayMatrix() const
 {
   //  cout << endl;
-  int k;
+  size_t k;
   cout << "corner\t";
   for ( k=0; k<numCols(); k++)
     {
@@ -119,7 +119,7 @@ Matrix Matrix::operator -() const
 {
   Matrix result = *this;
 
-  for (int k=0; k<result.numRows(); k++)
+  for (size_t k=0; k<result.numRows(); k++)
     {
       result.rows[k] = -result[k];
     }

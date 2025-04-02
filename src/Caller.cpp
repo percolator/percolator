@@ -40,8 +40,7 @@ Caller::Caller() :
     tabOutputFN_(""), xmlOutputFN_(""), pepXMLOutputFN_(""),weightOutputFN_(""),
     psmResultFN_(""), peptideResultFN_(""), proteinResultFN_(""),
     decoyPsmResultFN_(""), decoyPeptideResultFN_(""), decoyProteinResultFN_(""),
-    analytics_(true), use_reset_alg_(false), use_composition_match_(false),
-    use_irls_pep_(false), use_interpolating_pep_(false), use_pava_pep_(false),
+    analytics_(true), 
     xmlPrintDecoys_(false), xmlPrintExpMass_(true), reportUniquePeptides_(true),
     reportPepXML_(false),
     targetDecoyCompetition_(false), useMixMax_(false), inputSearchType_("auto"),
@@ -49,7 +48,8 @@ Caller::Caller() :
     numIterations_(10), maxPSMs_(0u),
     nestedXvalBins_(1u), selectedCpos_(0.0), selectedCneg_(0.0),
     reportEachIteration_(false), quickValidation_(false), 
-    trainBestPositive_(false), numThreads_(3u) {
+    trainBestPositive_(false), numThreads_(3u), use_reset_alg_(false), use_composition_match_(false),
+    use_irls_pep_(false), use_interpolating_pep_(false), use_pava_pep_(false) {
 }
 
 Caller::~Caller() {

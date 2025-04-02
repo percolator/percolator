@@ -29,7 +29,7 @@ SqtSanityCheck::~SqtSanityCheck(){
 
 const string SqtSanityCheck::fingerPrint = "sqt";
 
-void SqtSanityCheck::calcInitDirection(vector<double>& wSet, size_t set) {
+void SqtSanityCheck::calcInitDirection(vector<double>& wSet, size_t /* set */) {
   std::size_t numFeatures = FeatureNames::getNumFeatures();
   for (std::size_t ix = 0; ix < numFeatures + 1; ++ix) {
     wSet[ix] = 0;
