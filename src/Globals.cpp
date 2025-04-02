@@ -85,6 +85,8 @@ const std::string Globals::getXMLDir(bool isConverter) {
       RegCloseKey(hKey);
     }
   }
+#else
+(void) isConverter;
 #endif
   return out;  
 }

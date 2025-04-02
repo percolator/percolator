@@ -82,6 +82,8 @@ int calcBalancedFDR(vector<ScoreHolder*> &scores, double nullTargetWinProb, doub
 }
 
 void generateTrainingSet(AlgIn& data, std::vector<ScoreHolder*>& scores, const double cneg, const double cpos, const double fdr) {
+    (void) cneg;
+    (void) cpos;
     std::size_t ix2 = 0;
     // Using range-based for loop with auto
     for (const auto scorePtr : scores) {  // scorePtr is automatically a ScoreHolder* from scores
@@ -124,8 +126,7 @@ double calcScore(const double* feat, const std::vector<double>& w) {
 // This function assign score to all score holders based on the weight vector w
 // and sorts the score holders in decending order
 int onlyCalcScores(std::vector<ScoreHolder*> &scores, std::vector<double>& w) {
-    std::size_t ix;
-    for (auto& scorePtr : scores) {  // scorePtr is automatically a ScoreHolder* from scores
+     for (auto& scorePtr : scores) {  // scorePtr is automatically a ScoreHolder* from scores
       scorePtr->score = calcScore(scorePtr->pPSM->features, w);
     }
     auto reversePointerComp = [](const ScoreHolder* a, const ScoreHolder* b) { return a->score > b->score; }; // Pointer GreaterThen
@@ -144,7 +145,7 @@ int calcScores(std::vector<ScoreHolder*> &scores, std::vector<double>& w, double
 int setInitDirection(vector<double>& w, vector<ScoreHolder*>& scores, double nullTargetWinProb, double selectionFDR) {
     int maxIds(-1), maxDir(0), maxSign(0);
 
-    for (int ix = 0; ix < w.size(); ix++) {
+    for (size_t ix = 0; ix < w.size(); ix++) {
         for(auto& scorePtr : scores) {
             scorePtr->score = scorePtr->pPSM->features[ix];
         }
@@ -161,7 +162,7 @@ int setInitDirection(vector<double>& w, vector<ScoreHolder*>& scores, double nul
             }
         }
     }
-    for (int ix = 0; ix < w.size(); ix++) {
+    for (size_t ix = 0; ix < w.size(); ix++) {
         w[ix] = 0;
     }
     w[maxDir] = static_cast<double>(maxSign);
@@ -187,8 +188,8 @@ int Reset::gridSearchC(vector<ScoreHolder*> &train, const double nullTargetWinPr
     std::vector<double> cPosCandidates = {100., 10., 1.0, 0.1, 0.01};
     std::vector<double> cFracCandidates = {0.1, 0.3, 1.0, 3.0, 10.0};
 #pragma omp parallel for schedule(dynamic, 1) ordered collapse(2)
-    for (int i = 0; i < cPosCandidates.size(); ++i) {
-        for (int j = 0; j < cFracCandidates.size(); ++j) {
+    for (size_t i = 0; i < cPosCandidates.size(); ++i) {
+        for (size_t j = 0; j < cFracCandidates.size(); ++j) {
             auto cPos = cPosCandidates[i];
             auto cFrac = cFracCandidates[j];
             svmTrain(cPos, cFrac);
@@ -254,7 +255,7 @@ int Reset::iterationOfReset(vector<ScoreHolder*> &train, double nullTargetWinPro
 }
 
 int Reset::evaluateTestSet(Scores &psms, vector<ScoreHolder*> &test, double testNullTargetWinProb, double selectionFDR) {
-
+    (void) psms;
     onlyCalcScores(test, w_); // Sorts the scores in descending order
     std::sort(test.begin(),test.end(), [](const ScoreHolder* a, const ScoreHolder* b) { return a->score > b->score; }); // Do we realy need this?
     int peptidesUnderFDR = calcBalancedFDR(test, testNullTargetWinProb, selectionFDR);
@@ -279,7 +280,7 @@ int Reset::evaluateTestSet(Scores &psms, vector<ScoreHolder*> &test, double test
 }
 
 int Reset::reset(Scores &psms, Scores &outS, double selectionFDR, SanityCheck* pCheck, double fractionTraining, unsigned int decoysPerTarget, std::vector<double>& w, bool use_composition_match) {
-
+    (void) pCheck;
     w_ = w;
     CompositionSorter sorter;
 
@@ -316,7 +317,8 @@ int Reset::reset(Scores &psms, Scores &outS, double selectionFDR, SanityCheck* p
     gridSearchC(train, trainNullTargetWinProb, selectionFDR);
 
     for (unsigned int i = 0; i < numIterations; i++) {    
-        unsigned int foundPositives = iterationOfReset(train, trainNullTargetWinProb, selectionFDR);
+        // unsigned int foundPositives = iterationOfReset(train, trainNullTargetWinProb, selectionFDR);
+        iterationOfReset(train, trainNullTargetWinProb, selectionFDR);
     }
     if (VERB>1) std::cerr << "Training Done!" << endl;
 
@@ -343,6 +345,7 @@ int Reset::reset(Scores &psms, Scores &outS, double selectionFDR, SanityCheck* p
 }
 
 int Reset::rereset(Scores &psms, Scores &outS, double selectionFDR, SanityCheck* pCheck, double fractionTraining, unsigned int decoysPerTarget, std::vector<double>& w) {
+    (void) pCheck;
 
     w_ = w;
 
@@ -377,7 +380,8 @@ int Reset::rereset(Scores &psms, Scores &outS, double selectionFDR, SanityCheck*
         }
 
         cerr << "Training" << endl;
-        unsigned int foundPositives = iterationOfReset(train, trainNullTargetWinProb, selectionFDR);
+        // unsigned int foundPositives = iterationOfReset(train, trainNullTargetWinProb, selectionFDR);
+        iterationOfReset(train, trainNullTargetWinProb, selectionFDR);
     }
     cerr << "Training Done!" << endl;
     
