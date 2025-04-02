@@ -336,13 +336,13 @@ bool Caller::parseOptions(int argc, char **argv) {
       "reset-algorithm",
       "Run an implementation of the Percolator-RESET Algorithm.",
       "", TRUE_IF_SET);
-  cmd.defineOption(Option::EXPERIMENTAL_FEATURE,
+  cmd.defineOption("",
       "irls-pep",
-      "Calculate PEPs using spline regression.",
+      "Calculate PEPs using a cubic spline fitted using penalized log-likelihood fitting as described in PMID:18689838. This used to be the default method.",
       "", TRUE_IF_SET);
   cmd.defineOption(Option::EXPERIMENTAL_FEATURE,
       "ip-pep",
-      "Use scores instead of rank as regression variable when calculating PEPs.",
+      "Use scores instead of rank as independent variable when calculating PEPs.",
       "", TRUE_IF_SET);
   cmd.defineOption(Option::EXPERIMENTAL_FEATURE,
         "pava-pep",
