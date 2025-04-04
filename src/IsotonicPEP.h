@@ -120,9 +120,9 @@ public:
 
 class IsplineRegression : public IsotonicRegression {
 public:
-    IsplineRegression(int degree = 2, int num_knots = 10)
-        : degree_(degree), num_knots_(num_knots) {}
-
+    IsplineRegression(int degree = 2)
+        : degree_(degree) {}
+    
     std::vector<double> fit_y(const std::vector<double>& y,
             double min_val = std::numeric_limits<double>::lowest(),
             double max_val = std::numeric_limits<double>::max()) const override {
@@ -133,22 +133,78 @@ public:
     }
         
     std::vector<double> fit_xy(const std::vector<double>& x, const std::vector<double>& y,
+        double min_val = std::numeric_limits<double>::lowest(),
+        double max_val = std::numeric_limits<double>::max()) const override {
+    
+        assert(x.size() == y.size());
+        int n = x.size();
+        if (n == 0) return {};
+
+        // Normalize x to [0,1]
+        std::vector<double> x_norm(n);
+        double xmin = *std::min_element(x.begin(), x.end());
+        double xmax = *std::max_element(x.begin(), x.end());
+        double xscale = xmax - xmin;
+        for (int i = 0; i < n; ++i)
+            x_norm[i] = (x[i] - xmin) / xscale;
+
+        // Determine number of knots and construct them
+        int num_knots = std::min(static_cast<int>(std::sqrt(n)), 500);
+        std::vector<double> knots(num_knots + 1);
+        for (int i = 0; i <= num_knots; ++i)
+            knots[i] = static_cast<double>(i) / num_knots;
+
+        // Build cubic I-spline basis
+        Eigen::MatrixXd B(n, num_knots);
+        #pragma omp parallel for
+        for (int i = 0; i < n; ++i)
+            for (int j = 0; j < num_knots; ++j)
+                B(i, j) = cubic_ispline(x_norm[i], knots[j], knots[j+1]);
+
+        // Add intercept column
+        Eigen::MatrixXd X(n, num_knots + 1);
+        X.col(0) = Eigen::VectorXd::Ones(n);
+        X.block(0, 1, n, num_knots) = B;
+
+        // Build constraint mask: intercept (c[0]) is unconstrained, rest must be ≥ 0
+        std::vector<bool> constrained(num_knots + 1, true);
+        constrained[0] = false;
+
+        // Solve using LDLT with constraint projection
+        Eigen::VectorXd yvec = Eigen::Map<const Eigen::VectorXd>(y.data(), y.size());
+        Eigen::VectorXd coeffs = box_lsq_ldlt(X, yvec, constrained);
+
+        // Predict and clamp
+        Eigen::VectorXd yfit = X * coeffs;
+        std::vector<double> result(yfit.size());
+        std::transform(yfit.data(), yfit.data() + yfit.size(), result.begin(), [&](double v) {
+            return clamp(v, min_val, max_val);
+        });
+
+        return result;
+    }
+    /*
+    std::vector<double> fit_xy(const std::vector<double>& x, const std::vector<double>& y,
             double min_val = std::numeric_limits<double>::lowest(),
             double max_val = std::numeric_limits<double>::max()) const override {
         assert(x.size() == y.size());
         int n = x.size();
+
+        int num_knots = min(static_cast<int>(sqrt(n)),500);
                 
-        create_knots(x);
+        create_knots(x, num_knots);
                 
-        int num_basis = num_knots_ + degree_ - 1;
+        int num_basis = num_knots + degree_ - 1;
         Eigen::MatrixXd B(n, num_basis);
     
+        #pragma omp parallel for
         for (int i = 0; i < n; ++i)
             for (int j = 0; j < num_basis; ++j)
-                B(i, j) = ispline_basis(j, degree_, x[i], knots_);
+                B(i, j) = cubic_ispline(x[i], knots_[j], knots_[j+1]);
+//                B(i, j) = ispline_basis(j, degree_, x[i], knots_);
     
         Eigen::VectorXd yvec = Eigen::Map<const Eigen::VectorXd>(y.data(), y.size());
-        Eigen::VectorXd coeffs = nnls(B, yvec);
+        Eigen::VectorXd coeffs = lsqnonneg(B, yvec);
     
         Eigen::VectorXd yfit = B * coeffs;
         std::vector<double> result(yfit.size());
@@ -158,27 +214,29 @@ public:
         });
         return result;
     }
-                
+    */            
 private:
     double mspline_basis(int i, int k, double x, const std::vector<double>& knots) const;
     double ispline_basis(int i, int k, double x, const std::vector<double>& knots, int steps = 50) const;
-    void create_knots(const std::vector<double>& x) const;
-    Eigen::VectorXd nnls(const Eigen::MatrixXd& A, const Eigen::VectorXd& b) const;
-
+    void create_knots(const std::vector<double>& x, const int& num_knots) const;
+    double cubic_ispline(double x, double left, double right) const;
+    // Eigen::VectorXd nnls(const Eigen::MatrixXd& A, const Eigen::VectorXd& b) const;
+    Eigen::VectorXd lsqnonneg(const Eigen::MatrixXd& A, const Eigen::VectorXd& b) const;
+    Eigen::VectorXd box_lsq_ldlt(const Eigen::MatrixXd& X, const Eigen::VectorXd& y, const std::vector<bool>& constrained,
+        double lambda = 0.0, int max_iter = 100, double tol = 1e-12) const;
     size_t degree_;
-    size_t num_knots_;
     mutable std::vector<double> knots_;
 };
 
-void IsplineRegression::create_knots(const std::vector<double>& x) const {
-    knots_.resize(num_knots_ + 2 * degree_);
+void IsplineRegression::create_knots(const std::vector<double>& x, const int& num_knots) const {
+    knots_.resize(num_knots + 2 * degree_);
     for (size_t i = 0; i < knots_.size(); ++i) {
         if (i < degree_)
             knots_[i] = x.front();
-        else if (i >= num_knots_ + degree_)
+        else if (i >= num_knots + degree_)
             knots_[i] = x.back();
         else {
-            double alpha = double(i - degree_ + 1) / (num_knots_ + 1);
+            double alpha = double(i - degree_ + 1) / (num_knots + 1);
             knots_[i] = x.front() + alpha * (x.back() - x.front());
         }
     }
@@ -205,6 +263,7 @@ double IsplineRegression::ispline_basis(int i, int k, double x, const std::vecto
     double h = (b - a) / steps;
     double sum = 0.5 * mspline_basis(i, k, a, knots);
 
+    #pragma omp parallel for reduction(+:sum)
     for (int j = 1; j < steps; ++j) {
         double t = a + j * h;
         sum += mspline_basis(i, k, t, knots);
@@ -213,44 +272,179 @@ double IsplineRegression::ispline_basis(int i, int k, double x, const std::vecto
     return sum * h;
 }
 
-Eigen::VectorXd IsplineRegression::nnls(const Eigen::MatrixXd& A, const Eigen::VectorXd& b) const {
-    Eigen::VectorXd x = Eigen::VectorXd::Zero(A.cols());
-    Eigen::VectorXd w = A.transpose() * (b - A * x);
 
-    std::vector<bool> passive_set(A.cols(), false);
+double IsplineRegression::cubic_ispline(double x, double left, double right) const {
+    if (x < left) return 0.0;
+    if (x >= right) return 1.0;
+    double u = (x - left) / (right - left);
+    return 3 * u * u - 2 * u * u * u;
+}
 
-    for (int iter = 0; iter < 500; ++iter) {
+Eigen::VectorXd IsplineRegression::box_lsq_ldlt(
+    const Eigen::MatrixXd& X,
+    const Eigen::VectorXd& y,
+    const std::vector<bool>& constrained,
+    double lambda,
+    int max_iter,
+    double tol
+) const {
+    using namespace Eigen;
+
+    const int n = X.rows();
+    const int p = X.cols();
+
+    VectorXd x = VectorXd::Zero(p);
+    x[0] = 0.5; // Warm-start the intercept
+    VectorXd w = X.transpose() * (y - X * x);
+
+    std::vector<bool> passive(p, false);
+    std::vector<int> passive_set;
+
+    // Pre-activate intercept and first basis function
+    passive[0] = true;
+    passive[1] = true;
+    passive_set.push_back(0);
+    passive_set.push_back(1);
+
+    for (int iter = 0; iter < max_iter; ++iter) {
         int idx = -1;
         double max_w = 0;
-        for (int i = 0; i < w.size(); ++i) {
-            if (!passive_set[i] && w[i] > max_w) {
+        for (int i = 0; i < p; ++i) {
+            if (!passive[i] && constrained[i] && w[i] > max_w) {
                 max_w = w[i];
                 idx = i;
             }
         }
-        if (idx == -1) break;
 
-        passive_set[idx] = true;
-        std::vector<int> active;
-        for (size_t i = 0; i < passive_set.size(); ++i)
-            if (passive_set[i]) active.push_back(i);
+        if (idx == -1)
+            break;
 
-        Eigen::MatrixXd A_active(A.rows(), active.size());
-        for (size_t i = 0; i < active.size(); ++i)
-            A_active.col(i) = A.col(active[i]);
+        passive[idx] = true;
+        passive_set.push_back(idx);
 
-        Eigen::VectorXd z = A_active.colPivHouseholderQr().solve(b);
+        bool inner_loop = true;
+        while (inner_loop) {
+            MatrixXd X_p(n, passive_set.size());
+            for (size_t i = 0; i < passive_set.size(); ++i)
+                X_p.col(i) = X.col(passive_set[i]);
 
-        for (size_t i = 0; i < active.size(); ++i)
-            x[active[i]] = std::max(0.0, z[i]);
+            VectorXd z_p = X_p.transpose() * y;
+            MatrixXd XtX = X_p.transpose() * X_p;
+            if (lambda > 0) XtX += lambda * MatrixXd::Identity(XtX.rows(), XtX.cols());
 
-        w = A.transpose() * (b - A * x);
+            VectorXd b_p = XtX.ldlt().solve(z_p);
+
+            VectorXd z = VectorXd::Zero(p);
+            for (size_t i = 0; i < passive_set.size(); ++i)
+                z[passive_set[i]] = b_p[i];
+
+            bool all_non_negative = true;
+            for (int j : passive_set) {
+                if (constrained[j] && z[j] < 0) {
+                    all_non_negative = false;
+                    break;
+                }
+            }
+
+            if (all_non_negative) {
+                x = z;
+                inner_loop = false;
+            } else {
+                double alpha = 1.0;
+                for (int j : passive_set) {
+                    if (constrained[j] && z[j] < 0)
+                        alpha = std::min(alpha, x[j] / (x[j] - z[j]));
+                }
+                x = x + alpha * (z - x);
+
+                std::vector<int> new_passive;
+                for (int j : passive_set) {
+                    if (x[j] > 1e-12) {
+                        new_passive.push_back(j);
+                    } else {
+                        passive[j] = false;
+                    }
+                }
+                passive_set = std::move(new_passive);
+            }
+        }
+
+        w = X.transpose() * (y - X * x);
     }
 
     return x;
 }
 
+Eigen::VectorXd IsplineRegression::lsqnonneg(const Eigen::MatrixXd& A, const Eigen::VectorXd& b) const {
+    double tol = 1e-10;
 
+    using namespace Eigen;
+    const int m = A.rows();
+    const int n = A.cols();
+
+    VectorXd x = VectorXd::Zero(n);
+    VectorXd w = A.transpose() * (b - A * x);
+
+    std::vector<bool> P(n, false);
+    std::vector<int> passive_set;
+
+    for (int iter = 0; iter < 3 * n; ++iter) {
+        // Step 1: find index with max w
+        int t = -1;
+        double max_w = 0;
+        for (int i = 0; i < n; ++i) {
+            if (!P[i] && w[i] > max_w) {
+                max_w = w[i];
+                t = i;
+            }
+        }
+        if (t == -1) break;
+
+        P[t] = true;
+        passive_set.push_back(t);
+
+        VectorXd z = x;
+        bool inner_loop = true;
+        while (inner_loop) {
+            // Solve least squares on passive set
+            MatrixXd A_p(m, passive_set.size());
+            for (size_t i = 0; i < passive_set.size(); ++i)
+                A_p.col(i) = A.col(passive_set[i]);
+
+            VectorXd b_p = A_p.colPivHouseholderQr().solve(b);
+
+            z.setZero();
+            for (size_t i = 0; i < passive_set.size(); ++i)
+                z[passive_set[i]] = b_p[i];
+
+            if ((z.array() >= 0).all()) {
+                x = z;
+                inner_loop = false;
+            } else {
+                double alpha = std::numeric_limits<double>::infinity();
+                for (size_t i = 0; i < passive_set.size(); ++i) {
+                    int idx = passive_set[i];
+                    if (z[idx] < 0)
+                        alpha = std::min(alpha, x[idx] / (x[idx] - z[idx]));
+                }
+
+                x = x + alpha * (z - x);
+
+                std::vector<int> new_passive;
+                for (int idx : passive_set) {
+                    if (x[idx] > tol)
+                        new_passive.push_back(idx);
+                    else
+                        P[idx] = false;
+                }
+                passive_set = std::move(new_passive);
+            }
+        }
+        w = A.transpose() * (b - A * x);
+    }
+
+    return x;
+}
 
 
 class InferPEP {
@@ -259,8 +453,14 @@ class InferPEP {
         {
             if (use_ispline) {
                 regressor_ptr_ = std::make_unique<IsplineRegression>();
+                if (VERB > 1) {
+                    cerr << "Performing isotonic regression using I-Splines" << endl;
+                }                
             } else {
                 regressor_ptr_ = std::make_unique<PavaRegression>();
+                if (VERB > 1) {
+                    cerr << "Performing isotonic regression using PAVA" << endl;
+                }
             }
         }
     
@@ -275,13 +475,11 @@ class InferPEP {
                 qn[i] = q_values[i] * indices[i];
                 assert((i == q_values.size() - 1) || (q_values[i] <= q_values[i + 1]));
             }
-    
             std::vector<double> raw_pep(qn.size());
             raw_pep[0] = qn[0];
             for (size_t i = 1; i < qn.size(); ++i) {
                 raw_pep[i] = qn[i] - qn[i - 1];
-            }
-    
+            }   
             return regressor_ptr_->fit_y(raw_pep);
         }
     
@@ -322,6 +520,7 @@ class InferPEP {
             decoy_rate.erase(decoy_rate.begin());
     
             std::vector<double> pep_iso;
+            auto i_d = is_decoy.begin(); double tar = 0.; double dec = 0.; double errors = 0.;
             for (auto& dp : decoy_rate) {
                 if (dp > 1. - epsilon)
                     dp = 1. - epsilon;
@@ -329,6 +528,8 @@ class InferPEP {
                 if (pep > 1.)
                     pep = 1.;
                 pep_iso.push_back(pep);
+                if (*i_d>0.5) {dec+=1.;} else {tar+=1.; errors += pep;} i_d++;
+                cerr << dp << "\t" << pep << "\t" << tar << "\t" << dec << "\t" << errors << "\t" << (dec+0.5)/(tar) << "\t" << errors/(tar) << endl;
             }
             return pep_iso;
         }
