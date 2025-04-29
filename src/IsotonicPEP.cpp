@@ -147,13 +147,17 @@ std::vector<double> IsplineRegression::fit_xy(const std::vector<double>& x, cons
     int n = x_used.size();
     if (n == 0) return {};
 
-    // Normalize x to [0,1]
-    std::vector<double> x_norm(n);
     double xmin = *std::min_element(x.begin(), x.end());
     double xmax = *std::max_element(x.begin(), x.end());
-    double xscale = xmax - xmin;
+    double xscale = xmax - xmin;    
+
+    // Normalize x to [0,1]
+    std::vector<double> x_norm(n);
+    double xmin_used = *std::min_element(x_used.begin(), x_used.end());
+    double xmax_used = *std::max_element(x_used.begin(), x_used.end());
+    double xscale_used = xmax_used - xmin_used;    
     for (int i = 0; i < n; ++i)
-        x_norm[i] = (x[i] - xmin) / xscale;
+        x_norm[i] = (x_used[i] - xmin_used) / xscale_used;
 
     // Determine number of knots
     const int MAX_KNOTS = 50;
@@ -171,7 +175,7 @@ std::vector<double> IsplineRegression::fit_xy(const std::vector<double>& x, cons
         // 1. Sort x_norm and y together
         std::vector<std::pair<double, double>> xy(n);
         for (int i = 0; i < n; ++i)
-            xy[i] = {x_norm[i], y[i]};
+            xy[i] = {x_norm[i], y_used[i]};
         std::sort(xy.begin(), xy.end());
 
         // 2. Compute moving average of y
@@ -249,9 +253,10 @@ std::vector<double> IsplineRegression::fit_xy(const std::vector<double>& x, cons
     for (const auto& vec : triplets_per_thread)
         triplets.insert(triplets.end(), vec.begin(), vec.end());    
     
-    Eigen::SparseMatrix<double> X(n, num_knots + 1);
+    Eigen::SparseMatrix<double, Eigen::RowMajor> X(n, num_knots + 1);
     X.reserve(Eigen::VectorXi::Constant(n, 2)); // Approx two non-zeros per row
     X.setFromTriplets(triplets.begin(), triplets.end());
+    X.makeCompressed();
 
     // Fill intercept column (first column, all ones)
     for (int i = 0; i < n; ++i)
@@ -259,16 +264,22 @@ std::vector<double> IsplineRegression::fit_xy(const std::vector<double>& x, cons
 
     Eigen::VectorXd yvec = Eigen::Map<const Eigen::VectorXd>(y_used.data(), y_used.size());
 
-    // Reweight rows
-    Eigen::VectorXd sqrt_weights = Eigen::Map<const Eigen::VectorXd>(weights.data(), weights.size()).array().sqrt();
-    for (int i = 0; i < n; ++i) {
-        for (Eigen::SparseMatrix<double>::InnerIterator it(X, i); it; ++it) {
-            it.valueRef() *= sqrt_weights[i];
-        }
-        yvec[i] *= sqrt_weights[i];
-        Eigen::VectorXd sqrt_weights = Eigen::Map<const Eigen::VectorXd>(weights.data(), weights.size()).array().sqrt();
+    assert(weights.size() == static_cast<size_t>(n));
+    assert(X.rows() == n);
+    assert(yvec.size() == n);    
 
+    // Reweight rows
+
+    Eigen::VectorXd sqrt_weights_vec = Eigen::Map<const Eigen::VectorXd>(weights.data(), n).array().sqrt();
+
+    // scale the rows
+    for (int i = 0; i < X.outerSize(); ++i) {
+        for (Eigen::SparseMatrix<double, Eigen::RowMajor>::InnerIterator it(X, i); it; ++it) {
+            it.valueRef() *= sqrt_weights_vec[it.row()];  // use it.row()!
+        }
     }
+    yvec = yvec.cwiseProduct(sqrt_weights_vec);
+
     // Build constraint mask: intercept unconstrained
     std::vector<bool> constrained(num_knots + 1, true);
     constrained[0] = false;
@@ -280,12 +291,57 @@ std::vector<double> IsplineRegression::fit_xy(const std::vector<double>& x, cons
     if (VERB > 2)
         std::cerr << "[TIMING] box_lsq_ldlt sparse duration: " << std::chrono::duration<double>(box_end - box_start).count() << " seconds\n";
 
-    // Predict and clamp
-    Eigen::VectorXd yfit = X * coeffs;
-    std::vector<double> result(yfit.size());
-    std::transform(yfit.data(), yfit.data() + yfit.size(), result.begin(), [&](double v) {
+    // Predict at original x positions
+    int n_full = x.size(); // full original size
+    std::vector<double> x_full_norm(n_full);
+    for (int i = 0; i < n_full; ++i)
+        x_full_norm[i] = (x[i] - xmin) / xscale;
+
+    // Build SparseMatrix X_full
+    std::vector<std::vector<Eigen::Triplet<double>>> triplets_full_per_thread(omp_get_max_threads());
+
+    #pragma omp parallel
+    {
+        int tid = omp_get_thread_num();
+        auto& local_triplets = triplets_full_per_thread[tid];
+        local_triplets.reserve(n_full / omp_get_max_threads() + 8);
+
+        #pragma omp for nowait
+        for (int i = 0; i < n_full; ++i) {
+            double xi = x_full_norm[i];
+
+            // Locate interval
+            auto it = std::upper_bound(knots.begin(), knots.end(), xi);
+            int j = std::max(0, static_cast<int>(it - knots.begin()) - 1);
+            if (j < num_knots) {
+                double val = cubic_ispline(xi, knots[j], knots[j+1]);
+                if (val > 0.0)
+                    local_triplets.emplace_back(i, j + 1, val);
+            }
+        }
+    }
+
+    // Merge
+    std::vector<Eigen::Triplet<double>> triplets_full;
+    for (const auto& vec : triplets_full_per_thread)
+        triplets_full.insert(triplets_full.end(), vec.begin(), vec.end());
+
+    Eigen::SparseMatrix<double, Eigen::RowMajor> X_full(n_full, num_knots + 1);
+    X_full.reserve(Eigen::VectorXi::Constant(n_full, 2));
+    X_full.setFromTriplets(triplets_full.begin(), triplets_full.end());
+
+    // Fill intercept column (first column, all ones)
+    for (int i = 0; i < n_full; ++i)
+        X_full.coeffRef(i, 0) = 1.0;
+
+    // Predict
+    Eigen::VectorXd yfit_full = X_full * coeffs;
+    std::vector<double> result(yfit_full.size());
+    std::transform(yfit_full.data(), yfit_full.data() + yfit_full.size(), result.begin(), [&](double v) {
         return clamp(v, min_val, max_val);
     });
+
+    // Ensure monotonicity
     for (size_t i = 1; i < result.size(); ++i)
         result[i] = std::max(result[i], result[i-1]);
 
