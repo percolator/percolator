@@ -81,8 +81,65 @@ std::vector<double> PavaRegression::pavaNonDecreasingRanged(
     return result;
 }
 
-BinnedData IsplineRegression::bin_data_weighted(
-    const std::vector<double>& x, const std::vector<double>& y, int max_bins) const
+BinnedData IsplineRegression::bin_data_weighted(const std::vector<double>& x, const std::vector<double>& y, int max_bins) const {
+    size_t n = x.size();
+    if (n <= static_cast<size_t>(max_bins)) {
+        return {x, y, std::vector<double>(n, 1.0)};
+    }
+
+    // Step 1: Smooth y using moving average to estimate local P(y=1)
+    std::vector<double> p(n, 0.0);
+    const size_t window = std::max<size_t>(10, n / 200); // around 0.5% of data
+    for (size_t i = 0; i < n; ++i) {
+        size_t start = (i >= window/2) ? i - window/2 : 0;
+        size_t end = std::min(n, i + window/2);
+        double sum = std::accumulate(y.begin() + start, y.begin() + end, 0.0);
+        p[i] = sum / (end - start);
+    }
+
+    // Step 2: Compute cumulative *change* in estimated P(y=1)
+    std::vector<double> change(n, 0.0);
+    for (size_t i = 1; i < n; ++i) {
+        change[i] = change[i - 1] + std::abs(p[i] - p[i - 1]);
+    }
+    double total_change = change.back();
+    if (total_change == 0.0) total_change = 1.0;
+
+    // Step 3: Create bins where change crosses thresholds
+    std::vector<double> x_binned, y_binned, weights;
+    size_t bin_start = 0;
+    size_t target_bin = 1;
+
+    for (size_t i = 1; i < n; ++i) {
+        if (change[i] >= (target_bin * total_change / max_bins)) {
+            size_t count = i - bin_start;
+            if (count > 0) {
+                double x_sum = std::accumulate(x.begin() + bin_start, x.begin() + i, 0.0);
+                double y_sum = std::accumulate(y.begin() + bin_start, y.begin() + i, 0.0);
+                x_binned.push_back(x_sum / count);
+                y_binned.push_back(y_sum / count);
+                weights.push_back(static_cast<double>(count));
+            }
+            bin_start = i;
+            target_bin++;
+        }
+    }
+
+    // Final bin
+    if (bin_start < n) {
+        size_t count = n - bin_start;
+        double x_sum = std::accumulate(x.begin() + bin_start, x.end(), 0.0);
+        double y_sum = std::accumulate(y.begin() + bin_start, y.end(), 0.0);
+        x_binned.push_back(x_sum / count);
+        y_binned.push_back(y_sum / count);
+        weights.push_back(static_cast<double>(count));
+    }
+
+    return {x_binned, y_binned, weights};
+}
+
+BinnedData old_bin_data_weighted(
+    const std::vector<double>& x, const std::vector<double>& y, int max_bins)
 {
     size_t n = x.size();
     if (n <= static_cast<size_t>(max_bins)) {
@@ -155,8 +212,26 @@ std::vector<double> IsplineRegression::fit_xy(const std::vector<double>& x, cons
     int num_knots = std::min(static_cast<int>(std::sqrt(n)), 50);
     std::vector<double> knots = compute_knots(x_norm, y_used, num_knots);
 
+    if (VERB > 3) {
+        std::cerr << "[DEBUG] Knots (" << knots.size() << "): ";
+        for (double k : knots) std::cerr << k << " ";
+        std::cerr << "\n";
+    }
+
+
     Eigen::SparseMatrix<double, Eigen::RowMajor> X = build_design_matrix(x_norm, knots, n, num_knots);
     fill_intercept(X);
+
+    if (VERB > 3) {
+        std::cerr << "[DEBUG] First 50 rows of design matrix (non-zero entries):\n";
+        for (int i = 0; i < std::min(50, n); ++i) {
+            std::cerr << "Row " << i << ": ";
+            for (Eigen::SparseMatrix<double, Eigen::RowMajor>::InnerIterator it(X, i); it; ++it)
+                std::cerr << "(" << it.col() << ", " << it.value() << ") ";
+            std::cerr << "\n";
+        }
+    }
+
 
     Eigen::VectorXd yvec = Eigen::Map<const Eigen::VectorXd>(y_used.data(), y_used.size());
     Eigen::VectorXd sqrt_weights_vec = Eigen::Map<const Eigen::VectorXd>(weights.data(), n).array().sqrt();
@@ -169,6 +244,11 @@ std::vector<double> IsplineRegression::fit_xy(const std::vector<double>& x, cons
     auto box_start = high_resolution_clock::now();
     Eigen::VectorXd coeffs = box_lsq_ldlt(X, yvec, constrained);
     auto box_end = high_resolution_clock::now();
+    if (VERB > 3) {
+        std::cerr << "[DEBUG] Coefficients:\n";
+        for (int i = 0; i < coeffs.size(); ++i)
+            std::cerr << "  coeff[" << i << "] = " << coeffs[i] << "\n";
+    }
     if (VERB > 2)
         std::cerr << "[TIMING] box_lsq_ldlt sparse duration: " << std::chrono::duration<double>(box_end - box_start).count() << " seconds\n";
 
@@ -178,6 +258,18 @@ std::vector<double> IsplineRegression::fit_xy(const std::vector<double>& x, cons
     Eigen::MatrixXd X_full_dense = build_dense_matrix(x_full_norm, knots, n_full, num_knots);
 
     Eigen::VectorXd yfit_full = X_full_dense * coeffs;
+
+    if (VERB > 3) {
+        std::cerr << "[DEBUG] Binned y values (first 20): ";
+        for (size_t i = 0; i < std::min(y_used.size(), size_t(20)); ++i)
+            std::cerr << y_used[i] << " ";
+        std::cerr << "\n";
+
+        std::cerr << "[DEBUG] First 10 predictions (before clamp):\n";
+        for (int i = 0; i < std::min(10, n_full); ++i)
+            std::cerr << "  yfit[" << i << "] = " << yfit_full[i] << "\n";
+    }
+
     std::vector<double> result(n_full);
     std::transform(yfit_full.data(), yfit_full.data() + n_full, result.begin(), [&](double v) {
         return clamp(v, min_val, max_val);
@@ -200,51 +292,12 @@ std::vector<double> IsplineRegression::normalize_vector(const std::vector<double
     return norm;
 }
 
-std::vector<double> IsplineRegression::compute_knots(const std::vector<double>& x_norm, const std::vector<double>& y, int num_knots) const {
-    int n = x_norm.size();
+std::vector<double> IsplineRegression::compute_knots(const std::vector<double>& /* x_norm */,
+                                                     const std::vector<double>& /* y */,
+                                                     int num_knots) const {
     std::vector<double> knots(num_knots + 1);
-    if (n < 200) {
-        for (int i = 0; i <= num_knots; ++i)
-            knots[i] = static_cast<double>(i) / num_knots;
-    } else {
-        std::vector<std::pair<double, double>> xy(n);
-        for (int i = 0; i < n; ++i)
-            xy[i] = {x_norm[i], y[i]};
-        std::sort(xy.begin(), xy.end());
-
-        std::vector<double> y_moving_avg(n, 0.0);
-        const int window = std::max(5, n / 200);
-        for (int i = 0; i < n; ++i) {
-            int start = std::max(0, i - window / 2);
-            int end = std::min(n, i + window / 2);
-            double sum = 0;
-            for (int j = start; j < end; ++j)
-                sum += xy[j].second;
-            y_moving_avg[i] = sum / (end - start);
-        }
-
-        std::vector<double> action(n, 0.0);
-        for (int i = 1; i < n; ++i)
-            action[i] = action[i - 1] + std::abs(y_moving_avg[i] - y_moving_avg[i - 1]);
-
-        double total_action = action.back();
-        if (total_action == 0.0) total_action = 1.0;
-        for (int i = 0; i < n; ++i)
-            action[i] /= total_action;
-
-        knots[0] = 0.0;
-        knots[1] = 0.02;
-        knots[num_knots - 1] = 0.98;
-        knots[num_knots] = 1.0;
-
-        int adaptive_knots = num_knots - 3;
-        for (int k = 1; k <= adaptive_knots; ++k) {
-            double target = static_cast<double>(k) / (adaptive_knots + 1);
-            auto it = std::lower_bound(action.begin(), action.end(), target);
-            int idx = std::min(static_cast<int>(it - action.begin()), n - 1);
-            knots[k + 1] = xy[idx].first;
-        }
-    }
+    for (int i = 0; i <= num_knots; ++i)
+    knots[i] = static_cast<double>(i) / num_knots;
     return knots;
 }
 
@@ -305,7 +358,8 @@ Eigen::MatrixXd IsplineRegression::build_dense_matrix(const std::vector<double>&
         while (j + 1 < static_cast<int>(knots.size()) && xi > knots[j + 1])
             ++j;
 
-        for (int k = std::max(0, j - 2); k <= std::min(j + 1, num_knots - 1); ++k) {
+        int width = 5;
+        for (int k = std::max(0, j - width); k <= std::min(j + width, num_knots - 1); ++k) {
             double val = cubic_ispline(xi, knots[k], knots[k + 1]);
             if (val > 0.0)
                 X_full_dense(i, k + 1) = val;

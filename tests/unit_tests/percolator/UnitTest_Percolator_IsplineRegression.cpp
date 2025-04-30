@@ -10,6 +10,27 @@ protected:
     }
 };
 
+TEST_F(IsplineRegressionTest, CubicIsplineBasicBehavior) {
+    double left = 0.2;
+    double right = 0.4;
+
+    EXPECT_DOUBLE_EQ(model.cubic_ispline(0.1, left, right), 0.0);  // Before support
+    EXPECT_DOUBLE_EQ(model.cubic_ispline(left, left, right), 0.0); // At left
+
+    double mid = 0.3;
+    double val = model.cubic_ispline(mid, left, right);
+    EXPECT_GT(val, 0.0);
+    EXPECT_LT(val, 1.0);
+
+    EXPECT_DOUBLE_EQ(model.cubic_ispline(right, left, right), 1.0);  // At right
+    EXPECT_DOUBLE_EQ(model.cubic_ispline(0.41, left, right), 1.0);   // After support
+
+    double val1 = model.cubic_ispline(0.25, left, right);
+    double val2 = model.cubic_ispline(0.35, left, right);
+    EXPECT_GT(val1, 0.0);
+    EXPECT_GT(val2, val1); // Monotonicity
+}
+
 TEST_F(IsplineRegressionTest, MonotonicityFitY) {
     // Test that fit_y returns a non-decreasing sequence
     std::vector<double> y = {0.1, 0.05, 0.2, 0.15, 0.3, 0.25, 0.5};

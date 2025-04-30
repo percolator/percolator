@@ -72,6 +72,8 @@ public:
         double min_val = std::numeric_limits<double>::lowest(),
         double max_val = std::numeric_limits<double>::max()) const override;
 
+    double cubic_ispline(double x, double left, double right) const;
+
 protected:
     std::vector<double> normalize_vector(const std::vector<double>& x, double xmin, double xscale) const;
     std::vector<double> compute_knots(const std::vector<double>& x_norm, const std::vector<double>& y, int num_knots) const;
@@ -83,7 +85,6 @@ protected:
     Eigen::MatrixXd build_dense_matrix(const std::vector<double>& x_full_norm,
         const std::vector<double>& knots, int n_full, int num_knots) const;
     BinnedData bin_data_weighted(const std::vector<double>& x, const std::vector<double>& y, int max_bins = 2500) const;
-    double cubic_ispline(double x, double left, double right) const;
     // Eigen::VectorXd nnls(const Eigen::MatrixXd& A, const Eigen::VectorXd& b) const;
     Eigen::VectorXd box_lsq_ldlt(const Eigen::MatrixXd& X, const Eigen::VectorXd& y, const std::vector<bool>& constrained,
         double lambda = 0.0, int max_iter = 100, double tol = 1e-12) const;
