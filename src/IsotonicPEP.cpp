@@ -81,34 +81,38 @@ std::vector<double> PavaRegression::pavaNonDecreasingRanged(
     return result;
 }
 
-BinnedData IsplineRegression::bin_data_weighted(const std::vector<double>& x, const std::vector<double>& y, int max_bins) const {
+BinnedData IsplineRegression::bin_data_weighted(
+    const std::vector<double>& x, const std::vector<double>& y, int max_bins) const
+{
     size_t n = x.size();
     if (n <= static_cast<size_t>(max_bins)) {
-        return {x, y, std::vector<double>(x.size(), 1.0)}; // No binning needed, uniform weights
+        return {x, y, std::vector<double>(x.size(), 1.0)}; // No binning needed
     }
 
-    size_t bin_size = n / max_bins;
-    std::vector<double> x_binned, y_binned, weights;
-    x_binned.reserve(max_bins);
-    y_binned.reserve(max_bins);
-    weights.reserve(max_bins);
+    std::vector<double> x_binned(max_bins, 0.0);
+    std::vector<double> y_binned(max_bins, 0.0);
+    std::vector<double> weights(max_bins, 0.0);
 
-    for (size_t i = 0; i < n; i += bin_size) {
-        size_t end = std::min(i + bin_size, n);
-        double x_sum = 0.0, y_sum = 0.0;
-        size_t count = end - i;
-        for (size_t j = i; j < end; ++j) {
-            x_sum += x[j];
-            y_sum += y[j];
-        }
-        if (count > 0) {
-            x_binned.push_back(x_sum / count);
-            y_binned.push_back(y_sum / count);
-            weights.push_back(static_cast<double>(count));
+    double bin_size = static_cast<double>(n) / max_bins;
+
+    for (size_t i = 0; i < n; ++i) {
+        int bin = std::min(static_cast<int>(i / bin_size), max_bins - 1);
+        x_binned[bin] += x[i];
+        y_binned[bin] += y[i];
+        weights[bin] += 1.0;
+    }
+
+    // Finalize average per bin
+    std::vector<double> x_avg, y_avg, w_out;
+    for (int i = 0; i < max_bins; ++i) {
+        if (weights[i] > 0) {
+            x_avg.push_back(x_binned[i] / weights[i]);
+            y_avg.push_back(y_binned[i] / weights[i]);
+            w_out.push_back(weights[i]);
         }
     }
 
-    return {x_binned, y_binned, weights};
+    return {x_avg, y_avg, w_out};
 }
 
 std::vector<double> IsplineRegression::fit_y(const std::vector<double>& y,
@@ -125,13 +129,10 @@ std::vector<double> IsplineRegression::fit_y(const std::vector<double>& y,
 }
 
 std::vector<double> IsplineRegression::fit_xy(const std::vector<double>& x, const std::vector<double>& y,
-    double min_val,
-    double max_val) const {
-
+                                              double min_val, double max_val) const {
     using namespace std::chrono;
     auto start = high_resolution_clock::now();
-    if (VERB > 2)
-        std::cerr << "[TIMING] entering sparse fit_xy\n";
+    if (VERB > 2) std::cerr << "[TIMING] entering sparse fit_xy\n";
 
     assert(x.size() == y.size());
 
@@ -140,216 +141,177 @@ std::vector<double> IsplineRegression::fit_xy(const std::vector<double>& x, cons
     auto y_used = tmp.y;
     auto weights = tmp.weights;
 
-    if (x_used.empty() || y_used.empty()) {
-        return {}; // empty input
-    }
+    if (x_used.empty() || y_used.empty()) return {};
 
     int n = x_used.size();
     if (n == 0) return {};
 
     double xmin = *std::min_element(x.begin(), x.end());
     double xmax = *std::max_element(x.begin(), x.end());
-    double xscale = xmax - xmin;    
+    double xscale = xmax - xmin;
 
-    // Normalize x to [0,1]
-    std::vector<double> x_norm(n);
-    double xmin_used = *std::min_element(x_used.begin(), x_used.end());
-    double xmax_used = *std::max_element(x_used.begin(), x_used.end());
-    double xscale_used = xmax_used - xmin_used;    
-    for (int i = 0; i < n; ++i)
-        x_norm[i] = (x_used[i] - xmin_used) / xscale_used;
+    std::vector<double> x_norm = normalize_vector(x_used, xmin, xscale);
 
-    // Determine number of knots
-    const int MAX_KNOTS = 50;
-    int num_knots = std::min(static_cast<int>(std::sqrt(n)), MAX_KNOTS);
+    int num_knots = std::min(static_cast<int>(std::sqrt(n)), 50);
+    std::vector<double> knots = compute_knots(x_norm, y_used, num_knots);
 
-    std::vector<double> knots(num_knots + 1);
-
-    if (n < 200) {
-        // --- Small dataset: uniform knots ---
-        for (int i = 0; i <= num_knots; ++i)
-            knots[i] = static_cast<double>(i) / num_knots;
-    } else {
-        // --- Large dataset: adaptive knots based on local y movement ---
-
-        // 1. Sort x_norm and y together
-        std::vector<std::pair<double, double>> xy(n);
-        for (int i = 0; i < n; ++i)
-            xy[i] = {x_norm[i], y_used[i]};
-        std::sort(xy.begin(), xy.end());
-
-        // 2. Compute moving average of y
-        std::vector<double> y_moving_avg(n, 0.0);
-        const int window = std::max(5, n / 200); // window ~ 0.5% of data
-        for (int i = 0; i < n; ++i) {
-            int start = std::max(0, i - window/2);
-            int end = std::min(n, i + window/2);
-            double sum = 0;
-            for (int j = start; j < end; ++j)
-                sum += xy[j].second;
-            y_moving_avg[i] = sum / (end - start);
-        }
-
-        // 3. Compute cumulative "action" score
-        std::vector<double> action(n, 0.0);
-        action[0] = 0.0;
-        for (int i = 1; i < n; ++i)
-            action[i] = action[i-1] + std::abs(y_moving_avg[i] - y_moving_avg[i-1]);
-
-        // Normalize action to [0,1]
-        double total_action = action.back();
-        if (total_action == 0.0) total_action = 1.0; // avoid div-by-zero
-        for (int i = 0; i < n; ++i)
-            action[i] /= total_action;
-
-        // 4. Distribute knots, with a couple ones fixed 
-        knots[0] = 0.0;
-        knots[1] = 0.02;  // very close to start
-        knots[num_knots-1] = 0.98; // very close to end
-        knots[num_knots] = 1.0;
-
-        // 5. Fill adaptive inside
-        int adaptive_knots = num_knots - 3; // we reserved 4 fixed, but there are n-1 intervalls
-        for (int k = 1; k <= adaptive_knots; ++k) {
-            double target = static_cast<double>(k) / (adaptive_knots + 1);
-            auto it = std::lower_bound(action.begin(), action.end(), target);
-            int idx = std::min(static_cast<int>(it - action.begin()), n-1);
-            knots[k+1] = xy[idx].first; // Fill inside (shifted by +1)
-        }
-    }
-
-    // Build Sparse Matrix of Cubic I-splines
-    std::vector<std::vector<Eigen::Triplet<double>>> triplets_per_thread(omp_get_max_threads());
-
-    #pragma omp parallel
-    {
-        int tid = omp_get_thread_num();
-        auto& local_triplets = triplets_per_thread[tid];
-        local_triplets.reserve(n / omp_get_max_threads() + 8);
-    
-        #pragma omp for nowait
-        for (int i = 0; i < n; ++i) {
-            double xi = x_norm[i];
-    
-            // Locate interval
-            auto it = std::upper_bound(knots.begin(), knots.end(), xi);
-            int j = std::max(0, static_cast<int>(it - knots.begin()) - 1);        
-            if (j < num_knots) {
-                double val = cubic_ispline(xi, knots[j], knots[j+1]);
-                if (val > 0.0)
-                    local_triplets.emplace_back(i, j + 1, val);
-            }
-        }
-    }
-    
-    // Merge all local vectors
-    std::vector<Eigen::Triplet<double>> triplets;
-    size_t total_size = 0;
-    for (const auto& vec : triplets_per_thread)
-        total_size += vec.size();
-    
-    triplets.reserve(total_size);
-    
-    for (const auto& vec : triplets_per_thread)
-        triplets.insert(triplets.end(), vec.begin(), vec.end());    
-    
-    Eigen::SparseMatrix<double, Eigen::RowMajor> X(n, num_knots + 1);
-    X.reserve(Eigen::VectorXi::Constant(n, 2)); // Approx two non-zeros per row
-    X.setFromTriplets(triplets.begin(), triplets.end());
-    X.makeCompressed();
-
-    // Fill intercept column (first column, all ones)
-    for (int i = 0; i < n; ++i)
-        X.coeffRef(i, 0) = 1.0;
+    Eigen::SparseMatrix<double, Eigen::RowMajor> X = build_design_matrix(x_norm, knots, n, num_knots);
+    fill_intercept(X);
 
     Eigen::VectorXd yvec = Eigen::Map<const Eigen::VectorXd>(y_used.data(), y_used.size());
-
-    assert(weights.size() == static_cast<size_t>(n));
-    assert(X.rows() == n);
-    assert(yvec.size() == n);    
-
-    // Reweight rows
-
     Eigen::VectorXd sqrt_weights_vec = Eigen::Map<const Eigen::VectorXd>(weights.data(), n).array().sqrt();
 
-    // scale the rows
-    for (int i = 0; i < X.outerSize(); ++i) {
-        for (Eigen::SparseMatrix<double, Eigen::RowMajor>::InnerIterator it(X, i); it; ++it) {
-            it.valueRef() *= sqrt_weights_vec[it.row()];  // use it.row()!
-        }
-    }
-    yvec = yvec.cwiseProduct(sqrt_weights_vec);
+    apply_weights(X, yvec, sqrt_weights_vec);
 
-    // Build constraint mask: intercept unconstrained
     std::vector<bool> constrained(num_knots + 1, true);
     constrained[0] = false;
 
-    // Solve
     auto box_start = high_resolution_clock::now();
     Eigen::VectorXd coeffs = box_lsq_ldlt(X, yvec, constrained);
     auto box_end = high_resolution_clock::now();
     if (VERB > 2)
         std::cerr << "[TIMING] box_lsq_ldlt sparse duration: " << std::chrono::duration<double>(box_end - box_start).count() << " seconds\n";
 
-    // Predict at original x positions
-    int n_full = x.size(); // full original size
-    std::vector<double> x_full_norm(n_full);
-    for (int i = 0; i < n_full; ++i)
-        x_full_norm[i] = (x[i] - xmin) / xscale;
+    int n_full = x.size();
+    std::vector<double> x_full_norm = normalize_vector(x, xmin, xscale);
 
-    // Build SparseMatrix X_full
-    std::vector<std::vector<Eigen::Triplet<double>>> triplets_full_per_thread(omp_get_max_threads());
+    Eigen::MatrixXd X_full_dense = build_dense_matrix(x_full_norm, knots, n_full, num_knots);
 
-    #pragma omp parallel
-    {
-        int tid = omp_get_thread_num();
-        auto& local_triplets = triplets_full_per_thread[tid];
-        local_triplets.reserve(n_full / omp_get_max_threads() + 8);
-
-        #pragma omp for nowait
-        for (int i = 0; i < n_full; ++i) {
-            double xi = x_full_norm[i];
-
-            // Locate interval
-            auto it = std::upper_bound(knots.begin(), knots.end(), xi);
-            int j = std::max(0, static_cast<int>(it - knots.begin()) - 1);
-            if (j < num_knots) {
-                double val = cubic_ispline(xi, knots[j], knots[j+1]);
-                if (val > 0.0)
-                    local_triplets.emplace_back(i, j + 1, val);
-            }
-        }
-    }
-
-    // Merge
-    std::vector<Eigen::Triplet<double>> triplets_full;
-    for (const auto& vec : triplets_full_per_thread)
-        triplets_full.insert(triplets_full.end(), vec.begin(), vec.end());
-
-    Eigen::SparseMatrix<double, Eigen::RowMajor> X_full(n_full, num_knots + 1);
-    X_full.reserve(Eigen::VectorXi::Constant(n_full, 2));
-    X_full.setFromTriplets(triplets_full.begin(), triplets_full.end());
-
-    // Fill intercept column (first column, all ones)
-    for (int i = 0; i < n_full; ++i)
-        X_full.coeffRef(i, 0) = 1.0;
-
-    // Predict
-    Eigen::VectorXd yfit_full = X_full * coeffs;
-    std::vector<double> result(yfit_full.size());
-    std::transform(yfit_full.data(), yfit_full.data() + yfit_full.size(), result.begin(), [&](double v) {
+    Eigen::VectorXd yfit_full = X_full_dense * coeffs;
+    std::vector<double> result(n_full);
+    std::transform(yfit_full.data(), yfit_full.data() + n_full, result.begin(), [&](double v) {
         return clamp(v, min_val, max_val);
     });
 
-    // Ensure monotonicity
     for (size_t i = 1; i < result.size(); ++i)
-        result[i] = std::max(result[i], result[i-1]);
+        result[i] = std::max(result[i], result[i - 1]);
 
     auto end = high_resolution_clock::now();
     if (VERB > 2)
         std::cerr << "[TIMING] sparse fit_xy total duration: " << std::chrono::duration<double>(end - start).count() << " seconds\n";
 
     return result;
+}
+
+std::vector<double> IsplineRegression::normalize_vector(const std::vector<double>& x, double xmin, double xscale) const {
+    std::vector<double> norm(x.size());
+    for (size_t i = 0; i < x.size(); ++i)
+        norm[i] = (x[i] - xmin) / xscale;
+    return norm;
+}
+
+std::vector<double> IsplineRegression::compute_knots(const std::vector<double>& x_norm, const std::vector<double>& y, int num_knots) const {
+    int n = x_norm.size();
+    std::vector<double> knots(num_knots + 1);
+    if (n < 200) {
+        for (int i = 0; i <= num_knots; ++i)
+            knots[i] = static_cast<double>(i) / num_knots;
+    } else {
+        std::vector<std::pair<double, double>> xy(n);
+        for (int i = 0; i < n; ++i)
+            xy[i] = {x_norm[i], y[i]};
+        std::sort(xy.begin(), xy.end());
+
+        std::vector<double> y_moving_avg(n, 0.0);
+        const int window = std::max(5, n / 200);
+        for (int i = 0; i < n; ++i) {
+            int start = std::max(0, i - window / 2);
+            int end = std::min(n, i + window / 2);
+            double sum = 0;
+            for (int j = start; j < end; ++j)
+                sum += xy[j].second;
+            y_moving_avg[i] = sum / (end - start);
+        }
+
+        std::vector<double> action(n, 0.0);
+        for (int i = 1; i < n; ++i)
+            action[i] = action[i - 1] + std::abs(y_moving_avg[i] - y_moving_avg[i - 1]);
+
+        double total_action = action.back();
+        if (total_action == 0.0) total_action = 1.0;
+        for (int i = 0; i < n; ++i)
+            action[i] /= total_action;
+
+        knots[0] = 0.0;
+        knots[1] = 0.02;
+        knots[num_knots - 1] = 0.98;
+        knots[num_knots] = 1.0;
+
+        int adaptive_knots = num_knots - 3;
+        for (int k = 1; k <= adaptive_knots; ++k) {
+            double target = static_cast<double>(k) / (adaptive_knots + 1);
+            auto it = std::lower_bound(action.begin(), action.end(), target);
+            int idx = std::min(static_cast<int>(it - action.begin()), n - 1);
+            knots[k + 1] = xy[idx].first;
+        }
+    }
+    return knots;
+}
+
+Eigen::SparseMatrix<double, Eigen::RowMajor> IsplineRegression::build_design_matrix(const std::vector<double>& x_norm, const std::vector<double>& knots, int n, int num_knots) const {
+    std::vector<std::vector<Eigen::Triplet<double>>> triplets_per_thread(omp_get_max_threads());
+    #pragma omp parallel
+    {
+        int tid = omp_get_thread_num();
+        auto& local_triplets = triplets_per_thread[tid];
+        local_triplets.reserve(n / omp_get_max_threads() + 8);
+
+        #pragma omp for nowait
+        for (int i = 0; i < n; ++i) {
+            double xi = x_norm[i];
+            auto it = std::upper_bound(knots.begin(), knots.end(), xi);
+            int j = std::max(0, static_cast<int>(it - knots.begin()) - 1);
+            if (j < num_knots) {
+                double val = cubic_ispline(xi, knots[j], knots[j + 1]);
+                if (val > 0.0)
+                    local_triplets.emplace_back(i, j + 1, val);
+            }
+        }
+    }
+
+    std::vector<Eigen::Triplet<double>> triplets;
+    for (const auto& vec : triplets_per_thread)
+        triplets.insert(triplets.end(), vec.begin(), vec.end());
+
+    Eigen::SparseMatrix<double, Eigen::RowMajor> X(n, num_knots + 1);
+    X.reserve(Eigen::VectorXi::Constant(n, 2));
+    X.setFromTriplets(triplets.begin(), triplets.end());
+    X.makeCompressed();
+    return X;
+}
+
+void IsplineRegression::fill_intercept(Eigen::SparseMatrix<double, Eigen::RowMajor>& X) const {
+    for (int i = 0; i < X.rows(); ++i)
+        X.coeffRef(i, 0) = 1.0;
+}
+
+void IsplineRegression::apply_weights(Eigen::SparseMatrix<double, Eigen::RowMajor>& X, Eigen::VectorXd& yvec, const Eigen::VectorXd& sqrt_weights_vec) const {
+    for (int i = 0; i < X.outerSize(); ++i) {
+        for (Eigen::SparseMatrix<double, Eigen::RowMajor>::InnerIterator it(X, i); it; ++it) {
+            it.valueRef() *= sqrt_weights_vec[it.row()];
+        }
+    }
+    yvec = yvec.cwiseProduct(sqrt_weights_vec);
+}
+
+Eigen::MatrixXd IsplineRegression::build_dense_matrix(const std::vector<double>& x_full_norm, const std::vector<double>& knots, int n_full, int num_knots) const {
+    Eigen::MatrixXd X_full_dense = Eigen::MatrixXd::Zero(n_full, num_knots + 1);
+    for (int i = 0; i < n_full; ++i)
+        X_full_dense(i, 0) = 1.0;
+
+    for (int i = 0; i < n_full; ++i) {
+        double xi = x_full_norm[i];
+        int j = 0;
+        while (j + 1 < static_cast<int>(knots.size()) && xi > knots[j + 1])
+            ++j;
+
+        for (int k = std::max(0, j - 2); k <= std::min(j + 1, num_knots - 1); ++k) {
+            double val = cubic_ispline(xi, knots[k], knots[k + 1]);
+            if (val > 0.0)
+                X_full_dense(i, k + 1) = val;
+        }
+    }
+    return X_full_dense;
 }
 
 double IsplineRegression::cubic_ispline(double x, double left, double right) const {
@@ -438,7 +400,7 @@ Eigen::VectorXd IsplineRegression::box_lsq_ldlt(
 
                 std::vector<int> new_passive;
                 for (int j : passive_set) {
-                    if (x[j] > 1e-12) {
+                    if (x[j] > tol) {
                         new_passive.push_back(j);
                     } else {
                         passive[j] = false;

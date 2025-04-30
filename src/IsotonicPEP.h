@@ -71,7 +71,17 @@ public:
     std::vector<double> fit_xy(const std::vector<double>& x, const std::vector<double>& y,
         double min_val = std::numeric_limits<double>::lowest(),
         double max_val = std::numeric_limits<double>::max()) const override;
-private:
+
+protected:
+    std::vector<double> normalize_vector(const std::vector<double>& x, double xmin, double xscale) const;
+    std::vector<double> compute_knots(const std::vector<double>& x_norm, const std::vector<double>& y, int num_knots) const;
+    Eigen::SparseMatrix<double, Eigen::RowMajor> build_design_matrix(const std::vector<double>& x_norm,
+        const std::vector<double>& knots, int n, int num_knots) const;
+    void fill_intercept(Eigen::SparseMatrix<double, Eigen::RowMajor>& X) const;
+    void apply_weights(Eigen::SparseMatrix<double, Eigen::RowMajor>& X,
+        Eigen::VectorXd& yvec, const Eigen::VectorXd& sqrt_weights_vec) const;
+    Eigen::MatrixXd build_dense_matrix(const std::vector<double>& x_full_norm,
+        const std::vector<double>& knots, int n_full, int num_knots) const;
     BinnedData bin_data_weighted(const std::vector<double>& x, const std::vector<double>& y, int max_bins = 2500) const;
     double cubic_ispline(double x, double left, double right) const;
     // Eigen::VectorXd nnls(const Eigen::MatrixXd& A, const Eigen::VectorXd& b) const;
