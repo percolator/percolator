@@ -52,14 +52,14 @@ elif [[ -f ${HOME}/bin/brew ]]
     echo "[ Package manager ] : Homebrew "
     package_manager=$HOME/bin/brew
     boost_install_options="boost"
-    other_packages="cmake tokyo-cabinet lbzip2 pbzip2 lzlib libomp googletest"
-elif [[ -f /usr/local/bin/brew ]]
+    other_packages="cmake tokyo-cabinet lbzip2 pbzip2 lzlib llvm libomp googletest"
+elif [[ -f /usr/local/bin/brew || -f /opt/homebrew/bin/brew ]]  
   then
     echo "[ Package manager ] : Homebrew "
     package_manager="brew"
     ${package_manager} update || true # brew.rb raises an error on the vagrant box, just ignore it
     boost_install_options="boost"
-    other_packages="cmake tokyo-cabinet lbzip2 pbzip2 lzlib libomp googletest"
+    other_packages="cmake tokyo-cabinet lbzip2 pbzip2 lzlib llvm libomp googletest"
 
 else
     package_manager_installed=false
@@ -105,81 +105,44 @@ source ./percolator/admin/builders/_urls_and_file_names_.sh
 mkdir -p ${build_dir}
 cd ${build_dir}
 
-# XercesC installation
-#if [[ -d /usr/local/include/xercesc ]] # this implies homebrew installation ...
-#	then
-#	echo "Xerces is already installed."
-#else
-	curl -k -O ${mac_os_xerces_url}
-	tar xzf ${mac_os_xerces}.tar.gz
-	cd ${mac_os_xerces}/
-	./configure CFLAGS="-arch x86_64" CXXFLAGS="-arch x86_64" --disable-dynamic --enable-transcoder-iconv --disable-network --disable-threads
-	make -j 2
-	sudo make install
-#fi
+$package_manager install xerces-c xsd
+export CC=/opt/homebrew/opt/llvm/bin/clang
+export CXX=/opt/homebrew/opt/llvm/bin/clang++
+export SDKROOT=$(xcrun --sdk macosx --show-sdk-path)
+export SYSROOT_FLAGS="--sysroot=$SDKROOT -isystem$SDKROOT/usr/include -isystem$SDKROOT/System/Library/Frameworks"
+export HOMEBREW_LLVM_INCLUDE="/opt/homebrew/opt/llvm/include/c++/v1"
+export CXXFLAGS="-isystem $HOMEBREW_LLVM_INCLUDE $SYSROOT_FLAGS"
+export LDFLAGS="-L/opt/homebrew/opt/llvm/lib/c++ -stdlib=libc++"
+prefix_path="/opt/homebrew/opt/xerces-c;/opt/homebrew/opt/xsd"
 
-cd ${build_dir}
 
-# XSD installation
-if [ ! -d ${mac_os_xsd} ]; then
-#  if [ $package_manager == "sudo port" ]; then
-#     export XSDDIR=/usr/local/Cellar/xsd/4.0.0_1/
-#  fi
-  curl -OL ${mac_os_xsd_url}
-  tar -xjf ${mac_os_xsd}.tar.bz2
-  cd ${mac_os_xsd}
-  
-  # https://www.codesynthesis.com/pipermail/xsde-users/2022-August/000916.html
-  mv libxsd-frontend/version libxsd-frontend/version.txt
-  mv libcutl/version libcutl/version.txt
-  mv xsd/version xsd/version.txt
+function build_component() {
+    local name="$1"
+    local src="$2"
+    local options="$3"
 
-  # https://www.codesynthesis.com/pipermail/xsde-users/2022-August/000918.html
-  # https://www.boost.org/doc/libs/master/libs/config/doc/html/boost_config/boost_macro_reference.html
-  echo '# define BOOST_NO_CXX11_HDR_TUPLE' > tmp_file
-  cat libcutl/cutl/details/boost/config/stdlib/libcpp.hpp >> tmp_file
-  mv tmp_file libcutl/cutl/details/boost/config/stdlib/libcpp.hpp
+    mkdir -p "${build_dir}/${name}"
+    pushd "${build_dir}/${name}" > /dev/null
 
-  echo '#include <iostream>' > tmp_file
-  cat libxsd-frontend/xsd-frontend/semantic-graph/elements.cxx >> tmp_file
-  mv tmp_file libxsd-frontend/xsd-frontend/semantic-graph/elements.cxx
-  
-  make CPPFLAGS=-I../${mac_os_xerces}/src LDFLAGS=-L../${mac_os_xerces}/src/.libs
-  ./xsd/xsd/xsd --version
-  # Move Binary, to the right include files
-  mv xsd/xsd/xsd xsd/libxsd/xsd/
-  rm -fr xsd/xsd
-  cd ..
-  export XSDDIR=${build_dir}/${mac_os_xsd}/xsd/libxsd
-else
-  echo "XSD is already installed."
-fi
-
-#-------------------------------------------
+    cmake \
+      -DCMAKE_C_COMPILER="$CC" \
+      -DCMAKE_CXX_COMPILER="$CXX" \
+      -DCMAKE_BUILD_TYPE=Release \
+      -DCMAKE_INSTALL_PREFIX=/usr/local \
+      -DCMAKE_PREFIX_PATH="$prefix_path" \
+      -DCMAKE_CXX_FLAGS="$CXXFLAGS" \
+      -DCMAKE_EXE_LINKER_FLAGS="$LDFLAGS" \
+      $options "$src"
+    make -j$(sysctl -n hw.ncpu)
+    make package
+    popd > /dev/null
+}
 
 mkdir -p ${release_dir}
 
-mkdir -p ${build_dir}/percolator-noxml
-cd ${build_dir}/percolator-noxml
-
-cmake -DTARGET_ARCH="x86_64" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local/ -DXML_SUPPORT=OFF -DCMAKE_PREFIX_PATH="/opt/local/;/usr/;/usr/local/;~/;/Library/Developer/CommandLineTools/usr/"  ${src_dir}/percolator
-make -j 2
-make -j 2 package
-
-mkdir -p ${build_dir}/percolator
-cd ${build_dir}/percolator
-
-cmake -DTARGET_ARCH="x86_64" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local/ -DXML_SUPPORT=ON -DGOOGLE_TEST=1 -DCMAKE_PREFIX_PATH="${build_dir}/${mac_os_xerces}/;${build_dir}/${mac_os_xsd}/;/opt/local/;/usr/;/usr/local/;~/;/Library/Developer/CommandLineTools/usr/"  ${src_dir}/percolator
-make -j 2
-make -j 2 package
-
-mkdir -p ${build_dir}/converters
-cd ${build_dir}/converters
-
-cmake -DTARGET_ARCH="x86_64" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local/ -DCMAKE_PREFIX_PATH="${build_dir}/${mac_os_xerces}/;${build_dir}/${mac_os_xsd}/;/opt/local/;/usr/;/usr/local/;~/;/Library/Developer/CommandLineTools/usr/" -DSERIALIZE="TokyoCabinet" ${src_dir}/percolator/src/converters
-make -j 2
-make -j 2 package
-#--------------------------------------------
+build_component "percolator-noxml" "${src_dir}/percolator" "-DXML_SUPPORT=OFF"
+build_component "percolator" "${src_dir}/percolator" "-DXML_SUPPORT=ON -DGOOGLE_TEST=1"
+build_component "converters" "${src_dir}/percolator/src/converters" "-DSERIALIZE=TokyoCabinet"
 
 echo "build directory was : ${build_dir}";
 
