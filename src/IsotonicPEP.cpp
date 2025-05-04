@@ -470,11 +470,104 @@ Eigen::VectorXd IsplineRegression::box_lsq_ldlt(
     return x;
 }
 
+namespace util {
+    template <typename T>
+    const T& clamp(const T& v, const T& lo, const T& hi) {
+        return (v < lo) ? lo : (hi < v) ? hi : v;
+    }
+}
+
+AdaptiveIsplineRegression::AdaptiveIsplineRegression(int degree) : degree_(degree) {}
+
+std::vector<double> AdaptiveIsplineRegression::fit_y(const std::vector<double>& y, double min_val, double max_val) const {
+    std::vector<double> x(y.size());
+    std::iota(x.begin(), x.end(), 0.0);
+    return fit_xy(x, y, min_val, max_val);
+}
+
+AdaptiveIsplineRegression::BinnedData AdaptiveIsplineRegression::adaptive_bin(const std::vector<double>& x, const std::vector<double>& y, int max_bins) const {
+    size_t n = x.size();
+    std::vector<double> x_binned, y_binned, weights;
+
+    size_t bin_start = 0;
+    for (size_t i = 1; i <= n; ++i) {
+        if (i == n || (y[i] != y[bin_start] && (i - bin_start >= n / max_bins || y[i] == 0))) {
+            double x_avg = std::accumulate(x.begin() + bin_start, x.begin() + i, 0.0) / (i - bin_start);
+            double y_avg = std::accumulate(y.begin() + bin_start, y.begin() + i, 0.0) / (i - bin_start);
+            if (VERB > 2) std::cerr << "Creating bin from " << bin_start << " to " << i - 1 << ", x_avg: " << x_avg << ", y_avg: " << y_avg << "\n";
+            x_binned.push_back(x_avg);
+            y_binned.push_back(y_avg);
+            weights.push_back(i - bin_start);
+            bin_start = i;
+        }
+    }
+    return {x_binned, y_binned, weights};
+}
+
+std::vector<double> AdaptiveIsplineRegression::compute_adaptive_knots(const std::vector<double>& x, const std::vector<double>& /* y */, int num_knots) const {
+    std::vector<double> knots;
+    knots.push_back(x.front());
+    for (int i = 1; i < num_knots; ++i) {
+        double q = static_cast<double>(i) / num_knots;
+        size_t idx = q * (x.size() - 1);
+        knots.push_back(x[idx]);
+    }
+    knots.push_back(x.back());
+    if (VERB > 1) {
+        std::cerr << "Knots: ";
+        for (const auto& k : knots) std::cerr << k << " ";
+        std::cerr << "\n";
+    }
+    return knots;
+}
+
+Eigen::VectorXd AdaptiveIsplineRegression::fit_spline(const BinnedData& data, const std::vector<double>& knots, double lambda) const {
+    int n = data.x.size(), k = knots.size();
+    Eigen::MatrixXd X(n, k);
+    for (int i = 0; i < n; ++i)
+        for (int j = 0; j < k - 1; ++j)
+            X(i, j) = quadratic_ispline(data.x[i], knots[j], knots[j + 1]);
+    X.col(k - 1).setOnes();
+
+    Eigen::VectorXd y = Eigen::Map<const Eigen::VectorXd>(data.y.data(), n);
+    Eigen::VectorXd w = Eigen::Map<const Eigen::VectorXd>(data.weights.data(), n);
+    Eigen::VectorXd coeffs = (X.transpose() * w.asDiagonal() * X + lambda * Eigen::MatrixXd::Identity(k, k)).ldlt().solve(X.transpose() * w.asDiagonal() * y);
+
+    if (VERB > 1) std::cerr << "Spline coefficients: " << coeffs.transpose() << "\n";
+
+    return coeffs;
+}
+
+double AdaptiveIsplineRegression::quadratic_ispline(double x, double left, double right) const {
+    if (x < left) return 0.0;
+    if (x > right) return 1.0;
+    double u = (x - left) / (right - left);
+    return u * u;
+}
+
+std::vector<double> AdaptiveIsplineRegression::fit_xy(const std::vector<double>& x, const std::vector<double>& y, double min_val, double max_val) const {
+    assert(x.size() == y.size());
+
+    auto data = adaptive_bin(x, y, 2500);
+    auto knots = compute_adaptive_knots(data.x, data.y, std::min(50, (int)std::sqrt(data.x.size())));
+
+    Eigen::VectorXd coeffs = fit_spline(data, knots, 1e-8);
+
+    std::vector<double> result(x.size());
+    for (size_t i = 0; i < x.size(); ++i) {
+        double pred = coeffs.tail(1)(0);
+        for (size_t j = 0; j < knots.size() - 1; ++j)
+            pred += coeffs(j) * quadratic_ispline(x[i], knots[j], knots[j + 1]);
+        result[i] = util::clamp(pred, min_val, max_val);
+    }
+
+    return PavaRegression().fit_xy(x, result, min_val, max_val);
+}
 
 InferPEP::InferPEP(bool use_ispline)
 {
     if (use_ispline) {
-        regressor_ptr_ = std::make_unique<IsplineRegression>();
+        regressor_ptr_ = std::make_unique<AdaptiveIsplineRegression>(2);
         if (VERB > 1) {
             std::cerr << "Performing isotonic regression using I-Splines" << std::endl;
         }                

@@ -93,7 +93,23 @@ protected:
 };
 
 
-
+class AdaptiveIsplineRegression : public IsotonicRegression {
+    public:
+        AdaptiveIsplineRegression(int degree = 2);
+        std::vector<double> fit_xy(const std::vector<double>& x, const std::vector<double>& y,
+                                   double min_val, double max_val) const override;
+        std::vector<double> fit_y(const std::vector<double>& y, double min_val, double max_val) const override;    private:
+        int degree_;
+        struct BinnedData {
+            std::vector<double> x, y, weights;
+        };
+    
+        BinnedData adaptive_bin(const std::vector<double>& x, const std::vector<double>& y, int max_bins) const;
+        std::vector<double> compute_adaptive_knots(const std::vector<double>& x, const std::vector<double>& y, int num_knots) const;
+        Eigen::VectorXd fit_spline(const BinnedData& data, const std::vector<double>& knots, double lambda) const;
+        double quadratic_ispline(double x, double left, double right) const;
+};
+    
 
 class InferPEP {
     public:
