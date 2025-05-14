@@ -61,8 +61,7 @@ struct BinnedData {
 
 class IsplineRegression : public IsotonicRegression {
 public:
-    IsplineRegression(int degree = 2)
-        : degree_(degree) {}
+    IsplineRegression()  {}
     
     std::vector<double> fit_y(const std::vector<double>& y,
             double min_val = std::numeric_limits<double>::lowest(),
@@ -84,30 +83,31 @@ protected:
         Eigen::VectorXd& yvec, const Eigen::VectorXd& sqrt_weights_vec) const;
     Eigen::MatrixXd build_dense_matrix(const std::vector<double>& x_full_norm,
         const std::vector<double>& knots, int n_full, int num_knots) const;
-    BinnedData bin_data_weighted(const std::vector<double>& x, const std::vector<double>& y, int max_bins = 2500) const;
+    BinnedData bin_data_weighted(const std::vector<double>& x, const std::vector<double>& y, int max_bins = 25000) const;
     // Eigen::VectorXd nnls(const Eigen::MatrixXd& A, const Eigen::VectorXd& b) const;
     Eigen::VectorXd box_lsq_ldlt(const Eigen::MatrixXd& X, const Eigen::VectorXd& y, const std::vector<bool>& constrained,
-        double lambda = 0.0, int max_iter = 100, double tol = 1e-12) const;
-    size_t degree_;
+        double lambda = 1e-6, int max_iter = 500, double tol = 1e-12) const;
     mutable std::vector<double> knots_;
 };
 
 
-class AdaptiveIsplineRegression : public IsotonicRegression {
+class AdaptiveIsplineRegression : public IsplineRegression {
     public:
-        AdaptiveIsplineRegression(int degree = 2);
+        AdaptiveIsplineRegression();
         std::vector<double> fit_xy(const std::vector<double>& x, const std::vector<double>& y,
                                    double min_val, double max_val) const override;
-        std::vector<double> fit_y(const std::vector<double>& y, double min_val, double max_val) const override;    private:
-        int degree_;
+        std::vector<double> fit_y(const std::vector<double>& y, double min_val, double max_val) const override;
+
         struct BinnedData {
             std::vector<double> x, y, weights;
         };
+
+    protected:
     
         BinnedData adaptive_bin(const std::vector<double>& x, const std::vector<double>& y, int max_bins) const;
+        BinnedData bin_data(const std::vector<double>& x, const std::vector<double>& y, int max_bins) const;
         std::vector<double> compute_adaptive_knots(const std::vector<double>& x, const std::vector<double>& y, int num_knots) const;
         Eigen::VectorXd fit_spline(const BinnedData& data, const std::vector<double>& knots, double lambda) const;
-        double quadratic_ispline(double x, double left, double right) const;
 };
     
 

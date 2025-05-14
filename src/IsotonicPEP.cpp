@@ -81,7 +81,7 @@ std::vector<double> PavaRegression::pavaNonDecreasingRanged(
     return result;
 }
 
-BinnedData IsplineRegression::bin_data_weighted(const std::vector<double>& x, const std::vector<double>& y, int max_bins) const {
+BinnedData bin_data_weighted_xxx(const std::vector<double>& x, const std::vector<double>& y, int max_bins) { // const {
     size_t n = x.size();
     if (n <= static_cast<size_t>(max_bins)) {
         return {x, y, std::vector<double>(n, 1.0)};
@@ -109,19 +109,27 @@ BinnedData IsplineRegression::bin_data_weighted(const std::vector<double>& x, co
     std::vector<double> x_binned, y_binned, weights;
     size_t bin_start = 0;
     size_t target_bin = 1;
+    size_t max_bin_size = static_cast<size_t> (n * 2.0 / max_bins);
+    int bins_remaining = max_bins;
 
     for (size_t i = 1; i < n; ++i) {
-        if (change[i] >= (target_bin * total_change / max_bins)) {
-            size_t count = i - bin_start;
+        size_t count = i - bin_start;
+        if ((change[i] >= (target_bin * total_change / bins_remaining )) || (count >= max_bin_size )) {
+            if ((count >= max_bin_size ) && ( bins_remaining > 1 )) {
+                bins_remaining--;
+            } else {
+                target_bin++;
+            }
+
             if (count > 0) {
                 double x_sum = std::accumulate(x.begin() + bin_start, x.begin() + i, 0.0);
                 double y_sum = std::accumulate(y.begin() + bin_start, y.begin() + i, 0.0);
                 x_binned.push_back(x_sum / count);
                 y_binned.push_back(y_sum / count);
-                weights.push_back(static_cast<double>(count));
+                double weight_scale = 1.0 + 10.0 * (1.0 - double(bin_start) / n);
+                weights.push_back(static_cast<double>(count) * weight_scale);
             }
             bin_start = i;
-            target_bin++;
         }
     }
 
@@ -138,8 +146,8 @@ BinnedData IsplineRegression::bin_data_weighted(const std::vector<double>& x, co
     return {x_binned, y_binned, weights};
 }
 
-BinnedData old_bin_data_weighted(
-    const std::vector<double>& x, const std::vector<double>& y, int max_bins)
+BinnedData IsplineRegression::bin_data_weighted(
+    const std::vector<double>& x, const std::vector<double>& y, int max_bins) const
 {
     size_t n = x.size();
     if (n <= static_cast<size_t>(max_bins)) {
@@ -389,7 +397,7 @@ Eigen::VectorXd IsplineRegression::box_lsq_ldlt(
     const int p = X.cols();
 
     VectorXd x = VectorXd::Zero(p);
-    x[0] = 0.5; // Warm-start the intercept
+    x[0] = 1e-8; // Warm-start the intercept
     VectorXd w = X.transpose() * (y - X * x);
 
     std::vector<bool> passive(p, false);
@@ -477,7 +485,7 @@ namespace util {
     }
 }
 
-AdaptiveIsplineRegression::AdaptiveIsplineRegression(int degree) : degree_(degree) {}
+AdaptiveIsplineRegression::AdaptiveIsplineRegression() {}
 
 std::vector<double> AdaptiveIsplineRegression::fit_y(const std::vector<double>& y, double min_val, double max_val) const {
     std::vector<double> x(y.size());
@@ -489,31 +497,83 @@ AdaptiveIsplineRegression::BinnedData AdaptiveIsplineRegression::adaptive_bin(co
     size_t n = x.size();
     std::vector<double> x_binned, y_binned, weights;
 
+    double total_ones = std::accumulate(y.begin(), y.end(), 0.0);
+    double target_per_bin = total_ones / max_bins;
+    double bin_ones = 0.0;
+
     size_t bin_start = 0;
-    for (size_t i = 1; i <= n; ++i) {
-        if (i == n || (y[i] != y[bin_start] && (i - bin_start >= n / max_bins || y[i] == 0))) {
-            double x_avg = std::accumulate(x.begin() + bin_start, x.begin() + i, 0.0) / (i - bin_start);
-            double y_avg = std::accumulate(y.begin() + bin_start, y.begin() + i, 0.0) / (i - bin_start);
-            if (VERB > 2) std::cerr << "Creating bin from " << bin_start << " to " << i - 1 << ", x_avg: " << x_avg << ", y_avg: " << y_avg << "\n";
+    size_t max_bin_size = static_cast<size_t> ( n * 2.0 / max_bins);  // enforce upper limit on bin width
+
+    for (size_t i = 0; i < n; ++i) {
+        bin_ones += y[i];
+        size_t bin_size = i - bin_start + 1;
+
+        if (bin_ones >= target_per_bin || bin_size >= max_bin_size || i == n - 1) {
+            double x_avg = std::accumulate(x.begin() + bin_start, x.begin() + i + 1, 0.0) / bin_size;
+            double y_avg = std::accumulate(y.begin() + bin_start, y.begin() + i + 1, 0.0) / bin_size;
+            if (VERB > 2) std::cerr << "Creating bin from " << bin_start << " to " << i << ", x_avg: " << x_avg << ", y_avg: " << y_avg << "\n";
             x_binned.push_back(x_avg);
             y_binned.push_back(y_avg);
-            weights.push_back(i - bin_start);
-            bin_start = i;
+            weights.push_back(bin_size);
+            bin_start = i + 1;
+            bin_ones = 0.0;
         }
     }
     return {x_binned, y_binned, weights};
 }
 
+AdaptiveIsplineRegression::BinnedData AdaptiveIsplineRegression::bin_data(
+    const std::vector<double>& x, const std::vector<double>& y, int max_bins) const
+{
+    size_t n = x.size();
+    if (n == 0 || max_bins <= 0) return {{}, {}, {}};
+
+    std::vector<double> x_binned, y_binned, weights;
+
+    double target_bin_size = static_cast<double>(n) / max_bins;
+    double next_bin_threshold = target_bin_size;
+
+    size_t bin_start = 0;
+    for (size_t i = 0; i < n; ++i) {
+        double bin_progress = static_cast<double>(i + 1);  // since i is inclusive
+        if (bin_progress >= next_bin_threshold || i == n - 1) {
+            size_t bin_end = i + 1;  // exclusive
+            size_t bin_size = bin_end - bin_start;
+
+            double x_sum = std::accumulate(x.begin() + bin_start, x.begin() + bin_end, 0.0);
+            double y_sum = std::accumulate(y.begin() + bin_start, y.begin() + bin_end, 0.0);
+
+            double x_avg = x_sum / bin_size;
+            double y_avg = y_sum / bin_size;
+
+            if (VERB > 4) {
+                std::cerr << "Creating bin from " << bin_start << " to " << i
+                          << ", x_avg: " << x_avg << ", y_avg: " << y_avg << "\n";
+            }
+
+            x_binned.push_back(x_avg);
+            y_binned.push_back(y_avg);
+            weights.push_back(static_cast<double>(bin_size));
+
+            bin_start = bin_end;
+            next_bin_threshold += target_bin_size;
+        }
+    }
+
+    return {x_binned, y_binned, weights};
+}
+
 std::vector<double> AdaptiveIsplineRegression::compute_adaptive_knots(const std::vector<double>& x, const std::vector<double>& /* y */, int num_knots) const {
+    double skew_factor = 0.75; // <1 for front loading
     std::vector<double> knots;
     knots.push_back(x.front());
     for (int i = 1; i < num_knots; ++i) {
-        double q = static_cast<double>(i) / num_knots;
-        size_t idx = q * (x.size() - 1);
+        double q = std::pow(static_cast<double>(i) / num_knots, skew_factor);  
+        size_t idx = static_cast<size_t>(q * (x.size() - 1));
         knots.push_back(x[idx]);
     }
     knots.push_back(x.back());
-    if (VERB > 1) {
+    if (VERB > 3) {
         std::cerr << "Knots: ";
         for (const auto& k : knots) std::cerr << k << " ";
         std::cerr << "\n";
@@ -526,7 +586,7 @@ Eigen::VectorXd AdaptiveIsplineRegression::fit_spline(const BinnedData& data, co
     Eigen::MatrixXd X(n, k);
     for (int i = 0; i < n; ++i)
         for (int j = 0; j < k - 1; ++j)
-            X(i, j) = quadratic_ispline(data.x[i], knots[j], knots[j + 1]);
+            X(i, j) = cubic_ispline(data.x[i], knots[j], knots[j + 1]);
     X.col(k - 1).setOnes();
 
     Eigen::VectorXd y = Eigen::Map<const Eigen::VectorXd>(data.y.data(), n);
@@ -538,26 +598,21 @@ Eigen::VectorXd AdaptiveIsplineRegression::fit_spline(const BinnedData& data, co
     return coeffs;
 }
 
-double AdaptiveIsplineRegression::quadratic_ispline(double x, double left, double right) const {
-    if (x < left) return 0.0;
-    if (x > right) return 1.0;
-    double u = (x - left) / (right - left);
-    return u * u;
-}
-
 std::vector<double> AdaptiveIsplineRegression::fit_xy(const std::vector<double>& x, const std::vector<double>& y, double min_val, double max_val) const {
+    size_t num_bins = 10000;
+    double lambda = 1e-10;
     assert(x.size() == y.size());
-
-    auto data = adaptive_bin(x, y, 2500);
+    auto data = bin_data(x, y, num_bins);
+    // auto data = adaptive_bin(x, y, num_bins);
     auto knots = compute_adaptive_knots(data.x, data.y, std::min(50, (int)std::sqrt(data.x.size())));
 
-    Eigen::VectorXd coeffs = fit_spline(data, knots, 1e-8);
+    Eigen::VectorXd coeffs = fit_spline(data, knots, lambda);
 
     std::vector<double> result(x.size());
     for (size_t i = 0; i < x.size(); ++i) {
         double pred = coeffs.tail(1)(0);
         for (size_t j = 0; j < knots.size() - 1; ++j)
-            pred += coeffs(j) * quadratic_ispline(x[i], knots[j], knots[j + 1]);
+            pred += coeffs(j) * cubic_ispline(x[i], knots[j], knots[j + 1]);
         result[i] = util::clamp(pred, min_val, max_val);
     }
 
@@ -567,7 +622,8 @@ std::vector<double> AdaptiveIsplineRegression::fit_xy(const std::vector<double>&
 InferPEP::InferPEP(bool use_ispline)
 {
     if (use_ispline) {
-        regressor_ptr_ = std::make_unique<AdaptiveIsplineRegression>(2);
+        regressor_ptr_ = std::make_unique<AdaptiveIsplineRegression>();
+//        regressor_ptr_ = std::make_unique<IsplineRegression>();
         if (VERB > 1) {
             std::cerr << "Performing isotonic regression using I-Splines" << std::endl;
         }                
@@ -636,11 +692,11 @@ std::vector<double> InferPEP::tdc_to_pep(const std::vector<double>& is_decoy, co
             std::cerr << "[TIMING] choosing fit_xy\n";
         auto sc = scores;
         sc.insert(sc.begin(), sc[0]);
-        decoy_rate = regressor_ptr_->fit_xy(sc, is_dec);
+        decoy_rate = regressor_ptr_->fit_xy(sc, is_dec, epsilon, 1. - epsilon);
     } else {
         if (VERB > 2)
             std::cerr << "[TIMING] choosing fit_y\n";
-        decoy_rate = regressor_ptr_->fit_y(is_dec);
+        decoy_rate = regressor_ptr_->fit_y(is_dec,  epsilon, 1. - epsilon);
     }
     decoy_rate.erase(decoy_rate.begin());
 
