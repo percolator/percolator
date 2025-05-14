@@ -593,7 +593,7 @@ Eigen::VectorXd AdaptiveIsplineRegression::fit_spline(const BinnedData& data, co
     Eigen::VectorXd w = Eigen::Map<const Eigen::VectorXd>(data.weights.data(), n);
     Eigen::VectorXd coeffs = (X.transpose() * w.asDiagonal() * X + lambda * Eigen::MatrixXd::Identity(k, k)).ldlt().solve(X.transpose() * w.asDiagonal() * y);
 
-    if (VERB > 1) std::cerr << "Spline coefficients: " << coeffs.transpose() << "\n";
+    if (VERB > 3) std::cerr << "Spline coefficients: " << coeffs.transpose() << "\n";
 
     return coeffs;
 }
