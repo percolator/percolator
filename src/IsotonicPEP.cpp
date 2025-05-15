@@ -145,11 +145,13 @@ IsplineRegression::BinnedData IsplineRegression::bin_data(
 }
 
 std::vector<double> IsplineRegression::compute_adaptive_knots(const std::vector<double>& x, const std::vector<double>& /* y */, int num_knots) const {
+    
     double skew_factor = 0.75; // <1 for front loading
+
     std::vector<double> knots;
     knots.push_back(x.front());
     for (int i = 1; i < num_knots; ++i) {
-        double q = std::pow(static_cast<double>(i) / num_knots, skew_factor);  
+        double q = 1.0 - std::pow(1.0 - static_cast<double>(i) / num_knots, skew_factor);
         size_t idx = static_cast<size_t>(q * (x.size() - 1));
         knots.push_back(x[idx]);
     }
