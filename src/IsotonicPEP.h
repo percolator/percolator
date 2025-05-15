@@ -52,59 +52,24 @@ public:
 
 };
 
-struct BinnedData {
-    std::vector<double> x;
-    std::vector<double> y;
-    std::vector<double> weights;
-};
-
 
 class IsplineRegression : public IsotonicRegression {
-public:
-    IsplineRegression()  {}
-    
-    std::vector<double> fit_y(const std::vector<double>& y,
+    public:
+        IsplineRegression();
+        std::vector<double> fit_xy(const std::vector<double>& x, const std::vector<double>& y,
             double min_val = std::numeric_limits<double>::lowest(),
             double max_val = std::numeric_limits<double>::max()) const override;
-        
-    std::vector<double> fit_xy(const std::vector<double>& x, const std::vector<double>& y,
-        double min_val = std::numeric_limits<double>::lowest(),
-        double max_val = std::numeric_limits<double>::max()) const override;
-
-    double cubic_ispline(double x, double left, double right) const;
-
-protected:
-    std::vector<double> normalize_vector(const std::vector<double>& x, double xmin, double xscale) const;
-    std::vector<double> compute_knots(const std::vector<double>& x_norm, const std::vector<double>& y, int num_knots) const;
-    Eigen::SparseMatrix<double, Eigen::RowMajor> build_design_matrix(const std::vector<double>& x_norm,
-        const std::vector<double>& knots, int n, int num_knots) const;
-    void fill_intercept(Eigen::SparseMatrix<double, Eigen::RowMajor>& X) const;
-    void apply_weights(Eigen::SparseMatrix<double, Eigen::RowMajor>& X,
-        Eigen::VectorXd& yvec, const Eigen::VectorXd& sqrt_weights_vec) const;
-    Eigen::MatrixXd build_dense_matrix(const std::vector<double>& x_full_norm,
-        const std::vector<double>& knots, int n_full, int num_knots) const;
-    BinnedData bin_data_weighted(const std::vector<double>& x, const std::vector<double>& y, int max_bins = 25000) const;
-    // Eigen::VectorXd nnls(const Eigen::MatrixXd& A, const Eigen::VectorXd& b) const;
-    Eigen::VectorXd box_lsq_ldlt(const Eigen::MatrixXd& X, const Eigen::VectorXd& y, const std::vector<bool>& constrained,
-        double lambda = 1e-6, int max_iter = 500, double tol = 1e-12) const;
-    mutable std::vector<double> knots_;
-};
-
-
-class AdaptiveIsplineRegression : public IsplineRegression {
-    public:
-        AdaptiveIsplineRegression();
-        std::vector<double> fit_xy(const std::vector<double>& x, const std::vector<double>& y,
-                                   double min_val, double max_val) const override;
-        std::vector<double> fit_y(const std::vector<double>& y, double min_val, double max_val) const override;
+        std::vector<double> fit_y(const std::vector<double>& y, 
+            double min_val = std::numeric_limits<double>::lowest(),
+            double max_val = std::numeric_limits<double>::max()) const override;
 
         struct BinnedData {
             std::vector<double> x, y, weights;
         };
+        double cubic_ispline(double x, double left, double right) const;
 
     protected:
     
-        BinnedData adaptive_bin(const std::vector<double>& x, const std::vector<double>& y, int max_bins) const;
         BinnedData bin_data(const std::vector<double>& x, const std::vector<double>& y, int max_bins) const;
         std::vector<double> compute_adaptive_knots(const std::vector<double>& x, const std::vector<double>& y, int num_knots) const;
         Eigen::VectorXd fit_spline(const BinnedData& data, const std::vector<double>& knots, double lambda) const;
