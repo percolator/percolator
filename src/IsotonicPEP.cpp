@@ -95,8 +95,6 @@ namespace util {
     }
 }
 
-IsplineRegression::IsplineRegression() {}
-
 std::vector<double> IsplineRegression::fit_y(const std::vector<double>& y, double min_val, double max_val) const {
     std::vector<double> x(y.size());
     std::iota(x.begin(), x.end(), 0.0);
@@ -146,12 +144,10 @@ IsplineRegression::BinnedData IsplineRegression::bin_data(
 
 std::vector<double> IsplineRegression::compute_adaptive_knots(const std::vector<double>& x, const std::vector<double>& /* y */, int num_knots) const {
     
-    double skew_factor = 0.75; // <1 for front loading
-
     std::vector<double> knots;
     knots.push_back(x.front());
     for (int i = 1; i < num_knots; ++i) {
-        double q = 1.0 - std::pow(1.0 - static_cast<double>(i) / num_knots, skew_factor);
+        double q = 1.0 - std::pow(1.0 - static_cast<double>(i) / num_knots, skew_factor_);
         size_t idx = static_cast<size_t>(q * (x.size() - 1));
         knots.push_back(x[idx]);
     }
@@ -182,14 +178,16 @@ Eigen::VectorXd IsplineRegression::fit_spline(const BinnedData& data, const std:
 }
 
 std::vector<double> IsplineRegression::fit_xy(const std::vector<double>& x, const std::vector<double>& y, double min_val, double max_val) const {
-    size_t num_bins = 10000;
-    double lambda = 1e-10;
+    if (x.empty() || y.empty()) {
+        if (VERB > 0) std::cerr << "[WARNING] fit_xy called with empty input.\n";
+        return {};
+    }
     assert(x.size() == y.size());
-    auto data = bin_data(x, y, num_bins);
+    auto data = bin_data(x, y, num_bins_);
     // auto data = adaptive_bin(x, y, num_bins);
     auto knots = compute_adaptive_knots(data.x, data.y, std::min(50, (int)std::sqrt(data.x.size())));
 
-    Eigen::VectorXd coeffs = fit_spline(data, knots, lambda);
+    Eigen::VectorXd coeffs = fit_spline(data, knots, lambda_);
 
     std::vector<double> result(x.size());
     for (size_t i = 0; i < x.size(); ++i) {

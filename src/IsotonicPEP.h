@@ -8,6 +8,12 @@
 #include <Eigen/Dense>
 #include <Eigen/Sparse> 
 
+// Constants for tuning (Point 7)
+constexpr int DEFAULT_NUM_BINS = 10000;
+constexpr double DEFAULT_LAMBDA = 1e-6;
+constexpr int DEFAULT_NUM_KNOTS = 50;
+constexpr double DEFAULT_SKEW_FACTOR = 0.75;
+
 template <typename T>
 const T& clamp(const T& v, const T& lo, const T& hi) {
     return (v < lo) ? lo : (hi < v) ? hi : v;
@@ -55,7 +61,15 @@ public:
 
 class IsplineRegression : public IsotonicRegression {
     public:
-        IsplineRegression();
+        IsplineRegression(int num_bins = DEFAULT_NUM_BINS,
+            double lambda = DEFAULT_LAMBDA,
+            int max_knots = DEFAULT_NUM_KNOTS,
+            double skew_factor = DEFAULT_SKEW_FACTOR) : 
+                num_bins_(num_bins),
+                lambda_(lambda),
+                max_knots_(max_knots),
+                skew_factor_(skew_factor) {}
+
         std::vector<double> fit_xy(const std::vector<double>& x, const std::vector<double>& y,
             double min_val = std::numeric_limits<double>::lowest(),
             double max_val = std::numeric_limits<double>::max()) const override;
@@ -73,7 +87,12 @@ class IsplineRegression : public IsotonicRegression {
         BinnedData bin_data(const std::vector<double>& x, const std::vector<double>& y, int max_bins) const;
         std::vector<double> compute_adaptive_knots(const std::vector<double>& x, const std::vector<double>& y, int num_knots) const;
         Eigen::VectorXd fit_spline(const BinnedData& data, const std::vector<double>& knots, double lambda) const;
-};
+
+        int num_bins_;
+        double lambda_;
+        int max_knots_;
+        double skew_factor_;    
+    };
     
 
 class InferPEP {
