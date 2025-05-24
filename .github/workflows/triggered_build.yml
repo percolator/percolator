@@ -18,7 +18,7 @@ jobs:
     - name: zip raw binary
       run: zip -j ${{ github.workspace }}/../release/percolator-noxml-ubuntu-portable.zip ${{ github.workspace }}/../build/percolator-noxml/src/percolator
     - name: Upload packages
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: ubuntu-packages
         path: ${{ github.workspace }}/../release
