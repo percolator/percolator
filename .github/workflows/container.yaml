@@ -50,7 +50,7 @@ jobs:
         with:
           push: true
           file: ./Dockerfile
-          platforms: linux/amd64
+          platforms: linux/amd64,linux/arm64
           tags: ${{ steps.metadata_action_id.outputs.tags }}
           labels: ${{ steps.metadata_action_id.outputs.labels }}
           build-args: |
