@@ -70,6 +70,7 @@ jobs:
     - name: create_dirs
       run: mkdir "%GITHUB_WORKSPACE%\rel" "%GITHUB_WORKSPACE%\build"
     - name: configure_and_make
+      shell: cmd
       run: |
         cd /d "${{ github.workspace }}"
         set base_dir=%cd%
