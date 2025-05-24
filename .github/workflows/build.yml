@@ -14,13 +14,13 @@ jobs:
     - name: preinstall
       run: sudo apt-get update && sudo apt-get install -y -o Acquire::Retries=3 libxml2-utils
     - name: create_dirs
-      run: mkdir -p ../release ../build
+      run: mkdir -p ${{ github.workspace }}/release ${{ github.workspace }}/build
     - name: configure_and_make
-      run: ./admin/builders/ubuntu64_build.sh -s `pwd`/.. -r `pwd`/../release -b `pwd`/../build
+      run: ./admin/builders/ubuntu64_build.sh -s ${{ github.workspace }}/.. -r ${{ github.workspace }}/release -b ${{ github.workspace }}/build
     - name: unit_tests
-      run: cd ../build/percolator && make test
+      run: cd ${{ github.workspace }}/build/percolator && make test
     - name: system_test  
-      run: cd ../build/percolator && sudo make install && make test-install
+      run: cd ${{ github.workspace }}/build/percolator && sudo make install && make test-install
 
 #  build-centos:
 #    runs-on: ubuntu-latest
@@ -42,13 +42,13 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: create_dirs
-      run: mkdir -p ../release ../build
+      run: mkdir -p ${{ github.workspace }}/release ${{ github.workspace }}/build
     - name: configure_and_make
-      run: admin/builders/osx64_build.sh  -s `pwd`/.. -r `pwd`/../release -b `pwd`/../build
+      run: admin/builders/osx64_build.sh  -s ${{ github.workspace }}/.. -r ${{ github.workspace }}/release -b ${{ github.workspace }}/build
     - name: unit_tests
-      run: cd ../build/percolator && make test
+      run: cd ${{ github.workspace }}/build/percolator && make test
     - name: system_test  
-      run: cd ../build/percolator && sudo make install && make test-install
+      run: cd ${{ github.workspace }}/build/percolator && sudo make install && make test-install
 
   build-windows:
     runs-on: windows-2019
