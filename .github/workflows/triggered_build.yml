@@ -55,7 +55,7 @@ jobs:
     - name: zip raw binary
       run: zip ${{ github.workspace }}/../release/percolator-noxml-osx-portable.zip ${{ github.workspace }}/../build/percolator-noxml/src/percolator
     - name: Upload packages
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: osx-packages
         path: ${{ github.workspace }}/../release
@@ -79,7 +79,7 @@ jobs:
       shell: pwsh
       run: Compress-Archive -Path "${env:GITHUB_WORKSPACE}\..\my_build\percolator-noxml\src\Release\*.exe" -DestinationPath "${env:GITHUB_WORKSPACE}\..\my_rel\percolator-noxml-windows-portable.zip"
     - name: Upload packages
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: windows-packages
         path: ${GITHUB_WORKSPACE}\..\my_rel\percolator-noxml-windows-portable.zip
