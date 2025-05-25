@@ -1,3 +1,4 @@
+#include "Globals.h"
 #include <vector>
 #include <limits>
 #include <algorithm>
@@ -9,7 +10,6 @@
 #include <Eigen/Dense>
 #include <Eigen/Sparse> 
 #include <chrono>
-#include "Globals.h"
 #include "IsotonicPEP.h"
 
 

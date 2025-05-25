@@ -1,6 +1,7 @@
 #ifndef ISOTONIC_REGRESSION_H_
 #define ISOTONIC_REGRESSION_H_
 
+#include "Globals.h"
 #include <chrono>
 #include <iostream> // for std::cerr, std::endl
 #include <memory>   // for std::unique_ptr, std::make_unique
