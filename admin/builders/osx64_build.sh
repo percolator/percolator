@@ -111,8 +111,8 @@ export CXX=/opt/homebrew/opt/llvm/bin/clang++
 export SDKROOT=$(xcrun --sdk macosx --show-sdk-path)
 export SYSROOT_FLAGS="--sysroot=$SDKROOT -isystem$SDKROOT/usr/include -isystem$SDKROOT/System/Library/Frameworks"
 export HOMEBREW_LLVM_INCLUDE="/opt/homebrew/opt/llvm/include/c++/v1"
-export CXXFLAGS="-isystem $HOMEBREW_LLVM_INCLUDE $SYSROOT_FLAGS"
-export LDFLAGS="-L/opt/homebrew/opt/llvm/lib/c++ -stdlib=libc++ -framework CoreFoundation -framework CoreServices -lcurl"
+export CXXFLAGS="-isystem $HOMEBREW_LLVM_INCLUDE $SYSROOT_FLAGS -I/opt/homebrew/opt/tokyo-cabinet/include"
+export LDFLAGS="-L/opt/homebrew/opt/llvm/lib/c++ -L/opt/homebrew/opt/tokyo-cabinet/lib -stdlib=libc++ -framework CoreFoundation -framework CoreServices -lcurl"
 prefix_path="/opt/homebrew/opt/xerces-c;/opt/homebrew/opt/xsd"
 
 
