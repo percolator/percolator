@@ -226,11 +226,12 @@ EXIT /B
 
 :downloadfile
 echo Downloading "%1" to "%2"
-PowerShell -Command "Try { \
-  [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; \
-  Invoke-WebRequest -Uri '%1' -OutFile '%2' -ErrorAction Stop \
-} Catch { Write-Host 'Download failed'; Exit 1 }"
-EXIT /B
+curl -fsSL -o "%2" "%1"
+if errorlevel 1 (
+  echo ERROR: Failed to download %1
+  exit /b 1
+)
+exit /b
 
 :copytorelease
 echo Copying "%1" to "%RELEASE_DIR%"
