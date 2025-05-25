@@ -132,6 +132,29 @@ FetchContent_MakeAvailable(eigen)
 include_directories(${eigen_SOURCE_DIR})
 
 
+### Patching code start
+# Path to the file to patch
+set(EIGEN_FILE "${eigen_SOURCE_DIR}/Eigen/src/Core/MathFunctions.h")
+
+# Apply the patch only once
+add_custom_command(
+  OUTPUT ${CMAKE_BINARY_DIR}/_eigen_patched.stamp
+  COMMAND ${CMAKE_COMMAND}
+    -DEIGEN_FILE=${EIGEN_FILE}
+    -P ${CMAKE_SOURCE_DIR}/cmake/patch_eigen.cmake
+  COMMAND ${CMAKE_COMMAND} -E touch ${CMAKE_BINARY_DIR}/_eigen_patched.stamp
+  DEPENDS ${EIGEN_FILE}
+  COMMENT "Patching Eigen after FetchContent_MakeAvailable"
+)
+
+add_custom_target(patch_eigen DEPENDS ${CMAKE_BINARY_DIR}/_eigen_patched.stamp)
+
+# Ensure percolator build depends on patched Eigen
+add_dependencies(perclibrary patch_eigen)
+### Patching code end
+
+
+
 #############################################################################
 # COMPILE PERCOLATOR
 ###############################################################################
