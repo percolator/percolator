@@ -48,10 +48,10 @@ void GoogleAnalytics::httpRequest(const std::string& url, const std::string& dat
   using namespace boost::asio;
 
   // Establish TCP connection to host on port 80
-  io_service service;
-  ip::tcp::resolver resolver(service);
-  ip::tcp::resolver::iterator endpoint = resolver.resolve(ip::tcp::resolver::query(host, "80"));
-  ip::tcp::socket sock(service);
+  boost::asio::io_context service;
+  boost::asio::ip::tcp::resolver resolver(service);
+  auto endpoints = resolver.resolve(host, "80");
+  auto endpoint = endpoints.begin();
   connect(sock, endpoint);
   
   std::size_t seed = 0;
