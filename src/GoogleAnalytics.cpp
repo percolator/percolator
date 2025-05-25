@@ -53,7 +53,7 @@ void GoogleAnalytics::httpRequest(const std::string& url, const std::string& dat
   auto endpoints = resolver.resolve(host, "80");
   auto endpoint = endpoints.begin();
   boost::asio::ip::tcp::socket sock(service);
-  sock.connect(endpoint);
+  boost::asio::connect(sock, endpoint);
   
   std::size_t seed = 0;
   boost::hash_combine(seed, ip::host_name());
