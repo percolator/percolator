@@ -7,6 +7,13 @@
 #include <numeric>    // for std::iota
 #include <cassert>
 #include <iostream>
+
+#ifdef _MSC_VER
+  #define NOMINMAX
+  #include <float.h>
+  #define _finite(x) _finite(x)
+#endif
+
 #include <Eigen/Dense>
 #include <Eigen/Sparse> 
 #include <chrono>
