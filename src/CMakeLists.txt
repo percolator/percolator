@@ -149,8 +149,6 @@ add_custom_command(
 
 add_custom_target(patch_eigen DEPENDS ${CMAKE_BINARY_DIR}/_eigen_patched.stamp)
 
-# Ensure percolator build depends on patched Eigen
-add_dependencies(perclibrary patch_eigen)
 ### Patching code end
 
 
@@ -173,6 +171,10 @@ else(XML_SUPPORT)
 								  ProteinProbEstimator.cpp ProteinFDRestimator.cpp Scores.cpp PseudoRandom.cpp Set.cpp SqtSanityCheck.cpp ssl.cpp PackedVector.cpp
 								  PackedMatrix.cpp Matrix.cpp Logger.cpp MyException.cpp ProteinScoreHolder.cpp PickedProteinInterface.cpp FeatureMemoryPool.cpp Timer.cpp TmpDir.cpp ValidateTabFile.cpp Vector.cpp)
 endif(XML_SUPPORT)
+
+### More patches
+# Ensure percolator build depends on patched Eigen
+add_dependencies(perclibrary patch_eigen)
 
 
 ###############################################################################
