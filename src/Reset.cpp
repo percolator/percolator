@@ -188,8 +188,8 @@ int Reset::gridSearchC(vector<ScoreHolder*> &train, const double nullTargetWinPr
     std::vector<double> cPosCandidates = {100., 10., 1.0, 0.1, 0.01};
     std::vector<double> cFracCandidates = {0.1, 0.3, 1.0, 3.0, 10.0};
 #pragma omp parallel for schedule(dynamic, 1) ordered collapse(2)
-    for (size_t i = 0; i < cPosCandidates.size(); ++i) {
-        for (size_t j = 0; j < cFracCandidates.size(); ++j) {
+    for (int i = 0; i < static_cast<int>(cPosCandidates.size()); ++i) {
+        for (int j = 0; j < static_cast<int>(cFracCandidates.size()); ++j) {
             auto cPos = cPosCandidates[i];
             auto cFrac = cFracCandidates[j];
             svmTrain(cPos, cFrac);

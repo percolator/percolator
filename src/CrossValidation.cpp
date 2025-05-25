@@ -294,9 +294,8 @@ int CrossValidation::doStep(Normalizer* pNorm, double selectionFdr) {
          svmInputsVec.push_back(svmInput);
        }
    }
-
 #pragma omp parallel for schedule(dynamic, 1) ordered 
-   for (size_t pairIdx = 0; pairIdx < classWeightsPerFold_.size(); pairIdx++){
+  for (int pairIdx = 0; pairIdx < static_cast<int>(classWeightsPerFold_.size()); pairIdx++) {
     candidateCposCfrac* cpCnFold = &classWeightsPerFold_[pairIdx];
     AlgIn* svmInput = svmInputsVec[cpCnFold->set * nestedXvalBins_  + 
     static_cast<unsigned int>(cpCnFold->nestedSet)];
@@ -364,13 +363,12 @@ int CrossValidation::mergeCpCnPairs(double selectionFdr,
   vector<double> bestCposes(numFolds_, 1);
   vector<double> bestCfracs(numFolds_, 1);
   
-  size_t set = 0;
   // Validate learned parameters per (cpos,cneg) pair per nested CV fold
   // Note: this cannot be done in trainCpCnPair without setting a critical pragma, due to the 
   //       scoring calculation in calcScores.
   unsigned int numCpCnPairsPerSet = static_cast<unsigned int>(classWeightsPerFold_.size() / numFolds_);
 #pragma omp parallel for schedule(dynamic, 1) ordered
-  for (set = 0; set < numFolds_; ++set) {
+  for (int set = 0; set < static_cast<int>(numFolds_); ++set) {
     unsigned int a = set * numCpCnPairsPerSet;
     unsigned int b = (set+1) * numCpCnPairsPerSet;
     int tp = 0;
@@ -410,7 +408,7 @@ int CrossValidation::mergeCpCnPairs(double selectionFdr,
   
   if (nestedXvalBins_ > 1) {
 #pragma omp parallel for schedule(dynamic, 1) ordered
-    for (set = 0; set < numFolds_; ++set) {
+    for (int set = 0; set < static_cast<int>(numFolds_); ++set) {
       vector_double pWeights;
       pWeights.d = static_cast<int>(FeatureNames::getNumFeatures()) + 1;
       pWeights.vec = new double[pWeights.d];

@@ -80,6 +80,12 @@ limitations under the License.
 #endif
 
 #ifdef _MSC_VER
+  #define NOMINMAX
+  #include <float.h>
+  #define _finite(x) _finite(x)
+#endif
+
+#ifdef _MSC_VER
   #ifndef isfinite
     #define isfinite _finite
   #endif
