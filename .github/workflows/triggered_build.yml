@@ -72,10 +72,8 @@ jobs:
     - name: configure_and_make
       shell: cmd
       run: |
-        cd /d "%GITHUB_WORKSPACE%"
-        set base_dir=%cd%
-        echo %base_dir%
-        call percolator\admin\builders\nativew64_build.bat -s "%base_dir%" -r "%GITHUB_WORKSPACE%\rel" -b "%GITHUB_WORKSPACE%\build"
+        echo %GITHUB_WORKSPACE%
+        call percolator\admin\builders\nativew64_build.bat -s "%GITHUB_WORKSPACE%" -r "%GITHUB_WORKSPACE%\rel" -b "%GITHUB_WORKSPACE%\build"
     - name: zip raw binary
       shell: pwsh
       run: |
