@@ -58,13 +58,12 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: create_dirs
-      run: CD .. || MKDIR my_rel my_build
+      run: mkdir "%GITHUB_WORKSPACE%\rel" "%GITHUB_WORKSPACE%\build"
     - name: configure_and_make
+      shell: cmd
       run: |
-        CD ..
-        SET base_dir=%cd%
-        ECHO %base_dir%
-        CALL percolator\admin\builders\nativew64_build.bat -s %base_dir% -r %base_dir%\my_rel -b %base_dir%\my_build
+        echo %GITHUB_WORKSPACE%
+        call "%GITHUB_WORKSPACE%\admin\builders\nativew64_build.bat" -s "%GITHUB_WORKSPACE%\.." -r "%GITHUB_WORKSPACE%\rel" -b "%GITHUB_WORKSPACE%\build"
 #    - name: unit_tests
 #      run: |
 #        CD my_build\percolator
