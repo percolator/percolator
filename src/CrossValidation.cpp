@@ -439,7 +439,7 @@ int CrossValidation::mergeCpCnPairs(double selectionFdr,
   }
 
   double bestTruePos = 0;
-  for (set = 0; set < numFolds_; ++set) {
+  for (int set = 0; set < static_cast<int>(numFolds_); ++set) {
     bestTruePos += trainScores_[set].calcScores(w_[set], testFdr_);
   }
   return static_cast<int>(bestTruePos / (numFolds_ - 1));
