@@ -43,7 +43,10 @@ set ZIP_EXE="%INSTALL_DIR%\7zip\7z.exe"
 if not exist "%INSTALL_DIR%\%CMAKE_BASE%" (
   echo Downloading and installing CMake
   call :downloadfile %CMAKE_URL% %INSTALL_DIR%\cmake.zip
-  %ZIP_EXE% x "%INSTALL_DIR%\cmake.zip" -o"%INSTALL_DIR%" -aoa -xr!doc > NUL
+  %ZIP_EXE% x "%INSTALL_DIR%\cmake.zip" -o"%INSTALL_DIR%" -aoa -xr!doc || (
+    echo Extraction failed for cmake.zip
+    EXIT /B 1
+  )
 )
 set CMAKE_EXE="%INSTALL_DIR%\%CMAKE_BASE%\bin\cmake.exe"
 
@@ -58,6 +61,8 @@ if not exist "%BOOST_ROOT%" (
   b2 address-model=64 threading=multi -j4 --with-system --with-filesystem --with-serialization -d0
 )
 set BOOST_LIB=%BOOST_ROOT%\stage\lib
+set BOOST_INCLUDEDIR=%BOOST_ROOT%
+set BOOST_LIBRARYDIR=%BOOST_ROOT%\stage\lib
 
 ::: Needed for CPack :::
 set NSIS_DIR=%INSTALL_DIR%\nsis
@@ -194,7 +199,7 @@ msbuild PACKAGE.vcxproj /p:Configuration=%BUILD_TYPE% /m
 if not exist "%BUILD_DIR%\converters" (md "%BUILD_DIR%\converters")
 cd /D "%BUILD_DIR%\converters"
 echo cmake converters.....
-%CMAKE_EXE% -G "Visual Studio %MSVC_VER%" -A x64 -DCMAKE_BUILD_TYPE=%BUILD_TYPE% -DBOOST_ROOT="%BOOST_ROOT%" -DBOOST_LIBRARYDIR="%BOOST_LIB%" -DSERIALIZE="Boost" -DCMAKE_PREFIX_PATH="%XERCES_DIR%;%XSD_DIR%;%SQLITE_DIR%;%ZLIB_DIR%" -DXML_SUPPORT=ON "%SRC_DIR%\percolator\src\converters"
+%CMAKE_EXE% -G "Visual Studio %MSVC_VER%" -A x64 -DCMAKE_BUILD_TYPE=%BUILD_TYPE% -DBOOST_ROOT="%BOOST_ROOT%" -DBoost_NO_SYSTEM_PATHS=ON -DBoost_INCLUDE_DIR="%BOOST_INCLUDEDIR%" -DBoost_LIBRARY_DIR="%BOOST_LIBRARYDIR%" -DSERIALIZE="Boost" -DCMAKE_PREFIX_PATH="%XERCES_DIR%;%XSD_DIR%;%SQLITE_DIR%;%ZLIB_DIR%" -DXML_SUPPORT=ON "%SRC_DIR%\percolator\src\converters"
 echo build converters (this will take a few minutes).....
 msbuild PACKAGE.vcxproj /p:Configuration=%BUILD_TYPE% /m
 
@@ -221,7 +226,10 @@ EXIT /B
 
 :downloadfile
 echo Downloading "%1" to "%2"
-PowerShell "[Net.ServicePointManager]::SecurityProtocol = 'tls12, tls11, tls'; (new-object System.Net.WebClient).DownloadFile('%1','%2')"
+PowerShell -Command "Try { \
+  [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; \
+  Invoke-WebRequest -Uri '%1' -OutFile '%2' -ErrorAction Stop \
+} Catch { Write-Host 'Download failed'; Exit 1 }"
 EXIT /B
 
 :copytorelease
