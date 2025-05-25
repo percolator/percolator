@@ -72,7 +72,7 @@ jobs:
     - name: configure_and_make
       shell: cmd
       run: |
-        cd /d "${{ github.workspace }}"
+        cd /d "%GITHUB_WORKSPACE%"
         set base_dir=%cd%
         echo %base_dir%
         call percolator\admin\builders\nativew64_build.bat -s "%base_dir%" -r "%GITHUB_WORKSPACE%\rel" -b "%GITHUB_WORKSPACE%\build"
