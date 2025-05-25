@@ -29,7 +29,7 @@
 #include <omp.h>
 #endif
 
-#include "GoogleAnalytics.h"
+#include "Analytics.h"
 #include "Reset.h"
 using namespace std;
 
@@ -961,9 +961,9 @@ int Caller::run() {
   if (VERB > 0) {
     std::cerr << extendedGreeter();
   }
-  if (analytics_)
-    GoogleAnalytics::postToAnalytics("percolator");
-
+// skip for now
+//  if (analytics_)
+//    postToPostHog("percolator_startup");
 #ifdef _OPENMP
   omp_set_num_threads(static_cast<int>(
     std::min((unsigned int)omp_get_max_threads(), numThreads_)));
