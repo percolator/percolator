@@ -9,15 +9,8 @@ macro(load_config_files location)
   file(GLOB_RECURSE configurefiles RELATIVE ${location} ${location}/*.cmake )
   foreach(i ${configurefiles})
     string(REPLACE ".cmake" "" myReplFile "${i}")
-    configure_file(
-      ${location}/${myReplFile}.cmake
-      ${CMAKE_CURRENT_BINARY_DIR}/${myReplFile}
-      @ONLY
-      FILE_PERMISSIONS
-        OWNER_READ OWNER_WRITE
-        GROUP_READ
-        WORLD_READ
-    )  endforeach()
+    configure_file(${location}/${myReplFile}.cmake ${CMAKE_CURRENT_BINARY_DIR}/${myReplFile} @ONLY)
+  endforeach()
 endmacro()
 
 # useful macro
