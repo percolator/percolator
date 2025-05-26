@@ -1,6 +1,10 @@
 // The file specification of the X!Tandem output is given here:
 //   https://www.thegpm.org/docs/X_series_output_form.pdf
 
+#if defined(_MSC_VER)
+#define _CMATH_IN_CRT 1
+#include <float.h>
+#endif
 #include "TandemReader.h"
 
 //default score vector //TODO move this to a file or input parameter                          

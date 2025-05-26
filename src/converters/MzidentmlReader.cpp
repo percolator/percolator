@@ -1,3 +1,8 @@
+#if defined(_MSC_VER)
+#define _CMATH_IN_CRT 1
+#include <float.h>
+#endif
+
 #include <memory> // For std::unique_ptr
 #include <xercesc/dom/DOM.hpp> // For xercesc::DOMDocument
 #include <xsd/cxx/xml/dom/auto-ptr.hxx> // For xsd::cxx::xml::dom::deleter

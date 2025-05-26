@@ -1,3 +1,8 @@
+#if defined(_MSC_VER)
+#define _CMATH_IN_CRT 1
+#include <float.h>
+#endif
+
 #include "FragSpectrumScanDatabase.h"
 //#include <MSToolkitTypes.h>
  

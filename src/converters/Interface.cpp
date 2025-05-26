@@ -14,6 +14,10 @@
  limitations under the License.
 
  *******************************************************************************/
+#if defined(_MSC_VER)
+#define _CMATH_IN_CRT 1
+#include <float.h>
+#endif
 
 #include "Interface.h"
 #include "Version.h"
