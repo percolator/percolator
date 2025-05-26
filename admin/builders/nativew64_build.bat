@@ -33,13 +33,23 @@ set INSTALL_DIR=%BUILD_DIR%\tools
 if not exist "%INSTALL_DIR%" (md "%INSTALL_DIR%")
 if not exist "%RELEASE_DIR%" (md "%RELEASE_DIR%")
 
-if not exist "%INSTALL_DIR%\7zip" (
-  echo Downloading and installing 7-Zip
-  call :downloadfile %ZIP_URL% %INSTALL_DIR%\7zip.zip
-  powershell -Command "Expand-Archive -Path '%INSTALL_DIR%\7zip.zip' -DestinationPath '%INSTALL_DIR%\7zip' -Force"
+set ZIP_INSTALLER=%INSTALL_DIR%\7zip-installer.exe
+set ZIP_EXE=%INSTALL_DIR%\7zip\7z.exe
+
+if not exist "%ZIP_EXE%" (
+  echo Downloading and installing 7-Zip...
+  call :downloadfile %ZIP_URL% %ZIP_INSTALLER%
+
+  :: Run installer silently to extract to the desired location
+  start /wait "" "%ZIP_INSTALLER%" /S /D=%INSTALL_DIR%\7zip
+
+  :: Verify the install
+  if not exist "%ZIP_EXE%" (
+    echo ERROR: 7z.exe not found after installation.
+    exit /B 1
+  )
 )
 
-set ZIP_EXE=%INSTALL_DIR%\7zip\7z.exe
 if not exist "%ZIP_EXE%" (
   echo ERROR: 7z.exe not found after unpacking.
   exit /B 1
