@@ -36,7 +36,7 @@ if not exist "%RELEASE_DIR%" (md "%RELEASE_DIR%")
 if not exist "%INSTALL_DIR%\7zip" (
   echo Downloading and installing 7-Zip
   call :downloadfile %ZIP_URL% %INSTALL_DIR%\7zip.exe
-  "%INSTALL_DIR%\7zip.exe" /S /D=%INSTALL_DIR%\7zip
+  powershell -Command "Expand-Archive -Path '%INSTALL_DIR%\7zip.exe' -DestinationPath '%INSTALL_DIR%\7zip' -Force"
 )
 set ZIP_EXE="%INSTALL_DIR%\7zip\7z.exe"
 
