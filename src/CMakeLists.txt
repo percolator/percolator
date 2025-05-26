@@ -131,25 +131,9 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(eigen)
 include_directories(${eigen_SOURCE_DIR})
 
-
-### Patching code start
-# Path to the file to patch
-set(EIGEN_FILE "${eigen_SOURCE_DIR}/Eigen/src/Core/MathFunctions.h")
-
-# Apply the patch only once
-add_custom_command(
-  OUTPUT ${CMAKE_BINARY_DIR}/_eigen_patched.stamp
-  COMMAND ${CMAKE_COMMAND}
-    -DEIGEN_FILE=${EIGEN_FILE}
-    -P ${CMAKE_SOURCE_DIR}/cmake/patch_eigen.cmake
-  COMMAND ${CMAKE_COMMAND} -E touch ${CMAKE_BINARY_DIR}/_eigen_patched.stamp
-  DEPENDS ${EIGEN_FILE}
-  COMMENT "Patching Eigen after FetchContent_MakeAvailable"
-)
-
-add_custom_target(patch_eigen DEPENDS ${CMAKE_BINARY_DIR}/_eigen_patched.stamp)
-
-### Patching code end
+file(READ "${eigen_SOURCE_DIR}/CMakeLists.txt" _eigen_main_cmake)
+string(REPLACE "add_subdirectory(test)" "" _eigen_main_cmake "${_eigen_main_cmake}")
+file(WRITE "${eigen_SOURCE_DIR}/CMakeLists.txt" "${_eigen_main_cmake}")
 
 
 
@@ -171,10 +155,6 @@ else(XML_SUPPORT)
 								  ProteinProbEstimator.cpp ProteinFDRestimator.cpp Scores.cpp PseudoRandom.cpp Set.cpp SqtSanityCheck.cpp ssl.cpp PackedVector.cpp
 								  PackedMatrix.cpp Matrix.cpp Logger.cpp MyException.cpp ProteinScoreHolder.cpp PickedProteinInterface.cpp FeatureMemoryPool.cpp Timer.cpp TmpDir.cpp ValidateTabFile.cpp Vector.cpp)
 endif(XML_SUPPORT)
-
-### More patches
-# Ensure percolator build depends on patched Eigen
-add_dependencies(perclibrary patch_eigen)
 
 
 ###############################################################################

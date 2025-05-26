@@ -43,7 +43,7 @@ set ZIP_EXE="%INSTALL_DIR%\7zip\7z.exe"
 if not exist "%INSTALL_DIR%\%CMAKE_BASE%" (
   echo Downloading and installing CMake
   call :downloadfile %CMAKE_URL% %INSTALL_DIR%\cmake.zip
-  %ZIP_EXE% x "%INSTALL_DIR%\cmake.zip" -o"%INSTALL_DIR%" -aoa -xr!doc || (
+  %ZIP_EXE% x "%INSTALL_DIR%\cmake.zip" -o"%INSTALL_DIR%" -aoa -xr!doc -bso0 || (
     echo Extraction failed for cmake.zip
     EXIT /B 1
   )
@@ -116,7 +116,7 @@ if not exist "%XSD_DIR%" (
   call :downloadfile %LIBXSD_URL% %INSTALL_DIR%\libxsd.zip
   %ZIP_EXE% x "%INSTALL_DIR%\libxsd.zip" -o"%INSTALL_DIR%" > NUL
   echo Moving files from %LIBXSD_BASE%\include\ to %XSD_BASE%
-  xcopy "%INSTALL_DIR%\%LIBXSD_BASE%\include\*" "%INSTALL_DIR%\%XSD_BASE%\" /s /e /y /i
+  xcopy "%INSTALL_DIR%\%LIBXSD_BASE%\include\*" "%INSTALL_DIR%\%XSD_BASE%\" /s /e /y /i >nul
 )
 
 ::: Needed for converters package :::
