@@ -14,13 +14,13 @@ jobs:
     - name: preinstall
       run: sudo apt-get update && sudo apt-get install -y -o Acquire::Retries=3 libxml2-utils
     - name: create_dirs
-      run: mkdir -p ../release ../build
+      run: mkdir -p ${{ github.workspace }}/release ${{ github.workspace }}/build
     - name: configure_and_make
-      run: ./admin/builders/ubuntu64_build.sh -s `pwd`/.. -r `pwd`/../release -b `pwd`/../build
+      run: ./admin/builders/ubuntu64_build.sh -s ${{ github.workspace }}/.. -r ${{ github.workspace }}/release -b ${{ github.workspace }}/build
     - name: unit_tests
-      run: cd ../build/percolator && make test
+      run: cd ${{ github.workspace }}/build/percolator && make test
     - name: system_test  
-      run: cd ../build/percolator && sudo make install && make test-install
+      run: cd ${{ github.workspace }}/build/percolator && sudo make install && make test-install
 
 #  build-centos:
 #    runs-on: ubuntu-latest
@@ -38,17 +38,17 @@ jobs:
 #      run: cd ../my_build/percolator-test && make install && make test-install
 
   build-osx:
-    runs-on: macos-12
+    runs-on: macos-15
     steps:
     - uses: actions/checkout@v4
     - name: create_dirs
-      run: mkdir -p ../release ../build
+      run: mkdir -p ${{ github.workspace }}/release ${{ github.workspace }}/build
     - name: configure_and_make
-      run: admin/builders/osx64_build.sh  -s `pwd`/.. -r `pwd`/../release -b `pwd`/../build
+      run: admin/builders/osx64_build.sh  -s ${{ github.workspace }}/.. -r ${{ github.workspace }}/release -b ${{ github.workspace }}/build
     - name: unit_tests
-      run: cd ../build/percolator && make test
+      run: cd ${{ github.workspace }}/build/percolator && make test
     - name: system_test  
-      run: cd ../build/percolator && sudo make install && make test-install
+      run: cd ${{ github.workspace }}/build/percolator && sudo make install && make test-install
 
   build-windows:
     runs-on: windows-2019
@@ -58,13 +58,12 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: create_dirs
-      run: CD .. || MKDIR my_rel my_build
+      run: mkdir "%GITHUB_WORKSPACE%\rel" "%GITHUB_WORKSPACE%\build"
     - name: configure_and_make
+      shell: cmd
       run: |
-        CD ..
-        SET base_dir=%cd%
-        ECHO %base_dir%
-        CALL percolator\admin\builders\nativew64_build.bat -s %base_dir% -r %base_dir%\my_rel -b %base_dir%\my_build
+        echo %GITHUB_WORKSPACE%
+        call "%GITHUB_WORKSPACE%\admin\builders\nativew64_build.bat" -s "%GITHUB_WORKSPACE%\.." -r "%GITHUB_WORKSPACE%\rel" -b "%GITHUB_WORKSPACE%\build"
 #    - name: unit_tests
 #      run: |
 #        CD my_build\percolator

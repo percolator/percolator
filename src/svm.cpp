@@ -2126,9 +2126,14 @@ svm_model* svm_train(const svm_problem* prob, const svm_parameter* param) {
     for (i = 1; i < nr_class; i++) {
       nz_start[i] = nz_start[i - 1] + nz_count[i - 1];
     }
-    model->sv_coef = Malloc(double*, static_cast<std::size_t>(nr_class - 1));
-    for (i = 0; i < nr_class - 1; i++) {
-      model->sv_coef[i] = Malloc(double, static_cast<std::size_t>(total_sv));
+    if (nr_class > 1) {
+      model->sv_coef = Malloc(double*, static_cast<std::size_t>(nr_class - 1));
+      for (i = 0; i < nr_class - 1; i++) {
+        model->sv_coef[i] = Malloc(double, static_cast<std::size_t>(total_sv));
+      }
+    } else {
+      fprintf(stderr, "Error: nr_class (%d) must be at least 2\n", nr_class);
+      model->sv_coef =  nullptr;   
     }
     p = 0;
     for (i = 0; i < nr_class; i++)

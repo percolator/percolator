@@ -253,6 +253,8 @@ void Array<T>::boundsCheck(int i) const
 #ifdef SAFE_ARRAYS
   if ( ! inBounds(i) )
     throw OutOfBoundsException();
+#else
+  (void) i; // to silence -Wunused-parameter
 #endif
 }
 
@@ -281,6 +283,10 @@ void sizeCheck(const Array<T> & lhs, const Array<R> & rhs)
     {
       throw typename Array<T>::SizeException();
     }
+#else
+  // Mark them unused in release or non-SAFE mode
+  (void)lhs;
+  (void)rhs;
 #endif
 }
 

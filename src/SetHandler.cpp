@@ -73,7 +73,7 @@ void SetHandler::normalizeFeatures(Normalizer*& pNorm) {
   pNorm->normalizeSet(featuresV, rtFeaturesV);
 }
 
-int const SetHandler::getLabel(int setPos) {
+int SetHandler::getLabel(int setPos) {
   assert(setPos >= 0 && setPos < (signed int)subsets_.size());
   return subsets_[static_cast<std::size_t>(setPos)]->getLabel();
 }

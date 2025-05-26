@@ -3,7 +3,7 @@
 ::: hardcoded in the respective buiding scripts
 
 ::: 7-zip
-set ZIP_URL=https://downloads.sourceforge.net/sevenzip/7z920.exe
+set ZIP_URL=https://www.7-zip.org/a/7z2301.exe
 
 ::: CMake
 set CMAKE_VERSION=3.17.1
@@ -47,8 +47,7 @@ set SQLITE_DLL_URL=https://www.sqlite.org/2013/sqlite-dll-win32-x86-3080200.zip
 
 set SQLITE_64_SRC_BASE=sqlite-amalgamation-3080803
 set SQLITE_64_SRC_URL=https://sqlite.org/2015/%SQLITE_64_SRC_BASE%.zip
-set SQLITE_64_DLL_URL=https://system.data.sqlite.org/blobs/1.0.96.0/sqlite-netFx45-binary-x64-2012-1.0.96.0.zip
-
+set SQLITE_64_DLL_URL=https://system.data.sqlite.org/downloads/1.0.119.0/sqlite-netFx45-binary-x64-2012-1.0.119.0.zip
 ::: Zlib
 set ZLIB_URL=https://sourceforge.net/projects/libpng/files/zlib/1.2.8/zlib128-dll.zip/download
 

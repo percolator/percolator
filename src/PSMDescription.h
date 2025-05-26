@@ -79,7 +79,10 @@ class PSMDescription {
     PSMDescription* getAParent() { return this; }
     void checkFragmentPeptides(
         std::vector<PSMDescription*>::reverse_iterator other,
-        std::vector<PSMDescription*>::reverse_iterator theEnd) {}
+        std::vector<PSMDescription*>::reverse_iterator theEnd) {
+        (void)other;
+        (void)theEnd;
+    }
     static inline void setProteinNameSeparator(const std::string sep) {
         proteinNameSeparator_ = sep;
     }
@@ -102,9 +105,9 @@ class PSMDescription {
             fn = spectraFileNames_.at(specFileNr);
         return fn;
     }
-    inline const bool static hasSpectrumFileName() { return !spectraFileNames_.empty(); }
+    inline bool static hasSpectrumFileName() { return !spectraFileNames_.empty(); }
 
-    void setRetentionFeatures(double* retentionFeatures) {}
+    void setRetentionFeatures(double* retentionFeatures) {(void) retentionFeatures; }
     double* getRetentionFeatures() { return NULL; }
 
     void setParentFragment(PSMDescription*) {}

@@ -50,8 +50,8 @@ class Scores;
 class ScoreHolder {
  public:
   double score, q, pep, p;
-  PSMDescription* pPSM;
   int label;
+  PSMDescription* pPSM;
   
   ScoreHolder() : score(0.0), q(0.0), pep(0.0), p(0.0), label(0), pPSM(NULL) {}
   ScoreHolder(const double s, const int l, PSMDescription* psm = NULL) :
@@ -233,7 +233,7 @@ class Scores {
   int onlyCalcScores(vector<double>& w);
   int calcQ(double fdr, bool skipDecoysPlusOne = false);
   void recalculateDescriptionOfCorrect(const double fdr);
-  void calcPep();
+  void calcPep(const bool spline = false, const bool interpol = false, const bool from_q = false);
   int calcBalancedFDR(double treshhold);
   
   void populateWithPSMs(SetHandler& setHandler);

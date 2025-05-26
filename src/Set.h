@@ -28,6 +28,7 @@ class Set : public Array<int> {
   Array<int> operator [](const Set & rhs) const {
     return Array<int>::operator [](rhs);
   }
+  using Array<int>::operator[];
   const int & operator [](std::size_t k) const {
     return Array<int>::operator [](k);
   }

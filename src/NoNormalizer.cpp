@@ -38,7 +38,6 @@ NoNormalizer::~NoNormalizer() {
 
 void NoNormalizer::unnormalizeweight(const std::vector<double>& in, 
     std::vector<double>& out) {
-  double sum = 0;
   unsigned int i = 0;
   for (; i < numFeatures+1; i++) {
     out[i] = in[i];
@@ -47,15 +46,14 @@ void NoNormalizer::unnormalizeweight(const std::vector<double>& in,
 
 void NoNormalizer::normalizeweight(const std::vector<double>& in, 
     std::vector<double>& out) {
-  double sum = 0;
   size_t i = 0;
   for (; i < numFeatures+1; i++) {
     out[i] = in[i];
   }
 }
 
-void NoNormalizer::setSet(std::vector<double*>& featuresV,
-                            std::vector<double*>& rtFeaturesV, size_t nf,
+void NoNormalizer::setSet(std::vector<double*>& /* featuresV */,
+                            std::vector<double*>& /* rtFeaturesV */, size_t nf,
                             size_t nrf) {
   numFeatures = nf;
   numRetentionFeatures = nrf;
@@ -69,7 +67,7 @@ void NoNormalizer::setSet(std::vector<double*>& featuresV,
 }
 
 
-void NoNormalizer::updateSet(vector<double*> & featuresV, size_t offset,
+void NoNormalizer::updateSet(vector<double*> & /* featuresV */, size_t /* offset */,
                                size_t numFeatures) {
   size_t ix;
   for (ix = 0; ix < numFeatures; ++ix) {

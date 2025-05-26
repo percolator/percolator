@@ -108,11 +108,11 @@ int CompositionSorter::sortScorePerPeptide() {
 
     // Iterating and sorting
     for (auto& compositionToPeptides : compositionToPeptidesToScore_) {
-        auto& composition = compositionToPeptides.first;
+        // auto& composition = compositionToPeptides.first;
         auto& peptideMap = compositionToPeptides.second;
     
         for (auto& peptideToScores : peptideMap) {
-            auto& peptide = peptideToScores.first;
+            //auto& peptide = peptideToScores.first;
             auto& scores = peptideToScores.second;
         
             std::sort(scores.begin(), scores.end(), compareScoreHolder);
@@ -143,7 +143,7 @@ int CompositionSorter::inCompositionCompetition(std::vector<ScoreHolder*>& bestS
     std::vector<size_t> compTargetSizeStat;
     std::vector<size_t> compNumTargetSizeStat;
     for (auto& compositionToPeptides : compositionToPeptidesToScore_) {
-    auto& composition = compositionToPeptides.first;
+    // auto& composition = compositionToPeptides.first;
     auto& peptideMap = compositionToPeptides.second;
         // cerr << "Composition " << composition << " contains " << peptideMap.size() << " peptides." << endl;
         std::vector<std::vector<ScoreHolder*>> compositionGroups;
@@ -155,7 +155,7 @@ int CompositionSorter::inCompositionCompetition(std::vector<ScoreHolder*>& bestS
         // Add the target peptides
         size_t numTargetPeptides = 0;
         for (auto& peptideToScores : peptideMap) {
-            auto& peptide = peptideToScores.first;
+            // auto& peptide = peptideToScores.first;
             auto& scoreHolders = peptideToScores.second;
             // cerr << "Peptide, " << peptide << ", with label=" << scoreHolders.front()->label << " has " <<  scoreHolders.size() << " instances." << endl;
             if (scoreHolders.empty()) {

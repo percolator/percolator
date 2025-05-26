@@ -93,6 +93,8 @@ fi
 # end of section to remove
 sudo apt-get -y install libboost-dev libboost-filesystem-dev xsdcxx;
 sudo apt-get -y install libboost-system-dev libboost-thread-dev libsqlite3-dev libtokyocabinet-dev zlib1g-dev libbz2-dev;
+sudo apt-get -y install libtirpc-dev;
+
 
 #------------------------------------------------------------------------
 mkdir -p $build_dir/percolator-noxml $build_dir/percolator $build_dir/converters;
