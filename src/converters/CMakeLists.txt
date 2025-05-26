@@ -167,6 +167,20 @@ else(BOOSTDB)
 endif()
 include_directories(${Boost_INCLUDE_DIRS})
 
+if(MSVC)
+  set(BOOST_CMATH_FILE "${Boost_INCLUDE_DIRS}/boost/core/cmath.hpp")
+
+  file(READ "${BOOST_CMATH_FILE}" BOOST_CMATH_CONTENT)
+
+  string(REGEX REPLACE
+    "using std::_finite;"
+    "// patched: _finite is not in std\n#define _CMATH_IN_CRT 1\n#include <float.h>\nusing ::_finite;"
+    BOOST_CMATH_PATCHED
+    "${BOOST_CMATH_CONTENT}"
+  )
+
+  file(WRITE "${BOOST_CMATH_FILE}" "${BOOST_CMATH_PATCHED}")
+endif()
 
 FIND_PACKAGE ( Threads REQUIRED )
 
