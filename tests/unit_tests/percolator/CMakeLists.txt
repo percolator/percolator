@@ -1,9 +1,5 @@
 include(FetchContent)
 
-set (CMAKE_CXX_STANDARD 14)
-set (CMAKE_CXX_STANDARD_REQUIRED YES)
-add_compile_options(-frtti)
-
 if(WIN32)
     set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 endif()
