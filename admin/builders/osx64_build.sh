@@ -33,20 +33,20 @@ if [[ -d /opt/local/var/macports ]]
     echo "[ Package manager ] : MacPorts "
     package_manager="sudo port"
     boost_install_options="boost -no_static"
-    other_packages="cmake tokyocabinet bzip2 libiconv zlib gtest"
+    other_packages="cmake tokyocabinet bzip2 libiconv zlib"
 elif [[ -f ${HOME}/bin/brew ]]
   then
     echo "[ Package manager ] : Homebrew "
     package_manager=$HOME/bin/brew
     boost_install_options="boost"
-    other_packages="cmake tokyo-cabinet lbzip2 pbzip2 lzlib llvm libomp googletest"
+    other_packages="cmake tokyo-cabinet lbzip2 pbzip2 lzlib llvm libomp"
 elif [[ -f /usr/local/bin/brew || -f /opt/homebrew/bin/brew ]]  
   then
     echo "[ Package manager ] : Homebrew "
     package_manager="brew"
     ${package_manager} update || true # brew.rb raises an error on the vagrant box, just ignore it
     boost_install_options="boost"
-    other_packages="cmake tokyo-cabinet lbzip2 pbzip2 lzlib llvm libomp googletest"
+    other_packages="cmake tokyo-cabinet lbzip2 pbzip2 lzlib llvm libomp"
 
 else
     package_manager_installed=false
