@@ -35,10 +35,15 @@ if not exist "%RELEASE_DIR%" (md "%RELEASE_DIR%")
 
 if not exist "%INSTALL_DIR%\7zip" (
   echo Downloading and installing 7-Zip
-  call :downloadfile %ZIP_URL% %INSTALL_DIR%\7zip.exe
-  powershell -Command "Expand-Archive -Path '%INSTALL_DIR%\7zip.exe' -DestinationPath '%INSTALL_DIR%\7zip' -Force"
+  call :downloadfile %ZIP_URL% %INSTALL_DIR%\7zip.zip
+  powershell -Command "Expand-Archive -Path '%INSTALL_DIR%\7zip.zip' -DestinationPath '%INSTALL_DIR%\7zip' -Force"
 )
-set ZIP_EXE="%INSTALL_DIR%\7zip\7z.exe"
+
+set ZIP_EXE=%INSTALL_DIR%\7zip\7z.exe
+if not exist "%ZIP_EXE%" (
+  echo ERROR: 7z.exe not found after unpacking.
+  exit /B 1
+)
 
 if not exist "%INSTALL_DIR%\%CMAKE_BASE%" (
   echo Downloading and installing CMake
