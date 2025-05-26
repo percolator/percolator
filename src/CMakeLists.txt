@@ -131,11 +131,29 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(eigen)
 include_directories(${eigen_SOURCE_DIR})
 
+### Patch for avoiding _finite
 file(READ "${eigen_SOURCE_DIR}/CMakeLists.txt" _eigen_main_cmake)
 string(REPLACE "add_subdirectory(test)" "" _eigen_main_cmake "${_eigen_main_cmake}")
 file(WRITE "${eigen_SOURCE_DIR}/CMakeLists.txt" "${_eigen_main_cmake}")
 
+set(EIGEN_MATHFUNCTIONS_FILE "${eigen_SOURCE_DIR}/Eigen/src/Core/MathFunctions.h")
 
+# Do the patch if not already patched
+file(READ "${EIGEN_MATHFUNCTIONS_FILE}" MATHFUNCS_CONTENT)
+
+if(MATHFUNCS_CONTENT MATCHES "#else[ \r\n]+    return x<=NumTraits<T>::highest.*")
+  message(STATUS "Patching Eigen isfinite_impl fallback...")
+  string(REGEX REPLACE
+    "#else[ \r\n]+    return x<=NumTraits<T>::highest\\(\\) && x>=NumTraits<T>::lowest\\(\\);"
+    "#else\n    return !std::isnan(x) && !std::isinf(x); // PATCHED"
+    MATHFUNCS_CONTENT_PATCHED
+    "${MATHFUNCS_CONTENT}"
+  )
+  file(WRITE "${EIGEN_MATHFUNCTIONS_FILE}" "${MATHFUNCS_CONTENT_PATCHED}")
+else()
+  message(STATUS "Eigen isfinite_impl already patched or pattern not found.")
+endif()
+### End patch
 
 #############################################################################
 # COMPILE PERCOLATOR
