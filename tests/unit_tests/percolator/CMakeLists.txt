@@ -72,8 +72,10 @@ target_link_libraries(gtest_unit
     Eigen3::Eigen
     perclibrary
     dblas
-    pthread # (on Linux/Unix)
 )
+if(NOT WIN32)
+  target_link_libraries(gtest_unit PRIVATE pthread)
+endif()
 
 # (Optional: if you want coverage)
 if(COVERAGE)
