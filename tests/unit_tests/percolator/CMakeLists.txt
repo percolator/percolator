@@ -1,11 +1,21 @@
 include(FetchContent)
 
+if(WIN32)
+    set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+endif()
+
 # =============================
 # Fetch or find GoogleTest
 # =============================
 find_package(GTest QUIET)
 if(NOT GTest_FOUND)
     message(STATUS "GoogleTest not found, downloading it...")
+
+    if(WIN32)
+        # Ensures gtest uses the same runtime library as the rest of your project
+        set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+    endif()
+
     FetchContent_Declare(
       googletest
       GIT_REPOSITORY https://github.com/google/googletest.git
