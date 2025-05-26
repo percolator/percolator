@@ -162,27 +162,29 @@ endif()
 
 if(BOOSTDB)
   find_package(Boost ${BOOST_MIN_VERSION} COMPONENTS serialization filesystem system REQUIRED)
-else(BOOSTDB)
+else()
   find_package(Boost ${BOOST_MIN_VERSION} COMPONENTS filesystem system REQUIRED)
 endif()
 include_directories(${Boost_INCLUDE_DIRS})
 
 if(MSVC)
   set(BOOST_CMATH_FILE "${Boost_INCLUDE_DIRS}/boost/core/cmath.hpp")
-
   file(READ "${BOOST_CMATH_FILE}" BOOST_CMATH_CONTENT)
 
-  string(REGEX REPLACE
+  string(REPLACE
     "using std::_finite;"
-    "// patched: _finite is not in std\n#define _CMATH_IN_CRT 1\n#include <float.h>\nusing ::_finite;"
+    "#define _CMATH_IN_CRT 1\n#include <float.h>\nusing ::_finite;"
     BOOST_CMATH_PATCHED
     "${BOOST_CMATH_CONTENT}"
   )
 
-  file(WRITE "${BOOST_CMATH_FILE}" "${BOOST_CMATH_PATCHED}")
+  if(NOT "${BOOST_CMATH_CONTENT}" STREQUAL "${BOOST_CMATH_PATCHED}")
+    message(STATUS "Patching Boost cmath.hpp to fix MSVC _finite issue")
+    file(WRITE "${BOOST_CMATH_FILE}" "${BOOST_CMATH_PATCHED}")
+  endif()
 endif()
 
-FIND_PACKAGE ( Threads REQUIRED )
+find_package(Threads REQUIRED)
 
 #find_package(Pthreads)
 #if(PTHREADS_FOUND)
