@@ -18,11 +18,6 @@
 #ifndef FRAGSPECTRUMSCANDATABASEBOOSTDB_H
 #define FRAGSPECTRUMSCANDATABASEBOOSTDB_H
 
-#if defined(_MSC_VER)
-#define _CMATH_IN_CRT 1
-#include <float.h>
-#endif
-
 #include "FragSpectrumScanDatabase.h"
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>

@@ -1,8 +1,3 @@
-#if defined(_MSC_VER)
-#define _CMATH_IN_CRT 1
-#include <float.h>
-#endif
-
 #include <typeinfo>
 #include <xsd/cxx/xml/dom/auto-ptr.hxx>
 #include "Reader.h"

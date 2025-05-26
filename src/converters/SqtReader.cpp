@@ -1,8 +1,3 @@
-#if defined(_MSC_VER)
-#define _CMATH_IN_CRT 1
-#include <float.h>
-#endif
-
 #include "SqtReader.h"
 
 //default score vector //TODO move this to a file or input parameter                          
