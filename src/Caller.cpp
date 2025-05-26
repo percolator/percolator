@@ -277,11 +277,11 @@ bool Caller::parseOptions(int argc, char **argv) {
       "value");
   cmd.defineOption("l",
       "results-proteins",
-      "Output tab delimited results of proteins to a file instead of stdout (Only valid if option -A or -f is active)",
+      "Output tab delimited results of proteins to a file instead of stdout (Only valid if option -f is active)",
       "filename");
   cmd.defineOption("L",
       "decoy-results-proteins",
-      "Output tab delimited results for decoy proteins into a file (Only valid if option -A or -f is active)",
+      "Output tab delimited results for decoy proteins into a file (Only valid if option -f is active)",
       "filename");
   cmd.defineOption("P",
       "protein-decoy-pattern",
