@@ -3,7 +3,7 @@
 ::: hardcoded in the respective buiding scripts
 
 ::: 7-zip
-set ZIP_URL=https://downloads.sourceforge.net/sevenzip/7z920.exe
+set ZIP_URL=https://www.7-zip.org/a/7z2301-extra.7z
 
 ::: CMake
 set CMAKE_VERSION=3.17.1
