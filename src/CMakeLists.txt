@@ -74,39 +74,6 @@ add_subdirectory(dblas)
 set (DBLAS_LIBRARIES ${DBLAS_LIBRARIES} dblas)
 
 ###############################################################################
-# RUN CODESYNTHESIS
-###############################################################################
-
-if(XML_SUPPORT)
-  add_definitions(-DXSD_CXX11)
-  if(MINGW OR WIN32)
-    set( xdr_flags )
-  else()
-    set( xdr_flags  --generate-insertion XDR --generate-extraction XDR --std c++11)
-  endif()
-
-  # RUN CODESYNTHESIS TO GENERATE xsdfiles for pin (percolator input)
-  set(xsdfiles_in ${CMAKE_CURRENT_BINARY_DIR}/percolator_in.cxx ${CMAKE_CURRENT_BINARY_DIR}/percolator_in.hxx )
-  set(percolator_in xml/percolator_in.xsd)
-  add_custom_command(
-    OUTPUT ${xsdfiles_in}
-    COMMAND ${XSD_EXECUTABLE} ARGS cxx-tree   --generate-serialization  ${xdr_flags} --root-element-all  --namespace-map ${percolator-in-namespace}=percolatorInNs ${CMAKE_CURRENT_SOURCE_DIR}/${percolator_in}
-    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${percolator_in}
-    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-  )
-
-  # RUN CODESYNTHESIS TO GENERATE xsdfiles for pout (percolator output)
-  set(xsdfiles_out ${CMAKE_CURRENT_BINARY_DIR}/percolator_out.cxx ${CMAKE_CURRENT_BINARY_DIR}/percolator_out.hxx )
-  set(percolator_out xml/percolator_out.xsd)
-  add_custom_command(
-    OUTPUT ${xsdfiles_out}
-    COMMAND ${XSD_EXECUTABLE} ARGS cxx-tree   --generate-serialization ${xdr_flags} --root-element-all  --namespace-map ${percolator-out-namespace}=percolatorOutNs ${CMAKE_CURRENT_SOURCE_DIR}/${percolator_out}
-    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${percolator_out}
-    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-  )
-endif(XML_SUPPORT)
-
-###############################################################################
 # PULL Eigen
 ###############################################################################
 
@@ -155,6 +122,48 @@ else()
 endif()
 ### End patch
 
+###############################################################################
+# RUN CODESYNTHESIS
+###############################################################################
+
+if(XML_SUPPORT)
+  add_definitions(-DXSD_CXX11)
+  if(MINGW OR WIN32)
+    set(xdr_flags)
+  else()
+    set(xdr_flags --generate-insertion XDR --generate-extraction XDR --std c++11)
+  endif()
+
+  # Generate percolator_in
+  set(xsdfiles_in ${CMAKE_CURRENT_BINARY_DIR}/percolator_in.cxx ${CMAKE_CURRENT_BINARY_DIR}/percolator_in.hxx)
+  set(percolator_in xml/percolator_in.xsd)
+  add_custom_command(
+    OUTPUT ${xsdfiles_in}
+    COMMAND ${XSD_EXECUTABLE} cxx-tree --generate-serialization ${xdr_flags} --root-element-all
+            --namespace-map ${percolator-in-namespace}=percolatorInNs
+            ${CMAKE_CURRENT_SOURCE_DIR}/${percolator_in}
+    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${percolator_in}
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    COMMENT "Generating percolator_in.* from XSD"
+  )
+
+  # Generate percolator_out
+  set(xsdfiles_out ${CMAKE_CURRENT_BINARY_DIR}/percolator_out.cxx ${CMAKE_CURRENT_BINARY_DIR}/percolator_out.hxx)
+  set(percolator_out xml/percolator_out.xsd)
+  add_custom_command(
+    OUTPUT ${xsdfiles_out}
+    COMMAND ${XSD_EXECUTABLE} cxx-tree --generate-serialization ${xdr_flags} --root-element-all
+            --namespace-map ${percolator-out-namespace}=percolatorOutNs
+            ${CMAKE_CURRENT_SOURCE_DIR}/${percolator_out}
+    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${percolator_out}
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    COMMENT "Generating percolator_out.* from XSD"
+  )
+
+  # 👇 This is the critical part!
+  add_custom_target(generate_xsd ALL DEPENDS ${xsdfiles_in} ${xsdfiles_out})
+endif()
+
 #############################################################################
 # COMPILE PERCOLATOR
 ###############################################################################
@@ -166,6 +175,7 @@ if(XML_SUPPORT)
 								  SanityCheck.cpp UniNormalizer.cpp DataSet.cpp TabFileValidator.cpp FeatureNames.cpp LogisticRegression.cpp Numerical.cpp Option.cpp PosteriorEstimator.cpp
 								  ProteinProbEstimator.cpp ProteinFDRestimator.cpp Scores.cpp PseudoRandom.cpp Set.cpp SqtSanityCheck.cpp ssl.cpp PackedVector.cpp
 								  PackedMatrix.cpp Matrix.cpp Logger.cpp MyException.cpp ProteinScoreHolder.cpp PickedProteinInterface.cpp FeatureMemoryPool.cpp Timer.cpp TmpDir.cpp ValidateTabFile.cpp Vector.cpp)
+  add_dependencies(perclibrary generate_xsd)
 else(XML_SUPPORT)
   add_library(perclibrary STATIC Array.cpp BaseSpline.cpp MassHandler.cpp ResultHolder.cpp Reset.cpp PSMDescription.cpp IsotonicPEP.cpp
 								  XMLInterface.cpp SetHandler.cpp StdvNormalizer.cpp svm.cpp Caller.cpp CompositionSorter.cpp CrossValidation.cpp Enzyme.cpp Globals.cpp NoNormalizer.cpp Normalizer.cpp
