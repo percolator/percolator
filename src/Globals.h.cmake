@@ -79,6 +79,18 @@ limitations under the License.
   #include <fcntl.h>
 #endif
 
+#ifdef _MSC_VER
+  #define NOMINMAX
+  #include <float.h>
+  #define _finite(x) _finite(x)
+#endif
+
+#ifdef _MSC_VER
+  #ifndef isfinite
+    #define isfinite _finite
+  #endif
+#endif
+
 
 
 #ifdef __APPLE__

@@ -58,7 +58,7 @@ static const XMLCh fragSpectrumScanStr[] = {
 
 XMLInterface::XMLInterface(const std::string& outputFN,
                            const std::string& PEPoutputFN,
-                           bool schemaValidation, bool printDecoys, bool printExpMass) : xmlOutputFN_(outputFN), pepXMLOutputFN_(PEPoutputFN), schemaValidation_(schemaValidation), otherCall_(""), reportUniquePeptides_(false), reportPepXML_(false), printDecoys_(printDecoys), printExpMass_(printExpMass) {}
+                           bool schemaValidation, bool printDecoys, bool printExpMass) : xmlOutputFN_(outputFN), pepXMLOutputFN_(PEPoutputFN), schemaValidation_(schemaValidation), otherCall_(""), reportUniquePeptides_(false), printDecoys_(printDecoys), reportPepXML_(false), printExpMass_(printExpMass) {}
 
 XMLInterface::~XMLInterface() {
     // clean up temporary files if an exception occurred during the writing
@@ -281,6 +281,15 @@ int XMLInterface::readAndScorePin(istream& dataStream, std::vector<double>& rawW
     xercesc::XMLPlatformUtils::Terminate();
     return 1;
 #else   // XML_SUPPORT
+    (void) rawWeights; // avoid compilation warning
+    (void) dataStream; // avoid compilation warning
+    (void) allScores; // avoid compilation warning
+    (void) xmlInputFN; // avoid compilation warning
+    (void) setHandler; // avoid compilation warning
+    (void) pCheck; // avoid compilation warning
+    (void) protEstimator; // avoid compilation warning
+    (void) enzyme; // avoid compilation warning
+
     std::cerr << "ERROR: Compiler flag XML_SUPPORT was off, you cannot use the -k flag for pin-format input files" << std::endl;
     return 0;
 #endif  // XML_SUPPORT
@@ -482,6 +491,9 @@ void XMLInterface::writeXML(Scores& fullset, ProteinProbEstimator* protEstimator
 }
 
 void XMLInterface::writePepXML(Scores& fullset, ProteinProbEstimator* protEstimator, std::string call) {
+    (void) fullset; // avoid compilation warning
+    (void) protEstimator; // avoid compilation warning
+    (void) call; // avoid compilation warning
     ofstream os;
     const string schema =  // space +
         "http://sashimi.sourceforge.net/schema_revision/pepXML/pepXML_v122.xsd";

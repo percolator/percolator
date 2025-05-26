@@ -15,6 +15,7 @@
 
  *******************************************************************************/
 
+
 #include <algorithm>
 #include <boost/algorithm/string/trim.hpp>
 #include <boost/assign.hpp>
@@ -40,6 +41,7 @@ using namespace boost::algorithm;
 #include "Scores.h"
 #include "SetHandler.h"
 #include "ssl.h"
+#include "IsotonicPEP.h"
 
 inline bool operator>(const ScoreHolder& one, const ScoreHolder& other) {
     return (one.score > other.score) || (one.score == other.score && one.pPSM->scan > other.pPSM->scan) || (one.score == other.score && one.pPSM->scan == other.pPSM->scan && one.pPSM->expMass > other.pPSM->expMass) || (one.score == other.score && one.pPSM->scan == other.pPSM->scan && one.pPSM->expMass == other.pPSM->expMass && one.label > other.label);
@@ -150,11 +152,11 @@ void ScoreHolder::printPepXML(ostream& os, map<char, float>& aaWeight, int index
     std::string id = pPSM->getId();
     /* Get scan ids */
     unsigned int scan = pPSM->scan;
-    unsigned int native_id = scan - 1;
+    // unsigned int native_id = scan - 1;
     /* Get charge */
     std::string assumed_charge = getCharge(id);
     /* Get RT */
-    double RT = pPSM->getRetentionTime();
+    // double RT = pPSM->getRetentionTime();
     /*  uncalibrated_precursor_neutral_mass ? */
     double expMass = pPSM->expMass;
     /*  precursor_neutral_mass ? */
@@ -641,7 +643,7 @@ int Scores::calcQ(double fdr, bool skipDecoysPlusOne) {
     return numPos;
 }
 
-void Scores::generateNegativeTrainingSet(AlgIn& data, const double cneg) {
+void Scores::generateNegativeTrainingSet(AlgIn& data, const double /* cneg */) {
     std::size_t ix2 = 0;
     std::vector<ScoreHolder>::const_iterator scoreIt = scores_.begin();
     for (; scoreIt != scores_.end(); ++scoreIt) {
@@ -656,7 +658,7 @@ void Scores::generateNegativeTrainingSet(AlgIn& data, const double cneg) {
 }
 
 void Scores::generatePositiveTrainingSet(AlgIn& data, const double fdr,
-                                         const double cpos, const bool trainBestPositive) {
+                                         const double /* cpos */, const bool trainBestPositive) {
     std::size_t ix2 = static_cast<std::size_t>(data.negatives);
     int p = 0;
 
@@ -853,15 +855,65 @@ void Scores::checkSeparationAndSetPi0() {
     }
 }
 
-void Scores::calcPep() {
-    std::vector<pair<double, bool> > combined;
-    getScoreLabelPairs(combined);
+void Scores::calcPep(const bool spline, const bool interp, const bool pava) {
+    if (!spline) {
+        if (pava) {
+            std::vector<double> target_q, sc;
+            for (auto& sh : scores_) {
+                if (sh.isTarget()) {
+                    target_q.push_back(sh.q);
+                    sc.push_back(sh.score);
+                }
+            }
+            InferPEP reg(false);
+            auto target_pep = interp
+                                ? reg.qns_to_pep(target_q, sc)
+                                : reg.q_to_pep(target_q);
+            // Move PEPs to scoreholders. The PEPs are only defined for target, 
+            // We use interpolation for decoys.
+            // Add elements avoiding overflow problems if last sh is a decoy
+            target_pep.push_back(1.0); target_q.push_back(1.0);
+            auto it_pep = target_pep.begin();
+            auto it_q = target_q.begin();
+            double l_q(0.0), l_pep(0.0);
+            for (auto& sh : scores_) {
+                if (sh.isTarget()) {
+                    sh.pep = *it_pep;
+                    // remember last (l_) pep and q for interpolation
+                    l_pep = *it_pep;
+                    l_q = *it_q;
+                    it_pep++; it_q++;
+                } else {
+                    double pep = reg.interpolate(sh.q,l_q,*it_q,l_pep,*it_pep);
+                    sh.pep = pep;
+                }
+            }
+        } else {
+            std::vector<double> is_decoy, sc;
+            for (auto& sh : scores_) {
+                is_decoy.push_back(sh.isTarget()? 0.: 1.);
+                sc.push_back(sh.score);
+            }
+            InferPEP reg(true);
+            auto peps = interp
+                                ? reg.tdc_to_pep(is_decoy, sc)
+                                : reg.tdc_to_pep(is_decoy);
+            auto it_pep = peps.begin();
+            for (auto& sh : scores_) {
+                sh.pep = *it_pep;
+                it_pep++;
+            }
+        }
+    } else {
+        std::vector<pair<double, bool> > combined;
+        getScoreLabelPairs(combined);
 
-    std::vector<double> peps;
-    // Logistic regression on the data
-    PosteriorEstimator::estimatePEP(combined, usePi0_, pi0_, peps, true);
-    for (size_t ix = 0; ix < scores_.size(); ix++) {
-        scores_[ix].pep = peps[ix];
+        std::vector<double> peps;
+        // Logistic regression on the data
+        PosteriorEstimator::estimatePEP(combined, usePi0_, pi0_, peps, true);
+        for (size_t ix = 0; ix < scores_.size(); ix++) {
+            scores_[ix].pep = peps[ix];
+        }
     }
 }
 

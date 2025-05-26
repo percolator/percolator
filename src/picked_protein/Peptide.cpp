@@ -739,6 +739,7 @@ void Peptide::printFilteredInFormat(
   FILE* file  ///< the out put stream -out
   ) {
 
+  (void) file; // avoid compilation warning
   char* sequence = NULL;
   // bool light = false;
 

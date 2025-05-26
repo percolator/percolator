@@ -85,6 +85,8 @@ class NoEnzyme : public Enzyme {
       return getString();
     }
     virtual bool isEnz(const char& n, const char& c) const {
+      (void)n;
+      (void)c;
       return true;
     }
     virtual EnzymeType getET() const {

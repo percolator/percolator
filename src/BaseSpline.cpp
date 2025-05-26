@@ -266,7 +266,7 @@ double BaseSpline::evaluateSlope(double alpha) {
   int mixg=1; // Ignore 0 and n-1
   double maxg = g[mixg];
   for (int ix=mixg;ix<n-1;++ix) {
-    assert(ix=g.index(ix)); //This should be a filled vector
+    assert(ix==g.index(ix)); //This should be a filled vector
     if (g[ix]>=maxg) {
       maxg = g[ix];
       mixg = ix;

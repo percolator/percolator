@@ -33,17 +33,35 @@ set INSTALL_DIR=%BUILD_DIR%\tools
 if not exist "%INSTALL_DIR%" (md "%INSTALL_DIR%")
 if not exist "%RELEASE_DIR%" (md "%RELEASE_DIR%")
 
-if not exist "%INSTALL_DIR%\7zip" (
-  echo Downloading and installing 7-Zip
-  call :downloadfile %ZIP_URL% %INSTALL_DIR%\7zip.exe
-  "%INSTALL_DIR%\7zip.exe" /S /D=%INSTALL_DIR%\7zip
+set ZIP_INSTALLER=%INSTALL_DIR%\7zip-installer.exe
+set ZIP_EXE=%INSTALL_DIR%\7zip\7z.exe
+
+if not exist "%ZIP_EXE%" (
+  echo Downloading and installing 7-Zip...
+  call :downloadfile %ZIP_URL% %ZIP_INSTALLER%
+
+  :: Run installer silently to extract to the desired location
+  start /wait "" "%ZIP_INSTALLER%" /S /D=%INSTALL_DIR%\7zip
+
+  :: Verify the install
+  if not exist "%ZIP_EXE%" (
+    echo ERROR: 7z.exe not found after installation.
+    exit /B 1
+  )
 )
-set ZIP_EXE="%INSTALL_DIR%\7zip\7z.exe"
+
+if not exist "%ZIP_EXE%" (
+  echo ERROR: 7z.exe not found after unpacking.
+  exit /B 1
+)
 
 if not exist "%INSTALL_DIR%\%CMAKE_BASE%" (
   echo Downloading and installing CMake
   call :downloadfile %CMAKE_URL% %INSTALL_DIR%\cmake.zip
-  %ZIP_EXE% x "%INSTALL_DIR%\cmake.zip" -o"%INSTALL_DIR%" -aoa -xr!doc > NUL
+  %ZIP_EXE% x "%INSTALL_DIR%\cmake.zip" -o"%INSTALL_DIR%" -aoa -xr!doc -bso0 || (
+    echo Extraction failed for cmake.zip
+    EXIT /B 1
+  )
 )
 set CMAKE_EXE="%INSTALL_DIR%\%CMAKE_BASE%\bin\cmake.exe"
 
@@ -58,6 +76,8 @@ if not exist "%BOOST_ROOT%" (
   b2 address-model=64 threading=multi -j4 --with-system --with-filesystem --with-serialization -d0
 )
 set BOOST_LIB=%BOOST_ROOT%\stage\lib
+set BOOST_INCLUDEDIR=%BOOST_ROOT%
+set BOOST_LIBRARYDIR=%BOOST_ROOT%\stage\lib
 
 ::: Needed for CPack :::
 set NSIS_DIR=%INSTALL_DIR%\nsis
@@ -111,7 +131,7 @@ if not exist "%XSD_DIR%" (
   call :downloadfile %LIBXSD_URL% %INSTALL_DIR%\libxsd.zip
   %ZIP_EXE% x "%INSTALL_DIR%\libxsd.zip" -o"%INSTALL_DIR%" > NUL
   echo Moving files from %LIBXSD_BASE%\include\ to %XSD_BASE%
-  xcopy "%INSTALL_DIR%\%LIBXSD_BASE%\include\*" "%INSTALL_DIR%\%XSD_BASE%\" /s /e /y /i
+  xcopy "%INSTALL_DIR%\%LIBXSD_BASE%\include\*" "%INSTALL_DIR%\%XSD_BASE%\" /s /e /y /i >nul
 )
 
 ::: Needed for converters package :::
@@ -194,7 +214,7 @@ msbuild PACKAGE.vcxproj /p:Configuration=%BUILD_TYPE% /m
 if not exist "%BUILD_DIR%\converters" (md "%BUILD_DIR%\converters")
 cd /D "%BUILD_DIR%\converters"
 echo cmake converters.....
-%CMAKE_EXE% -G "Visual Studio %MSVC_VER%" -A x64 -DCMAKE_BUILD_TYPE=%BUILD_TYPE% -DBOOST_ROOT="%BOOST_ROOT%" -DBOOST_LIBRARYDIR="%BOOST_LIB%" -DSERIALIZE="Boost" -DCMAKE_PREFIX_PATH="%XERCES_DIR%;%XSD_DIR%;%SQLITE_DIR%;%ZLIB_DIR%" -DXML_SUPPORT=ON "%SRC_DIR%\percolator\src\converters"
+%CMAKE_EXE% -G "Visual Studio %MSVC_VER%" -A x64 -DCMAKE_BUILD_TYPE=%BUILD_TYPE% -DBOOST_ROOT="%BOOST_ROOT%" -DBoost_NO_SYSTEM_PATHS=ON -DBoost_INCLUDE_DIR="%BOOST_INCLUDEDIR%" -DBoost_LIBRARY_DIR="%BOOST_LIBRARYDIR%" -DSERIALIZE="Boost" -DCMAKE_PREFIX_PATH="%XERCES_DIR%;%XSD_DIR%;%SQLITE_DIR%;%ZLIB_DIR%" -DXML_SUPPORT=ON "%SRC_DIR%\percolator\src\converters"
 echo build converters (this will take a few minutes).....
 msbuild PACKAGE.vcxproj /p:Configuration=%BUILD_TYPE% /m
 
@@ -221,8 +241,12 @@ EXIT /B
 
 :downloadfile
 echo Downloading "%1" to "%2"
-PowerShell "[Net.ServicePointManager]::SecurityProtocol = 'tls12, tls11, tls'; (new-object System.Net.WebClient).DownloadFile('%1','%2')"
-EXIT /B
+curl -fsSL -o "%2" "%1"
+if errorlevel 1 (
+  echo ERROR: Failed to download %1
+  exit /b 1
+)
+exit /b
 
 :copytorelease
 echo Copying "%1" to "%RELEASE_DIR%"

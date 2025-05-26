@@ -68,6 +68,7 @@ Protein::Protein(
   Database* database ///< the database of its origin
   )
 {
+  (void) annotation; // avoid compilation warning
   init();
   setId(id);
   setSequence(sequence);
@@ -455,6 +456,7 @@ bool Protein::readRawSequence
    unsigned int* sequence_length // the sequence length -chris added
    )
 {
+  (void) name; // avoid compilation warning
   int a_char;
   unsigned int i_seq;
   bool return_value = true;

@@ -6,10 +6,30 @@ endmacro(my_set)
 
 # STORE NEWLY SET VARIABLES IN *.h.cmake FILES
 macro(load_config_files location)
-  file(GLOB_RECURSE configurefiles RELATIVE ${location} ${location}/*.cmake )
+  file(GLOB_RECURSE configurefiles
+    RELATIVE "${location}"
+    "${location}/*.h.cmake"
+    "${location}/*.py.cmake"
+  )
   foreach(i ${configurefiles})
-    string(REPLACE ".cmake" "" myReplFile "${i}")
-    configure_file(${location}/${myReplFile}.cmake ${CMAKE_CURRENT_BINARY_DIR}/${myReplFile} @ONLY)
+    # Determine output extension
+    if(i MATCHES "\\.h\\.cmake$")
+      string(REPLACE ".h.cmake" ".h" outputFile "${i}")
+    elseif(i MATCHES "\\.py\\.cmake$")
+      string(REPLACE ".py.cmake" ".py" outputFile "${i}")
+    else()
+      message(WARNING "Unrecognized config file pattern: ${i}")
+      continue()
+    endif()
+
+    # Create output directory if needed
+    get_filename_component(outputDir "${outputFile}" DIRECTORY)
+    if(NOT outputDir STREQUAL "")
+      file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/${outputDir}")
+    endif()
+
+    # Configure the file
+    configure_file("${location}/${i}" "${CMAKE_CURRENT_BINARY_DIR}/${outputFile}" @ONLY)
   endforeach()
 endmacro()
 
@@ -50,7 +70,7 @@ set(CMAKE_MODULE_PATH ${PERCOLATOR_SOURCE_DIR}/cmake)
 
 # VERSION AND NAMESPACES
 set(CPACK_PACKAGE_VERSION_MAJOR "3")
-set(CPACK_PACKAGE_VERSION_MINOR "07")
+set(CPACK_PACKAGE_VERSION_MINOR "08")
 set(CPACK_PACKAGE_VERSION_PATCH "0")
 set(PIN_VERSION_MAJOR "1")
 set(PIN_VERSION_MINOR "3")

@@ -1,4 +1,5 @@
 #include <typeinfo>
+#include <xsd/cxx/xml/dom/auto-ptr.hxx>
 #include "Reader.h"
 
 const std::string Reader::aaAlphabet("ACDEFGHIKLMNPQRSTVWY");

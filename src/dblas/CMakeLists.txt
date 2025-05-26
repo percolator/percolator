@@ -10,5 +10,5 @@ ELSEIF(UNIX)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -Wall -fPIC")
 ENDIF(UNIX)
 
-file(GLOB BLAS_SOURCES dscal.c daxpy.c ddot.c dnrm2.c dgemv.c)
-add_library(blas STATIC ${BLAS_SOURCES})
+file(GLOB DBLAS_SOURCES dscal.c daxpy.c ddot.c dnrm2.c dgemv.c)
+add_library(dblas STATIC ${DBLAS_SOURCES})

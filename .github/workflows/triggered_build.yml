@@ -1,0 +1,85 @@
+name: Triggered Build
+
+on: workflow_dispatch
+
+jobs:
+  build-ubuntu:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: preinstall
+      run: sudo apt-get update && sudo apt-get install -y -o Acquire::Retries=3 libxml2-utils
+    - name: create_dirs
+      run: mkdir -p ${{ github.workspace }}/rel ${{ github.workspace }}/build
+    - name: configure_and_make
+      run: ./admin/builders/ubuntu64_build.sh -s ${{ github.workspace }}/.. -r ${{ github.workspace }}/rel -b ${{ github.workspace }}/build
+    - name: test
+      run: cd ${{ github.workspace }}/build/percolator && sudo make install && make test ARGS="-V"
+    - name: zip raw binary
+      run: zip -j ${{ github.workspace }}/rel/percolator-noxml-ubuntu-portable.zip ${{ github.workspace }}/build/percolator-noxml/src/percolator
+    - name: Upload packages
+      uses: actions/upload-artifact@v4
+      with:
+        name: ubuntu-packages
+        path: ${{ github.workspace }}/rel
+
+#  build-centos:
+#    runs-on: ubuntu-latest
+#    container: 'lukall/centos_runner:latest'
+#    steps:
+#    - uses: actions/checkout@v4
+#    - name: create_dirs
+#      run: mkdir -p ../my_rel ../my_build
+#    - name: configure_and_make
+#      run: ./admin/builders/centos64_build.sh -s `pwd`/.. -r `pwd`/../my_rel -b `pwd`/../my_build
+#    - name: test
+#      run: cd ../my_build/percolator && make install && make test ARGS="-V"
+#    - name: zip raw binary
+#      run: zip -j ../my_rel/percolator-noxml-linux-portable.zip ../my_build/percolator-noxml/src/percolator
+#    - name: Upload packages
+#      uses: actions/upload-artifact@v3
+#      with:
+#        name: centos-packages
+#        path: ../my_rel
+
+  build-osx:
+    runs-on: macos-15
+    steps:
+    - uses: actions/checkout@v4
+    - name: create_dirs
+      run: mkdir -p ${{ github.workspace }}/rel ${{ github.workspace }}/build
+    - name: configure_and_make
+      run: ./admin/builders/osx64_build.sh -s ${{ github.workspace }}/.. -r ${{ github.workspace }}/release -b ${{ github.workspace }}/build
+    - name: test
+      run: cd ${{ github.workspace }}/build/percolator && sudo make install && make test ARGS="-V"
+    - name: zip raw binary
+      run: zip ${{ github.workspace }}/rel/percolator-noxml-osx-portable.zip ${{ github.workspace }}/build/percolator-noxml/src/percolator
+    - name: Upload packages
+      uses: actions/upload-artifact@v4
+      with:
+        name: osx-packages
+        path: ${{ github.workspace }}/rel
+
+  build-windows:
+    runs-on: windows-2019
+    defaults:
+      run:
+        shell: cmd
+    steps:
+    - uses: actions/checkout@v4
+    - name: create_dirs
+      run: mkdir "%GITHUB_WORKSPACE%\rel" "%GITHUB_WORKSPACE%\build"
+    - name: configure_and_make
+      shell: cmd
+      run: |
+        echo %GITHUB_WORKSPACE%
+        call "%GITHUB_WORKSPACE%\admin\builders\nativew64_build.bat" -s "%GITHUB_WORKSPACE%\.." -r "%GITHUB_WORKSPACE%\rel" -b "%GITHUB_WORKSPACE%\build"
+    - name: zip raw binary
+      shell: pwsh
+      run: |
+         Compress-Archive -Path "$env:GITHUB_WORKSPACE\build\percolator-noxml\src\Release\*.exe" -DestinationPath "$env:GITHUB_WORKSPACE\rel\percolator-noxml-windows-portable.zip"
+    - name: Upload packages
+      uses: actions/upload-artifact@v4
+      with:
+        name: windows-packages
+        path: ${{ github.workspace }}/rel/percolator-noxml-windows-portable.zip

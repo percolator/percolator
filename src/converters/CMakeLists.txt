@@ -1,7 +1,7 @@
 ###############################################################################
 # NAME AND VERSION
 ###############################################################################
-cmake_minimum_required (VERSION 3.10)
+cmake_minimum_required (VERSION 3.5)
 
 if(APPLE AND ${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION} VERSION_GREATER 3.0)
   # Identify AppleClang's COMPILER_ID as AppleClang instead of just Clang

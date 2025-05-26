@@ -29,7 +29,7 @@
 #include <omp.h>
 #endif
 
-#include "GoogleAnalytics.h"
+#include "Analytics.h"
 #include "Reset.h"
 using namespace std;
 
@@ -40,7 +40,7 @@ Caller::Caller() :
     tabOutputFN_(""), xmlOutputFN_(""), pepXMLOutputFN_(""),weightOutputFN_(""),
     psmResultFN_(""), peptideResultFN_(""), proteinResultFN_(""),
     decoyPsmResultFN_(""), decoyPeptideResultFN_(""), decoyProteinResultFN_(""),
-    analytics_(true), use_reset_alg_(false), use_composition_match_(false),
+    analytics_(true), 
     xmlPrintDecoys_(false), xmlPrintExpMass_(true), reportUniquePeptides_(true),
     reportPepXML_(false),
     targetDecoyCompetition_(false), useMixMax_(false), inputSearchType_("auto"),
@@ -48,7 +48,8 @@ Caller::Caller() :
     numIterations_(10), maxPSMs_(0u),
     nestedXvalBins_(1u), selectedCpos_(0.0), selectedCneg_(0.0),
     reportEachIteration_(false), quickValidation_(false), 
-    trainBestPositive_(false), numThreads_(3u) {
+    trainBestPositive_(false), numThreads_(3u), use_reset_alg_(false), use_composition_match_(false),
+    use_irls_pep_(false), use_interpolating_pep_(false), use_pava_pep_(false) {
 }
 
 Caller::~Caller() {
@@ -276,11 +277,11 @@ bool Caller::parseOptions(int argc, char **argv) {
       "value");
   cmd.defineOption("l",
       "results-proteins",
-      "Output tab delimited results of proteins to a file instead of stdout (Only valid if option -A or -f is active)",
+      "Output tab delimited results of proteins to a file instead of stdout (Only valid if option -f is active)",
       "filename");
   cmd.defineOption("L",
       "decoy-results-proteins",
-      "Output tab delimited results for decoy proteins into a file (Only valid if option -A or -f is active)",
+      "Output tab delimited results for decoy proteins into a file (Only valid if option -f is active)",
       "filename");
   cmd.defineOption("P",
       "protein-decoy-pattern",
@@ -335,6 +336,18 @@ bool Caller::parseOptions(int argc, char **argv) {
       "reset-algorithm",
       "Run an implementation of the Percolator-RESET Algorithm.",
       "", TRUE_IF_SET);
+  cmd.defineOption("",
+      "irls-pep",
+      "Calculate PEPs using a cubic spline fitted using penalized log-likelihood fitting as described in PMID:18689838. This used to be the default method.",
+      "", TRUE_IF_SET);
+  cmd.defineOption(Option::EXPERIMENTAL_FEATURE,
+      "ip-pep",
+      "Use scores instead of rank as independent variable when calculating PEPs.",
+      "", TRUE_IF_SET);
+  cmd.defineOption(Option::EXPERIMENTAL_FEATURE,
+        "pava-pep",
+        "Calculate PEPs using PAVA isotonic regression.",
+        "", TRUE_IF_SET);
   cmd.defineOption(Option::EXPERIMENTAL_FEATURE,
       "composition-match",
       "Run an implementation of the Percolator-RESET psmsAndPeptides with target-decoy matching based on composition.",
@@ -446,6 +459,16 @@ bool Caller::parseOptions(int argc, char **argv) {
   if (cmd.isOptionSet("composition-match")) {
     use_composition_match_ = true;
   }
+  if (cmd.isOptionSet("irls-pep")) {
+    use_irls_pep_ = true;
+  }
+  if (cmd.isOptionSet("ip-pep")) {
+    use_interpolating_pep_ = true;
+  }
+  if (cmd.isOptionSet("pava-pep")) {
+    use_pava_pep_ = true;
+  }
+
   if (cmd.isOptionSet("xml-in")) {
     tabInput_ = false;
     inputFN_ = cmd.options["xml-in"];
@@ -720,8 +743,7 @@ void Caller::calculatePSMProb(Scores& allScores, bool isUniquePeptideRun){
               << " with q<" << testFdr_ << "." << endl;
     std::cerr << "Calculating posterior error probabilities (PEPs)." << std::endl;
   }
-
-  allScores.calcPep();
+  allScores.calcPep(use_irls_pep_, use_interpolating_pep_, use_pava_pep_);
   writeResults(allScores, isUniquePeptideRun, writeOutput);
 }
 
@@ -939,9 +961,9 @@ int Caller::run() {
   if (VERB > 0) {
     std::cerr << extendedGreeter();
   }
-  if (analytics_)
-    GoogleAnalytics::postToAnalytics("percolator");
-
+// skip for now
+//  if (analytics_)
+//    postToPostHog("percolator_startup");
 #ifdef _OPENMP
   omp_set_num_threads(static_cast<int>(
     std::min((unsigned int)omp_get_max_threads(), numThreads_)));

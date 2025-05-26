@@ -25,11 +25,11 @@ using namespace std;
 class Normalizer {
  public:
   virtual ~Normalizer();
-  virtual void setSet(vector<double*>& featuresV,
-                      vector<double*>& rtFeaturesV, size_t numFeatures,
-                      size_t numRetentionFeatures) {}
-  virtual void updateSet(vector<double*>& featuresV, size_t offset,
-                         size_t numFeatures) {}
+  virtual void setSet(vector<double*>& /* featuresV */,
+                      vector<double*>& /* rtFeaturesV */, size_t /* numFeatures */,
+                      size_t /* numRetentionFeatures*/ ) {}
+  virtual void updateSet(vector<double*>& /* featuresV */, size_t /* offset */,
+                         size_t /* numFeatures */) {}
   
   void normalizeSet(vector<double*>& featuresV,
                     vector<double*>& rtFeaturesV);
@@ -40,10 +40,10 @@ class Normalizer {
   inline double normalize(const double in, size_t index) {
     return (in - sub[index]) / div[index];
   }
-  virtual void unnormalizeweight(const vector<double>& in,
-                                 vector<double>& out) {}
-  virtual void normalizeweight(const vector<double>& in,
-                               vector<double>& out) {}
+  virtual void unnormalizeweight(const vector<double>& /* in */,
+                                 vector<double>& /* out */) {}
+  virtual void normalizeweight(const vector<double>& /* in */,
+                               vector<double>& /* out */) {}
   static void endScoreNormalizeWeights(const std::vector<double>& in, 
     std::vector<double>& out, double subScore, double scale);
 
