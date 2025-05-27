@@ -1,3 +1,24 @@
+v3.08
+
+* Including builder for ghcr.io containers
+* Defaulting to Isplines as PEP regressor #391
+* Functionality for PAVA regression #391
+* Added some more Unit Tests #391
+* added libtirpc-dev to ubuntu builder
+* Changing build directory structure for Actions
+* Actions building with macos-15 runners, including arm64 support #388
+* updating Boost.Asio interface #388
+* removing GoogleAnalytics for now,
+* Changed paths for triggered builds.
+* Adding dependecy to the Eigen library #391
+* Removing unit test dependency on pthreads under windows
+* Tidied up code #384
+
+v3.07
+* Implementation of percolator-reset #378
+* Added RT to percolator output #374
+
+
 v3.06.5
 * Allow empty pin-file with --no-terminate flag. (#371)
 * Skip protein decoy pattern detection if --protein-decoy-pattern is specified. (#356)
