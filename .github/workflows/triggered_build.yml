@@ -25,7 +25,7 @@ jobs:
 
   build-centos:
     runs-on: ubuntu-latest
-    container: 'lukall/centos_runner:latest'
+    container: ghcr.io/statisticalbiotechnology/centos_runner:latest'
     steps:
     - uses: actions/checkout@v4
     - name: environment fixes
@@ -40,20 +40,20 @@ jobs:
         # install sudo
         yum install sudo -y
     - name: create_dirs
-      run: mkdir -p ${{ github.workspace }}/release ${{ github.workspace }}/../build
+      run: mkdir -p ${{ github.workspace }}/rel ${{ github.workspace }}/build
     - name: configure_and_make
       run: |
-        ./admin/builders/centos64_build.sh -s ${{ github.workspace }}/.. -r ${{ github.workspace }}/release -b ${{ github.workspace }}/../build
+        ./admin/builders/centos64_build.sh -s ${{ github.workspace }}/.. -r ${{ github.workspace }}/rel -b ${{ github.workspace }}/build
     - name: test
       run: |
-        cd -P ${{ github.workspace }}/../build/percolator && make install && make test ARGS="-V"
+        cd -P ${{ github.workspace }}/build/percolator && make install && make test ARGS="-V"
     - name: zip raw binary
-      run: zip -j ${{ github.workspace }}/release/percolator-noxml-linux-portable.zip ${{ github.workspace }}/../build/percolator-noxml/src/percolator
+      run: zip -j ${{ github.workspace }}/rel/percolator-noxml-linux-portable.zip ${{ github.workspace }}/build/percolator-noxml/src/percolator
     - name: Upload packages
       uses: actions/upload-artifact@v3
       with:
         name: centos-packages
-        path: ${{ github.workspace }}/release
+        path: ${{ github.workspace }}/rel
 
   build-osx:
     runs-on: macos-15
