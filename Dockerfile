@@ -1,4 +1,4 @@
-FROM docker.io/library/ubuntu:24.04 AS builder
+FROM docker.io/library/ubuntu:20.04 AS builder
 ARG percolator_cmake_args="-DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DGOOGLE_TEST=0 -DXML_SUPPORT=OFF"
 
 RUN apt-get update && apt-get install -y 
@@ -25,7 +25,7 @@ RUN cmake ${percolator_cmake_args} /percolator
 RUN make
 RUN make install
 
-FROM docker.io/library/ubuntu:24.04 AS runtime
+FROM docker.io/library/ubuntu:20.04 AS runtime
 
 RUN apt-get update && apt-get install -y \
     libboost-system-dev \

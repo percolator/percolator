@@ -2,7 +2,7 @@ name: Build and push container image
 on: workflow_dispatch
 jobs:
   build_push_container:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
