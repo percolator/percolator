@@ -6,6 +6,12 @@ RUN apt-get update && apt-get install -y
 # Remove the system gtest libraries (if installed)
 RUN apt-get remove --purge -y libgtest-dev && apt-get autoremove -y
 
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && \
+    apt-get install -y tzdata && \
+    ln -fs /usr/share/zoneinfo/Etc/UTC /etc/localtime && \
+    dpkg-reconfigure --frontend noninteractive tzdata
+
 RUN apt-get install -y build-essential g++ make cmake gawk git ca-certificates
 
 RUN apt-get install -y \
