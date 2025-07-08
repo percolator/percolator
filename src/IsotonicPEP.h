@@ -21,6 +21,7 @@ constexpr int DEFAULT_NUM_BINS = 10000;
 constexpr double DEFAULT_LAMBDA = 1e-6;
 constexpr int DEFAULT_NUM_KNOTS = 50;
 constexpr double DEFAULT_SKEW_FACTOR = 0.75;
+constexpr double DEFAULT_EPSILON = 1e-20;
 
 template <typename T>
 const T& clamp(const T& v, const T& lo, const T& hi) {
@@ -29,7 +30,7 @@ const T& clamp(const T& v, const T& lo, const T& hi) {
 
 class IsotonicRegression {
 public:
-    IsotonicRegression() = default;
+    IsotonicRegression(double epsilon = DEFAULT_EPSILON) : epsilon_(epsilon) {};
     virtual ~IsotonicRegression() = default;
 
     virtual std::vector<double> fit_y(const std::vector<double>& y, 
@@ -39,6 +40,8 @@ public:
     virtual std::vector<double> fit_xy(const std::vector<double>& x, const std::vector<double>& y,
                                        double min_val = std::numeric_limits<double>::lowest(),
                                        double max_val = std::numeric_limits<double>::max()) const = 0;
+protected:
+    double epsilon_;   
 };
 
 class PavaRegression : public IsotonicRegression {
@@ -72,11 +75,13 @@ class IsplineRegression : public IsotonicRegression {
         IsplineRegression(int num_bins = DEFAULT_NUM_BINS,
             double lambda = DEFAULT_LAMBDA,
             int max_knots = DEFAULT_NUM_KNOTS,
-            double skew_factor = DEFAULT_SKEW_FACTOR) : 
-                num_bins_(num_bins),
-                lambda_(lambda),
-                max_knots_(max_knots),
-                skew_factor_(skew_factor) {}
+            double skew_factor = DEFAULT_SKEW_FACTOR,
+            double epsilon = DEFAULT_EPSILON) : 
+                IsotonicRegression(epsilon), 
+                    num_bins_(num_bins),
+                    lambda_(lambda),
+                    max_knots_(max_knots),
+                    skew_factor_(skew_factor) {}
 
         std::vector<double> fit_xy(const std::vector<double>& x, const std::vector<double>& y,
             double min_val = std::numeric_limits<double>::lowest(),
@@ -99,14 +104,22 @@ class IsplineRegression : public IsotonicRegression {
         int num_bins_;
         double lambda_;
         int max_knots_;
-        double skew_factor_;    
+        double skew_factor_; 
     };
     
 
 class InferPEP {
     public:
-        InferPEP(bool use_ispline);
-    
+        InferPEP(bool use_ispline, double epsilon = DEFAULT_EPSILON) 
+            : regressor_ptr_(use_ispline ? std::unique_ptr<IsotonicRegression>(new IsplineRegression()) : 
+                                           std::unique_ptr<IsotonicRegression>(new PavaRegression())), 
+              epsilon_(epsilon) {
+            if (VERB > 1) {
+                std::cerr << "Performing isotonic regression using " 
+                          << (use_ispline ? "I-Splines" : "PAVA") << std::endl;
+            }
+        }
+        virtual ~InferPEP() = default;        
         std::vector<double> q_to_pep(const std::vector<double>& q_values);
         std::vector<double> qns_to_pep(const std::vector<double>& q_values, const std::vector<double>& scores);
         std::vector<double> tdc_to_pep(const std::vector<double>& is_decoy, const std::vector<double>& scores = {});
@@ -120,6 +133,7 @@ class InferPEP {
         std::unique_ptr<IsotonicRegression> regressor_ptr_;
         std::vector<double> qs;
         std::vector<double> pep_iso;
+        double epsilon_;
     };
 
     #endif /* ISOTONICPEP_H_ */

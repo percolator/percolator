@@ -207,22 +207,6 @@ std::vector<double> IsplineRegression::fit_xy(const std::vector<double>& x, cons
     return PavaRegression().fit_xy(x, result, min_val, max_val);
 }
 
-InferPEP::InferPEP(bool use_ispline)
-{
-    if (use_ispline) {
-        regressor_ptr_ = std::make_unique<IsplineRegression>();
-//        regressor_ptr_ = std::make_unique<IsplineRegression>();
-        if (VERB > 1) {
-            std::cerr << "Performing isotonic regression using I-Splines" << std::endl;
-        }                
-    } else {
-        regressor_ptr_ = std::make_unique<PavaRegression>();
-        if (VERB > 1) {
-            std::cerr << "Performing isotonic regression using PAVA" << std::endl;
-        }
-    }
-}
-
 std::vector<double> InferPEP::q_to_pep(const std::vector<double>& q_values) {
     qs = q_values;
 
@@ -239,7 +223,7 @@ std::vector<double> InferPEP::q_to_pep(const std::vector<double>& q_values) {
     for (size_t i = 1; i < qn.size(); ++i) {
         raw_pep[i] = qn[i] - qn[i - 1];
     }   
-    return regressor_ptr_->fit_y(raw_pep);
+    return regressor_ptr_->fit_y(raw_pep, epsilon_, 1. - epsilon_);
 }
 
 std::vector<double> InferPEP::qns_to_pep(const std::vector<double>& q_values, const std::vector<double>& scores) {
@@ -260,7 +244,7 @@ std::vector<double> InferPEP::qns_to_pep(const std::vector<double>& q_values, co
         raw_pep[i] = qn[i] - qn[i - 1];
     }
 
-    return regressor_ptr_->fit_xy(scores, raw_pep);
+    return regressor_ptr_->fit_xy(scores, raw_pep, epsilon_, 1. - epsilon_);
 }
 
 std::vector<double> InferPEP::tdc_to_pep(const std::vector<double>& is_decoy, const std::vector<double>& scores) {
@@ -270,7 +254,6 @@ std::vector<double> InferPEP::tdc_to_pep(const std::vector<double>& is_decoy, co
     if (VERB > 2)
         std::cerr << "[TIMING] entering tdc_to_pep\n";
 
-    double epsilon = 1e-20;
     auto is_dec = is_decoy;
     is_dec.insert(is_dec.begin(), 0.5);
 
@@ -280,19 +263,19 @@ std::vector<double> InferPEP::tdc_to_pep(const std::vector<double>& is_decoy, co
             std::cerr << "[TIMING] choosing fit_xy\n";
         auto sc = scores;
         sc.insert(sc.begin(), sc[0]);
-        decoy_rate = regressor_ptr_->fit_xy(sc, is_dec, epsilon, 1. - epsilon);
+        decoy_rate = regressor_ptr_->fit_xy(sc, is_dec, epsilon_, 1. - epsilon_);
     } else {
         if (VERB > 2)
             std::cerr << "[TIMING] choosing fit_y\n";
-        decoy_rate = regressor_ptr_->fit_y(is_dec,  epsilon, 1. - epsilon);
+        decoy_rate = regressor_ptr_->fit_y(is_dec,  epsilon_, 1. - epsilon_);
     }
     decoy_rate.erase(decoy_rate.begin());
 
     std::vector<double> pep_iso;
     // auto i_d = is_decoy.begin(); double tar = 0.; double dec = 0.; double errors = 0.;
     for (auto& dp : decoy_rate) {
-        if (dp > 1. - epsilon)
-            dp = 1. - epsilon;
+        if (dp > 1. - epsilon_)
+            dp = 1. - epsilon_;
         double pep = dp / (1 - dp);
         if (pep > 1.)
             pep = 1.;
