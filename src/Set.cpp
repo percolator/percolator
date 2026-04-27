@@ -50,7 +50,8 @@ Set Set::reindexTo(const Set & base) {
   if (base.isEmpty())
     throw InvalidBaseException();
 
-  for (Set::Iterator iter = begin(), baseIter = base.begin(); iter != end() && baseIter != base.end(); ) {
+  Set::Iterator iter = begin(), baseIter = base.begin();
+  for (; iter != end() && baseIter != base.end(); ) {
     if ( *iter > *baseIter ) {
       baseIter++;
     } else if ( *iter == *baseIter ) {
