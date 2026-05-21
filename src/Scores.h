@@ -84,7 +84,7 @@ class Scores {
                          bool skipDecoysPlusOne = false);
   int calcScores(vector<double>& w);
   int calcQvals(double fdr, bool skipDecoysPlusOne = false);
-  void calcPep(const bool spline = false, const bool interpol = false, const bool from_q = false);
+  void calcPep(const bool spline = false, const bool interpol = true, const bool from_q = false);
  
   void populateWithPSMs(SetHandler& setHandler);
 

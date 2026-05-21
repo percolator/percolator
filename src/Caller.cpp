@@ -79,7 +79,7 @@ Caller::Caller()
       trainBestPositive_(false),
       numThreads_(3u), 
       useIrlsPep_(false),
-      useInterpolatingPep_(false),
+      useInterpolatingPep_(true),
       usePavaPep_(false) {}
 
 Caller::~Caller() {
@@ -392,9 +392,9 @@ bool Caller::parseOptions(int argc, char** argv) {
       "irls-pep",
       "Calculate PEPs using a cubic spline fitted using penalized log-likelihood fitting as described in PMID:18689838. This used to be the default method.",
       "", TRUE_IF_SET);
-  cmd.defineOption(Option::EXPERIMENTAL_FEATURE,
-      "ip-pep",
-      "Use scores instead of rank as independent variable when calculating PEPs.",
+  cmd.defineOption("",
+      "rank-pep",
+      "Use rank instead of score as independent variable when calculating PEPs.",
       "", TRUE_IF_SET);
   cmd.defineOption(Option::EXPERIMENTAL_FEATURE,
         "pava-pep",
@@ -509,8 +509,8 @@ bool Caller::parseOptions(int argc, char** argv) {
   if (cmd.isOptionSet("irls-pep")) {
     useIrlsPep_ = true;
   }
-  if (cmd.isOptionSet("ip-pep")) {
-    useInterpolatingPep_ = true;
+  if (cmd.isOptionSet("rank-pep")) {
+    useInterpolatingPep_ = false;
   }
   if (cmd.isOptionSet("pava-pep")) {
     usePavaPep_ = true;
