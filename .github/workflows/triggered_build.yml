@@ -50,7 +50,7 @@ jobs:
     - name: zip raw binary
       run: zip -j ${{ github.workspace }}/release/percolator-linux-portable.zip ${{ github.workspace }}/../build/percolator/src/percolator
     - name: Upload packages
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: centos-packages
         path: ${{ github.workspace }}/release
