@@ -1,5 +1,14 @@
-v3.08
+v3.09
+* Replaced I-spline rank-based PEP calibration with score-based I-spline calibration as the new default; use --rank-pep to opt back to the previous rank-based behaviour. (#403)
+* Added I-spline PEP calibration using a trust-region reflective constrained ridge regressor (ISplineTRRRegressor), replacing PAVA post-processing as the default smoother; use --pava-pep to revert to PAVA. (#399)
+* Removed XML/XSD I/O support, which was incompatible with modern C++ toolchains. (#399)
+* Fixed a bug where PEP values could exceed 1.0. (#394)
+* Fixed a variable scope error in Set::reindexTo. (#402)
+* Raise an error when tab characters are found in a non-tab-separated protein field. (#380)
+* Check that input files exist before attempting decoy prefix detection. (#397)
+* Replaced CentOS with AlmaLinux 9 in CI via container build; updated GitHub Actions to Node.js 24 compatible versions and Boost 1.87.0. (#399)
 
+v3.08
 * Including builder for ghcr.io containers
 * Defaulting to Isplines as PEP regressor #391
 * Functionality for PAVA regression #391
