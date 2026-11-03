@@ -16,6 +16,7 @@
  *******************************************************************************/
 
 #include "SetHandler.h"
+#include <cmath>
 
 SetHandler::SetHandler(unsigned int maxPSMs) : maxPSMs_(maxPSMs) {}
 
@@ -379,6 +380,19 @@ ScanId SetHandler::getScanId(const std::string& psmLine, int& label,
           temp << "ERROR: Reading tab file, error reading experimental mass on line " 
               << lineNr << ". Check if experimental mass is a floating point number." << std::endl;
           throw MyException(temp.str());
+        }
+        if (!std::isfinite(scanId.second)) {
+          ostringstream temp;
+          temp << "ERROR: Reading tab file, the experimental mass on line "
+              << lineNr << " is " << scanId.second
+              << " instead of a finite number." << std::endl;
+          if (NO_TERMINATE) {
+            cerr << temp.str() << "No-terminate flag set: setting it to 0 "
+                << "and ignoring the error." << std::endl;
+            scanId.second = 0.0;
+          } else {
+            throw MyException(temp.str());
+          }
         }
         break;
       } case CALCMASS: {

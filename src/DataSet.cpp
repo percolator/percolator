@@ -118,6 +118,20 @@ LabelType DataSet::readPsm(const std::string& line, const unsigned int lineNr,
         break;
       } case EXPMASS: {
         psm.expMass = reader.readDouble();
+        // A NaN would break the strict weak order that the comparators in
+        // ScoreHolder.h need. SetHandler::getScanId checks every line first and
+        // reports such a value also with NO_TERMINATE, so in that case it is
+        // set to 0 here without a second message.
+        if (!isfinite(psm.expMass)) {
+          if (!NO_TERMINATE) {
+            ostringstream temp;
+            temp << "ERROR: Reading tab file, the experimental mass of PSM "
+                << psm.getId() << " on line " << lineNr << " is "
+                << psm.expMass << " instead of a finite number." << std::endl;
+            throw MyException(temp.str());
+          }
+          psm.expMass = 0.0;
+        }
         break;
       } case CALCMASS: {
         psm.calcMass = reader.readDouble();

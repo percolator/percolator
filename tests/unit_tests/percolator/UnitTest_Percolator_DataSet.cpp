@@ -124,6 +124,22 @@ TEST_F(DataSetTest, CheckOptionalFieldsParsing)
             1, optionalFields, true, myPsm, featurePool, psmStore, decoyPrefix), MyException);
 }
 
+// The experimental mass enters the comparators of ScoreHolder, so it must be
+// a finite number.
+TEST_F(DataSetTest, CheckExpMassIsFinite)
+{
+    optionalFields.push_back(EXPMASS);
+    DataSet::readPsm("Id\t1\t1234.5\tPEPTIDE\tProteinList",
+            7, optionalFields, true, myPsm, featurePool, psmStore, decoyPrefix);
+    ASSERT_TRUE(myPsm != NULL);
+    ASSERT_EQ(1234.5, myPsm->expMass);
+    for (const char* mass : {"nan", "NaN", "inf", "-inf", "Infinity"}) {
+        std::string line = std::string("Id\t1\t") + mass + "\tPEPTIDE\tProteinList";
+        EXPECT_THROW(DataSet::readPsm(line, 7, optionalFields, true, myPsm,
+                featurePool, psmStore, decoyPrefix), MyException) << mass;
+    }
+}
+
 // The feature pool can be destroyed and created again with another row
 // width, and then hands out distinct, writable rows.
 TEST(FeatureMemoryPoolTest, ReuseAfterDestroy)
