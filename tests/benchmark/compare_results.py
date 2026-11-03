@@ -29,6 +29,16 @@ def read_table(path):
     return header, rows
 
 
+def same_bytes(path1, path2, block_size=1 << 20):
+    with open(path1, "rb") as f1, open(path2, "rb") as f2:
+        while True:
+            b1, b2 = f1.read(block_size), f2.read(block_size)
+            if b1 != b2:
+                return False
+            if not b1:
+                return True
+
+
 def column(header, *names):
     for name in names:
         if name in header:
@@ -78,8 +88,7 @@ def main():
     args = ap.parse_args()
 
     if args.exact:
-        with open(args.base, "rb") as f1, open(args.new, "rb") as f2:
-            same = f1.read() == f2.read()
+        same = same_bytes(args.base, args.new)
         print("identical" if same else "DIFFERENT", args.base, args.new)
         sys.exit(0 if same else 1)
 
