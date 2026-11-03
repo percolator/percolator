@@ -42,7 +42,8 @@ def zipf_index(rng, n):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("-n", "--num-psms", type=int, required=True)
+    ap.add_argument("-n", "--num-psms", type=int, required=True,
+                    help="number of PSMs; must be even with --mode separate")
     ap.add_argument("-f", "--num-features", type=int, default=30,
                     help="total number of feature columns (at least 10)")
     ap.add_argument("--mode", choices=["separate", "concatenated"], default="concatenated")

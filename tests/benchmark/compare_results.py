@@ -9,7 +9,9 @@ Exits with status 1 if the files differ beyond the given tolerances.
 Tolerance mode joins rows on the first column (PSMId or protein id) and
 reports the number of targets below the q-value threshold, the Jaccard index
 of the accepted sets, the largest q-value and PEP differences and the Spearman
-correlation of the scores.
+correlation of the scores. Percolator can write the same PSMId more than once
+(the input may repeat a SpecId); the first, best-scoring row of a key is then
+used and the number of repeated keys is reported on stderr.
 """
 
 import argparse
@@ -20,12 +22,24 @@ import sys
 def read_table(path):
     with open(path) as f:
         header = f.readline().rstrip("\n").split("\t")
-        rows = {}
-        for line in f:
+        rows, first_line = {}, {}
+        repeated, example = 0, None
+        for line_nr, line in enumerate(f, 2):
+            if not line.strip():
+                continue
             fields = line.rstrip("\n").split("\t")
-            if fields[0] in rows:
-                raise SystemExit("duplicate key %r in %s" % (fields[0], path))
-            rows[fields[0]] = fields
+            key = fields[0]
+            if key in rows:
+                # rows are sorted best first, so the first row of a key is kept
+                repeated += 1
+                if example is None:
+                    example = (key, first_line[key], line_nr)
+                continue
+            rows[key] = fields
+            first_line[key] = line_nr
+    if repeated:
+        print("warning: %s: %d rows repeat an earlier key and are ignored, e.g. %r "
+              "on lines %d and %d" % ((path, repeated) + example), file=sys.stderr)
     return header, rows
 
 
@@ -114,7 +128,7 @@ def main():
     common = sorted(base.keys() & new.keys())
     max_dq = max_abs_diff(base, new, common, qb, qn)
     max_dpep = max_abs_diff(base, new, common, pb, pn)
-    rho = 1.0
+    rho = math.nan  # undefined without a score column (e.g. protein level)
     if sb is not None and sn is not None:
         rho = spearman([float(base[k][sb]) for k in common], [float(new[k][sn]) for k in common])
 
