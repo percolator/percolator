@@ -160,9 +160,14 @@ void SetHandler::getFeatureNames(const std::string& headerLine,
   }
   // Check if we have read the correct number of features
   if (numFeatLeft != 0) {
-      cerr << "Not enough features read" << endl;
-      exit(-1);
-  } 
+    // thrown rather than exit(), so that the caller's destructors still
+    // remove the temporary file of a multi-file input
+    ostringstream temp;
+    temp << "ERROR: Reading tab file, the header line has fewer columns than "
+         << "the first PSM: " << numFeatures - numFeatLeft
+         << " column names for its " << numFeatures << " features." << std::endl;
+    throw MyException(temp.str());
+  }
   featureNames.initFeatures();
   assert(numFeatures == DataSet::getNumFeatures());
 }
@@ -383,9 +388,10 @@ ScanId SetHandler::getScanId(const std::string& psmLine, int& label,
         }
         if (!std::isfinite(scanId.second)) {
           ostringstream temp;
-          temp << "ERROR: Reading tab file, the experimental mass on line "
-              << lineNr << " is " << scanId.second
-              << " instead of a finite number." << std::endl;
+          temp << "ERROR: Reading tab file, the experimental mass of PSM "
+              << psmLine.substr(0, psmLine.find('\t')) << " on line " << lineNr
+              << " is " << scanId.second << " instead of a finite number."
+              << std::endl;
           if (NO_TERMINATE) {
             cerr << temp.str() << "No-terminate flag set: setting it to 0 "
                 << "and ignoring the error." << std::endl;
