@@ -58,6 +58,8 @@ def main():
 
     if args.num_features < 10:
         ap.error("--num-features must be at least 10")
+    if args.mode == "separate" and args.num_psms % 2:
+        ap.error("--num-psms must be even with --mode separate")
     rng = random.Random(args.seed)
     num_cont = args.num_features - 7  # continuous; the rest are charge, enzyme and length
     shifts = [rng.uniform(0.0, 2.0) if i % 3 else 0.0 for i in range(num_cont)]
