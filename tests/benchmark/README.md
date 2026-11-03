@@ -6,7 +6,9 @@ change leaves the results unchanged. They need only the Python standard library.
 - `make_synthetic_pin.py` writes a deterministic synthetic pin file of any size,
   for separate or concatenated target-decoy searches.
 - `compare_results.py` compares two result files, either byte for byte
-  (`--exact`) or within tolerances on accepted targets, q-values and PEPs.
+  (`--exact`) or within tolerances on the accepted targets and the q-values.
+  The largest PEP difference is reported, but only checked when `--max-dpep`
+  is given.
 - `pep_calibration.py` checks PEP and q-value calibration of a PSM result
   file for an input made with `make_synthetic_pin.py --mark-correct`, which
   marks correct and incorrect targets in the PSM ids.
