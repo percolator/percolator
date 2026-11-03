@@ -13,6 +13,7 @@ correlation of the scores.
 """
 
 import argparse
+import math
 import sys
 
 
@@ -48,15 +49,17 @@ def ranks(values):
 
 
 def spearman(a, b):
+    """Spearman rank correlation; NaN (undefined) for fewer than two values or
+    when either list is constant."""
     ra, rb = ranks(a), ranks(b)
     n = len(a)
     if n < 2:
-        return 1.0
+        return math.nan
     ma, mb = sum(ra) / n, sum(rb) / n
     cov = sum((x - ma) * (y - mb) for x, y in zip(ra, rb))
     va = sum((x - ma) ** 2 for x in ra)
     vb = sum((y - mb) ** 2 for y in rb)
-    return cov / (va * vb) ** 0.5 if va > 0 and vb > 0 else 1.0
+    return cov / (va * vb) ** 0.5 if va > 0 and vb > 0 else math.nan
 
 
 def main():
