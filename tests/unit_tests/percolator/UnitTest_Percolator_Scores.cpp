@@ -24,6 +24,7 @@
 #include <cstdarg>
 #include "SetHandler.h"
 #include "DataSet.h"
+#include "PosteriorEstimator.h"
 #include "Scores.h"
 
 // Some strings in alphabetical order.
@@ -263,6 +264,9 @@ TEST(ScoresCountTest, CountTargetsBelowFdrMatchesCalcScoresAndQvals)
         Scores::FeatureRows rows;
         scores.getFeatureRows(rows);
         std::vector<std::pair<double, bool> > combined;
+        // countTargetsBelowFdr needs the q values of the decoys as well;
+        // calcScoresAndQvals sets this only after the first call below
+        PosteriorEstimator::setNegative(true);
         for (double fdr : {0.01, 0.05, 0.2}) {
             for (bool skipDecoysPlusOne : {false, true}) {
                 int count = scores.countTargetsBelowFdr(
