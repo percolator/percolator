@@ -13,6 +13,8 @@ Fixes:
 * --quick-validation with --nested-xval-bins > 1 retrained with a Cpos/Cneg pair that had not been evaluated.
 * -N read PSMs with labels other than 1 and -1 as decoys. They are ignored, as without -N.
 * -Q/--pepxml-output has written nothing since the XML output was removed; it now prints a warning.
+* A non-finite experimental mass (nan, inf) is rejected with an error that names the PSM; it broke the ordering of PSMs.
+* A failed load of several input files (unreadable input, a header with fewer columns than the PSMs) left the temporary concatenated file behind.
 * Multiple input files: infinite loop when a column was missing from the widest header; the temporary directory is now removed.
 * Out-of-bounds read in ProteinProbEstimator::lastProteinInGroup; uninitialised Peptide reference count (leak in protein digestion); leaked PSMs in the second pass of -N; 32-bit overflow of SVM buffer sizes above about 70 million active rows.
 * A plain cmake configure built without optimisation. Release is now the default.
