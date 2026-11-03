@@ -750,8 +750,10 @@ bool PosteriorEstimator::parseOptions(int argc, char** argv) {
                    TRUE_IF_SET);
   cmd.defineOption("",
                    "tdc-pep",
-                   "Estimate PEPs from the decoy rate p as a monotone function of the score, PEP = p/(1-p), "
-                   "instead of from the target q values. Requires a null_file.",
+                   "Estimate PEPs from the decoy rate p as a monotone function of the score, "
+                   "instead of from the target q values: PEP = p/(1-p), multiplied by "
+                   "pi0 * numTargets / max(1, numDecoys); -Y sets this factor to 1. "
+                   "Requires a null_file.",
                    "",
                    TRUE_IF_SET);
   cmd.defineOption("",
