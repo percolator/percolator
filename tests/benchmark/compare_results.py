@@ -23,6 +23,8 @@ def read_table(path):
         rows = {}
         for line in f:
             fields = line.rstrip("\n").split("\t")
+            if fields[0] in rows:
+                raise SystemExit("duplicate key %r in %s" % (fields[0], path))
             rows[fields[0]] = fields
     return header, rows
 
