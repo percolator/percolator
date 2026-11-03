@@ -1073,9 +1073,11 @@ int Caller::run() {
   Scores allScores(useMixMax_);
   allScores.setOutputRT(outputRT_);
 
+  // returning instead of exiting lets the destructor remove tmpDir_
   if (!loadAndNormalizeData(getDataInStream(fileStream),
-                            setHandler, allScores))
-    exit(EXIT_FAILURE);
+                            setHandler, allScores)) {
+    return 0;
+  }
 
   double decoyFractionTraining = 1.0;
   unsigned int numFolds = 3u;
