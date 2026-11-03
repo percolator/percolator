@@ -74,6 +74,13 @@ def spearman(a, b):
     return cov / (va * vb) ** 0.5 if va > 0 and vb > 0 else math.nan
 
 
+def max_abs_diff(base, new, common, cb, cn):
+    """Largest |base - new| of columns cb and cn over the common rows; inf if
+    any difference is not finite (NaN or inf), 0 if there are no rows."""
+    diffs = (abs(float(base[k][cb]) - float(new[k][cn])) for k in common)
+    return max((d if math.isfinite(d) else math.inf for d in diffs), default=0.0)
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("base")
@@ -105,8 +112,8 @@ def main():
     jaccard = len(acc_b & acc_n) / len(union) if union else 1.0
     count_change = abs(len(acc_n) - len(acc_b)) / max(1, len(acc_b))
     common = sorted(base.keys() & new.keys())
-    max_dq = max((abs(float(base[k][qb]) - float(new[k][qn])) for k in common), default=0.0)
-    max_dpep = max((abs(float(base[k][pb]) - float(new[k][pn])) for k in common), default=0.0)
+    max_dq = max_abs_diff(base, new, common, qb, qn)
+    max_dpep = max_abs_diff(base, new, common, pb, pn)
     rho = 1.0
     if sb is not None and sn is not None:
         rho = spearman([float(base[k][sb]) for k in common], [float(new[k][sn]) for k in common])
