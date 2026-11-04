@@ -106,6 +106,8 @@ class Scores {
                                 unsigned int xval_fold,
                                 double decoyFractionTraining = 1.0,
                                 unsigned int decoysPerTarget = 1u);
+  // number of distinct spectra (spectrum file and scan number)
+  std::size_t getNumSpectra() const;
 
   void generatePositiveTrainingSet(AlgIn& data,
                                    const double fdr,

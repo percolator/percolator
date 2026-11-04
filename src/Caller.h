@@ -93,6 +93,8 @@ class Caller {
   // SVM / cross validation parameters
   double selectionFdr_, initialSelectionFdr_, testFdr_;
   unsigned int numIterations_, maxPSMs_, nestedXvalBins_, numThreads_;
+  unsigned int numFolds_ = 3u;  // --num-folds
+  bool numFoldsSet_ = false;    // --num-folds given
   double selectedCpos_, selectedCneg_;
   bool classicTraining_ = false;
   bool reportEachIteration_, quickValidation_, trainBestPositive_,

@@ -74,8 +74,18 @@ void CrossValidationTest::TearDown()
     Globals::getInstance()->setVerbose(origVerbose);
 }
 
+// With numFolds folds each PSM is in numFolds - 1 training sets, and the
+// estimated number of positives is their sum over the training sets divided
+// by numFolds - 1; with one fold the only training set holds all PSMs. The
+// estimate is therefore about the number of positives in the whole data set
+// (N) for any number of folds.
 TEST_F(CrossValidationTest, doStepTest)
 {
+  // the default 3 folds first, then other numbers of folds; with 2 folds the
+  // training sets hold only about N/2 targets above the first decoy, too few
+  // to reach q < testFdr in some of them, and the estimate is about N/2
+  for (unsigned int numFolds : {3u, 1u, 5u, 10u}) {
+    SCOPED_TRACE(numFolds);
     // Note that we use an elevated testFdr (0.02 instead of 0.01),
     // to compensate for the small size of the data sets.
     int const N = 100;
@@ -96,8 +106,9 @@ TEST_F(CrossValidationTest, doStepTest)
                                   1,       // numThreads
                                   false,   // skipNormalizeScores
                                   1.0,     // decoyFractionTraining
-                                  3u);     // numFolds
+                                  numFolds);
 
+    FeatureNames::resetNumFeatures();
     FeatureNames::setNumFeatures(2);
     SetHandler setHandler(0);
     int scanNumber = 1;
@@ -144,7 +155,8 @@ TEST_F(CrossValidationTest, doStepTest)
     SanityCheck check;
     int numInit = crossValidation->preIterationSetup(scores, check, pNorm);
     std::vector< std::vector<double> > const& w = crossValidation->weights();
-    for (int i = 0 ; i < 3 ; ++i) {
+    ASSERT_EQ(numFolds, w.size());
+    for (unsigned int i = 0 ; i < numFolds ; ++i) {
         EXPECT_EQ(1.0, w[i][0]);
         EXPECT_EQ(0.0, w[i][1]);
     }
@@ -154,9 +166,67 @@ TEST_F(CrossValidationTest, doStepTest)
     // counted as positives. This can be either because the highest scoring decoy 
     // in the cross validation fold has a lower score, or because it narrowly passes 
     // the testFDR threshold.
+    // The estimate is truncated, and the trained direction can move single
+    // targets below a decoy in some training sets, so it can be slightly
+    // below N for other numbers of folds.
     int estimatedNumPositives = crossValidation->doStepEx(pNorm, 0.01);
-    EXPECT_LE(N, estimatedNumPositives);
+    if (numFolds == 3u) {
+      EXPECT_LE(N, estimatedNumPositives);
+    } else {
+      EXPECT_LE(N * (1.0 - testFdr), estimatedNumPositives);
+    }
     EXPECT_GE(N * (1.0 + testFdr), estimatedNumPositives);
 
     delete crossValidation;
+  }
+  FeatureNames::resetNumFeatures();
+}
+
+// More folds than spectra leave a fold without PSMs, which
+// preIterationSetup reports as an error. With as many folds as spectra of
+// equal size, each fold gets one spectrum.
+TEST_F(CrossValidationTest, EmptyFoldIsAnError)
+{
+    FeatureNames::resetNumFeatures();
+    FeatureNames::setNumFeatures(2);
+    SetHandler setHandler(0);
+    PsmStore psmStore;
+    DataSet *targets = new DataSet();
+    DataSet *decoys = new DataSet();
+    targets->setLabel(LabelType::TARGET);
+    decoys->setLabel(LabelType::DECOY);
+    std::vector<double> features(2 * 8);
+    // 2 spectra with 2 targets and 2 decoys each
+    for (int i = 0 ; i < 8 ; ++i) {
+        PSMDescription *psm = psmStore.add(PSMDescription());
+        psm->features = &features[2 * i];
+        psm->features[0] = static_cast<double>(i);
+        psm->features[1] = static_cast<double>(i % 3);
+        psm->scan = 1 + i / 4;
+        (i % 2 ? decoys : targets)->registerPsm(psm);
+    }
+    setHandler.push_back_dataset(std::unique_ptr<DataSet>(targets));
+    setHandler.push_back_dataset(std::unique_ptr<DataSet>(decoys));
+    std::unique_ptr<Normalizer> norm = Normalizer::create(Normalizer::STDV);
+    setHandler.normalizeFeatures(*norm);
+
+    for (unsigned int numFolds : {1u, 2u, 3u}) {
+        SCOPED_TRACE(numFolds);
+        CrossValidation crossValidation(false, false, 0.01, 0.01, 0.01, 0.0,
+                                        0.0, 10, false, 1, false, 1, false,
+                                        1.0, numFolds);
+        Scores scores(false);
+        scores.populateWithPSMs(setHandler);
+        EXPECT_EQ(2u, scores.getNumSpectra());
+        SanityCheck check;
+        if (numFolds <= 2u) {
+            EXPECT_NO_THROW(
+                crossValidation.preIterationSetup(scores, check, norm.get()));
+        } else {
+            EXPECT_THROW(
+                crossValidation.preIterationSetup(scores, check, norm.get()),
+                MyException);
+        }
+    }
+    FeatureNames::resetNumFeatures();
 }

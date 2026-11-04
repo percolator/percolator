@@ -195,9 +195,23 @@ void Scores::populateWithPSMs(SetHandler& setHandler) {
   }
 }
 
+std::size_t Scores::getNumSpectra() const {
+  std::vector<std::pair<unsigned int, unsigned int> > spectra;
+  spectra.reserve(scores_.size());
+  for (const ScoreHolder& sh : scores_) {
+    spectra.emplace_back(sh.pPSM->specFileNr, sh.pPSM->scan);
+  }
+  std::sort(spectra.begin(), spectra.end());
+  return static_cast<std::size_t>(
+      std::unique(spectra.begin(), spectra.end()) - spectra.begin());
+}
+
 /**
  * Divides the PSMs from pin file into xval_fold cross-validation sets based on
- * their spectrum scan number
+ * their spectrum scan number. Each PSM is put in the test set of one fold and
+ * in the training sets of the other xval_fold - 1 folds, and all PSMs of a
+ * spectrum go to the same fold. With xval_fold = 1 the only training set and
+ * the only test set both hold all PSMs.
  * @param train vector containing the training sets of PSMs
  * @param test vector containing the test sets of PSMs
  * @param xval_fold number of folds in train and test

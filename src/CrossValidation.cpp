@@ -101,6 +101,22 @@ int CrossValidation::preIterationSetup(Scores& fullset,
     fullset.createXvalSetsBySpectrum(trainScores_, testScores_, numFolds_,
                                      decoyFractionTraining_, decoysPerTarget);
   }
+  // A fold without PSMs cannot be scored or merged; this happens when the
+  // input has about as many spectra as folds, or fewer.
+  for (unsigned int set = 0; set < numFolds_; ++set) {
+    if (testScores_[set].size() == 0u) {
+      ostringstream oss;
+      oss << "Error: cross-validation fold " << set + 1 << " of " << numFolds_
+          << " received no PSMs, the input has too few spectra for "
+          << numFolds_ << " folds. Use fewer folds (--num-folds).\n";
+      if (NO_TERMINATE) {
+        cerr << oss.str() << "No-terminate flag set: ignoring error."
+             << std::endl;
+        break;
+      }
+      throw MyException(oss.str());
+    }
+  }
 
   // initialize weights vector for all folds
   weights_ = vector<vector<double> >(

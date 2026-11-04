@@ -164,6 +164,19 @@ bool Caller::parseOptions(int argc, char** argv) {
   cmd.defineOption("x", "quick-validation",
                    "Quicker execution by reduced internal cross-validation.",
                    "", TRUE_IF_SET);
+  cmd.defineOption(
+      Option::NO_SHORT_OPT, "num-folds",
+      "Number of folds N of the cross-validation: the PSMs are split by "
+      "spectrum into N parts, and each part is scored by SVMs trained on the "
+      "other N-1 parts. Training time and memory grow with N. With N = 1 the "
+      "SVM is trained and evaluated on the same PSMs, which overfits, so the "
+      "reported q values and PEPs are optimistic; this is meant for inputs "
+      "too small to split. On synthetic data with N = 1, 4-12% of the target "
+      "PSMs with q < 0.01 were incorrect for inputs of 2,000 PSMs, 0.8-1.8% "
+      "for 10,000 PSMs and 0.7-0.8%, as with N = 3, for 200,000 PSMs or "
+      "more; with 100-500 PSMs and --testFDR 0.05, 22-50% of the targets "
+      "with q < 0.05 were incorrect. Default = 3.",
+      "number");
   cmd.defineOption("", "classic-training",
                    "Train the SVMs as Percolator 3.09 did: every SVM is "
                    "solved from zero weights with conjugate gradients, Cpos "
@@ -330,7 +343,7 @@ bool Caller::parseOptions(int argc, char** argv) {
    * change and behavior */
   cmd.defineOption(Option::EXPERIMENTAL_FEATURE, "num-threads",
                    "Number of total parallel threads for SVM training during "
-                   "cross validation. Default (one thread per CV fold) = 3.",
+                   "cross validation. Default = 3.",
                    "value");
   cmd.defineOption(Option::EXPERIMENTAL_FEATURE, "nested-xval-bins",
                    "Number of nested cross validation bins within each cross "
@@ -654,6 +667,12 @@ bool Caller::parseOptions(int argc, char** argv) {
 
   if (cmd.isOptionSet("nested-xval-bins")) {
     nestedXvalBins_ = cmd.getUInt("nested-xval-bins", 1, 1000);
+  }
+  // the number of spectra, which bounds the number of folds, is checked in
+  // run()
+  if (cmd.isOptionSet("num-folds")) {
+    numFolds_ = cmd.getUInt("num-folds", 1, 1000);
+    numFoldsSet_ = true;
   }
   // if there are no arguments left...
   if (cmd.arguments.size() == 0) {
@@ -1080,7 +1099,7 @@ int Caller::run() {
   }
 
   double decoyFractionTraining = 1.0;
-  unsigned int numFolds = 3u;
+  unsigned int numFolds = numFolds_;
   if (useResetAlgorithm_) {
     if (VERB > 0) {
       std::cerr << "Running the Percolator-RESET algorithm." << std::endl;
@@ -1124,12 +1143,27 @@ int Caller::run() {
 
       // we do not necessarily need multiple folds with RESET because the pseudo
       // targets take care of the overfitting.
+      if (numFoldsSet_ && numFolds_ != 1u) {
+        std::cerr << "Warning: --num-folds " << numFolds_ << " is ignored "
+                  << "with --reset-algorithm, which trains on a single fold."
+                  << std::endl;
+      }
       numFolds = 1u;
       nestedXvalBins_ = 3u;
     }
 
     // TODO:
     // - apply decoy factor in PosteriorEstimator::estimatePEP
+  }
+
+  if (numFoldsSet_ && numFolds > 1u) {
+    const std::size_t numSpectra = allScores.getNumSpectra();
+    if (numFolds > numSpectra) {
+      std::cerr << "Error: --num-folds " << numFolds << " is larger than the "
+                << "number of spectra (" << numSpectra << "), and each fold "
+                << "needs at least one spectrum." << std::endl;
+      return 0;
+    }
   }
 
   // The cross-validation sets and SVM inputs are only needed for training,

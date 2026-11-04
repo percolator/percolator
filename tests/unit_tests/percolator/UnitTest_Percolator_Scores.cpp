@@ -20,8 +20,11 @@
  */
 
 #include <gtest/gtest.h>
+#include <algorithm>
 #include <cmath>
 #include <cstdarg>
+#include <map>
+#include <utility>
 #include "SetHandler.h"
 #include "DataSet.h"
 #include "PosteriorEstimator.h"
@@ -224,6 +227,95 @@ TEST_F(ScoresTest, CheckPopulatingEmpty)
     setHandler.push_back_dataset(std::unique_ptr<DataSet>(set1));
     setHandler.push_back_dataset(std::unique_ptr<DataSet>(set2));
     EXPECT_THROW(scores.populateWithPSMs(setHandler), MyException);
+}
+
+// createXvalSetsBySpectrum with N folds puts every PSM in the test set of
+// exactly one fold and in the training sets of the other N - 1 folds, keeps
+// the PSMs of a spectrum in one fold and gives folds of about equal size.
+// With one fold, the training set and the test set both hold all PSMs.
+TEST_F(ScoresTest, CreateXvalSetsBySpectrumWithNFolds)
+{
+    // 2 files with 37 spectra each, with 1 to 4 PSMs per spectrum and the
+    // same scan numbers in both files
+    std::vector<PSMDescription> psms;
+    psms.reserve(400);
+    for (unsigned int file = 0; file < 2; ++file) {
+        for (unsigned int scan = 0; scan < 37; ++scan) {
+            for (unsigned int k = 0; k <= (scan * 7 + file) % 4; ++k) {
+                psms.emplace_back();
+                psms.back().specFileNr = file;
+                psms.back().scan = 1000 + scan;
+            }
+        }
+    }
+    const std::size_t maxPsmsPerSpectrum = 4;
+    ASSERT_LT(psms.size(), 400u);  // no reallocation
+    auto spectrumOf = [](const PSMDescription* psm) {
+        return std::make_pair(psm->specFileNr, psm->scan);
+    };
+
+    for (unsigned int numFolds : {1u, 2u, 3u, 5u, 10u}) {
+        Scores scores(false);
+        for (std::size_t i = 0; i < psms.size(); ++i) {
+            scores.addScoreHolder(ScoreHolder(
+                0.0, i % 3 ? LabelType::TARGET : LabelType::DECOY, &psms[i]));
+        }
+        scores.recalculateSizes();
+        ASSERT_EQ(74u, scores.getNumSpectra());
+
+        std::vector<Scores> train, test;
+        scores.createXvalSetsBySpectrum(train, test, numFolds);
+        ASSERT_EQ(numFolds, train.size());
+        ASSERT_EQ(numFolds, test.size());
+
+        std::map<const PSMDescription*, unsigned int> testFold, numTrain;
+        std::map<std::pair<unsigned int, unsigned int>, unsigned int>
+            spectrumFold;
+        std::size_t numTest = 0;
+        for (unsigned int fold = 0; fold < numFolds; ++fold) {
+            EXPECT_EQ(test[fold].size(),
+                      static_cast<unsigned int>(
+                          std::distance(test[fold].begin(), test[fold].end())));
+            EXPECT_LE(test[fold].size(),
+                      (psms.size() + numFolds - 1) / numFolds +
+                          maxPsmsPerSpectrum - 1)
+                << numFolds << " folds";
+            EXPECT_GT(test[fold].size(), 0u) << numFolds << " folds";
+            for (const ScoreHolder& sh : test[fold]) {
+                ++numTest;
+                EXPECT_EQ(0u, testFold.count(sh.pPSM));  // in one test set
+                testFold[sh.pPSM] = fold;
+                auto spectrum = spectrumOf(sh.pPSM);
+                if (spectrumFold.count(spectrum)) {
+                    EXPECT_EQ(spectrumFold[spectrum], fold);
+                } else {
+                    spectrumFold[spectrum] = fold;
+                }
+            }
+        }
+        EXPECT_EQ(psms.size(), numTest);
+        EXPECT_EQ(74u, spectrumFold.size());
+        for (unsigned int fold = 0; fold < numFolds; ++fold) {
+            for (const ScoreHolder& sh : train[fold]) {
+                ++numTrain[sh.pPSM];
+                // a PSM is not trained on in the fold it is tested in, unless
+                // there is only one fold
+                if (numFolds > 1) {
+                    EXPECT_NE(testFold[sh.pPSM], fold);
+                }
+            }
+        }
+        EXPECT_EQ(psms.size(), numTrain.size());
+        for (const auto& psmCount : numTrain) {
+            EXPECT_EQ(std::max(1u, numFolds - 1), psmCount.second);
+        }
+        if (numFolds == 1) {
+            EXPECT_EQ(psms.size(), train[0].size());
+            EXPECT_EQ(psms.size(), test[0].size());
+            EXPECT_EQ(scores.posSize(), train[0].posSize());
+            EXPECT_EQ(scores.negSize(), test[0].negSize());
+        }
+    }
 }
 
 // countTargetsBelowFdr must report the same number of targets below the FDR
