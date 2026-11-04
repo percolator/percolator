@@ -1257,21 +1257,27 @@ int Caller::run() {
     if (VERB > 1) {
       std::cerr << "Selecting best separating single variable." << std::endl;
     }
-    SanityCheck sc(check_);
-    std::vector<std::vector<double>> ww(
-        1, std::vector<double>(DataSet::getNumFeatures() + 1, 0.0));
-    std::vector<Scores> tmpScoreVector;
-    tmpScoreVector.push_back(std::move(allScores));
-    sc.getInitDirection(tmpScoreVector, tmpScoreVector, pNorm_.get(), ww,
-                        selectionFdr_, initialSelectionFdr_);
-    allScores = std::move(tmpScoreVector.at(0));
+    {
+      StageTimer stageTimer("RESET initial direction");
+      SanityCheck sc(check_);
+      std::vector<std::vector<double>> ww(
+          1, std::vector<double>(DataSet::getNumFeatures() + 1, 0.0));
+      std::vector<Scores> tmpScoreVector;
+      tmpScoreVector.push_back(std::move(allScores));
+      sc.getInitDirection(tmpScoreVector, tmpScoreVector, pNorm_.get(), ww,
+                          selectionFdr_, initialSelectionFdr_);
+      allScores = std::move(tmpScoreVector.at(0));
+    }
 
-    Scores winnerPeptides(false);
-    unsigned int decoysPerTarget = 1;
-    CompositionSorter::retainRepresentatives(allScores, winnerPeptides,
-                                             selectionFdr_, decoysPerTarget,
-                                             useCompositionMatch_);
-    allScores = std::move(winnerPeptides);
+    {
+      StageTimer stageTimer("RESET peptide selection");
+      Scores winnerPeptides(false);
+      unsigned int decoysPerTarget = 1;
+      CompositionSorter::retainRepresentatives(allScores, winnerPeptides,
+                                               selectionFdr_, decoysPerTarget,
+                                               useCompositionMatch_);
+      allScores = std::move(winnerPeptides);
+    }
 
     bool useSingleFold = true;
     decoyFractionTraining = 0.5;
