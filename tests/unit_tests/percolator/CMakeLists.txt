@@ -43,6 +43,7 @@ add_executable(gtest_unit
     UnitTest_Percolator_InferPep.cpp
     UnitTest_Percolator_Scores.cpp
     UnitTest_Percolator_CrossValidation.cpp
+    UnitTest_Percolator_Normalizer.cpp
 )
 
 # =============================

@@ -20,6 +20,7 @@
 #include "Timer.h"
 
 #include <algorithm>
+#include <cmath>
 #ifdef _OPENMP
 #include <omp.h>
 #endif
@@ -278,6 +279,7 @@ void CrossValidation::train(const Normalizer* pNorm) {
   if (VERB == 3) {
     printAllRawWeightsColumns(cerr, pNorm);
   }
+  checkWeightsFinite();
   foundPositives = 0;
   for (size_t set = 0; set < numFolds_; ++set) {
     foundPositives +=
@@ -286,6 +288,27 @@ void CrossValidation::train(const Normalizer* pNorm) {
   if (VERB > 0) {
     std::cerr << "Found " << foundPositives << " test set PSMs with q<"
               << testFdr_ << "." << std::endl;
+  }
+}
+
+void CrossValidation::checkWeightsFinite() const {
+  for (size_t set = 0; set < weights_.size(); ++set) {
+    for (size_t ix = 0; ix < weights_[set].size(); ++ix) {
+      if (std::isfinite(weights_[set][ix])) continue;
+      ostringstream oss;
+      oss << "ERROR: The SVM weight of "
+          << (ix < FeatureNames::getNumFeatures()
+                  ? "feature " + DataSet::getFeatureNames().describeFeature(ix)
+                  : std::string("the bias term m0"))
+          << " in cross validation split " << set + 1 << " is "
+          << weights_[set][ix] << " after training." << std::endl;
+      if (NO_TERMINATE) {
+        cerr << oss.str() << "No-terminate flag set: ignoring the error."
+             << std::endl;
+        return;
+      }
+      throw MyException(oss.str() + "Terminating.\n");
+    }
   }
 }
 

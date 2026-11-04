@@ -147,6 +147,8 @@ class CrossValidation {
                      const vector<double>& cpos_vec,
                      const vector<double>& cfrac_vec);
   int doStep(const Normalizer* pNorm, double selectionFdr);
+  // throws, or warns with --no-terminate, if a weight of a fold is not finite
+  void checkWeightsFinite() const;
 
   void printSetWeights(ostream& weightStream, unsigned int set);
   void printRawSetWeights(ostream& weightStream,

@@ -132,6 +132,8 @@ void StdvNormalizer::setSet(std::vector<double*>& featuresV,
   if (VERB > 2) {
     cerr << endl;
   }
+  checkFactorsFinite(0, numFeatures + numRetentionFeatures, "mean",
+                     "standard deviation");
 }
 
 
@@ -188,4 +190,6 @@ void StdvNormalizer::updateSet(vector<double*> & featuresV, size_t offset,
   if (VERB > 2) {
     cerr << endl;
   }
+  checkFactorsFinite(offset, offset + numFeatures, "mean",
+                     "standard deviation");
 }

@@ -83,6 +83,8 @@ void UniNormalizer::setSet(vector<double*> & featuresV,
       div[ix] = 1.0;
     }
   }
+  checkFactorsFinite(0, numFeatures + numRetentionFeatures, "minimum",
+                     "range");
 }
 
 void UniNormalizer::updateSet(vector<double*>& featuresV, size_t offset,
@@ -106,4 +108,5 @@ void UniNormalizer::updateSet(vector<double*>& featuresV, size_t offset,
       div[offset + ix] = 1.0;
     }
   }
+  checkFactorsFinite(offset, offset + numFeatures, "minimum", "range");
 }

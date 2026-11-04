@@ -34,6 +34,11 @@ class FeatureNames {
     virtual ~FeatureNames();
     std::string getFeatureNames();
     inline std::string getFeatureName(unsigned int index) { return featureNames.at(index); }
+    // for messages: the name of a feature, or its number if it has no name
+    std::string describeFeature(size_t index) const {
+      if (index < featureNames.size()) return featureNames[index];
+      return "number " + std::to_string(index + 1);
+    }
     static inline size_t getNumFeatures() {
       return numFeatures;
     }
