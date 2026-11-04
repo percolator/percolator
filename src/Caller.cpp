@@ -22,6 +22,7 @@
 #endif
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <filesystem>
 #include <iomanip>
 #include <set>
 
@@ -773,6 +774,26 @@ bool Caller::parseOptions(int argc, char** argv) {
     }
   }
 
+  // the files that are read, to check that no output overwrites one
+  std::vector<std::pair<std::string, std::string> > inputFiles;
+  for (const std::string& fileName : inputFNs_) {
+    inputFiles.emplace_back("input file", fileName);
+  }
+  if (cmd.isOptionSet("tab-in")) {
+    inputFiles.emplace_back("input file", cmd.options["tab-in"]);
+  }
+  if (cmd.isOptionSet("init-weights")) {
+    inputFiles.emplace_back("weights file (-W)", cmd.options["init-weights"]);
+  }
+  if (cmd.isOptionSet("picked-protein") &&
+      cmd.options["picked-protein"] != "auto") {
+    inputFiles.emplace_back("FASTA file (-f)", cmd.options["picked-protein"]);
+  }
+  if (cmd.isOptionSet("parameter-file")) {
+    inputFiles.emplace_back("parameter file", cmd.options["parameter-file"]);
+  }
+  checkOutputFiles(inputFiles);
+
   return true;
 }
 
@@ -927,8 +948,72 @@ void Caller::calculateProteinProbabilities(Scores& allScores) {
   protEstimator_->printOut(proteinResultFN_, decoyProteinResultFN_);
 }
 
+namespace {
+
+// Whether two paths name the same regular file, or are the same path of a
+// file that does not exist yet. Devices such as /dev/null and pipes can be
+// shared by several outputs.
+bool isSameFile(const std::string& a, const std::string& b) {
+  namespace fs = std::filesystem;
+  std::error_code ec;
+  const fs::file_status statusA = fs::status(a, ec);
+  const fs::file_status statusB = fs::status(b, ec);
+  if (fs::exists(statusA) && fs::exists(statusB)) {
+    return fs::is_regular_file(statusA) && fs::equivalent(a, b, ec);
+  }
+  if (fs::exists(statusA) || fs::exists(statusB)) return false;
+  const fs::path canonicalA = fs::weakly_canonical(a, ec);
+  if (ec) return false;
+  const fs::path canonicalB = fs::weakly_canonical(b, ec);
+  return !ec && canonicalA == canonicalB;
+}
+
+}  // namespace
+
+/**
+ * Throws if an output file is one of the input files, which writing the
+ * results would destroy (with -N the input is even read again after
+ * training), or if two outputs go to the same file, so that the second
+ * replaces the first.
+ */
+void Caller::checkOutputFiles(
+    const std::vector<std::pair<std::string, std::string> >& inputFiles)
+    const {
+  const std::pair<const char*, const std::string*> outputs[] = {
+      {"PSM results", &psmResultFN_},
+      {"decoy PSM results", &decoyPsmResultFN_},
+      {"peptide results", &peptideResultFN_},
+      {"decoy peptide results", &decoyPeptideResultFN_},
+      {"protein results", &proteinResultFN_},
+      {"decoy protein results", &decoyProteinResultFN_},
+      {"tab-delimited output (-J)", &tabOutputFN_},
+      {"weights (-w)", &weightOutputFN_}};
+  const size_t numOutputs = sizeof(outputs) / sizeof(outputs[0]);
+  for (size_t i = 0; i < numOutputs; ++i) {
+    const std::string& output = *outputs[i].second;
+    if (output.empty()) continue;
+    for (const auto& input : inputFiles) {
+      if (isSameFile(output, input.second)) {
+        throw MyException("ERROR: The " + std::string(outputs[i].first) +
+                          " would be written to " + output + ", which is the " +
+                          input.first + " " + input.second + ".\n");
+      }
+    }
+    for (size_t j = 0; j < i; ++j) {
+      if (!outputs[j].second->empty() &&
+          isSameFile(output, *outputs[j].second)) {
+        throw MyException("ERROR: The " + std::string(outputs[j].first) +
+                          " and the " + outputs[i].first +
+                          " would both be written to " + output + ".\n");
+      }
+    }
+  }
+}
+
 void Caller::checkIsWritable(const std::string& filePath) {
-  std::ofstream ofs(filePath.c_str());
+  // appends nothing, but unlike the default mode it does not truncate an
+  // existing file, which might also be an input (see checkOutputFiles)
+  std::ofstream ofs(filePath.c_str(), std::ios::app);
   if (!ofs.is_open()) {
     ostringstream temp;
     temp << "ERROR: Could not open the file " << filePath << " for writing. "

@@ -121,6 +121,10 @@ class Caller {
   void writeResults(Scores& allScores, bool unique, bool writeOutput);
   void calculateProteinProbabilities(Scores& allScores);
   void checkIsWritable(const std::string& filePath);
+  // inputFiles holds (description, file name) pairs
+  void checkOutputFiles(
+      const std::vector<std::pair<std::string, std::string> >& inputFiles)
+      const;
 };
 
 #endif /*CALLER_H_*/

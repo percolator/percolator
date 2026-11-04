@@ -113,3 +113,41 @@ TEST(CallerTest, RunsGiveTheSameResultsAfterOtherRuns) {
   }
   fs::remove_all(dir);
 }
+
+namespace {
+
+bool parseOnly(std::vector<std::string> args) {
+  args.insert(args.begin(), {"percolator", "-v", "0"});
+  std::vector<char*> argv;
+  for (std::string& arg : args) argv.push_back(&arg[0]);
+  argv.push_back(nullptr);
+  Caller caller;
+  return caller.parseOptions(static_cast<int>(args.size()), argv.data());
+}
+
+}  // namespace
+
+// "-m x.pin x.pin" used to empty the input while the options were parsed.
+TEST(CallerTest, RejectsOutputsThatOverwriteInputsOrEachOther) {
+  fs::path dir = fs::temp_directory_path() / "percolator-unittest-outputs";
+  fs::create_directories(dir);
+  const std::string pin = (dir / "input.pin").string();
+  writeInput(pin);
+  const std::string content = readFile(pin);
+  const std::string out = (dir / "out.txt").string();
+  const std::string sameOut = (dir / "." / "out.txt").string();
+
+  EXPECT_THROW(parseOnly({"-m", pin, pin}), MyException);
+  EXPECT_THROW(parseOnly({"-J", pin, "-m", out, pin}), MyException);
+  EXPECT_THROW(parseOnly({"-w", pin, pin}), MyException);
+  EXPECT_EQ(content, readFile(pin));
+
+  EXPECT_THROW(parseOnly({"-m", out, "-r", sameOut, pin}), MyException);
+  EXPECT_THROW(parseOnly({"-M", out, "-w", out, pin}), MyException);
+  EXPECT_TRUE(parseOnly({"-m", out, "-r", (dir / "pep.txt").string(), pin}));
+#ifndef _WIN32
+  // devices may be shared
+  EXPECT_TRUE(parseOnly({"-m", "/dev/null", "-r", "/dev/null", pin}));
+#endif
+  fs::remove_all(dir);
+}
