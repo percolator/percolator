@@ -364,6 +364,13 @@ int L2_SVM_MFN(const AlgIn& data, const options& Options,
   const double* Y = data.Y.data();
   int n = static_cast<int>(Weights.size());
   const int m = data.m;
+  if (m == 0) {
+    // Without examples the objective 0.5 * lambda * |w|^2 is smallest at
+    // w = 0, which the iterations below also reach, but only after
+    // passing the null data pointers of the empty buffers to memcpy.
+    std::fill(Weights.begin(), Weights.end(), 0.0);
+    return 1;
+  }
   double lambda = Options.lambda;
   double epsilon = BIG_EPSILON;
   int cgitermax = SMALL_CGITERMAX;

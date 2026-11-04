@@ -118,6 +118,19 @@ int CrossValidation::preIterationSetup(Scores& fullset,
       throw MyException(oss.str());
     }
   }
+  // With very few spectra all of them can fall into the test set of one
+  // split, whose SVM then has nothing to train on. With two or more folds
+  // the other test sets are then empty, so this is only reached with the
+  // no-terminate flag; one fold trains on all PSMs.
+  for (unsigned int set = 0; set < numFolds_; ++set) {
+    if (trainScores_[set].size() == 0 && fullset.size() > 0 && VERB > 0) {
+      cerr << "Warning: cross validation split " << set + 1 << " of "
+           << numFolds_ << " has no PSMs to train on, as all "
+           << fullset.size() << " PSMs fall into its test set. The input "
+           << "has too few spectra for " << numFolds_ << "-fold cross "
+           << "validation." << endl;
+    }
+  }
 
   // initialize weights vector for all folds
   weights_ = vector<vector<double> >(
