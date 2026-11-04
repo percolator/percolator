@@ -559,6 +559,9 @@ void PosteriorEstimator::readScores(const std::string& fileName,
 }
 
 int PosteriorEstimator::run() {
+  if (versionRequested_) {
+    return true;  // parseOptions printed the version
+  }
   // Merge a labeled version of the two lists into a combined list
   vector<pair<double, bool> > combined;
   vector<double> pvals;
@@ -807,7 +810,18 @@ bool PosteriorEstimator::parseOptions(int argc, char** argv) {
                    "",
                    TRUE_IF_SET);
 
+  cmd.defineOption(Option::NO_SHORT_OPT,
+                   "version",
+                   "Print the version of qvality on standard output and exit.",
+                   "",
+                   TRUE_IF_SET);
+
   cmd.parseArgs(argc, argv);
+  if (cmd.isOptionSet("version")) {
+    std::cout << "qvality version " << VERSION << std::endl;
+    versionRequested_ = true;
+    return true;
+  }
   if (cmd.isOptionSet("verbose")) {
     Globals::getInstance()->setVerbose(cmd.getInt("verbose", 0, 10));
   }

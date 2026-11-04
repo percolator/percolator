@@ -101,6 +101,43 @@ TEST_F(OptionTest, CheckThrowOnRangeExceeded)
     EXPECT_THROW(parser.getInt("integerOption", 50, 60), MyException);
 }
 
+// An option defined with an empty short name used to get the short name
+// "-", so that a lone "-" selected it (in Percolator, --tdc-pep).
+TEST_F(OptionTest, CheckLoneDashIsAnArgument)
+{
+    parser.defineOption("", "noShortName", "No short name.", "", TRUE_IF_SET);
+    char const *argv[] = {"prog", "-", "file", NULL};
+    parseArgv(argv);
+    EXPECT_FALSE(parser.isOptionSet("noShortName"));
+    EXPECT_FALSE(parser.isOptionSet("aShortOption"));
+    ASSERT_EQ(2, parser.arguments.size());
+    EXPECT_EQ("-", parser.arguments[0]);
+    EXPECT_EQ("file", parser.arguments[1]);
+}
+
+TEST_F(OptionTest, CheckThrowOnDuplicateDefinition)
+{
+    EXPECT_THROW(parser.defineOption("a", "otherName", "Same short name."),
+                 MyException);
+    EXPECT_THROW(parser.defineOption("", "longOption", "Same long name."),
+                 MyException);
+    EXPECT_NO_THROW(parser.defineOption("", "first", "No short name."));
+    EXPECT_NO_THROW(parser.defineOption("", "second", "No short name."));
+}
+
+TEST_F(OptionTest, CheckInvalidOptionMessageNamesTheProgram)
+{
+    char const *argv[] = {"myprog", "--unknownOption", NULL};
+    try {
+        parseArgv(argv);
+        FAIL() << "no exception";
+    } catch (const MyException& e) {
+        EXPECT_EQ("ERROR: the option --unknownOption is invalid. Run "
+                  "\"myprog --help\" for the list of options.\n",
+                  std::string(e.what()));
+    }
+}
+
 TEST_F(OptionTest, CheckSeparationOfOptionsAndArguments)
 {
     char const *argv[] = {

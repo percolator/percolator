@@ -128,6 +128,7 @@ class CommandLineParser {
   size_t optMaxLen;
   const static unsigned int lineLen = 80;
   std::string header, endnote;
+  std::string programName = "percolator";  // argv[0], for error messages
   std::vector<Option> opts;
   void findOption(char** argv, int& index, int argc);
   static inline std::string &rtrim(std::string &s);

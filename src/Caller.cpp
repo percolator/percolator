@@ -407,9 +407,18 @@ bool Caller::parseOptions(int argc, char** argv) {
       "searches the odds are multiplied by pi0 and the ratio of targets to "
       "decoys. By default PEPs are derived from the q values of the targets.",
       "", TRUE_IF_SET);
+  cmd.defineOption(Option::NO_SHORT_OPT, "version",
+      "Print the version of Percolator on standard output and exit.",
+      "", TRUE_IF_SET);
 
   // finally parse and handle return codes (display help etc...)
   cmd.parseArgs(argc, argv);
+
+  if (cmd.isOptionSet("version")) {
+    std::cout << "Percolator version " << VERSION << std::endl;
+    versionRequested_ = true;
+    return true;
+  }
 
   if (cmd.isOptionSet("output-retention-time")) {
     outputRT_ = true;
@@ -1051,6 +1060,9 @@ bool Caller::loadAndNormalizeData(std::istream& dataStream,
  * 5. (optional) calculate protein probabilities
  */
 int Caller::run() {
+  if (versionRequested_) {
+    return 1;  // parseOptions printed the version, there is nothing to run
+  }
   timer.reset();
   PSMDescription::resetSpectrumFileNames();
 
