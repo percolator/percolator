@@ -613,6 +613,9 @@ int PosteriorEstimator::run() {
       cerr << "Reversing all scores" << endl;
     }
   }
+  // std::sort here and above, not parallelSort: -0 and 0 in the input compare
+  // equal but print differently, and only a sort on one thread puts them in
+  // an order that does not depend on the number of threads.
   if (reversed) // sorting in ascending order
   {
     sort(combined.begin(), combined.end());

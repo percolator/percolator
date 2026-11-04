@@ -57,9 +57,9 @@ class ScoreHolder {
 
 /* Orders by score, then scan, experimental mass, label, spectrum file and
    PSM id. The comparators of all sorts are total orders, so that the result
-   does not depend on the sorting algorithm, which with GCC's parallel mode
-   depends on the number of threads. Inlined because they are the
-   comparators of the large sorts. */
+   does not depend on the sorting algorithm; parallelSort (ParallelSort.h)
+   relies on this to give the same order on any number of threads. Inlined
+   because they are the comparators of the large sorts. */
 // Last tie-break of the orders below: the PSM id, then the input line, so
 // that duplicated input rows also sort the same way on any number of threads.
 inline int compareIdAndLine(const PSMDescription& x, const PSMDescription& y) {

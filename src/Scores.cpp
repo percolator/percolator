@@ -36,6 +36,7 @@
 #include "Globals.h"
 #include "MassHandler.h"
 #include "Normalizer.h"
+#include "ParallelSort.h"
 #include "PosteriorEstimator.h"
 #include "Scores.h"
 #include "SetHandler.h"
@@ -68,7 +69,8 @@ void Scores::merge(std::vector<Scores>& sv,
   for (; cvBinScores != sv.end(); cvBinScores++, weights++) {
     // the test sets are usually sorted already, by calcScores
     if (!cvBinScores->isSortedByScore()) {
-      sort(cvBinScores->begin(), cvBinScores->end(), greater<ScoreHolder>());
+      parallelSort(cvBinScores->begin(), cvBinScores->end(),
+                   greater<ScoreHolder>());
     }
     cvBinScores->checkSeparationAndSetPi0();
     cvBinScores->calcQvals(fdr);
@@ -83,7 +85,7 @@ void Scores::merge(std::vector<Scores>& sv,
 }
 
 void Scores::postMergeStep() {
-  sort(scores_.begin(), scores_.end(), greater<ScoreHolder>());
+  parallelSort(scores_.begin(), scores_.end(), greater<ScoreHolder>());
   totalNumberOfDecoys_ = static_cast<unsigned int>(
       count_if(scores_.begin(), scores_.end(), mem_fn(&ScoreHolder::isDecoy)));
   totalNumberOfTargets_ = static_cast<unsigned int>(
@@ -265,7 +267,7 @@ void Scores::createXvalSetsBySpectrum(std::vector<Scores>& train,
     ix -= remain[static_cast<std::size_t>(fold)];
   }
 
-  std::sort(scores_.begin(), scores_.end(), OrderScanHash());
+  parallelSort(scores_.begin(), scores_.end(), OrderScanHash());
 
   if (scores_.size() == 0) {
     ostringstream oss;
@@ -463,7 +465,7 @@ int Scores::calcScores(std::vector<double>& w) {
   // already sorted when scored again with the same weights, as the test
   // sets are after training
   if (!isSortedByScore()) {
-    sort(scores_.begin(), scores_.end(), greater<ScoreHolder>());
+    parallelSort(scores_.begin(), scores_.end(), greater<ScoreHolder>());
   }
   if (VERB > 3) {
     if (scores_.size() >= 10) {
@@ -834,10 +836,12 @@ void Scores::generatePositiveTrainingSet(AlgIn& data,
     for (const ScoreHolder& sh : scores_) {
       if (sh.isTarget() && sh.q <= fdr) best.push_back(sh);
     }
-    std::sort(best.begin(), best.end(), OrderScanLabel());
+    // with nested cross validation called in a parallel loop, where
+    // parallelSort sorts on the calling thread
+    parallelSort(best.begin(), best.end(), OrderScanLabel());
     best.erase(std::unique(best.begin(), best.end(), UniqueScanLabel()),
                best.end());
-    std::sort(best.begin(), best.end(), greater<ScoreHolder>());
+    parallelSort(best.begin(), best.end(), greater<ScoreHolder>());
     for (const ScoreHolder& sh : best) {
       data.add(sh.pPSM->features, 1);
       ++p;
@@ -868,7 +872,7 @@ void Scores::weedOutRedundant(
     double specCountQvalThreshold) {
   // lexicographically order the scores_ (based on peptides names,labels and
   // scores)
-  std::sort(scores_.begin(), scores_.end(), lexicOrderProb());
+  parallelSort(scores_.begin(), scores_.end(), lexicOrderProb());
 
   // the views point into the PSMs, which stay in place
   std::string_view previousPeptide = "";
@@ -898,7 +902,7 @@ void Scores::weedOutRedundant(
  */
 void Scores::weedOutRedundantTDC() {
   // order the scores (based on spectra id and score)
-  std::sort(scores_.begin(), scores_.end(), OrderScanMassCharge());
+  parallelSort(scores_.begin(), scores_.end(), OrderScanMassCharge());
   scores_.erase(
       std::unique(scores_.begin(), scores_.end(), UniqueScanMassCharge()),
       scores_.end());

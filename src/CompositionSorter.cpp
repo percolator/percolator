@@ -9,6 +9,7 @@
 
 #include "CompositionSorter.h"
 #include "Globals.h"
+#include "ParallelSort.h"
 #include "Scores.h"
 #include "SequentialSort.h"
 
@@ -30,7 +31,8 @@ bool compareByScanThenScore(const ScoreHolder* lhs, const ScoreHolder* rhs) {
 }
 
 void targetDecoyCompetition(std::vector<ScoreHolder*>& scoreHolders) {
-  std::sort(scoreHolders.begin(), scoreHolders.end(), compareByScanThenScore);
+  parallelSort(scoreHolders.begin(), scoreHolders.end(),
+               compareByScanThenScore);
   if (VERB > 1) {
     std::cerr << "Before TDC there are " << scoreHolders.size() << " PSMs."
               << std::endl;

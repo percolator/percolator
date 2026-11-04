@@ -186,11 +186,6 @@ TEST(ParallelSortTest, SortsInsideParallelRegion) {
 // An exception thrown by the comparator on another thread than the calling
 // one reaches the caller instead of terminating the program.
 TEST(ParallelSortTest, PassesOnComparatorExceptions) {
-#ifdef _GLIBCXX_PARALLEL
-  // the std::sort of GCC's parallel mode runs the comparator in a parallel
-  // region of its own, from which an exception cannot escape
-  GTEST_SKIP() << "built with -D_GLIBCXX_PARALLEL";
-#endif
   std::vector<int> input(200000);
   for (size_t i = 0; i < input.size(); ++i) {
     input[i] = static_cast<int>((i * 7919u) % input.size());

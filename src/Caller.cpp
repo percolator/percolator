@@ -1296,9 +1296,8 @@ int Caller::run() {
       // From Algorithm S3 of the percolator-RESET supplementary material
       // decoyFractionTraining - the probability of assigning a decoy to the
       // training set
-      // A plain loop: GCC's parallel mode would run std::for_each on
-      // several threads, which then draw from the random number generator
-      // concurrently and make the result differ between runs.
+      // A plain loop in a fixed order, so that the random numbers go to
+      // the same PSMs in every run; do not parallelise it.
       for (ScoreHolder& sh : allScores) {
         if (sh.isDecoy() &&
             PseudoRandom::lcg_uniform_rand() > decoyFractionTraining) {
