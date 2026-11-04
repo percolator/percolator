@@ -7,7 +7,8 @@
  * @return name of the concatenated file
  */
 std::string ValidateTabFile::concatenateMultiplePINs(
-    const std::vector<std::string>& fileNames, const std::string& outputDir) {
+    const std::vector<std::string>& fileNames, const std::string& outputDir,
+    std::vector<InputSegment>* segments) {
   // Validate multiple tab-files, and then concatenate them.
   std::string inputFN;
   std::ifstream pinFileStream;
@@ -58,6 +59,8 @@ std::string ValidateTabFile::concatenateMultiplePINs(
 
   /* Only want to print header once */
   bool firstFile = true;
+  /* Number of lines written to outFile */
+  unsigned int outLines = 0;
   /* If go to next column when going though missing charge states */
   bool nextColumn;
 
@@ -117,22 +120,38 @@ std::string ValidateTabFile::concatenateMultiplePINs(
 
     /* Go through rest of the rows in pin-file */
     std::string nextRow;
-    getline(pinFileStream, nextRow);
+    bool hasRow = static_cast<bool>(getline(pinFileStream, nextRow));
+    unsigned int fileLine = 2;
 
     if (firstFile) {
       outFile <<  "\n";
+      ++outLines;
     } else {
       std::string defaultDirectionString = "defaultdirection";
       if (nextRow.size() >= defaultDirectionString.size()) {
         std::string psmid = nextRow.substr(0, defaultDirectionString.size());
         std::transform(psmid.begin(), psmid.end(), psmid.begin(), ::tolower);
         if (psmid == defaultDirectionString) {
-          getline(pinFileStream, nextRow); // skip row with default direction
+          // skip row with default direction
+          hasRow = static_cast<bool>(getline(pinFileStream, nextRow));
+          ++fileLine;
         }
       }
     }
+    // a file with only a header would otherwise add an empty PSM line
+    if (!hasRow) {
+      std::cerr << "Warning: the input file " << text
+                << " contains no PSMs." << std::endl;
+      pinFileStream.close();
+      firstFile = false;
+      continue;
+    }
+    if (segments) {
+      segments->push_back(InputSegment{outLines + 1, fileLine, text});
+    }
 
     do {
+      ++outLines;
       if (missingCols.empty()) {
         // same as splitting at the tabs and writing each field followed by
         // a tab, as done below

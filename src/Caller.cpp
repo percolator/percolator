@@ -1076,19 +1076,22 @@ int Caller::run() {
     }
   }
 
+  std::vector<InputSegment> inputSegments;
   if (inputFNs_.size() == 1) {
     inputFN_ = inputFNs_.at(0);
   } else if (inputFNs_.size() > 1) {
     tabInput_ = true;
     tmpDir_ = std::make_unique<TmpDir>();
     ValidateTabFile validateTab;
-    inputFN_ = validateTab.concatenateMultiplePINs(inputFNs_, tmpDir_->getPath());
+    inputFN_ = validateTab.concatenateMultiplePINs(inputFNs_, tmpDir_->getPath(),
+                                                   &inputSegments);
   }
 
   int success = 0;
   std::ifstream fileStream;
   SetHandler setHandler(maxPSMs_);
   setHandler.setDecoyPrefix(protEstimatorDecoyPrefix_);
+  setHandler.setInputSegments(std::move(inputSegments));
   Scores allScores(useMixMax_);
   allScores.setOutputRT(outputRT_);
 

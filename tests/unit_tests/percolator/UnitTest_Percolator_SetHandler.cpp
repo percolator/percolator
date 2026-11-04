@@ -16,8 +16,11 @@
  */
 
 #include <gtest/gtest.h>
+#include <filesystem>
+#include <fstream>
 #include <sstream>
 #include "SetHandler.h"
+#include "ValidateTabFile.h"
 
 /* A simple class that tracks global deletions.
  */
@@ -156,4 +159,77 @@ TEST_F(SetHandlerTest, TestReadWithFeatures)
             "id04\t+1\t3188.54\t3187.612\t-0.00899\t0.008990\tPEP\tPRO\n"
             "id05\t-1\t3838.10\t2837.188\t0.021003\t0.021003\tPEP\tPRO\n"
             "id06\t-1\t2182.15\t2182.175\t-0.02667\t0.026670\tPEP\tPRO\n"));
+}
+
+// The Peptide column of the header must follow the features of the first
+// PSM line, or the features would be named after other columns.
+TEST_F(SetHandlerTest, TestPeptideColumnFollowsFeatures)
+{
+    SetHandler sh(0);
+    // the first PSM has one feature more than the header names
+    EXPECT_THROW(testInput(&sh,
+            "id\tLabel\tF1\tPeptide\tProtein\n"
+            "id\t1\t0\t1\tK.PEP.R\tP\n"),
+            MyException);
+    sh.reset();
+    // the first PSM has a non-numeric feature, so fewer features
+    EXPECT_THROW(testInput(&sh,
+            "id\tLabel\tF1\tF2\tPeptide\tProtein\n"
+            "id\t1\t0\tNA\tK.PEP.R\tP\n"),
+            MyException);
+    sh.reset();
+    EXPECT_TRUE(testInput(&sh,
+            "id\tLabel\tF1\tF2\tpeptide\tProtein\n"
+            "id\t1\t0\t1\tK.PEP.R\tP\n"
+            "id2\t-1\t0\t1\tK.PEP.R\tP\n"));
+    sh.reset();
+}
+
+// Line numbers of a concatenated input are mapped back to the input files.
+TEST_F(SetHandlerTest, TestDescribeLine)
+{
+    SetHandler sh(0);
+    EXPECT_EQ("line 7", sh.describeLine(7));
+    sh.setInputSegments({{2, 2, "a.pin"}, {5, 3, "b.pin"}});
+    EXPECT_EQ("line 1", sh.describeLine(1));
+    EXPECT_EQ("line 2 of a.pin", sh.describeLine(2));
+    EXPECT_EQ("line 4 of a.pin", sh.describeLine(4));
+    EXPECT_EQ("line 3 of b.pin", sh.describeLine(5));
+    EXPECT_EQ("line 5 of b.pin", sh.describeLine(7));
+}
+
+// A file with only a header adds no line to a concatenated input, and the
+// segments give the first line of each file with PSMs.
+TEST_F(SetHandlerTest, TestConcatenateSkipsFilesWithoutPsms)
+{
+    namespace fs = std::filesystem;
+    fs::path dir = fs::temp_directory_path() / "percolator-unittest-concat";
+    fs::create_directories(dir);
+    const std::string header = "id\tLabel\tF1\tPeptide\tProteins\n";
+    std::vector<std::string> names;
+    auto write = [&](const char* name, const std::string& text) {
+        std::ofstream((dir / name).string()) << text;
+        names.push_back((dir / name).string());
+    };
+    write("a.pin", header + "a1\t1\t1\tK.PEP.R\tP\na2\t-1\t2\tK.PEP.R\tP\n");
+    write("b.pin", header);
+    write("c.pin", header + "DefaultDirection\t-\t1\nc1\t1\t3\tK.PEP.R\tP\n");
+    std::vector<InputSegment> segments;
+    ValidateTabFile validate;
+    std::string out = validate.concatenateMultiplePINs(names, dir.string(),
+                                                       &segments);
+    std::ifstream in(out);
+    std::vector<std::string> lines;
+    for (std::string line; std::getline(in, line);) lines.push_back(line);
+    ASSERT_EQ(4u, lines.size());
+    EXPECT_EQ("c1\t1\t3\tK.PEP.R\tP\t", lines[3]);
+    ASSERT_EQ(2u, segments.size());
+    EXPECT_EQ(2u, segments[0].firstLine);
+    EXPECT_EQ(2u, segments[0].firstFileLine);
+    EXPECT_EQ(names[0], segments[0].fileName);
+    EXPECT_EQ(4u, segments[1].firstLine);
+    EXPECT_EQ(3u, segments[1].firstFileLine);
+    EXPECT_EQ(names[2], segments[1].fileName);
+    in.close();
+    fs::remove_all(dir);
 }

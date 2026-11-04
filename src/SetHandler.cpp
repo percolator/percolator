@@ -40,6 +40,50 @@ void SetHandler::reset() {
   featurePool_.destroyPool();
   DataSet::resetFeatureNames();
 }
+
+std::string SetHandler::describeLine(unsigned int lineNr) const {
+  std::ostringstream oss;
+  oss << "line ";
+  // the last input file whose lines start at or before lineNr
+  auto it = std::upper_bound(
+      inputSegments_.begin(), inputSegments_.end(), lineNr,
+      [](unsigned int line, const InputSegment& segment) {
+        return line < segment.firstLine;
+      });
+  if (it == inputSegments_.begin()) {
+    oss << lineNr;
+  } else {
+    --it;
+    oss << it->firstFileLine + (lineNr - it->firstLine) << " of "
+        << it->fileName;
+  }
+  return oss.str();
+}
+
+void SetHandler::rethrowWithSource(const MyException& e,
+                                   unsigned int lineNr) const {
+  if (inputSegments_.empty()) throw;
+  std::ostringstream oss;
+  oss << e.what() << "Line " << lineNr << " of the concatenated input is "
+      << describeLine(lineNr) << "." << std::endl;
+  throw MyException(oss.str());
+}
+
+void SetHandler::warnIgnoredLabel(unsigned int lineNr,
+                                  unsigned int& numIgnored) const {
+  if (++numIgnored <= kMaxLabelWarnings) {
+    std::cerr << "Warning: the PSM on " << describeLine(lineNr)
+              << " has a label not in {1,-1} and will be ignored." << std::endl;
+  }
+}
+
+void SetHandler::warnIgnoredLabelTotal(unsigned int numIgnored) const {
+  if (numIgnored > kMaxLabelWarnings) {
+    std::cerr << "Warning: " << numIgnored << " PSMs have a label not in "
+              << "{1,-1} and were ignored; only the first "
+              << kMaxLabelWarnings << " are listed above." << std::endl;
+  }
+}
 /**
  * Gets the vector index of the DataSet matching the label
  * @param label DataSet label
@@ -172,6 +216,36 @@ void SetHandler::getFeatureNames(const std::string& headerLine,
   assert(numFeatures == DataSet::getNumFeatures());
 }
 
+/**
+ * Checks that the Peptide column of the header, if it has one, follows the
+ * feature columns of the first PSM line. Otherwise the features would get
+ * the names of other columns.
+ */
+void SetHandler::checkPeptideColumn(const std::string& headerLine,
+    int numFeatures, int optionalFieldCount,
+    unsigned int firstPsmLineNr) const {
+  const int firstFeatureColumn = 2 + optionalFieldCount;
+  TabReader reader(headerLine);
+  for (int column = 0; !reader.error(); ++column) {
+    std::string name = reader.readString();
+    std::transform(name.begin(), name.end(), name.begin(), ::tolower);
+    if (column < firstFeatureColumn || name != "peptide") continue;
+    if (column == firstFeatureColumn + numFeatures) return;
+    ostringstream temp;
+    temp << "ERROR: Reading tab file, the header line has "
+         << column - firstFeatureColumn << " feature columns before its "
+         << "Peptide column, but the first PSM, on "
+         << describeLine(firstPsmLineNr) << ", has " << numFeatures
+         << " features." << std::endl;
+    if (NO_TERMINATE) {
+      cerr << temp.str() << "No-terminate flag set: ignoring the error, the "
+           << "feature names may be wrong." << std::endl;
+      return;
+    }
+    throw MyException(temp.str());
+  }
+}
+
 bool SetHandler::getInitValues(const std::string& defaultDirectionLine, 
     int optionalFieldCount, std::vector<double>& init_values) {
   TabReader reader(defaultDirectionLine);
@@ -226,6 +300,7 @@ void SetHandler::readPSMs(istream& dataStream, std::string& psmLine,
   decoySet->setLabel(LabelType::DECOY);
   
   unsigned int lineNr = (hasInitialValueRow ? 3u : 2u);
+  unsigned int numIgnoredLabels = 0u;
   if (psmLine.size() == 0) {
     ostringstream temp;
     temp << "ERROR: Reading tab file, could not find any PSMs." << std::endl;
@@ -242,6 +317,7 @@ void SetHandler::readPSMs(istream& dataStream, std::string& psmLine,
     std::unordered_map<ScanId, std::pair<size_t, bool>, ScanIdHash>
         scanIdLookUp;
     unsigned int upperLimit = UINT_MAX;
+    try {  // not indented: rethrowWithSource adds the file of the line
     do {
       if (lineNr % 1000000 == 0 && VERB > 1) {
         std::cerr << "Processing line " << lineNr << std::endl;
@@ -264,8 +340,7 @@ void SetHandler::readPSMs(istream& dataStream, std::string& psmLine,
       }
       
       if (label != 1 && label != -1) {
-        std::cerr << "Warning: the PSM on line " << lineNr
-            << " has a label not in {1,-1} and will be ignored." << std::endl;
+        warnIgnoredLabel(lineNr, numIgnoredLabels);
       } else if (subsetPSMs.size() < maxPSMs_ || randIdx < upperLimit) {
         PSMDescriptionPriority psmPriority;
         bool readProteins = false;
@@ -284,11 +359,15 @@ void SetHandler::readPSMs(istream& dataStream, std::string& psmLine,
       }
       ++lineNr;
     } while (getline(dataStream, psmLine));
+    } catch (const MyException& e) {
+      rethrowWithSource(e, lineNr);
+    }
     
     addQueueToSets(subsetPSMs, targetSet.get(), decoySet.get());
   } else { // simply read all PSMs
     // ScanId -> isDecoy, only needed until a separate search is detected
     std::unordered_map<ScanId, bool, ScanIdHash> scanIdLookUp;
+    try {  // not indented: rethrowWithSource adds the file of the line
     do {
       if (lineNr % 1000000 == 0 && VERB > 1) {
         std::cerr << "Reading line " << lineNr << std::endl;
@@ -311,12 +390,15 @@ void SetHandler::readPSMs(istream& dataStream, std::string& psmLine,
         decoySet->readPsm(psmLine, lineNr, optionalFields, featurePool_,
                           psmStore_, decoyPrefix_);
       } else {
-        std::cerr << "Warning: the PSM on line " << lineNr
-            << " has a label not in {1,-1} and will be ignored." << std::endl;
+        warnIgnoredLabel(lineNr, numIgnoredLabels);
       }
       ++lineNr;
     } while (getline(dataStream, psmLine));
+    } catch (const MyException& e) {
+      rethrowWithSource(e, lineNr);
+    }
   }
+  warnIgnoredLabelTotal(numIgnoredLabels);
   
   numPsmLines_ = lineNr - (hasInitialValueRow ? 3u : 2u);
   if (VERB > 1) {
@@ -486,6 +568,8 @@ int SetHandler::readAndScoreTab(istream& dataStream,
   FeatureNames& featureNames = DataSet::getFeatureNames();
   // fill in the feature names from the header line
   getFeatureNames(headerLine, numFeatures, optionalFieldCount, featureNames);
+  checkPeptideColumn(headerLine, numFeatures, optionalFieldCount,
+                     hasInitialValueRow ? 3u : 2u);
   if (numFeatures < 1) {
     ostringstream oss;
     oss << "ERROR: Reading tab file, too few features present." << std::endl;
@@ -540,6 +624,7 @@ void SetHandler::readAndScorePSMs(istream& dataStream, std::string& psmLine,
     std::vector<double>& rawWeights, Scores& allScores) {
   unsigned int lineNr = (hasInitialValueRow ? 3u : 2u);
   bool readProteins = true;
+  try {  // not indented: rethrowWithSource adds the file of the line
   do {
     if (lineNr % 1000000 == 0 && VERB > 1) {
       std::cerr << "Processing line " << lineNr << std::endl;
@@ -558,6 +643,9 @@ void SetHandler::readAndScorePSMs(istream& dataStream, std::string& psmLine,
     }
     ++lineNr;
   } while (getline(dataStream, psmLine));
+  } catch (const MyException& e) {
+    rethrowWithSource(e, lineNr);
+  }
   
   if (VERB > 1) {
     std::cerr << "Found " << lineNr - (hasInitialValueRow ? 3u : 2u) << " PSMs" << std::endl;

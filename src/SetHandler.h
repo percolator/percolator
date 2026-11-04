@@ -42,6 +42,7 @@
 #include "SanityCheck.h"
 #include "PseudoRandom.h"
 #include "FeatureMemoryPool.h"
+#include "ValidateTabFile.h"
 
 struct PSMDescriptionPriority {
   PSMDescription* psm;
@@ -111,6 +112,14 @@ class SetHandler {
   }
   
   FeatureMemoryPool& getFeaturePool() { return featurePool_; }
+
+  // For an input concatenated from several files: where the lines of each
+  // file are, so that messages can name the file and line of a PSM.
+  void setInputSegments(std::vector<InputSegment> segments) {
+    inputSegments_ = std::move(segments);
+  }
+  // "line <lineNr>", or "line <n> of <file>" for a concatenated input
+  std::string describeLine(unsigned int lineNr) const;
   
   void reset();
   void releaseFeatures();
@@ -122,6 +131,15 @@ class SetHandler {
   std::vector<std::unique_ptr<DataSet> > subsets_;
   FeatureMemoryPool featurePool_;
   std::string decoyPrefix_; // Used to determine if a psm is a decoy
+  std::vector<InputSegment> inputSegments_;  // empty for a single input file
+  // warnings about labels other than 1 and -1 printed per line, then counted
+  static constexpr unsigned int kMaxLabelWarnings = 1000u;
+  
+  // rethrows e, with the file and line of a PSM line of a concatenated input
+  [[noreturn]] void rethrowWithSource(const MyException& e,
+                                      unsigned int lineNr) const;
+  void warnIgnoredLabel(unsigned int lineNr, unsigned int& numIgnored) const;
+  void warnIgnoredLabelTotal(unsigned int numIgnored) const;
   
   unsigned int getSubsetIndexFromLabel(LabelType label);
   static inline std::string &rtrim(std::string &s);
@@ -132,6 +150,8 @@ class SetHandler {
   int getNumFeatures(const std::string& line, int optionalFieldCount);
   void getFeatureNames(const std::string& headerLine, int numFeatures, 
     int optionalFieldCount, FeatureNames& featureNames);
+  void checkPeptideColumn(const std::string& headerLine, int numFeatures,
+    int optionalFieldCount, unsigned int firstPsmLineNr) const;
   bool getInitValues(const std::string& defaultDirectionLine, 
     int optionalFieldCount, std::vector<double>& init_values);
   ScanId getScanId(const std::string& psmLine, int& label,
