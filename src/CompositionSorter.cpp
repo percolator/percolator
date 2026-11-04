@@ -4,11 +4,13 @@
 #include <string>
 #include <string_view>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 #include "CompositionSorter.h"
 #include "Globals.h"
 #include "Scores.h"
+#include "SequentialSort.h"
 
 // helper for sorting ScoreHolder references by scan and score, to help TDC
 bool compareByScanThenScore(const ScoreHolder* lhs, const ScoreHolder* rhs) {
@@ -57,75 +59,186 @@ void targetDecoyCompetition(std::vector<ScoreHolder*>& scoreHolders) {
   }
 }
 
-std::string CompositionSorter::generateCompositionSignature(
-    const std::string& peptide) {
-  std::map<std::string, int> counts;
+namespace {
 
-  for (size_t i = 0; i < peptide.size(); ++i) {
-    if (peptide[i] == '[') {
-      size_t j = i + 1;
-      while (j < peptide.size() && peptide[j] != ']') {
-        ++j;
+// Builds the signature of generateCompositionSignature without a std::map
+// per peptide: the residues (single characters) are counted in a table and
+// the modifications in a short list. As std::string keys, the residues
+// compared by their unsigned character, and the modifications, which start
+// with '[', came after the residues below '[' and before those above it,
+// and compared as strings among themselves; the signature lists them in
+// that order.
+class SignatureBuilder {
+ public:
+  void build(std::string_view peptide, std::string& signature) {
+    for (size_t i = 0; i < peptide.size(); ++i) {
+      if (peptide[i] == '[') {
+        size_t j = i + 1;
+        while (j < peptide.size() && peptide[j] != ']') {
+          ++j;
+        }
+        // the modification, up to the end if it is not closed
+        addModification(peptide.substr(i, j - i + 1));
+        i = j;
+      } else {
+        const unsigned char residue = static_cast<unsigned char>(peptide[i]);
+        if (counts_[residue]++ == 0) {
+          residues_.push_back(residue);
+        }
       }
-      // Extract the modification
-      counts[peptide.substr(i, j - i + 1)]++;
-      // Skip the modification
-      i = j;
-    } else {
-      counts[std::string(1, peptide[i])]++;
     }
+    std::sort(residues_.begin(), residues_.end());
+    std::sort(modifications_.begin(), modifications_.end());
+    signature.clear();
+    size_t r = 0;
+    for (; r < residues_.size() && residues_[r] < '['; ++r) {
+      appendResidue(residues_[r], signature);
+    }
+    for (const auto& modification : modifications_) {
+      signature += modification.first;
+      signature += std::to_string(modification.second);
+    }
+    for (; r < residues_.size(); ++r) {
+      appendResidue(residues_[r], signature);
+    }
+    for (unsigned char residue : residues_) {
+      counts_[residue] = 0;
+    }
+    residues_.clear();
+    modifications_.clear();
   }
 
-  std::string signature;
-  for (const auto& aminoAcidCountPair : counts) {
-    const auto& aminoAcid = aminoAcidCountPair.first;
-    const auto& count = aminoAcidCountPair.second;
-    signature += aminoAcid;
-    signature += std::to_string(count);
+ private:
+  void addModification(std::string_view modification) {
+    for (auto& counted : modifications_) {
+      if (counted.first == modification) {
+        ++counted.second;
+        return;
+      }
+    }
+    modifications_.emplace_back(modification, 1);
   }
+  void appendResidue(unsigned char residue, std::string& signature) const {
+    signature += static_cast<char>(residue);
+    signature += std::to_string(counts_[residue]);
+  }
+
+  int counts_[256] = {};
+  std::vector<unsigned char> residues_;
+  std::vector<std::pair<std::string_view, int> > modifications_;
+};
+
+}  // namespace
+
+std::string CompositionSorter::generateCompositionSignature(
+    std::string_view peptide) {
+  SignatureBuilder builder;
+  std::string signature;
+  builder.build(peptide, signature);
   return signature;
 }
 
 int CompositionSorter::addPSMs(const Scores& scores, bool useTDC) {
+  std::vector<ScoreHolder*> scoreHolders;
+  for (const auto& scr : scores) {
+    scoreHolders.push_back(const_cast<ScoreHolder*>(&scr));
+  }
   if (useTDC) {
-    std::vector<ScoreHolder*> scoreHolders;
-    for (const auto& scr : scores) {
-      scoreHolders.push_back(const_cast<ScoreHolder*>(&scr));
-    }
     targetDecoyCompetition(scoreHolders);
-    for (auto& pScr : scoreHolders) {
-      std::string peptide = pScr->getPSM()->getPeptideSequence();
-      std::string signature = generateCompositionSignature(peptide);
-      compositionToPeptidesToScore_[signature][peptide].push_back(pScr);
+  }
+  SignatureBuilder builder;
+  std::string signature;
+  compositionPsms_.reserve(compositionPsms_.size() + scoreHolders.size());
+  for (ScoreHolder* pScr : scoreHolders) {
+    std::string_view peptide = pScr->getPSM()->getPeptideSequenceView();
+    builder.build(peptide, signature);
+    // a new signature is inserted at the same point of the sequence of
+    // insertions as before, so the map iterates in the same order
+    auto composition = compositionIndex_.find(signature);
+    if (composition == compositionIndex_.end()) {
+      composition =
+          compositionIndex_
+              .emplace(signature,
+                       static_cast<unsigned int>(compositionIndex_.size()))
+              .first;
     }
-  } else {
-    for (const auto& scr : scores) {
-      std::string peptide = scr.getPSM()->getPeptideSequence();
-      std::string signature = generateCompositionSignature(peptide);
-      compositionToPeptidesToScore_[signature][peptide].push_back(
-          const_cast<ScoreHolder*>(&scr));
-    }
+    compositionPsms_.push_back(CompositionPsm{
+        composition->second, peptide, compositionPsms_.size(), pScr});
   }
   return 0;
 }
 
 int CompositionSorter::sortScorePerPeptide() {
-  // Comparator for sorting ScoreHolder references
-  auto compareScoreHolder = [](const ScoreHolder* lhs, const ScoreHolder* rhs) {
-    return *lhs > *rhs;  // descending score, ties in a total order
-  };
-
-  // Iterating and sorting
-  for (auto& compositionToPeptides : compositionToPeptidesToScore_) {
-    auto& composition = compositionToPeptides.first;
-    auto& peptideMap = compositionToPeptides.second;
-
-    for (auto& peptideToScores : peptideMap) {
-      auto& peptide = peptideToScores.first;
-      auto& scores = peptideToScores.second;
-
-      std::sort(scores.begin(), scores.end(), compareScoreHolder);
+  const size_t numCompositions = compositionIndex_.size();
+  // the position of each composition in the iteration order of the map
+  std::vector<unsigned int> rank(numCompositions);
+  unsigned int nextRank = 0;
+  for (const auto& composition : compositionIndex_) {
+    rank[composition.second] = nextRank++;
+  }
+  // Order the PSMs by that position with a counting sort, which keeps the
+  // PSMs of a composition in the order in which they were added ...
+  const size_t n = compositionPsms_.size();
+  std::vector<size_t> compositionStart(numCompositions + 1, 0);
+  for (const CompositionPsm& cp : compositionPsms_) {
+    ++compositionStart[rank[cp.composition] + 1];
+  }
+  for (size_t r = 0; r < numCompositions; ++r) {
+    compositionStart[r + 1] += compositionStart[r];
+  }
+  {
+    // the new position of each PSM, applied in place, cycle by cycle
+    std::vector<size_t> destination(n);
+    std::vector<size_t> next(compositionStart.begin(),
+                             compositionStart.end() - 1);
+    for (size_t i = 0; i < n; ++i) {
+      destination[i] = next[rank[compositionPsms_[i].composition]]++;
     }
+    for (size_t i = 0; i < n; ++i) {
+      while (destination[i] != i) {
+        const size_t d = destination[i];
+        std::swap(compositionPsms_[i], compositionPsms_[d]);
+        std::swap(destination[i], destination[d]);
+      }
+    }
+  }
+  // ... and then by peptide within each composition, as the map of the
+  // peptides of each composition iterated, with the PSMs of a peptide in
+  // the order added
+  auto byPeptide = [](const CompositionPsm& a, const CompositionPsm& b) {
+    if (a.peptide != b.peptide) {
+      return a.peptide < b.peptide;
+    }
+    return a.order < b.order;
+  };
+  // These sorts, and those of the PSMs of each peptide below, are small
+  // apart from a few peptides with thousands of PSMs, so they run on the
+  // calling thread: a team of threads for each of those costs more than it
+  // saves. The comparators are total orders (for scores that are not NaN),
+  // so the result does not depend on the sort algorithm.
+  for (size_t r = 0; r < numCompositions; ++r) {
+    sequentialSort(compositionPsms_.begin() + compositionStart[r],
+                   compositionPsms_.begin() + compositionStart[r + 1],
+                   byPeptide);
+  }
+
+  // Comparator for sorting ScoreHolder references
+  auto compareScoreHolder = [](const CompositionPsm& lhs,
+                               const CompositionPsm& rhs) {
+    return *lhs.psm > *rhs.psm;  // descending score, ties in a total order
+  };
+  // sort the PSMs of each peptide
+  for (size_t first = 0; first < n;) {
+    size_t last = first + 1;
+    while (last < n &&
+           compositionPsms_[last].composition ==
+               compositionPsms_[first].composition &&
+           compositionPsms_[last].peptide == compositionPsms_[first].peptide) {
+      ++last;
+    }
+    sequentialSort(compositionPsms_.begin() + first,
+                   compositionPsms_.begin() + last, compareScoreHolder);
+    first = last;
   }
   return 0;
 }
@@ -148,32 +261,39 @@ int CompositionSorter::inCompositionCompetition(Scores& bestScoreHolders,
 
   if (VERB > 1) {
     std::cerr << "Composition Matching starting with "
-              << compositionToPeptidesToScore_.size() << " compositions."
-              << std::endl;
+              << compositionIndex_.size() << " compositions." << std::endl;
   }
 
   std::vector<size_t> compSizeStat;
   std::vector<size_t> compTargetSizeStat;
   std::vector<size_t> compNumTargetSizeStat;
-  for (auto& compositionToPeptides : compositionToPeptidesToScore_) {
-    auto& composition = compositionToPeptides.first;
-    auto& peptideMap = compositionToPeptides.second;
+  const size_t numPsms = compositionPsms_.size();
+  // the PSMs of a composition, and of each of its peptides, are adjacent
+  for (size_t compFirst = 0, compLast = 0; compFirst < numPsms;
+       compFirst = compLast) {
+    const unsigned int composition = compositionPsms_[compFirst].composition;
+    // the first PSM of each peptide of the composition
+    std::vector<size_t> peptideFirsts;
+    for (compLast = compFirst; compLast < numPsms &&
+                               compositionPsms_[compLast].composition ==
+                                   composition;
+         ++compLast) {
+      if (compLast == compFirst || compositionPsms_[compLast].peptide !=
+                                       compositionPsms_[compLast - 1].peptide) {
+        peptideFirsts.push_back(compLast);
+      }
+    }
     std::vector<std::vector<ScoreHolder*>> compositionGroups;
     std::vector<ScoreHolder*> targets;
     std::vector<ScoreHolder*> decoys;
     // register length statistics for printouts
-    size_t numberOfPeptidesInComposition = peptideMap.size();
+    size_t numberOfPeptidesInComposition = peptideFirsts.size();
     incVector(compSizeStat, numberOfPeptidesInComposition);
     // Add the target peptides
     size_t numTargetPeptides = 0;
-    for (auto& peptideToScores : peptideMap) {
-      auto& peptide = peptideToScores.first;
-      auto& scoreHolders = peptideToScores.second;
-      if (scoreHolders.empty()) {
-        continue;
-      }
-      ScoreHolder* firstScoreHolder =
-          scoreHolders.front();  // This is the best scoring PSM for the peptide
+    for (size_t peptideFirst : peptideFirsts) {
+      // This is the best scoring PSM for the peptide
+      ScoreHolder* firstScoreHolder = compositionPsms_[peptideFirst].psm;
       if (firstScoreHolder->isTarget()) {
         targets.push_back(firstScoreHolder);
         numTargetPeptides++;
