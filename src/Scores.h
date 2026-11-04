@@ -63,6 +63,9 @@ class Scores {
         totalNumberOfDecoys_(0),
         totalNumberOfTargets_(0) {}
 
+  // Replaces the PSMs of this set by those of the cross-validation bins sv,
+  // each scored, normalized and given q values, and sorted by score. The
+  // bins are emptied.
   void merge(std::vector<Scores>& sv,
              double fdr,
              bool skipNormalizeScores,

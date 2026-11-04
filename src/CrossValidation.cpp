@@ -83,6 +83,7 @@ CrossValidation::CrossValidation(bool quickValidation,
  * - `weights_`
  * - `candidatesCpos_`, `candidatesCfrac_` and `classWeightsPerFold_` (in
  * `initializeGridSearch`)
+ * - empties `fullset`, whose PSMs are then held by the folds
  *
  * @param w_ vector of SVM weights
  * @return number of positives for initial setup
@@ -97,10 +98,15 @@ int CrossValidation::preIterationSetup(Scores& fullset,
   svmInputs_.assign(numFolds_ * nestedXvalBins_, AlgIn(numFeatures + 1));
 
   unsigned int decoysPerTarget = 1u;  // TODO: make this a command line argument
+  double targetDecoySizeRatio = 1.0;
   {
     StageTimer stageTimer("cross-validation split");
     fullset.createXvalSetsBySpectrum(trainScores_, testScores_, numFolds_,
                                      decoyFractionTraining_, decoysPerTarget);
+    // the folds hold copies of all PSMs; postIterationProcessing merges them
+    // back into fullset
+    targetDecoySizeRatio = fullset.getTargetDecoySizeRatio();
+    fullset.reset();
   }
   // A fold without PSMs cannot be scored or merged; this happens when the
   // input has about as many spectra as folds, or fewer.
@@ -140,11 +146,7 @@ int CrossValidation::preIterationSetup(Scores& fullset,
       check.getInitDirection(testScores_, trainScores_, pNorm, weights_,
                                testFdr_, initialSelectionFdr_);
 
-  initializeGridSearch(fullset.getTargetDecoySizeRatio());
-
-  // the folds hold copies of all PSMs; postIterationProcessing merges them
-  // back into fullset
-  fullset.reset();
+  initializeGridSearch(targetDecoySizeRatio);
   return numPositive;
 }
 
@@ -631,8 +633,15 @@ int CrossValidation::mergeCpCnPairs(
   return static_cast<int>(bestTruePos / std::max(1u, numFolds_ - 1));
 }
 
+/**
+ * Scores the test sets with the trained weights and merges them into
+ * fullset. Releases the training data, so train() cannot be called again.
+ */
 void CrossValidation::postIterationProcessing(Scores& fullset,
                                               SanityCheck& check) {
+  // The training is done. Its data are released before the merge, which
+  // copies all PSMs once more and would otherwise set the peak memory.
+  std::vector<AlgIn>().swap(svmInputs_);
   if (decoyFractionTraining_ < 1.0) {
     // with RESET 1 decoy: decoysPerTarget = 1 and decoyFractionTraining = 0.5,
     // then factor = 1.5 and testNullTargetWinProb = 2/3 (and decoyFactor = 2)
@@ -668,6 +677,9 @@ void CrossValidation::postIterationProcessing(Scores& fullset,
       testScores_[set].calcScoresAndQvals(weights_[0], selectionFdr_);
     }
   }
+  // the default direction of validateDirection was the last use of the
+  // training sets; merge empties the test sets
+  std::vector<Scores>().swap(trainScores_);
   fullset.merge(testScores_, selectionFdr_, skipNormalizeScores_, weights_);
 }
 

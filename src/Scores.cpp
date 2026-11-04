@@ -76,6 +76,8 @@ void Scores::merge(std::vector<Scores>& sv,
       cvBinScores->normalizeScores(fdr, *weights, sv.size() == 1u);
     }
     copy(cvBinScores->begin(), cvBinScores->end(), back_inserter(scores_));
+    // release the bin before the sort of all PSMs
+    cvBinScores->reset();
   }
   postMergeStep();
 }
@@ -241,8 +243,14 @@ void Scores::createXvalSetsBySpectrum(std::vector<Scores>& train,
   // set the number of cross validation folds for train and test to xval_fold
   train.resize(xval_fold, Scores(usePi0_));
   test.resize(xval_fold, Scores(usePi0_));
+  // The test folds are filled up to scores_.size() / xval_fold PSMs, rounded
+  // up or down (remain, below), and a training set holds the PSMs of the
+  // other test folds, or all PSMs with a single fold. Spectra with several
+  // PSMs can make a fold a few PSMs larger.
   size_t approxTestSize = scores_.size() / xval_fold + 1;
-  size_t approxTrainSize = (approxTestSize < scores_.size()) ? scores_.size() - approxTestSize : scores_.size();
+  size_t approxTrainSize = (xval_fold > 1)
+                               ? scores_.size() - scores_.size() / xval_fold
+                               : scores_.size();
   for (unsigned int i = 0; i < xval_fold; ++i) {
     train[i].reserve(approxTrainSize);
     test[i].reserve(approxTestSize);
