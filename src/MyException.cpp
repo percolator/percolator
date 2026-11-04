@@ -17,6 +17,8 @@ limitations under the License.
 
 #include "MyException.h"
 
+#include <iostream>
+
 MyException::MyException(const string& ss)  : msg(ss) 
 {
   
@@ -40,3 +42,19 @@ const char* MyException::what() const throw()
   return msg.c_str(); 
 }
 
+void closeOutputFile(std::ofstream& out, const std::string& fileName) {
+  out.close();
+  if (out.fail()) {
+    throw MyException("ERROR: Could not write the file " + fileName +
+                      ". Check that the disk is not full and that the file "
+                      "is writable.\n");
+  }
+}
+
+void flushStandardOutput() {
+  std::cout.flush();
+  if (std::cout.fail()) {
+    throw MyException("ERROR: Could not write the results to standard "
+                      "output.\n");
+  }
+}

@@ -217,20 +217,22 @@ void PosteriorEstimator::finishStandalone(
   }
   vector<double>::iterator xval = xvals.begin();
   vector<double>::const_iterator qv = q.begin(), pep = peps.begin();
+  // '\n' instead of endl: a flush per line costs one write() call per line
   if (resultFileName.empty()) {
-    cout << "Score\tPEP\tq-value" << endl;
+    cout << "Score\tPEP\tq-value\n";
     for (; xval != xvals.end(); ++xval, ++pep, ++qv)
     {
-      cout << *xval << "\t" << *pep << "\t" << *qv << endl;
+      cout << *xval << "\t" << *pep << "\t" << *qv << '\n';
     }
+    flushStandardOutput();
   } else {
     ofstream resultstream(resultFileName.c_str());
-    resultstream << "Score\tPEP\tq-value" << endl;
+    resultstream << "Score\tPEP\tq-value\n";
     for (; xval != xvals.end(); ++xval, ++pep, ++qv)
     {
-      resultstream << *xval << "\t" << *pep << "\t" << *qv << endl;
+      resultstream << *xval << "\t" << *pep << "\t" << *qv << '\n';
     }
-    resultstream.close();
+    closeOutputFile(resultstream, resultFileName);
   }
 }
 

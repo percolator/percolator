@@ -841,12 +841,15 @@ void Caller::writeResults(Scores& allScores,
   if (!targetFN.empty()) {
     ofstream targetStream(targetFN.c_str(), ios::out);
     allScores.print(LabelType::TARGET, targetStream);
+    closeOutputFile(targetStream, targetFN);
   } else if (writeOutput) {
     allScores.print(LabelType::TARGET);
+    flushStandardOutput();
   }
   if (!decoyFN.empty()) {
     ofstream decoyStream(decoyFN.c_str(), ios::out);
     allScores.print(LabelType::DECOY, decoyStream);
+    closeOutputFile(decoyStream, decoyFN);
   }
 }
 
@@ -1234,7 +1237,7 @@ int Caller::run() {
     if (weightOutputFN_.size() > 0) {
       ofstream weightStream(weightOutputFN_.c_str(), ios::out);
       crossValidation.printAllWeights(weightStream, pNorm_.get());
-      weightStream.close();
+      closeOutputFile(weightStream, weightOutputFN_);
     }
 
     if (setHandler.getMaxPSMs() > 0u) {

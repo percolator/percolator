@@ -70,15 +70,16 @@ void ProteinProbEstimator::printOut(const std::string &proteinFN,
     if (!proteinFN.empty()) {
       ofstream proteinOut(proteinFN.data(), ios::out);
       print(proteinOut,false);
-      proteinOut.close();	
+      closeOutputFile(proteinOut, proteinFN);
     }
     if (!proteinDecoyFN.empty()) {
       ofstream proteinOut(proteinDecoyFN.data(), ios::out);
       print(proteinOut,true);
-      proteinOut.close();
+      closeOutputFile(proteinOut, proteinDecoyFN);
     }
   } else {
     print(std::cout);
+    flushStandardOutput();
   }
 }
 

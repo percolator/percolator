@@ -288,6 +288,7 @@ void SetHandler::writeTab(const string& dataFN, const SanityCheck& check) {
   for (const auto& subset : subsets_) {
     subset->writeTabData(dataStream);
   }
+  closeOutputFile(dataStream, dataFN);
 }
 
 void SetHandler::readPSMs(istream& dataStream, std::string& psmLine, 
