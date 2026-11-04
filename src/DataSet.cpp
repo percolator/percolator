@@ -260,13 +260,20 @@ LabelType DataSet::readPsm(const std::string& line, const unsigned int lineNr,
 void DataSet::checkUnflankedPeptide(std::string_view peptide,
                                     std::string_view psmId,
                                     unsigned int lineNr) {
-  // a digit is required, as the peptides NAN and INF would parse as numbers
-  std::string field(peptide);
-  TabReader numberReader(field);
-  numberReader.readDouble();
-  if (!numberReader.error() &&
-      std::any_of(field.begin(), field.end(),
+  // Only a field that starts like a number and has a digit is parsed (the
+  // peptides NAN and INF would parse as numbers), so that an input without
+  // flanks costs no conversion per PSM.
+  const unsigned char first = peptide.empty() ? 'A' : peptide[0];
+  bool isNumber = false;
+  if ((std::isdigit(first) || first == '-' || first == '+' || first == '.') &&
+      std::any_of(peptide.begin(), peptide.end(),
                   [](unsigned char c) { return std::isdigit(c) != 0; })) {
+    std::string field(peptide);
+    TabReader numberReader(field);
+    numberReader.readDouble();
+    isNumber = !numberReader.error();
+  }
+  if (isNumber) {
     ostringstream temp;
     temp << "ERROR: Reading tab file, the peptide column of PSM " << psmId
          << " on line " << lineNr << " holds the number " << peptide

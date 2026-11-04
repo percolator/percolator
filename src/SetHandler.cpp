@@ -240,7 +240,8 @@ void SetHandler::checkPeptideColumn(const std::string& headerLine,
   TabReader reader(headerLine);
   for (int column = 0; !reader.error(); ++column) {
     std::string name = reader.readString();
-    std::transform(name.begin(), name.end(), name.begin(), ::tolower);
+    std::transform(name.begin(), name.end(), name.begin(),
+                   [](unsigned char c) { return std::tolower(c); });
     if (column < firstFeatureColumn || name != "peptide") continue;
     if (column == firstFeatureColumn + numFeatures) return;
     ostringstream temp;
@@ -604,8 +605,10 @@ int SetHandler::readAndScoreTab(istream& dataStream,
   FeatureNames& featureNames = DataSet::getFeatureNames();
   // fill in the feature names from the header line
   getFeatureNames(headerLine, numFeatures, optionalFieldCount, featureNames);
-  checkPeptideColumn(headerLine, numFeatures, optionalFieldCount,
-                     hasInitialValueRow ? 3u : 2u);
+  if (!psmLine.empty()) {  // without PSMs the errors below are more apt
+    checkPeptideColumn(headerLine, numFeatures, optionalFieldCount,
+                       hasInitialValueRow ? 3u : 2u);
+  }
   if (numFeatures < 1) {
     ostringstream oss;
     oss << "ERROR: Reading tab file, too few features present." << std::endl;
