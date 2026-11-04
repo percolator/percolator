@@ -365,13 +365,16 @@ int CompositionSorter::inCompositionCompetition(Scores& bestScoreHolders,
     }
   }
 
-  int numTargets = 0;
+  // counted here: Scores::size() comes from the totals, which the caller
+  // only updates afterwards with recalculateSizes()
+  int numPeptides = 0, numTargets = 0;
   for (const ScoreHolder& pSH : bestScoreHolders) {
+    numPeptides++;
     if (pSH.isTarget())
       numTargets++;
   }
   if (VERB > 1) {
-    std::cerr << "Composition Matching ends with " << bestScoreHolders.size()
+    std::cerr << "Composition Matching ends with " << numPeptides
               << " peptides, whereof " << numTargets << " is target peptides."
               << std::endl;
   }
