@@ -185,6 +185,45 @@ TEST_F(SetHandlerTest, TestPeptideColumnFollowsFeatures)
     sh.reset();
 }
 
+// Spectra with more than one PSM of a label are counted, for the warning
+// about concatenated searches with several candidates per spectrum, in
+// both reading paths; the detection of separate searches is unchanged.
+TEST_F(SetHandlerTest, TestCountSpectraWithRepeatedLabels)
+{
+    const char* input =
+        "id\tLabel\tScanNr\tExpMass\tF1\tPeptide\tProtein\n"
+        "a\t1\t1\t100\t1\tK.PEP.R\tP\n"
+        "b\t-1\t1\t100\t2\tK.PEP.R\tP\n"
+        "c\t1\t2\t200\t1\tK.PEP.R\tP\n"
+        "d\t1\t2\t200\t3\tK.PEP.R\tP\n"
+        "e\t-1\t3\t300\t1\tK.PEP.R\tP\n"
+        "f\t-1\t3\t300\t2\tK.PEP.R\tP\n"
+        "g\t-1\t3\t300\t2\tK.PEP.R\tP\n";
+    for (unsigned int maxPSMs : {0u, 4u}) {
+        SetHandler sh(maxPSMs);
+        std::istringstream str(input);
+        SanityCheck check;
+        EXPECT_TRUE(sh.readTab(str, check));
+        EXPECT_FALSE(check.concatenatedSearch());
+        EXPECT_EQ(7u, sh.getSampledLines());
+        EXPECT_EQ(3u, sh.getSampledSpectra());
+        EXPECT_EQ(2u, sh.getSampledSpectraWithRepeatedLabel());
+        sh.reset();
+    }
+    SetHandler sh(0);
+    std::istringstream str(
+        "id\tLabel\tScanNr\tExpMass\tF1\tPeptide\tProtein\n"
+        "a\t1\t1\t100\t1\tK.PEP.R\tP\n"
+        "b\t-1\t2\t100\t2\tK.PEP.R\tP\n"
+        "c\t1\t3\t100\t1\tK.PEP.R\tP\n");
+    SanityCheck check;
+    EXPECT_TRUE(sh.readTab(str, check));
+    EXPECT_TRUE(check.concatenatedSearch());
+    EXPECT_EQ(3u, sh.getSampledSpectra());
+    EXPECT_EQ(0u, sh.getSampledSpectraWithRepeatedLabel());
+    sh.reset();
+}
+
 // Line numbers of a concatenated input are mapped back to the input files.
 TEST_F(SetHandlerTest, TestDescribeLine)
 {

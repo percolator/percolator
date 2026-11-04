@@ -112,6 +112,7 @@ class Caller {
   Timer timer;
 
   std::istream& getDataInStream(std::ifstream& fileStream);
+  void warnAboutSeveralCandidates(const SetHandler& setHandler) const;
   bool loadAndNormalizeData(std::istream& dataStream,
                             SetHandler& setHandler,
                             Scores& allScores);

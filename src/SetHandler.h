@@ -120,6 +120,17 @@ class SetHandler {
   }
   // "line <lineNr>", or "line <n> of <file>" for a concatenated input
   std::string describeLine(unsigned int lineNr) const;
+
+  // Among the spectra (ScanNr and ExpMass) of the first kRepeatSampleLines
+  // PSM lines of the last read: their number, and the number with more
+  // than one PSM of the same label, as in a search that reports several
+  // candidates per spectrum.
+  size_t getSampledLines() const { return sampledLines_; }
+  size_t getSampledSpectra() const { return sampledSpectra_; }
+  size_t getSampledSpectraWithRepeatedLabel() const {
+    return sampledSpectraWithRepeatedLabel_;
+  }
+  static constexpr size_t kRepeatSampleLines = 100000u;
   
   void reset();
   void releaseFeatures();
@@ -132,6 +143,18 @@ class SetHandler {
   FeatureMemoryPool featurePool_;
   std::string decoyPrefix_; // Used to determine if a psm is a decoy
   std::vector<InputSegment> inputSegments_;  // empty for a single input file
+  size_t sampledLines_ = 0u, sampledSpectra_ = 0u,
+         sampledSpectraWithRepeatedLabel_ = 0u;
+  // labels seen per spectrum while reading: target (any label but -1),
+  // decoy, and whether one of them was seen twice
+  static constexpr unsigned char kSeenTarget = 1u, kSeenDecoy = 2u,
+                                 kSeenTwice = 4u;
+  static unsigned char labelBit(bool isDecoy) {
+    return isDecoy ? kSeenDecoy : kSeenTarget;
+  }
+  // adds a label to those seen for a spectrum, counts a repeated label
+  // while sampling, and returns false if the spectrum now has both labels
+  bool addLabel(unsigned char& seen, bool isDecoy, bool sampling);
   // warnings about labels other than 1 and -1 printed per line, then counted
   static constexpr unsigned int kMaxLabelWarnings = 1000u;
   

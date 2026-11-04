@@ -659,6 +659,13 @@ bool Caller::parseOptions(int argc, char** argv) {
             << "option." << std::endl;
         return 0;
       }
+      if (targetDecoyCompetition_) {
+        std::cerr << "Warning: -I concatenated turns off target-decoy "
+                  << "competition, so -Y/--post-processing-tdc is ignored. "
+                  << "Without -I concatenated, -Y applies target-decoy "
+                  << "competition to the Percolator scores of any input."
+                  << std::endl;
+      }
       targetDecoyCompetition_ = false;
       useMixMax_ = false;
     } else if (inputSearchType_ == "separate") {
@@ -1036,6 +1043,29 @@ std::istream& Caller::getDataInStream(std::ifstream& fileStream) {
   return readStdIn_ ? std::cin : fileStream;
 }
 
+/**
+ * A concatenated target-decoy search that reports several candidates per
+ * spectrum gives spectra with both target and decoy PSMs, so it is detected
+ * as separate searches, and mix-max then keeps all candidates. Separate
+ * searches give one target and one decoy PSM per spectrum, so many spectra
+ * with a repeated label point to such input.
+ */
+void Caller::warnAboutSeveralCandidates(const SetHandler& setHandler) const {
+  const size_t sampled = setHandler.getSampledSpectra();
+  const size_t repeated = setHandler.getSampledSpectraWithRepeatedLabel();
+  if (VERB > 0 && sampled > 0 && repeated * 10 > sampled) {
+    std::cerr << "Warning: " << repeated << " of the " << sampled
+              << " spectra (ScanNr and ExpMass) of the first "
+              << setHandler.getSampledLines() << " PSMs have more than one "
+              << "target or more than one decoy PSM. Mix-max assumes one "
+              << "target and one decoy PSM per spectrum. If the input comes "
+              << "from a concatenated target-decoy search that reports "
+              << "several candidates per spectrum, use -Y/"
+              << "--post-processing-tdc, which keeps the best-scoring PSM "
+              << "of each spectrum." << std::endl;
+  }
+}
+
 bool Caller::loadAndNormalizeData(std::istream& dataStream,
                                   SetHandler& setHandler,
                                   Scores& allScores) {
@@ -1115,6 +1145,7 @@ bool Caller::loadAndNormalizeData(std::istream& dataStream,
           std::cerr << "Separate target and decoy search inputs detected, "
                     << "using mix-max method." << std::endl;
         }
+        warnAboutSeveralCandidates(setHandler);
       }
     }
   } else if (check_.concatenatedSearch() && inputSearchType_ == "separate") {
