@@ -73,6 +73,11 @@ class PosteriorEstimator {
   void estimateMonotonePEP(const std::vector<std::pair<double, bool> >& combined,
                            const std::vector<double>& p, double pi0,
                            std::vector<double>& peps) const;
+  // Reads the whitespace-separated scores of a qvality input file, and
+  // throws if the file cannot be opened, holds no score, or holds something
+  // other than a finite number.
+  static void readScores(const std::string& fileName, const char* role,
+                         std::vector<double>& scores);
   static void binData(const std::vector<std::pair<double, bool> >& combined,
                       double pi0, std::vector<double>& medians,
                       std::vector<double>& negatives,

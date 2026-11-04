@@ -524,26 +524,62 @@ double PosteriorEstimator::estimatePi0(vector<double>& p,
   return pi0;
 }
 
+void PosteriorEstimator::readScores(const std::string& fileName,
+                                    const char* role,
+                                    std::vector<double>& scores) {
+  ifstream in(fileName.c_str(), ios::in);
+  if (!in.is_open()) {
+    throw MyException("ERROR: Could not open the " + std::string(role) +
+                      " file " + fileName + ".\n");
+  }
+  // strtod on each whitespace-separated token gives the same values as
+  // operator>>, which also converts with strtod, but reports the token at
+  // which reading stops instead of ending the list there
+  std::string token;
+  while (in >> token) {
+    char* end = nullptr;
+    double value = std::strtod(token.c_str(), &end);
+    if (end == token.c_str() || *end != '\0' || !std::isfinite(value)) {
+      ostringstream oss;
+      oss << "ERROR: Value " << scores.size() + 1 << " of the " << role
+          << " file " << fileName << " is not a finite number: \"" << token
+          << "\"." << std::endl;
+      throw MyException(oss.str());
+    }
+    scores.push_back(value);
+  }
+  if (in.bad()) {
+    throw MyException("ERROR: Could not read the " + std::string(role) +
+                      " file " + fileName + ".\n");
+  }
+  if (scores.empty()) {
+    throw MyException("ERROR: The " + std::string(role) + " file " +
+                      fileName + " contains no values.\n");
+  }
+}
+
 int PosteriorEstimator::run() {
-  ifstream target(targetFile.c_str(), ios::in), decoy(decoyFile.c_str(),
-                                                      ios::in);
-  istream_iterator<double> tarIt(target), decIt(decoy), tarEnd, decEnd;
   // Merge a labeled version of the two lists into a combined list
   vector<pair<double, bool> > combined;
   vector<double> pvals;
   if (!pvalInput) {
-      std::transform(tarIt, tarEnd, std::back_inserter(combined),
-                       [](double value) { return make_my_pair(value, true); });
+      vector<double> targetScores, decoyScores;
+      readScores(targetFile, "target score", targetScores);
+      readScores(decoyFile, "null score", decoyScores);
+      std::transform(targetScores.begin(), targetScores.end(),
+                     std::back_inserter(combined),
+                     [](double value) { return make_my_pair(value, true); });
       size_t targetSize = combined.size();
-      std::transform(decIt, decEnd, std::back_inserter(combined),
-                       [](double value) { return make_my_pair(value, false); });
+      std::transform(decoyScores.begin(), decoyScores.end(),
+                     std::back_inserter(combined),
+                     [](double value) { return make_my_pair(value, false); });
 
       if (VERB > 0) {
             std::cerr << "Read " << targetSize << " target scores and "
                       << (combined.size() - targetSize) << " decoy scores" << std::endl;
       }
   } else {
-      std::copy(tarIt, tarEnd, std::back_inserter(pvals));
+      readScores(targetFile, "p value", pvals);
       std::sort(pvals.begin(), pvals.end());
       std::transform(pvals.begin(), pvals.end(), std::back_inserter(combined),
                        [](double value) { return make_my_pair(value, true); });
