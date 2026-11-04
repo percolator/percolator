@@ -136,10 +136,17 @@ class CrossValidation {
   bool trainScoresCurrent_ = false;
   std::vector<double> candidatesCpos_, candidatesCfrac_;
 
+  // buffers of the SVM solves of one thread, reused for its pairs
+  struct SvmTrainingBuffers {
+    SolverWorkspace solver;
+    std::vector<double> outputs;
+  };
+
   void initializeGridSearch(double targetDecoySizeRatio);
   void trainCpCnPair(CandidateCposCfrac& cpCnFold,
                      const options& pOptions,
-                     const AlgIn& svmInput);
+                     const AlgIn& svmInput,
+                     SvmTrainingBuffers& buffers);
 
   int mergeCpCnPairs(double selectionFdr,
                      const options& pOptions,

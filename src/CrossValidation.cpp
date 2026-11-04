@@ -32,6 +32,24 @@ const double CrossValidation::requiredIncreaseOver2IterationsDefault_ = 0.001;
 // fold keeps its pair (not in classic training)
 const unsigned int CrossValidation::gridSearchIterations_ = 3u;
 
+// the number of threads a parallel region can have, and the number of the
+// calling thread in its region
+static std::size_t maxNumThreads() {
+#ifdef _OPENMP
+  return static_cast<std::size_t>(std::max(1, omp_get_max_threads()));
+#else
+  return 1u;
+#endif
+}
+
+static std::size_t threadNum() {
+#ifdef _OPENMP
+  return static_cast<std::size_t>(omp_get_thread_num());
+#else
+  return 0u;
+#endif
+}
+
 CrossValidation::CrossValidation(bool quickValidation,
                                  bool reportPerformanceEachIteration,
                                  double testFdr,
@@ -414,6 +432,7 @@ int CrossValidation::doStep(const Normalizer* pNorm, double selectionFdr) {
 
   {
     StageTimer stageTimer("SVM training");
+    std::vector<SvmTrainingBuffers> buffers(maxNumThreads());
 #pragma omp parallel for schedule(dynamic, 1)
     for (int pairIdx = 0; pairIdx < classWeightsPerFold_.size(); pairIdx++) {
       CandidateCposCfrac* cpCnFold = &classWeightsPerFold_[pairIdx];
@@ -423,7 +442,7 @@ int CrossValidation::doStep(const Normalizer* pNorm, double selectionFdr) {
       const AlgIn& svmInput =
           svmInputs_[cpCnFold->set * nestedXvalBins_ +
                      static_cast<unsigned int>(cpCnFold->nestedSet)];
-      trainCpCnPair(*cpCnFold, pOptions, svmInput);
+      trainCpCnPair(*cpCnFold, pOptions, svmInput, buffers[threadNum()]);
     }
   }
 
@@ -438,10 +457,12 @@ int CrossValidation::doStep(const Normalizer* pNorm, double selectionFdr) {
  * @param cpCnFold contains cpos, cneg pair and SVM learned weights
  * @param pOptions options for the SVM algorithm
  * @param svmInput training data for this particular nested CV fold
+ * @param buffers buffers of the calling thread
  */
 void CrossValidation::trainCpCnPair(CandidateCposCfrac& cpCnFold,
                                     const options& pOptions,
-                                    const AlgIn& svmInput) {
+                                    const AlgIn& svmInput,
+                                    SvmTrainingBuffers& buffers) {
   double cpos = cpCnFold.cpos;
   double cfrac = cpCnFold.cfrac;
 
@@ -452,10 +473,14 @@ void CrossValidation::trainCpCnPair(CandidateCposCfrac& cpCnFold,
   // after the previous iteration (zero in the first one), which are close
   // to the new solution, or from zero with classic training.
   std::vector<double>& weights = cpCnFold.ww;
-  std::vector<double> outputs(
-      static_cast<std::size_t>(svmInput.positives + svmInput.negatives), 0.0);
+  std::vector<double>& outputs = buffers.outputs;
+  if (outputs.size() < static_cast<std::size_t>(svmInput.m)) {
+    std::vector<double>().swap(outputs);
+    outputs.resize(static_cast<std::size_t>(svmInput.m));
+  }
   if (classicTraining_) {
     std::fill(weights.begin(), weights.end(), 0.0);
+    std::fill(outputs.begin(), outputs.begin() + svmInput.m, 0.0);
   } else {
     for (int i = 0; i < svmInput.m; ++i) {
       const double* x = svmInput.row(i);
@@ -464,7 +489,8 @@ void CrossValidation::trainCpCnPair(CandidateCposCfrac& cpCnFold,
       outputs[i] = o;
     }
   }
-  L2_SVM_MFN(svmInput, pOptions, weights, outputs, cpos, cfrac * cpos);
+  L2_SVM_MFN(svmInput, pOptions, weights, outputs, cpos, cfrac * cpos,
+             buffers.solver);
 }
 
 /**

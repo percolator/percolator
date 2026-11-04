@@ -87,11 +87,20 @@ inline bool operator<(const Delta& a, const Delta& b) {
   return a.delta < b.delta || (a.delta == b.delta && a.index < b.index);
 }
 
+/* Buffers of the L2_SVM_MFN solver. One workspace can serve several solves
+   in turn (e.g. one per thread), which then do not allocate again unless
+   they have more examples. */
 struct SolverWorkspace {
-  SolverWorkspace(int m, int n);
-  std::vector<double> z, q, r, p;
-  std::vector<Delta> deltas;
+  /* makes the buffers large enough for m examples with n values each; z and
+     q are only needed by CGLS. Their contents are not kept. */
+  void prepare(int m, int n, bool cgls);
+  std::vector<double> z, q;  /* m, for CGLS */
+  std::vector<double> r, p;  /* n */
+  std::vector<Delta> deltas;  /* m, for the line search */
   std::vector<double> gram;  /* n x n, for the direct solve */
+  std::vector<int> activeSubset;  /* m */
+  std::vector<double> weightsBar;  /* n */
+  std::vector<double> outputsBar;  /* m */
 };
 
 /* svmlin algorithms and their subroutines */
@@ -106,6 +115,13 @@ int CGLS(const AlgIn& set, const double lambda, const int cgitermax,
 
 /* Linear Modified Finite Newton L2-SVM*/
 /* Solves: min_w 0.5*Options->lamda*w'*w + 0.5*sum_i Data->C[i] max(0,1 - Y[i] w' x_i)^2 */
+/* Starts from Weights and their Outputs (the first set.m values are used),
+   with the buffers of workspace */
+int L2_SVM_MFN(const AlgIn& set, const options& Options,
+               std::vector<double>& Weights,
+               std::vector<double>& Outputs, double cpos, double cneg,
+               SolverWorkspace& workspace);
+/* the same with buffers of its own */
 int L2_SVM_MFN(const AlgIn& set, const options& Options,
                std::vector<double>& Weights,
                std::vector<double>& Outputs, double cpos, double cneg);

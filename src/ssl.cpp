@@ -37,13 +37,32 @@ extern "C" {
 #define LOG2(x) 1.4426950408889634*log(x)
 // for compatibility issues, not using log2
 
-/* Buffers of one L2_SVM_MFN solve, sized for all m examples and reused by
-   all its CGLS calls and line searches. */
-SolverWorkspace::SolverWorkspace(int m, int n)
-    : z(static_cast<size_t>(m)), q(static_cast<size_t>(m)),
-      r(static_cast<size_t>(n)), p(static_cast<size_t>(n)),
-      deltas(static_cast<size_t>(m)),
-      gram(static_cast<size_t>(n) * static_cast<size_t>(n)) {}
+/* Makes buffer hold at least size elements, without keeping its contents:
+   a smaller buffer is released before the new one is allocated. */
+template <typename T>
+static void growBuffer(std::vector<T>& buffer, int size) {
+  const size_t needed = static_cast<size_t>(size);
+  if (buffer.size() < needed) {
+    std::vector<T>().swap(buffer);
+    buffer.resize(needed);
+  }
+}
+
+/* The buffers are sized for all m examples and reused by all CGLS calls and
+   line searches of a solve, and by the later solves with this workspace. */
+void SolverWorkspace::prepare(int m, int n, bool cgls) {
+  if (cgls) {
+    growBuffer(z, m);
+    growBuffer(q, m);
+  }
+  growBuffer(r, n);
+  growBuffer(p, n);
+  growBuffer(deltas, m);
+  growBuffer(gram, n * n);
+  growBuffer(activeSubset, m);
+  growBuffer(weightsBar, n);
+  growBuffer(outputsBar, m);
+}
 
 /* q[i] = x_{J[i]}' p for the active rows (length n, intercept included).
    Gives the same result as the reference BLAS dgemv with trans='T', alpha=1
@@ -360,6 +379,14 @@ int CGLS(const AlgIn& data, const double lambda, const int cgitermax,
 int L2_SVM_MFN(const AlgIn& data, const options& Options,
                std::vector<double>& Weights,
                std::vector<double>& Outputs, double cpos, double cneg) {
+  SolverWorkspace workspace;
+  return L2_SVM_MFN(data, Options, Weights, Outputs, cpos, cneg, workspace);
+}
+
+int L2_SVM_MFN(const AlgIn& data, const options& Options,
+               std::vector<double>& Weights,
+               std::vector<double>& Outputs, double cpos, double cneg,
+               SolverWorkspace& workspace) {
   /* Disassemble the structures */
   Timer tictoc;
   const double* Y = data.Y.data();
@@ -383,9 +410,9 @@ int L2_SVM_MFN(const AlgIn& data, const options& Options,
   int ini = 0;
   int n0 = n-1;
   int inc = 1;
+  workspace.prepare(m, n, !Options.directSolve);
   // active examples first, inactive ones from the back
-  std::vector<int> activeSubset(static_cast<size_t>(m));
-  int* activeSet = activeSubset.data();
+  int* activeSet = workspace.activeSubset.data();
   // initialize
   F = 0.5 * lambda * ddot_(&n, w, &inc, w, &inc);
   int active = 0;
@@ -405,13 +432,10 @@ int L2_SVM_MFN(const AlgIn& data, const options& Options,
   int iter = 0;
   int opt = 0;
   int opt2 = 0;
-  std::vector<double> weightsBar(static_cast<size_t>(n));
-  std::vector<double> outputsBar(static_cast<size_t>(m));
-  double* w_bar = weightsBar.data();
-  double* o_bar = outputsBar.data();
+  double* w_bar = workspace.weightsBar.data();
+  double* o_bar = workspace.outputsBar.data();
   double delta = 0.0;
   int ii = 0;
-  SolverWorkspace workspace(m, n);
   while (iter < Options.mfnitermax) {
     iter++;
     if (VERB > 4) {

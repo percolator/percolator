@@ -13,6 +13,7 @@
 #include "PSMDescription.h"
 #include "Scores.h"
 #include "Timer.h"
+#include "ssl.h"
 
 TEST(MemoryUsageTest, parsesProcStatus) {
   std::istringstream status(
@@ -109,4 +110,75 @@ TEST(TrainingMemoryTest, mergeEmptiesTheBins) {
     ++ix;
   }
   FeatureNames::resetNumFeatures();
+}
+
+// A training set of m examples with numFeatures features, two of them
+// informative, and labels +1 or -1. The rows are kept in storage, with the
+// intercept 1.0 after the features of each row.
+static void makeTrainingSet(int m, int numFeatures, unsigned int seed,
+                            std::vector<double>& storage, AlgIn& data) {
+  const int n = numFeatures + 1;
+  storage.assign(static_cast<std::size_t>(m) * n, 1.0);
+  std::vector<double> labels(static_cast<std::size_t>(m));
+  for (int i = 0; i < m; ++i) {
+    seed = seed * 1103515245u + 12345u;
+    const bool positive = (seed >> 16) % 3 != 0;
+    labels[i] = positive ? 1.0 : -1.0;
+    for (int k = 0; k < numFeatures; ++k) {
+      seed = seed * 1103515245u + 12345u;
+      double value = static_cast<double>((seed >> 8) % 1000) / 500.0 - 1.0;
+      if (k < 2 && positive) value += 0.8;
+      storage[static_cast<std::size_t>(i) * n + k] = value;
+    }
+  }
+  data.clear();
+  for (int i = 0; i < m; ++i) {  // negatives first, as Scores adds them
+    if (labels[i] < 0) data.add(&storage[static_cast<std::size_t>(i) * n], -1);
+  }
+  data.negatives = data.m;
+  for (int i = 0; i < m; ++i) {
+    if (labels[i] > 0) data.add(&storage[static_cast<std::size_t>(i) * n], 1);
+  }
+  data.positives = data.m - data.negatives;
+}
+
+// Solves that share one workspace, with more and then fewer examples than
+// the solve before, give the same weights and outputs as solves with their
+// own buffers, with the direct solve and with CGLS.
+TEST(TrainingMemoryTest, reusedSolverWorkspaceGivesTheSameSolution) {
+  const int numFeatures = 6;
+  const int n = numFeatures + 1;
+  for (bool directSolve : {true, false}) {
+    options opts;
+    opts.lambda = 1.0;
+    opts.lambda_u = 1.0;
+    opts.epsilon = EPSILON;
+    opts.cgitermax = CGITERMAX;
+    opts.mfnitermax = MFNITERMAX;
+    opts.directSolve = directSolve;
+    SolverWorkspace shared;
+    unsigned int seed = 17u;
+    for (int m : {300, 700, 200, 701}) {
+      std::vector<double> storage;
+      AlgIn data(n);
+      makeTrainingSet(m, numFeatures, seed++, storage, data);
+      for (double cneg : {1.0, 3.0}) {
+        std::vector<double> w1(n, 0.0), o1(m, 0.0);
+        std::vector<double> w2(n, 0.0), o2(m + 5, 0.0);  // longer is allowed
+        L2_SVM_MFN(data, opts, w1, o1, 1.0, cneg);
+        L2_SVM_MFN(data, opts, w2, o2, 1.0, cneg, shared);
+        for (int k = 0; k < n; ++k) {
+          EXPECT_EQ(w1[k], w2[k]) << "m " << m << " k " << k;
+        }
+        for (int i = 0; i < m; ++i) {
+          EXPECT_EQ(o1[i], o2[i]) << "m " << m << " i " << i;
+        }
+        EXPECT_NE(0.0, w1[0]);
+      }
+    }
+    // the CGLS buffers are only allocated for CGLS
+    EXPECT_EQ(directSolve ? 0u : 701u, shared.z.size());
+    EXPECT_EQ(directSolve ? 0u : 701u, shared.q.size());
+    EXPECT_EQ(701u, shared.deltas.size());
+  }
 }
