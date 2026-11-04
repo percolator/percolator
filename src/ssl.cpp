@@ -21,6 +21,7 @@
 using namespace std;
 #include "Globals.h"
 #include "ssl.h"
+#include "SequentialSort.h"
 
 #include <stdarg.h>
 #include <cstring>
@@ -533,17 +534,32 @@ double line_search(double* w, double* w_bar, double lambda, double* o,
       }
     }
   }
-  sort(deltas, deltas + p);
+  // The breakpoints are visited in increasing order until the derivative
+  // is no longer negative, usually after a small part of them. They are
+  // therefore sorted chunk by chunk, each chunk holding the smallest of the
+  // remaining breakpoints, and the chunks double in size. operator< of
+  // Delta is a total order, so the visits are the same as after a full
+  // sort. Runs on the calling thread, inside the parallel training loop.
   double delta_prime = 0.0;
-  for (i = 0; i < p; i++) {
-    delta_prime = L + deltas[i].delta * (R - L);
-    if (delta_prime >= 0) {
-      break;
+  int start = 0, chunk = std::max(p / 16, 256);
+  while (start < p) {
+    const int end = (chunk < p - start) ? start + chunk : p;
+    if (end < p) {
+      sequentialNthElement(deltas + start, deltas + end - 1, deltas + p);
     }
-    ii = deltas[i].index;
-    diff = (deltas[i].s) * ((Y[ii]==1)? cpos : cneg) * (o_bar[ii] - o[ii]);
-    L += diff * (o[ii] - Y[ii]);
-    R += diff * (o_bar[ii] - Y[ii]);
+    sequentialSort(deltas + start, deltas + end);
+    for (i = start; i < end; i++) {
+      delta_prime = L + deltas[i].delta * (R - L);
+      if (delta_prime >= 0) {
+        return (-L / (R - L));
+      }
+      ii = deltas[i].index;
+      diff = (deltas[i].s) * ((Y[ii]==1)? cpos : cneg) * (o_bar[ii] - o[ii]);
+      L += diff * (o[ii] - Y[ii]);
+      R += diff * (o_bar[ii] - Y[ii]);
+    }
+    start = end;
+    chunk = (chunk <= p / 2) ? 2 * chunk : p;
   }
   return (-L / (R - L));
 }
