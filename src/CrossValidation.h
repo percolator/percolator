@@ -36,7 +36,7 @@ struct CandidateCposCfrac {
   unsigned int set;
   int nestedSet;
   vector<double> ww;
-  int tp;
+  int tp;  // validation count; 0 for the only trained pair of a fold
 };
 
 class CrossValidation {

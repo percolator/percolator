@@ -503,7 +503,13 @@ int CrossValidation::mergeCpCnPairs(
     return nestedTestScores.empty() ? trainScores_[set]
                                     : nestedTestScores[nestedSet];
   };
-  const int numTestSets = static_cast<int>(numFolds_ * nestedXvalBins_);
+  // When a fold trains only one pair per nested fold, as it does once the
+  // grid is fixed or with a single candidate pair, the selection below
+  // picks that pair for any count >= 0, with and without nested cross
+  // validation. The counts are then not computed, and the pair gets 0.
+  const bool needCounts = !gridFixed_ && numCpCnPairsPerSet > nestedXvalBins_;
+  const int numTestSets =
+      needCounts ? static_cast<int>(numFolds_ * nestedXvalBins_) : 0;
   std::vector<Scores::FeatureRows> testRows(numTestSets);
 #pragma omp parallel for schedule(dynamic, 1)
   for (int idx = 0; idx < numTestSets; ++idx) {
@@ -522,6 +528,10 @@ int CrossValidation::mergeCpCnPairs(
     std::vector<std::pair<double, bool> > combined;
     if (!isSelectedPair(cpCnPair)) {
       truePositives[pairIdx] = -1;  // not trained in this iteration
+      continue;
+    }
+    if (!needCounts) {
+      truePositives[pairIdx] = 0;  // the only trained pair of its fold
       continue;
     }
     truePositives[pairIdx] =
