@@ -730,3 +730,96 @@ TEST(ScoresCountTest, SelectionCountRejectsNanAndInvalidProbabilities)
     EXPECT_FALSE(Scores::countTargetsBySelection(rows, buffers, 0.5, true, 0.5,
                                                  &high, &low));
 }
+
+// getInitDirection picks the same feature and direction, with the same
+// count, as the full sort of every feature column in the order of the
+// PSMs (the earlier implementation): with ties, an informative feature in
+// each direction, constant and NaN columns (the NaN column takes the full
+// sort) and the null target win probabilities of normal training and of
+// RESET.
+TEST(ScoresCountTest, InitDirectionMatchesFullSortOfEachFeature)
+{
+    OneThread oneThread;
+    const int origVerbose = Globals::getInstance()->getVerbose();
+    Globals::getInstance()->setVerbose(0);
+    const size_t numFeatures = 5;
+    FeatureNames::resetNumFeatures();
+    FeatureNames::setNumFeatures(numFeatures);
+    unsigned int seed = 99u;
+    auto next = [&seed]() {
+        seed = seed * 1103515245u + 12345u;
+        return seed >> 8;
+    };
+    for (int round = 0; round < 12; ++round) {
+        const int numPsms = 50 + static_cast<int>(next() % 3000);
+        std::vector<double> features(numPsms * numFeatures);
+        std::vector<PSMDescription> psms(numPsms);
+        Scores scores(false);
+        const bool withNan = round % 3 == 2;
+        for (int i = 0; i < numPsms; ++i) {
+            const bool isTarget = next() % 2 == 0;
+            const bool correct = isTarget && next() % 3 == 0;
+            double* row = &features[i * numFeatures];
+            row[0] = static_cast<double>(next() % 50) + (correct ? 20 : 0);
+            row[1] = -static_cast<double>(next() % 7) - (correct ? 3 : 0);
+            row[2] = static_cast<double>(next() % 1000) / 7.0;
+            row[3] = 1.0;
+            row[4] = withNan && next() % 100 == 0
+                         ? std::nan("")
+                         : static_cast<double>(next() % 30) + (correct ? 5 : 0);
+            psms[i].features = row;
+            psms[i].scan = static_cast<unsigned int>(i);
+            scores.addScoreHolder(ScoreHolder(0.0,
+                isTarget ? LabelType::TARGET : LabelType::DECOY, &psms[i]));
+        }
+        scores.recalculateSizes();
+        const double nullTargetWinProb = round % 2 == 0 ? 0.5 : 0.75;
+        scores.setNullTargetWinProb(nullTargetWinProb);
+        for (double fdr : {0.01, 0.1, 0.3}) {
+            // the earlier implementation, which sorts every column
+            int bestPositives = -1, bestFeature = -1;
+            bool lowBest = false;
+            for (size_t f = 0; f < numFeatures; ++f) {
+                std::vector<std::pair<double, bool> > combined;
+                for (const ScoreHolder& sh : scores) {
+                    combined.push_back(std::make_pair(sh.pPSM->features[f],
+                                                      sh.isTarget()));
+                }
+                std::sort(combined.begin(), combined.end(),
+                          [](const std::pair<double, bool>& a,
+                             const std::pair<double, bool>& b) {
+                              return a.first < b.first;
+                          });
+                for (int i = 0; i < 2; ++i) {
+                    if (i == 1) std::reverse(combined.begin(), combined.end());
+                    std::vector<double> q;
+                    PosteriorEstimator::setNegative(true);
+                    PosteriorEstimator::getQValues(1.0, combined, q, true,
+                                                   nullTargetWinProb);
+                    int positives = 0;
+                    for (size_t k = 0; k < q.size(); ++k) {
+                        if (q[k] < fdr && combined[k].second) ++positives;
+                    }
+                    if (positives > bestPositives) {
+                        bestPositives = positives;
+                        bestFeature = static_cast<int>(f);
+                        lowBest = (i == 0);
+                    }
+                }
+            }
+            ASSERT_GT(bestPositives, 0);
+            std::vector<double> direction(numFeatures + 1, 7.0);
+            EXPECT_EQ(bestPositives, scores.getInitDirection(fdr, direction))
+                << "round " << round << " fdr " << fdr;
+            for (size_t f = 0; f < numFeatures; ++f) {
+                const double expected = static_cast<int>(f) == bestFeature
+                                            ? (lowBest ? -1.0 : 1.0)
+                                            : 0.0;
+                EXPECT_EQ(expected, direction[f])
+                    << "round " << round << " fdr " << fdr << " feature " << f;
+            }
+        }
+    }
+    FeatureNames::resetNumFeatures();
+    Globals::getInstance()->setVerbose(origVerbose);
+}

@@ -907,27 +907,50 @@ int Scores::getInitDirection(const double initialSelectionFdr,
 
   // Number of positives when ordering by each feature, with low values
   // first (i = 0) or high values first (i = 1). They only depend on the
-  // feature values and labels, so the features are evaluated in parallel
-  // on (value, isTarget) pairs.
+  // feature values and labels, so the features are evaluated in parallel.
+  // Each column is read along the feature rows in memory order, and
+  // without the mix-max correction both counts come from one selection
+  // (countTargetsBySelection).
   const int numFeatures = static_cast<int>(FeatureNames::getNumFeatures());
   std::vector<int> positivesPerDirection(2 * static_cast<size_t>(numFeatures));
   PosteriorEstimator::setNegative(true);  // also get q-values for decoys
-#pragma omp parallel for schedule(dynamic, 1)
-  for (int featNo = 0; featNo < numFeatures; featNo++) {
-    std::vector<pair<double, bool> > combined(scores_.size());
-    for (std::size_t ix = 0; ix < scores_.size(); ++ix) {
-      combined[ix] = pair<double, bool>(scores_[ix].pPSM->features[featNo],
-                                        scores_[ix].isTarget());
+  FeatureRows rows;
+  getFeatureRows(rows);
+  const std::size_t numRows = rows.size();
+#pragma omp parallel
+  {
+    CountBuffers buffers;  // one per thread, for all its features
+    buffers.values.resize(numRows);
+#pragma omp for schedule(dynamic, 1)
+    for (int featNo = 0; featNo < numFeatures; featNo++) {
+      for (std::size_t ix = 0; ix < numRows; ++ix) {
+        buffers.values[ix] = rowFeatures(rows[ix])[featNo];
+      }
+      int lowCount = 0, highCount = 0;
+      if (pi0_ == 1.0 &&
+          countTargetsBySelection(rows, buffers, initialSelectionFdr,
+                                  skipDecoysPlusOne, nullTargetWinProb_,
+                                  &highCount, &lowCount)) {
+        positivesPerDirection[2 * featNo] = lowCount;
+        positivesPerDirection[2 * featNo + 1] = highCount;
+        continue;
+      }
+      // mix-max counts and NaN values: sort all PSMs
+      std::vector<pair<double, bool> > combined(scores_.size());
+      for (std::size_t ix = 0; ix < scores_.size(); ++ix) {
+        combined[ix] = pair<double, bool>(scores_[ix].pPSM->features[featNo],
+                                          scores_[ix].isTarget());
+      }
+      std::sort(combined.begin(), combined.end(),
+                [](const pair<double, bool>& a, const pair<double, bool>& b) {
+                  return a.first < b.first;
+                });
+      positivesPerDirection[2 * featNo] = countTargetsBelowFdr(
+          combined, initialSelectionFdr, skipDecoysPlusOne);
+      std::reverse(combined.begin(), combined.end());
+      positivesPerDirection[2 * featNo + 1] = countTargetsBelowFdr(
+          combined, initialSelectionFdr, skipDecoysPlusOne);
     }
-    std::sort(combined.begin(), combined.end(),
-              [](const pair<double, bool>& a, const pair<double, bool>& b) {
-                return a.first < b.first;
-              });
-    positivesPerDirection[2 * featNo] = countTargetsBelowFdr(
-        combined, initialSelectionFdr, skipDecoysPlusOne);
-    std::reverse(combined.begin(), combined.end());
-    positivesPerDirection[2 * featNo + 1] = countTargetsBelowFdr(
-        combined, initialSelectionFdr, skipDecoysPlusOne);
   }
 
   for (int featNo = 0; featNo < numFeatures; featNo++) {
