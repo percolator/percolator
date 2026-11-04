@@ -48,6 +48,7 @@ add_executable(gtest_unit
     UnitTest_Percolator_PosteriorEstimator.cpp
     UnitTest_Percolator_SanityCheck.cpp
     UnitTest_Percolator_Caller.cpp
+    UnitTest_Percolator_CompositionSorter.cpp
 )
 
 # =============================

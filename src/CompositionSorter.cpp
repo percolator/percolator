@@ -2,6 +2,7 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <string_view>
 #include <unordered_map>
 #include <vector>
 
@@ -274,17 +275,21 @@ int CompositionSorter::psmAndPeptide(const Scores& scores,
 
 void CompositionSorter::psmsOnly(const Scores& scores, Scores& winnerPeptides) {
   // Use an unordered_map (hash map) to store the best ScoreHolder for each
-  // peptide sequence
-  std::unordered_map<std::string, ScoreHolder*> bestScoreHolders;
+  // peptide sequence. The keys view the peptides of the PSMs, which outlive
+  // the map. std::hash<std::string_view> gives the same value as
+  // std::hash<std::string> for the same characters, and the peptides are
+  // inserted in the same sequence, so the map iterates in the same order
+  // as with std::string keys.
+  std::unordered_map<std::string_view, const ScoreHolder*> bestScoreHolders;
 
-  // Iterate over each ScoreHolder
+  // Iterate over each ScoreHolder, with one lookup per PSM
   for (const ScoreHolder& sh : scores) {
-    const std::string& peptide = sh.getPSM()->getPeptideSequence();
+    auto inserted = bestScoreHolders.try_emplace(
+        sh.getPSM()->getPeptideSequenceView(), &sh);
     // Update the map if the current ScoreHolder has a higher score for the
     // peptide
-    if (bestScoreHolders.find(peptide) == bestScoreHolders.end() ||
-        sh.score > bestScoreHolders[peptide]->score) {
-      bestScoreHolders[peptide] = const_cast<ScoreHolder*>(&sh);
+    if (!inserted.second && sh.score > inserted.first->second->score) {
+      inserted.first->second = &sh;
     }
   }
 
