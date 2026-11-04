@@ -86,6 +86,11 @@ class CrossValidation {
   }
   // train as Percolator 3.09 did, see Caller's --classic-training
   void inline setClassicTraining(bool on) { classicTraining_ = on; }
+  // train the SVM on the feature rows in place instead of on copies (see
+  // AlgIn), which needs rows that end with the intercept 1.0, as those of a
+  // FeatureMemoryPool for which canTrainInPlace(numFeatures) holds; set
+  // before preIterationSetup
+  void inline setSvmRowsInPlace(bool on) { svmRowsInPlace_ = on; }
 
  protected:
   std::vector<AlgIn> svmInputs_;
@@ -96,6 +101,7 @@ class CrossValidation {
 
   bool quickValidation_;
   bool classicTraining_ = false;
+  bool svmRowsInPlace_ = false;
   bool usePi0_;
   bool reportPerformanceEachIteration_;
 

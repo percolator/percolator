@@ -101,6 +101,7 @@ class Caller {
   bool numFoldsSet_ = false;    // --num-folds given
   double selectedCpos_, selectedCneg_;
   bool classicTraining_ = false;
+  bool inPlaceTraining_ = false;
   bool reportEachIteration_, quickValidation_, trainBestPositive_,
       skipNormalizeScores_, analytics_, useResetAlgorithm_,
       useCompositionMatch_, useIrlsPep_, useInterpolatingPep_, usePavaPep_,

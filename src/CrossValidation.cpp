@@ -113,7 +113,8 @@ int CrossValidation::preIterationSetup(Scores& fullset,
   // One input set per (nested) cross validation bin, to be reused multiple
   // times
   const int numFeatures = static_cast<int>(FeatureNames::getNumFeatures());
-  svmInputs_.assign(numFolds_ * nestedXvalBins_, AlgIn(numFeatures + 1));
+  svmInputs_.assign(numFolds_ * nestedXvalBins_,
+                    AlgIn(numFeatures + 1, svmRowsInPlace_));
 
   unsigned int decoysPerTarget = 1u;  // TODO: make this a command line argument
   double targetDecoySizeRatio = 1.0;

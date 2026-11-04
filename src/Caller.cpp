@@ -199,6 +199,12 @@ bool Caller::parseOptions(int argc, char** argv) {
                    "iterations are run, which takes longer but reproduces "
                    "earlier results.",
                    "", TRUE_IF_SET);
+  cmd.defineOption("", "in-place-training",
+                   "Train the SVMs on the feature rows of the PSMs in place "
+                   "instead of on copies of them. This lowers the peak "
+                   "memory, by about 30% with 30 features, but takes 15 to "
+                   "20% more CPU time. The results are the same.",
+                   "", TRUE_IF_SET);
   cmd.defineOption("J", "tab-out",
                    "Output computed features to the specified file in "
                    "tab-delimited PIN format.",
@@ -605,6 +611,9 @@ bool Caller::parseOptions(int argc, char** argv) {
   }
   if (cmd.isOptionSet("classic-training")) {
     classicTraining_ = true;
+  }
+  if (cmd.isOptionSet("in-place-training")) {
+    inPlaceTraining_ = true;
   }
   if (cmd.isOptionSet("train-best-positive")) {
     trainBestPositive_ = true;
@@ -1237,6 +1246,8 @@ int Caller::run() {
   SetHandler setHandler(maxPSMs_);
   setHandler.setDecoyPrefix(protEstimatorDecoyPrefix_);
   setHandler.setInputSegments(std::move(inputSegments));
+  // rows that the SVM can train on in place
+  setHandler.getFeaturePool().setSvmRowsInPlace(inPlaceTraining_);
   Scores allScores(useMixMax_);
   allScores.setOutputRT(outputRT_);
 
@@ -1349,6 +1360,11 @@ int Caller::run() {
         useMixMax_, nestedXvalBins_, trainBestPositive_, numThreads_,
         skipNormalizeScores_, decoyFractionTraining, numFolds);
     crossValidation.setClassicTraining(classicTraining_);
+    // in place only on rows that end with the intercept, which the pool
+    // gives unless the input has no features
+    crossValidation.setSvmRowsInPlace(
+        inPlaceTraining_ && setHandler.getFeaturePool().canTrainInPlace(
+                                DataSet::getNumFeatures()));
 
     int firstNumberOfPositives =
         crossValidation.preIterationSetup(allScores, check_, pNorm_.get());

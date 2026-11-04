@@ -11,6 +11,7 @@
  *******************************************************************************/
 #ifndef _svmlin_H
 #define _svmlin_H
+#include <cassert>
 #include <vector>
 #include <ctime>
 
@@ -26,35 +27,62 @@ using namespace std;
 
 #define VERBOSE_CGLS 0
 
-/* Training examples of the SVM. The feature rows are copied into one
-   contiguous row-major matrix, with the intercept (1.0) as the last column,
-   so that the solver streams through memory instead of following pointers
-   to scattered rows. */
+/* Training examples of the SVM: rows of n values, the n - 1 features
+   followed by the intercept 1.0. By default the features are copied into
+   one contiguous row-major matrix, so that the solver streams through
+   memory instead of following pointers to scattered rows. With rowsInPlace
+   only pointers to the rows are kept, which saves the copies (8 n bytes per
+   example) but makes the solver slower; the rows must then hold the
+   intercept, as the rows of a FeatureMemoryPool set up for this do, and
+   outlive this. */
 class AlgIn {
   public:
-    explicit AlgIn(const int numFeat) : n(numFeat) {}
+    explicit AlgIn(const int numFeat, bool rowsInPlace = false)
+        : n(numFeat), rowsInPlace_(rowsInPlace) {}
     int m = 0; /* number of examples */
     int n; /* number of features, including the intercept */
     int positives = 0;
     int negatives = 0;
-    std::vector<double> rows; /* m x n */
     std::vector<double> Y; /* labels */
 
     const double* row(int i) const {
-      return rows.data() + static_cast<size_t>(i) * static_cast<size_t>(n);
+      return rowsInPlace_
+                 ? rowPointers_[static_cast<size_t>(i)]
+                 : rows_.data() + static_cast<size_t>(i) * static_cast<size_t>(n);
     }
+    bool rowsInPlace() const { return rowsInPlace_; }
     void clear() {
       m = positives = negatives = 0;
-      rows.clear();
+      rows_.clear();
+      rowPointers_.clear();
       Y.clear();
     }
-    /* appends an example with n-1 features */
-    void add(const double* features, double label) {
-      rows.insert(rows.end(), features, features + (n - 1));
-      rows.push_back(1.0);
+    /* room for numExamples examples, allocated but only touched when used */
+    void reserve(size_t numExamples) {
+      if (rowsInPlace_) {
+        rowPointers_.reserve(numExamples);
+      } else {
+        rows_.reserve(numExamples * static_cast<size_t>(n));
+      }
+      Y.reserve(numExamples);
+    }
+    /* appends an example with the n - 1 features of row */
+    void add(const double* row, double label) {
+      if (rowsInPlace_) {
+        assert(row[n - 1] == 1.0);
+        rowPointers_.push_back(row);
+      } else {
+        rows_.insert(rows_.end(), row, row + (n - 1));
+        rows_.push_back(1.0);
+      }
       Y.push_back(label);
       ++m;
     }
+
+  private:
+    bool rowsInPlace_;
+    std::vector<double> rows_; /* m x n, the copies */
+    std::vector<const double*> rowPointers_; /* m, with rowsInPlace */
 };
 
 /* Asks the processor to load the n values of a row into the cache. The

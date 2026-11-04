@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 
+#include "FeatureMemoryPool.h"
 #include "FeatureNames.h"
 #include "PSMDescription.h"
 #include "Scores.h"
@@ -180,5 +181,170 @@ TEST(TrainingMemoryTest, reusedSolverWorkspaceGivesTheSameSolution) {
     EXPECT_EQ(directSolve ? 0u : 701u, shared.z.size());
     EXPECT_EQ(directSolve ? 0u : 701u, shared.q.size());
     EXPECT_EQ(701u, shared.deltas.size());
+  }
+}
+
+// Rows of a pool set up for in-place training end with the intercept 1.0
+// of the SVM, also when a row is used again after deallocate, and do not
+// overlap; by default the rows hold the features only.
+TEST(TrainingMemoryTest, featurePoolRowsForInPlaceTraining) {
+  const unsigned int numFeatures = 30;
+  for (bool inPlace : {false, true}) {
+    FeatureMemoryPool pool;
+    pool.setSvmRowsInPlace(inPlace);
+    pool.createPool(numFeatures);
+    EXPECT_EQ(inPlace, pool.hasInterceptColumn());
+    EXPECT_EQ(inPlace, pool.canTrainInPlace(numFeatures));
+    EXPECT_FALSE(pool.canTrainInPlace(numFeatures - 1));
+    EXPECT_EQ(numFeatures + (inPlace ? 1u : 0u), pool.rowStride());
+    // more rows than two blocks hold
+    const unsigned int numRows = 2 * ((1u << 20) / pool.rowStride()) + 7;
+    std::vector<double*> rows;
+    for (unsigned int i = 0; i < numRows; ++i) {
+      double* row = pool.allocate();
+      if (inPlace) {
+        EXPECT_EQ(1.0, row[numFeatures]);
+      }
+      for (unsigned int k = 0; k < numFeatures; ++k) {
+        row[k] = static_cast<double>(i) + k / 100.0;
+      }
+      rows.push_back(row);
+    }
+    for (unsigned int i = 0; i < numRows; ++i) {
+      ASSERT_EQ(static_cast<double>(i), rows[i][0]);
+      ASSERT_EQ(static_cast<double>(i) + 0.29, rows[i][numFeatures - 1]);
+      if (inPlace) {
+        ASSERT_EQ(1.0, rows[i][numFeatures]);
+      }
+      if (i % ((1u << 20) / pool.rowStride()) != 0) {  // within a block
+        ASSERT_EQ(rows[i - 1] + pool.rowStride(), rows[i]);
+      }
+    }
+    if (inPlace) {
+      // a used row gets its intercept back when it is allocated again
+      rows[5][numFeatures] = -3.0;
+      pool.deallocate(rows[5]);
+      double* again = pool.allocate();
+      EXPECT_EQ(rows[5], again);
+      EXPECT_EQ(1.0, again[numFeatures]);
+    }
+    pool.destroyPool();
+  }
+}
+
+// The training sets made by Scores hold the features of the PSMs and the
+// intercept 1.0, as copies by default and as the rows themselves in place.
+TEST(TrainingMemoryTest, trainingSetCopiesOrPointsToTheFeatureRows) {
+  const unsigned int numFeatures = 3;
+  FeatureNames::resetNumFeatures();
+  FeatureNames::setNumFeatures(numFeatures);
+  for (bool inPlace : {false, true}) {
+    FeatureMemoryPool pool;
+    pool.setSvmRowsInPlace(inPlace);
+    pool.createPool(numFeatures);
+    std::vector<PSMDescription> psms(8);
+    Scores scores(false);
+    for (unsigned int i = 0; i < psms.size(); ++i) {
+      psms[i].features = pool.allocate();
+      for (unsigned int k = 0; k < numFeatures; ++k) {
+        psms[i].features[k] = i + 0.5 * k;
+      }
+      psms[i].scan = i;
+      ScoreHolder sh(10.0 - i, i % 2 ? LabelType::DECOY : LabelType::TARGET,
+                     &psms[i]);
+      sh.q = i < 4 ? 0.0 : 0.5;
+      scores.addScoreHolder(sh);
+    }
+    AlgIn data(static_cast<int>(numFeatures) + 1, inPlace);
+    scores.generateNegativeTrainingSet(data, 1.0);
+    scores.generatePositiveTrainingSet(data, 0.01, 1.0, false);
+    ASSERT_EQ(4, data.negatives);  // the decoys 1, 3, 5, 7
+    ASSERT_EQ(2, data.positives);  // the targets 0, 2 with q <= 0.01
+    ASSERT_EQ(6, data.m);
+    const unsigned int expected[] = {1, 3, 5, 7, 0, 2};
+    for (int i = 0; i < data.m; ++i) {
+      const double* features = psms[expected[i]].features;
+      if (inPlace) {
+        EXPECT_EQ(features, data.row(i));
+      } else {
+        EXPECT_NE(features, data.row(i));
+        if (i > 0) {
+          EXPECT_EQ(data.row(i - 1) + data.n, data.row(i));  // contiguous
+        }
+      }
+      for (unsigned int k = 0; k < numFeatures; ++k) {
+        EXPECT_EQ(features[k], data.row(i)[k]);
+      }
+      EXPECT_EQ(1.0, data.row(i)[numFeatures]);
+      EXPECT_EQ(i < 4 ? -1.0 : 1.0, data.Y[i]);
+    }
+    pool.destroyPool();
+  }
+  FeatureNames::resetNumFeatures();
+}
+
+// Copied rows stay valid when the matrix grows without a reserve and when
+// the training set is copied or moved.
+TEST(TrainingMemoryTest, copiedRowsFollowTheMatrix) {
+  const int numFeatures = 5;
+  const int numRows = 5000;  // more than the first matrix of 1024 rows
+  std::vector<double> features(static_cast<std::size_t>(numRows) * numFeatures);
+  for (std::size_t i = 0; i < features.size(); ++i) {
+    features[i] = static_cast<double>(i);
+  }
+  AlgIn data(numFeatures + 1);
+  for (int i = 0; i < numRows; ++i) {
+    data.add(&features[static_cast<std::size_t>(i) * numFeatures], i % 2 ? 1 : -1);
+  }
+  AlgIn copy(data);
+  AlgIn assigned(numFeatures + 1);
+  assigned = data;
+  AlgIn moved(std::move(copy));
+  for (const AlgIn* set : {&data, &assigned, &moved}) {
+    ASSERT_EQ(numRows, set->m);
+    for (int i = 0; i < numRows; ++i) {
+      for (int k = 0; k < numFeatures; ++k) {
+        ASSERT_EQ(features[static_cast<std::size_t>(i) * numFeatures + k],
+                  set->row(i)[k]);
+      }
+      ASSERT_EQ(1.0, set->row(i)[numFeatures]);
+    }
+  }
+  EXPECT_NE(data.row(0), assigned.row(0));
+}
+
+// The solver gives the same weights and outputs on copied rows and on rows
+// in place.
+TEST(TrainingMemoryTest, inPlaceRowsGiveTheSameSolution) {
+  const int numFeatures = 6;
+  const int n = numFeatures + 1;
+  const int m = 900;
+  std::vector<double> storage;
+  AlgIn inPlace(n, true);
+  makeTrainingSet(m, numFeatures, 99u, storage, inPlace);
+  AlgIn copied(n);
+  for (int i = 0; i < m; ++i) {
+    copied.add(inPlace.row(i), inPlace.Y[i]);
+  }
+  copied.negatives = inPlace.negatives;
+  copied.positives = inPlace.positives;
+  for (bool directSolve : {true, false}) {
+    options opts;
+    opts.lambda = 1.0;
+    opts.lambda_u = 1.0;
+    opts.epsilon = EPSILON;
+    opts.cgitermax = CGITERMAX;
+    opts.mfnitermax = MFNITERMAX;
+    opts.directSolve = directSolve;
+    std::vector<double> w1(n, 0.0), o1(m, 0.0), w2(n, 0.0), o2(m, 0.0);
+    L2_SVM_MFN(copied, opts, w1, o1, 1.0, 2.0);
+    L2_SVM_MFN(inPlace, opts, w2, o2, 1.0, 2.0);
+    EXPECT_NE(0.0, w1[0]);
+    for (int k = 0; k < n; ++k) {
+      EXPECT_EQ(w1[k], w2[k]);
+    }
+    for (int i = 0; i < m; ++i) {
+      EXPECT_EQ(o1[i], o2[i]);
+    }
   }
 }

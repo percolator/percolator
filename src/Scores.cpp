@@ -809,8 +809,7 @@ int Scores::countTargetsBelowFdr(const FeatureRows& rows,
 void Scores::generateNegativeTrainingSet(AlgIn& data, const double cneg) {
   data.clear();
   // room for the largest possible training set; only touched when used
-  data.rows.reserve(scores_.size() * static_cast<size_t>(data.n));
-  data.Y.reserve(scores_.size());
+  data.reserve(scores_.size());
   std::vector<ScoreHolder>::const_iterator scoreIt = scores_.begin();
   for (; scoreIt != scores_.end(); ++scoreIt) {
     if (scoreIt->isDecoy()) {
