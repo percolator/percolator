@@ -412,7 +412,7 @@ int CrossValidation::doStep(const Normalizer* pNorm, double selectionFdr) {
 
   {
     StageTimer stageTimer("SVM training");
-#pragma omp parallel for schedule(dynamic, 1) ordered
+#pragma omp parallel for schedule(dynamic, 1)
     for (int pairIdx = 0; pairIdx < classWeightsPerFold_.size(); pairIdx++) {
       CandidateCposCfrac* cpCnFold = &classWeightsPerFold_[pairIdx];
       if (!isSelectedPair(*cpCnFold)) {
@@ -573,7 +573,7 @@ int CrossValidation::mergeCpCnPairs(
   }
 
   if (nestedXvalBins_ > 1) {
-#pragma omp parallel for schedule(dynamic, 1) ordered
+#pragma omp parallel for schedule(dynamic, 1)
     for (int set = 0; set < static_cast<int>(numFolds_); ++set) {
       AlgIn& svmInput = svmInputs_[set * nestedXvalBins_];
       trainScores_[set].generateNegativeTrainingSet(svmInput, 1.0);
