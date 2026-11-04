@@ -483,6 +483,7 @@ void CrossValidation::trainCpCnPair(CandidateCposCfrac& cpCnFold,
     std::fill(outputs.begin(), outputs.begin() + svmInput.m, 0.0);
   } else {
     for (int i = 0; i < svmInput.m; ++i) {
+      if (i + 8 < svmInput.m) prefetchRow(svmInput.row(i + 8), svmInput.n);
       const double* x = svmInput.row(i);
       double o = 0.0;
       for (int k = 0; k < svmInput.n; ++k) o += x[k] * weights[k];

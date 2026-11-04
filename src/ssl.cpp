@@ -74,6 +74,9 @@ static void activeRowsTimesVector(int active, const int* J, const AlgIn& data,
   const int n = data.n;
   int i = 0;
   for (; i + 4 <= active; i += 4) {
+    if (i + 16 <= active) {
+      for (int j = i + 12; j < i + 16; j++) prefetchRow(data.row(J[j]), n);
+    }
     const double* x0 = data.row(J[i]);
     const double* x1 = data.row(J[i + 1]);
     const double* x2 = data.row(J[i + 2]);
@@ -135,6 +138,9 @@ void cglsFun2(int active, const int* J, const double* Y,
   // Rows are added to r four at a time, in the same order per element as
   // one daxpy per row, so that r is loaded and stored once per four rows.
   for (; i + 4 <= active; i += 4) {
+    if (i + 16 <= active) {
+      for (int j = i + 12; j < i + 16; j++) prefetchRow(data.row(J[j]), n);
+    }
     for (int j = i; j < i + 4; j++) {
       o[J[j]] += q[j];
       z[j] -= ((Y[J[j]]==1)? cpos : cneg) * q[j];
@@ -182,6 +188,11 @@ static void scoreRows(const int* rows, int numRows, const AlgIn& data, int n0,
                       const double* w, double* o) {
   int i = 0;
   for (; i + 4 <= numRows; i += 4) {
+    if (i + 16 <= numRows) {
+      for (int j = i + 12; j < i + 16; j++) {
+        prefetchRow(data.row(rows[j]), data.n);
+      }
+    }
     const double* x0 = data.row(rows[i]);
     const double* x1 = data.row(rows[i + 1]);
     const double* x2 = data.row(rows[i + 2]);
@@ -237,6 +248,7 @@ int directLeastSquares(const AlgIn& data, const double lambda, const int* J,
   std::fill(b, b + n, 0.0);
   for (int i = 0; i < active; i++) {
     const int ii = J[i];
+    if (i + 4 < active) prefetchRow(data.row(J[i + 4]), n);
     const double* x = data.row(ii);
     const double c = (Y[ii] == 1) ? cpos : cneg;
     for (int j = 0; j < n; j++) {
@@ -283,6 +295,7 @@ int directLeastSquares(const AlgIn& data, const double lambda, const int* J,
   }
   for (int i = 0; i < active; i++) {
     const int ii = J[i];
+    if (i + 8 < active) prefetchRow(data.row(J[i + 8]), n);
     const double* x = data.row(ii);
     double t = 0.0;
     for (int k = 0; k < n; k++) t += x[k] * beta[k];
@@ -317,6 +330,7 @@ int CGLS(const AlgIn& data, const double lambda, const int cgitermax,
   }
   for (i = 0; i < active; i++) {
     ii = J[i];
+    if (i + 8 < active) prefetchRow(data.row(J[i + 8]), n);
     z[i] = ((Y[ii]==1)? cpos : cneg) * (Y[ii] - o[ii]);
     addScaledRow(z[i], data.row(ii), n, r);
   }

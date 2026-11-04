@@ -57,6 +57,23 @@ class AlgIn {
     }
 };
 
+/* Asks the processor to load the n values of a row into the cache. The
+   solver visits the rows of its active examples, or of the inactive ones,
+   which skip through the matrix, and requests each row a few rows ahead. */
+inline void prefetchRow(const double* row, int n) {
+#if defined(__GNUC__) || defined(__clang__)
+  const char* p = reinterpret_cast<const char*>(row);
+  const int bytes = n * static_cast<int>(sizeof(double));
+  for (int offset = 0; offset < bytes; offset += 64) {
+    __builtin_prefetch(p + offset);
+  }
+  __builtin_prefetch(p + bytes - 1);
+#else
+  (void)row;
+  (void)n;
+#endif
+}
+
 struct options {
     /* user options */
     double lambda; /* regularization parameter */
