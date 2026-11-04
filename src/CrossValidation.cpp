@@ -519,26 +519,29 @@ int CrossValidation::mergeCpCnPairs(
 
   std::vector<int> truePositives(classWeightsPerFold_.size());
   PosteriorEstimator::setNegative(true);  // also get q-values for decoys
-#pragma omp parallel for schedule(dynamic, 1)
-  for (int pairIdx = 0; pairIdx < static_cast<int>(classWeightsPerFold_.size());
-       ++pairIdx) {
-    const CandidateCposCfrac& cpCnPair = classWeightsPerFold_[pairIdx];
-    const unsigned int nestedSet =
-        static_cast<unsigned int>(cpCnPair.nestedSet);
-    std::vector<std::pair<double, bool> > combined;
-    if (!isSelectedPair(cpCnPair)) {
-      truePositives[pairIdx] = -1;  // not trained in this iteration
-      continue;
+#pragma omp parallel
+  {
+    Scores::CountBuffers buffers;  // one per thread, for all its pairs
+#pragma omp for schedule(dynamic, 1)
+    for (int pairIdx = 0;
+         pairIdx < static_cast<int>(classWeightsPerFold_.size()); ++pairIdx) {
+      const CandidateCposCfrac& cpCnPair = classWeightsPerFold_[pairIdx];
+      const unsigned int nestedSet =
+          static_cast<unsigned int>(cpCnPair.nestedSet);
+      if (!isSelectedPair(cpCnPair)) {
+        truePositives[pairIdx] = -1;  // not trained in this iteration
+        continue;
+      }
+      if (!needCounts) {
+        truePositives[pairIdx] = 0;  // the only trained pair of its fold
+        continue;
+      }
+      truePositives[pairIdx] =
+          testSet(cpCnPair.set, nestedSet)
+              .countTargetsBelowFdr(
+                  testRows[cpCnPair.set * nestedXvalBins_ + nestedSet],
+                  cpCnPair.ww, testFdr_, skipDecoysPlusOne, buffers);
     }
-    if (!needCounts) {
-      truePositives[pairIdx] = 0;  // the only trained pair of its fold
-      continue;
-    }
-    truePositives[pairIdx] =
-        testSet(cpCnPair.set, nestedSet)
-            .countTargetsBelowFdr(
-                testRows[cpCnPair.set * nestedXvalBins_ + nestedSet],
-                cpCnPair.ww, testFdr_, skipDecoysPlusOne, combined);
   }
 
   for (int set = 0; set < static_cast<int>(numFolds_); ++set) {

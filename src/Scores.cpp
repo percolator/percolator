@@ -23,6 +23,7 @@
 #include <cmath>
 #include <fstream>
 #include <iostream>
+#include <limits>
 #include <map>
 #include <memory>
 #include <set>
@@ -38,8 +39,19 @@
 #include "PosteriorEstimator.h"
 #include "Scores.h"
 #include "SetHandler.h"
+#include "SequentialSort.h"
 #include "ssl.h"
 #include "IsotonicPEP.h"
+
+namespace {
+inline bool inParallelRegion() {
+#ifdef _OPENMP
+  return omp_in_parallel() != 0;
+#else
+  return false;
+#endif
+}
+}  // namespace
 
 void Scores::merge(std::vector<Scores>& sv,
                    double fdr,
@@ -511,6 +523,7 @@ int Scores::countTargetsBelowFdr(
     double fdr,
     bool skipDecoysPlusOne) const {
   std::vector<double> qvals;
+  qvals.reserve(combined.size());
   PosteriorEstimator::getQValues(pi0_, combined, qvals, skipDecoysPlusOne,
                                  nullTargetWinProb_);
   int numPos = 0;
@@ -530,41 +543,201 @@ int Scores::countTargetsBelowFdr(
 void Scores::getFeatureRows(FeatureRows& rows) const {
   rows.resize(scores_.size());
   for (std::size_t ix = 0; ix < scores_.size(); ++ix) {
-    rows[ix] = FeatureRows::value_type(scores_[ix].pPSM->features,
-                                       scores_[ix].isTarget());
+    assert((reinterpret_cast<std::uintptr_t>(scores_[ix].pPSM->features) &
+            1u) == 0);
+    rows[ix] = makeFeatureRow(scores_[ix].pPSM->features,
+                              scores_[ix].isTarget());
   }
-  std::sort(rows.begin(), rows.end(),
-            [](const FeatureRows::value_type& a,
-               const FeatureRows::value_type& b) {
-              return std::less<const double*>()(a.first, b.first);
-            });
+  // the PSMs have distinct feature rows, so the order is unique
+  if (inParallelRegion()) {
+    sequentialSort(rows.begin(), rows.end());
+  } else {
+    std::sort(rows.begin(), rows.end());
+  }
+}
+
+namespace {
+
+// The FDR estimate of PosteriorEstimator::getQValues without the mix-max
+// correction (pi0 = 1), written as the same expression so that it gives
+// the same bits.
+inline double tdcFdrEstimate(int numDecoys, int numTargets,
+                             double decoyFactor) {
+  const double pi0 = 1.0, mixMaxCorrection = 0.0;
+  return (numDecoys * pi0 + mixMaxCorrection) /
+         (double)((std::max)(1, numTargets)) * decoyFactor;
+}
+
+// Sorts the PSMs ahead of a cut-off, best first, walks them as getQValues
+// does and returns the number of targets with a q value below fdr. The q
+// value of a PSM is the smallest estimate from its group of tied values
+// on, so these are the targets up to the end of the last group whose
+// estimate (at most 1) is below fdr.
+template <class Better>
+int countSortedTargetsBelowFdr(std::vector<pair<double, bool> >& psms,
+                               Better better, double fdr,
+                               int initialDecoyCount, double decoyFactor) {
+  sequentialSort(psms.begin(), psms.end(),
+                 [better](const pair<double, bool>& a,
+                          const pair<double, bool>& b) {
+                   return better(a.first, b.first);
+                 });
+  int numDecoys = initialDecoyCount, numTargets = 0, count = 0;
+  const std::size_t n = psms.size();
+  for (std::size_t i = 0; i < n; ++i) {
+    if (psms[i].second) {
+      ++numTargets;
+    } else {
+      ++numDecoys;
+    }
+    if (i + 1 == n || psms[i].first != psms[i + 1].first) {
+      double estimate = tdcFdrEstimate(numDecoys, numTargets, decoyFactor);
+      if ((std::min)(estimate, 1.0) < fdr) {
+        count = numTargets;
+      }
+    }
+  }
+  return count;
+}
+
+}  // namespace
+
+bool Scores::countTargetsBySelection(const FeatureRows& rows,
+                                     CountBuffers& buffers,
+                                     double fdr,
+                                     bool skipDecoysPlusOne,
+                                     double nullTargetWinProb,
+                                     int* highCount,
+                                     int* lowCount) {
+  const double decoyFactor = nullTargetWinProb / (1.0 - nullTargetWinProb);
+  if (!(decoyFactor >= 0.0 &&
+        decoyFactor <= std::numeric_limits<double>::max())) {
+    return false;
+  }
+  const std::vector<double>& values = buffers.values;
+  std::vector<double>& decoyValues = buffers.decoyValues;
+  const std::size_t n = rows.size();
+  assert(values.size() >= n);
+  decoyValues.clear();
+  int numTargets = 0;
+  for (std::size_t i = 0; i < n; ++i) {
+    const double value = values[i];
+    if (value != value) {
+      return false;  // NaN: a sort of all PSMs has no defined order
+    }
+    if (rowIsTarget(rows[i])) {
+      ++numTargets;
+    } else {
+      decoyValues.push_back(value);
+    }
+  }
+  const int numDecoys = static_cast<int>(decoyValues.size());
+  const int initialDecoyCount = skipDecoysPlusOne ? 0 : 1;
+
+  // The smallest number of decoys, cutOffDecoys, whose estimate with all
+  // targets is not below fdr. Every cut-off with at least that many decoys
+  // has at most all targets, and since IEEE division and multiplication are
+  // monotone its estimate is not below fdr either. Such cut-offs cannot
+  // give a q value below fdr, so only the PSMs with a better value than the
+  // cutOffDecoys-th best decoy can count, and only they are sorted. If
+  // there is no such number, all PSMs are sorted.
+  int first = 0, last = numDecoys + 1;
+  while (first < last) {
+    const int mid = first + (last - first) / 2;
+    double estimate =
+        tdcFdrEstimate(initialDecoyCount + mid, numTargets, decoyFactor);
+    if ((std::min)(estimate, 1.0) >= fdr) {
+      last = mid;
+    } else {
+      first = mid + 1;
+    }
+  }
+  const int cutOffDecoys = first;
+  if (cutOffDecoys == 0) {  // no cut-off reaches q < fdr
+    if (highCount) *highCount = 0;
+    if (lowCount) *lowCount = 0;
+    return true;
+  }
+
+  std::vector<pair<double, bool> >& high = buffers.high;
+  std::vector<pair<double, bool> >& low = buffers.low;
+  high.clear();
+  low.clear();
+  if (cutOffDecoys > numDecoys) {
+    for (std::size_t i = 0; i < n; ++i) {
+      const pair<double, bool> psm(values[i], rowIsTarget(rows[i]));
+      if (highCount) high.push_back(psm);
+      if (lowCount) low.push_back(psm);
+    }
+  } else {
+    // the cutOffDecoys-th smallest and the cutOffDecoys-th largest decoy
+    // value, at ascending ranks lowRank and highRank
+    const int lowRank = cutOffDecoys - 1, highRank = numDecoys - cutOffDecoys;
+    double lowCut = 0.0, highCut = 0.0;
+    std::vector<double>::iterator dv = decoyValues.begin();
+    if (lowCount) {
+      sequentialNthElement(dv, dv + lowRank, decoyValues.end());
+      lowCut = dv[lowRank];
+    }
+    if (highCount) {
+      if (!lowCount) {
+        sequentialNthElement(dv, dv + highRank, decoyValues.end());
+      } else if (highRank > lowRank) {
+        // the values from lowRank + 1 on are the larger ones
+        sequentialNthElement(dv + lowRank + 1, dv + highRank,
+                             decoyValues.end());
+      } else if (highRank < lowRank) {
+        sequentialNthElement(dv, dv + highRank, dv + lowRank);
+      }
+      highCut = dv[highRank];
+    }
+    for (std::size_t i = 0; i < n; ++i) {
+      const double value = values[i];
+      if (highCount && value > highCut) {
+        high.push_back(pair<double, bool>(value, rowIsTarget(rows[i])));
+      }
+      if (lowCount && value < lowCut) {
+        low.push_back(pair<double, bool>(value, rowIsTarget(rows[i])));
+      }
+    }
+  }
+  if (highCount) {
+    *highCount = countSortedTargetsBelowFdr(high, std::greater<double>(), fdr,
+                                            initialDecoyCount, decoyFactor);
+  }
+  if (lowCount) {
+    *lowCount = countSortedTargetsBelowFdr(low, std::less<double>(), fdr,
+                                           initialDecoyCount, decoyFactor);
+  }
+  return true;
 }
 
 /**
  * Returns the number of targets that calcScoresAndQvals(w, fdr,
  * skipDecoysPlusOne) would report, without changing this object, so that it
  * can be used concurrently. Only scores and labels are sorted, which is much
- * cheaper than sorting the ScoreHolders.
+ * cheaper than sorting the ScoreHolders, and without the mix-max correction
+ * (pi0 = 1) only those ahead of the cut-off decoy of countTargetsBySelection.
  * @param rows the PSMs of this set, from getFeatureRows
- * @param combined buffer for the (score, isTarget) pairs
+ * @param buffers the buffers of the calling thread
  */
-int Scores::countTargetsBelowFdr(
-    const FeatureRows& rows,
-    const std::vector<double>& w,
-    double fdr,
-    bool skipDecoysPlusOne,
-    std::vector<pair<double, bool> >& combined) const {
+int Scores::countTargetsBelowFdr(const FeatureRows& rows,
+                                 const std::vector<double>& w,
+                                 double fdr,
+                                 bool skipDecoysPlusOne,
+                                 CountBuffers& buffers) const {
   // same summation order as calcScore, four rows at a time so that their
   // additions overlap
   const std::size_t numFeatures = FeatureNames::getNumFeatures();
   const std::size_t numRows = rows.size();
-  combined.resize(numRows);
+  std::vector<double>& scores = buffers.values;
+  scores.resize(numRows);
   std::size_t i = 0;
   for (; i + 4 <= numRows; i += 4) {
-    const double* f0 = rows[i].first;
-    const double* f1 = rows[i + 1].first;
-    const double* f2 = rows[i + 2].first;
-    const double* f3 = rows[i + 3].first;
+    const double* f0 = rowFeatures(rows[i]);
+    const double* f1 = rowFeatures(rows[i + 1]);
+    const double* f2 = rowFeatures(rows[i + 2]);
+    const double* f3 = rowFeatures(rows[i + 3]);
     double s0 = w[numFeatures], s1 = w[numFeatures], s2 = w[numFeatures],
            s3 = w[numFeatures];
     for (std::size_t ix = numFeatures; ix--;) {
@@ -573,14 +746,24 @@ int Scores::countTargetsBelowFdr(
       s2 += f2[ix] * w[ix];
       s3 += f3[ix] * w[ix];
     }
-    combined[i] = pair<double, bool>(s0, rows[i].second);
-    combined[i + 1] = pair<double, bool>(s1, rows[i + 1].second);
-    combined[i + 2] = pair<double, bool>(s2, rows[i + 2].second);
-    combined[i + 3] = pair<double, bool>(s3, rows[i + 3].second);
+    scores[i] = s0;
+    scores[i + 1] = s1;
+    scores[i + 2] = s2;
+    scores[i + 3] = s3;
   }
   for (; i < numRows; ++i) {
-    combined[i] =
-        pair<double, bool>(calcScore(rows[i].first, w), rows[i].second);
+    scores[i] = calcScore(rowFeatures(rows[i]), w);
+  }
+  int count = 0;
+  if (pi0_ == 1.0 &&
+      countTargetsBySelection(rows, buffers, fdr, skipDecoysPlusOne,
+                              nullTargetWinProb_, &count, nullptr)) {
+    return count;
+  }
+  // mix-max counts and NaN scores: sort all PSMs
+  std::vector<pair<double, bool> > combined(numRows);
+  for (i = 0; i < numRows; ++i) {
+    combined[i] = pair<double, bool>(scores[i], rowIsTarget(rows[i]));
   }
   std::sort(combined.begin(), combined.end(),
             [](const pair<double, bool>& a, const pair<double, bool>& b) {

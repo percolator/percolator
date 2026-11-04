@@ -23,6 +23,7 @@
 
 #include <algorithm>
 #include <cfloat>
+#include <cstdint>
 #include <cstdlib>
 #include <iostream>
 #include <map>
@@ -82,15 +83,49 @@ class Scores {
                          bool skipDecoysPlusOne = false);
   int calcScores(vector<double>& w);
   int calcQvals(double fdr, bool skipDecoysPlusOne = false);
-  // feature rows and labels of the PSMs, see getFeatureRows
-  typedef std::vector<std::pair<const double*, bool> > FeatureRows;
+  // The feature row and label of a PSM in one word: the address of its
+  // features with the lowest bit set for a target (feature rows are
+  // aligned to at least 2 bytes). See getFeatureRows.
+  typedef std::uintptr_t FeatureRow;
+  typedef std::vector<FeatureRow> FeatureRows;
+  static inline FeatureRow makeFeatureRow(const double* features,
+                                          bool isTarget) {
+    return reinterpret_cast<std::uintptr_t>(features) |
+           static_cast<std::uintptr_t>(isTarget);
+  }
+  static inline const double* rowFeatures(FeatureRow row) {
+    return reinterpret_cast<const double*>(row & ~std::uintptr_t(1));
+  }
+  static inline bool rowIsTarget(FeatureRow row) { return (row & 1u) != 0; }
   void getFeatureRows(FeatureRows& rows) const;
-  int countTargetsBelowFdr(
-      const FeatureRows& rows,
-      const std::vector<double>& w,
-      double fdr,
-      bool skipDecoysPlusOne,
-      std::vector<std::pair<double, bool> >& combined) const;
+  // Buffers of the counts below, kept by a thread for all its counts so
+  // that they are allocated once
+  struct CountBuffers {
+    std::vector<double> values;       // one value per row
+    std::vector<double> decoyValues;  // the values of the decoys
+    // the PSMs that are sorted: those ahead of the cut-off decoy
+    std::vector<std::pair<double, bool> > high, low;
+  };
+  int countTargetsBelowFdr(const FeatureRows& rows,
+                           const std::vector<double>& w,
+                           double fdr,
+                           bool skipDecoysPlusOne,
+                           CountBuffers& buffers) const;
+  // The numbers of targets with q < fdr that calcQvals would count, with
+  // pi0 = 1 and the given null target win probability, after sorting the
+  // PSMs by decreasing value (highCount) and by increasing value
+  // (lowCount); either may be null. buffers.values holds one value per
+  // row of rows, which gives the labels. Only the PSMs ahead of the decoy
+  // from which on no cut-off can reach q < fdr are sorted. Returns false
+  // without counting if a value is NaN, or if the null target win
+  // probability is not in [0, 1).
+  static bool countTargetsBySelection(const FeatureRows& rows,
+                                      CountBuffers& buffers,
+                                      double fdr,
+                                      bool skipDecoysPlusOne,
+                                      double nullTargetWinProb,
+                                      int* highCount,
+                                      int* lowCount);
   // PEPs by P-IRLS (spline), or by I-spline/PAVA (pava) regression of either
   // target q values (default) or target-decoy labels (tdc) on the score
   // (interpol) or the rank

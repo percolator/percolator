@@ -20,15 +20,44 @@
  */
 
 #include <gtest/gtest.h>
+#ifdef _OPENMP
+#include <omp.h>
+#endif
 #include <algorithm>
 #include <cmath>
 #include <cstdarg>
+#include <limits>
 #include <map>
+#include <string>
 #include <utility>
 #include "SetHandler.h"
 #include "DataSet.h"
 #include "PosteriorEstimator.h"
 #include "Scores.h"
+
+namespace {
+
+// Runs OpenMP code, such as GCC's parallel-mode sorts and partial sums in
+// the reference counts, on one thread while it exists: thousands of small
+// parallel calls take minutes on a loaded machine.
+class OneThread {
+  public:
+    OneThread() {
+#ifdef _OPENMP
+        numThreads_ = omp_get_max_threads();
+        omp_set_num_threads(1);
+#endif
+    }
+    ~OneThread() {
+#ifdef _OPENMP
+        omp_set_num_threads(numThreads_);
+#endif
+    }
+  private:
+    int numThreads_ = 1;
+};
+
+}  // namespace
 
 // Some strings in alphabetical order.
 static std::string const psmNames[] = { "ABC", "DEF", "GHI", "JKL", "MNO" };
@@ -445,14 +474,14 @@ TEST(ScoresCountTest, CountTargetsBelowFdrMatchesCalcScoresAndQvals)
         }
         Scores::FeatureRows rows;
         scores.getFeatureRows(rows);
-        std::vector<std::pair<double, bool> > combined;
+        Scores::CountBuffers buffers;
         // countTargetsBelowFdr needs the q values of the decoys as well;
         // calcScoresAndQvals sets this only after the first call below
         PosteriorEstimator::setNegative(true);
         for (double fdr : {0.01, 0.05, 0.2}) {
             for (bool skipDecoysPlusOne : {false, true}) {
                 int count = scores.countTargetsBelowFdr(
-                    rows, w, fdr, skipDecoysPlusOne, combined);
+                    rows, w, fdr, skipDecoysPlusOne, buffers);
                 EXPECT_EQ(scores.calcScoresAndQvals(w, fdr, skipDecoysPlusOne),
                           count);
                 if (fdr > 0.1) {
@@ -518,4 +547,186 @@ TEST(ScoresPepTest, BothPathwaysGiveMonotoneCalibratedPeps)
             EXPECT_LT(sum / n, 0.05 * 2.0) << "tdc=" << tdc << " pava=" << pava;
         }
     }
+}
+
+namespace {
+
+// The number of targets with a q value below fdr as calcQvals counts it
+// with pi0 = 1: sort all PSMs, best first, and count with getQValues.
+int referenceTargetCount(std::vector<std::pair<double, bool> > psms,
+                         bool lowBest, double fdr, bool skipDecoysPlusOne,
+                         double nullTargetWinProb) {
+    std::sort(psms.begin(), psms.end(),
+              [lowBest](const std::pair<double, bool>& a,
+                        const std::pair<double, bool>& b) {
+                  return lowBest ? a.first < b.first : a.first > b.first;
+              });
+    std::vector<double> q;
+    PosteriorEstimator::setNegative(true);
+    PosteriorEstimator::getQValues(1.0, psms, q, skipDecoysPlusOne,
+                                   nullTargetWinProb);
+    int count = 0;
+    for (std::size_t i = 0; i < q.size(); ++i) {
+        if (q[i] < fdr && psms[i].second) ++count;
+    }
+    return count;
+}
+
+// Rows with the labels of psms; countTargetsBySelection reads only the
+// labels from them, so they point to placeholder storage.
+Scores::FeatureRows rowsFor(const std::vector<std::pair<double, bool> >& psms,
+                            std::vector<double>& storage) {
+    storage.assign(psms.size() + 1, 0.0);
+    Scores::FeatureRows rows(psms.size());
+    for (std::size_t i = 0; i < psms.size(); ++i) {
+        rows[i] = Scores::makeFeatureRow(&storage[i], psms[i].second);
+    }
+    return rows;
+}
+
+// Compares both counts of countTargetsBySelection, and each count alone,
+// with the full sort.
+void expectSelectionCountsMatch(
+        const std::vector<std::pair<double, bool> >& psms, double fdr,
+        bool skipDecoysPlusOne, double nullTargetWinProb,
+        Scores::CountBuffers& buffers, const std::string& what) {
+    std::vector<double> storage;
+    Scores::FeatureRows rows = rowsFor(psms, storage);
+    buffers.values.resize(psms.size());
+    for (std::size_t i = 0; i < psms.size(); ++i) {
+        buffers.values[i] = psms[i].first;
+    }
+    const std::string where = what + " fdr=" + std::to_string(fdr) +
+        " skip=" + std::to_string(skipDecoysPlusOne) + " p=" +
+        std::to_string(nullTargetWinProb);
+    int high = -2, low = -2;
+    ASSERT_TRUE(Scores::countTargetsBySelection(
+        rows, buffers, fdr, skipDecoysPlusOne, nullTargetWinProb, &high,
+        &low)) << where;
+    ASSERT_EQ(referenceTargetCount(psms, false, fdr, skipDecoysPlusOne,
+                                   nullTargetWinProb), high)
+        << where << " high first";
+    ASSERT_EQ(referenceTargetCount(psms, true, fdr, skipDecoysPlusOne,
+                                   nullTargetWinProb), low)
+        << where << " low first";
+    int single = -2;
+    ASSERT_TRUE(Scores::countTargetsBySelection(
+        rows, buffers, fdr, skipDecoysPlusOne, nullTargetWinProb, &single,
+        nullptr)) << where;
+    ASSERT_EQ(high, single) << where << " high first only";
+    ASSERT_TRUE(Scores::countTargetsBySelection(
+        rows, buffers, fdr, skipDecoysPlusOne, nullTargetWinProb, nullptr,
+        &single)) << where;
+    ASSERT_EQ(low, single) << where << " low first only";
+}
+
+}  // namespace
+
+// Every label sequence of up to 10 PSMs, with distinct values, all values
+// tied, blocks of 2 and 3 tied values and two alternating values, for FDR
+// thresholds that the estimates reach exactly, both decoy offsets and the
+// null target win probabilities of normal training and of RESET.
+TEST(ScoresCountTest, SelectionCountMatchesFullSortForAllSmallInputs)
+{
+    OneThread oneThread;
+    Scores::CountBuffers buffers;
+    const double fdrs[] = {0.0, 0.1, 0.2, 0.25, 1.0 / 3.0, 0.5, 2.0 / 3.0,
+                           1.0, 1.5};
+    const double nullTargetWinProbs[] = {0.5, 0.75, 2.0 / 3.0, 0.0};
+    std::vector<std::pair<double, bool> > psms;
+    for (int n = 0; n <= 10; ++n) {
+        for (unsigned int mask = 0; mask < (1u << n); ++mask) {
+            for (int pattern = 0; pattern < 5; ++pattern) {
+                psms.resize(n);
+                for (int i = 0; i < n; ++i) {
+                    double value = 0.0;
+                    switch (pattern) {
+                        case 0: value = i; break;
+                        case 1: value = 0.0; break;
+                        case 2: value = i / 2; break;
+                        case 3: value = -(i / 3); break;
+                        case 4: value = i % 2; break;
+                    }
+                    psms[i] = std::make_pair(value, ((mask >> i) & 1u) != 0);
+                }
+                const std::string what = "n=" + std::to_string(n) +
+                    " mask=" + std::to_string(mask) + " pattern=" +
+                    std::to_string(pattern);
+                for (double fdr : fdrs) {
+                    for (bool skip : {false, true}) {
+                        for (double p : nullTargetWinProbs) {
+                            expectSelectionCountsMatch(psms, fdr, skip, p,
+                                                       buffers, what);
+                            if (HasFatalFailure()) return;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// Larger random inputs in random order: coarse values with many ties, a
+// few signed zeros and infinities, and all-target and all-decoy sets.
+TEST(ScoresCountTest, SelectionCountMatchesFullSortForRandomInputs)
+{
+    OneThread oneThread;
+    Scores::CountBuffers buffers;
+    unsigned int seed = 4242u;
+    auto next = [&seed]() {
+        seed = seed * 1103515245u + 12345u;
+        return seed >> 8;
+    };
+    std::vector<std::pair<double, bool> > psms;
+    for (int round = 0; round < 60; ++round) {
+        const int n = 1 + static_cast<int>(next() % 4000);
+        const unsigned int targetPercent =
+            round % 10 == 0 ? 100 : (round % 10 == 1 ? 0 : next() % 100);
+        const unsigned int levels = 2 + next() % 200;
+        psms.resize(n);
+        for (int i = 0; i < n; ++i) {
+            const bool isTarget = next() % 100 < targetPercent;
+            double value = static_cast<double>(next() % levels) +
+                           (isTarget ? static_cast<double>(next() % 20) : 0.0);
+            if (next() % 500 == 0) value = (next() % 2) ? 0.0 : -0.0;
+            if (next() % 1000 == 0) {
+                value = (next() % 2) ? std::numeric_limits<double>::infinity()
+                                     : -std::numeric_limits<double>::infinity();
+            }
+            psms[i] = std::make_pair(value, isTarget);
+        }
+        for (double fdr : {0.001, 0.01, 0.05, 0.3}) {
+            for (bool skip : {false, true}) {
+                for (double p : {0.5, 0.75}) {
+                    expectSelectionCountsMatch(psms, fdr, skip, p, buffers,
+                                               "round " + std::to_string(round));
+                    if (HasFatalFailure()) return;
+                }
+            }
+        }
+    }
+}
+
+// NaN values, and null target win probabilities without a finite decoy
+// factor, are left to the full sort.
+TEST(ScoresCountTest, SelectionCountRejectsNanAndInvalidProbabilities)
+{
+    Scores::CountBuffers buffers;
+    std::vector<std::pair<double, bool> > psms = {
+        {1.0, true}, {0.5, false}, {2.0, true}, {0.1, false}};
+    std::vector<double> storage;
+    Scores::FeatureRows rows = rowsFor(psms, storage);
+    buffers.values = {1.0, 0.5, 2.0, 0.1};
+    int high = -2, low = -2;
+    EXPECT_TRUE(Scores::countTargetsBySelection(rows, buffers, 0.5, true, 0.5,
+                                                &high, &low));
+    EXPECT_EQ(2, high);
+    EXPECT_EQ(0, low);
+    EXPECT_FALSE(Scores::countTargetsBySelection(rows, buffers, 0.5, true, 1.0,
+                                                 &high, &low));
+    EXPECT_FALSE(Scores::countTargetsBySelection(rows, buffers, 0.5, true, 1.5,
+                                                 &high, &low));
+    buffers.values[1] = std::nan("");
+    EXPECT_FALSE(Scores::countTargetsBySelection(rows, buffers, 0.5, true, 0.5,
+                                                 &high, &low));
 }
