@@ -46,6 +46,7 @@ add_executable(gtest_unit
     UnitTest_Percolator_Normalizer.cpp
     UnitTest_Percolator_PSMDescription.cpp
     UnitTest_Percolator_PosteriorEstimator.cpp
+    UnitTest_Percolator_SanityCheck.cpp
 )
 
 # =============================
