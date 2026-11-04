@@ -50,6 +50,7 @@ add_executable(gtest_unit
     UnitTest_Percolator_Caller.cpp
     UnitTest_Percolator_CompositionSorter.cpp
     UnitTest_Percolator_TrainingMemory.cpp
+    UnitTest_Percolator_ParallelSort.cpp
 )
 
 # =============================
