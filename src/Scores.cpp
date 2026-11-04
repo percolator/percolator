@@ -66,7 +66,10 @@ void Scores::merge(std::vector<Scores>& sv,
   std::vector<Scores>::iterator cvBinScores = sv.begin();
   std::vector<std::vector<double> >::iterator weights = all_w.begin();
   for (; cvBinScores != sv.end(); cvBinScores++, weights++) {
-    sort(cvBinScores->begin(), cvBinScores->end(), greater<ScoreHolder>());
+    // the test sets are usually sorted already, by calcScores
+    if (!cvBinScores->isSortedByScore()) {
+      sort(cvBinScores->begin(), cvBinScores->end(), greater<ScoreHolder>());
+    }
     cvBinScores->checkSeparationAndSetPi0();
     cvBinScores->calcQvals(fdr);
     if (!skipNormalizeScores) {
@@ -449,7 +452,11 @@ int Scores::calcScores(std::vector<double>& w) {
   for (long i = 0; i < numScores; ++i) {
     scores_[i].score = calcScore(scores_[i].pPSM->features, w);
   }
-  sort(scores_.begin(), scores_.end(), greater<ScoreHolder>());
+  // already sorted when scored again with the same weights, as the test
+  // sets are after training
+  if (!isSortedByScore()) {
+    sort(scores_.begin(), scores_.end(), greater<ScoreHolder>());
+  }
   if (VERB > 3) {
     if (scores_.size() >= 10) {
       cerr << "10 best scores and labels" << endl;
@@ -466,6 +473,21 @@ int Scores::calcScores(std::vector<double>& w) {
     }
   }
   return 0;
+}
+
+/**
+ * Whether the PSMs are in strictly decreasing order of operator>, which
+ * orders PSMs without NaN scores totally: then sorting them with
+ * greater<ScoreHolder> would not change their order. A NaN score, or the
+ * same PSM twice, gives false. Stops at the first pair out of order.
+ */
+bool Scores::isSortedByScore() const {
+  for (std::size_t i = 1; i < scores_.size(); ++i) {
+    if (!(scores_[i - 1] > scores_[i])) {
+      return false;
+    }
+  }
+  return true;
 }
 
 void Scores::getScoreLabelPairs(std::vector<pair<double, bool> >& combined) {

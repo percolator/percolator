@@ -823,3 +823,54 @@ TEST(ScoresCountTest, InitDirectionMatchesFullSortOfEachFeature)
     FeatureNames::resetNumFeatures();
     Globals::getInstance()->setVerbose(origVerbose);
 }
+
+// isSortedByScore is true exactly when a sort by decreasing score, ties
+// broken by the total order of ScoreHolder, would keep the order; calcScores
+// and merge skip that sort then.
+TEST(ScoresSortTest, IsSortedByScoreMatchesTheOrderOfTheSort)
+{
+    std::vector<PSMDescription> psms(6);
+    for (size_t i = 0; i < psms.size(); ++i) {
+        psms[i].scan = static_cast<unsigned int>(10 - i);
+    }
+    auto makeScores = [&psms](const std::vector<double>& values) {
+        Scores scores(false);
+        for (size_t i = 0; i < values.size(); ++i) {
+            scores.addScoreHolder(ScoreHolder(values[i],
+                i % 2 ? LabelType::TARGET : LabelType::DECOY, &psms[i]));
+        }
+        return scores;
+    };
+    EXPECT_TRUE(makeScores({}).isSortedByScore());
+    EXPECT_TRUE(makeScores({1.0}).isSortedByScore());
+    EXPECT_TRUE(makeScores({3.0, 2.0, 2.0, 1.0}).isSortedByScore());
+    EXPECT_FALSE(makeScores({3.0, 1.0, 2.0}).isSortedByScore());
+    EXPECT_FALSE(makeScores({1.0, 2.0}).isSortedByScore());
+    EXPECT_FALSE(makeScores({3.0, std::nan(""), 1.0}).isSortedByScore());
+    EXPECT_FALSE(makeScores({3.0, 2.0, std::nan("")}).isSortedByScore());
+    // ties are ordered by decreasing scan number: psms[i] has scan 10 - i
+    Scores tied = makeScores({2.0, 2.0, 2.0});
+    EXPECT_TRUE(tied.isSortedByScore());
+    std::swap(*tied.begin(), *(tied.begin() + 2));
+    EXPECT_FALSE(tied.isSortedByScore());
+    std::sort(tied.begin(), tied.end(), std::greater<ScoreHolder>());
+    EXPECT_TRUE(tied.isSortedByScore());
+    // a sorted set stays as it is when scored again with the same weights
+    FeatureNames::resetNumFeatures();
+    FeatureNames::setNumFeatures(1);
+    std::vector<double> features = {0.5, 0.25, 0.25, 1.0, -1.0, 0.0};
+    Scores scored(false);
+    for (size_t i = 0; i < psms.size(); ++i) {
+        psms[i].features = &features[i];
+        scored.addScoreHolder(ScoreHolder(0.0, LabelType::TARGET, &psms[i]));
+    }
+    std::vector<double> w = {2.0, 0.5};
+    scored.calcScores(w);
+    ASSERT_TRUE(scored.isSortedByScore());
+    std::vector<const PSMDescription*> order;
+    for (const ScoreHolder& sh : scored) order.push_back(sh.pPSM);
+    scored.calcScores(w);
+    size_t k = 0;
+    for (const ScoreHolder& sh : scored) EXPECT_EQ(order[k++], sh.pPSM);
+    FeatureNames::resetNumFeatures();
+}

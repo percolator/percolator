@@ -83,6 +83,8 @@ class Scores {
                          bool skipDecoysPlusOne = false);
   int calcScores(vector<double>& w);
   int calcQvals(double fdr, bool skipDecoysPlusOne = false);
+  // whether a sort by decreasing score would leave the PSMs as they are
+  bool isSortedByScore() const;
   // The feature row and label of a PSM in one word: the address of its
   // features with the lowest bit set for a target (feature rows are
   // aligned to at least 2 bytes). See getFeatureRows.
