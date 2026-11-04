@@ -28,8 +28,10 @@
 #include <cstdarg>
 #include <limits>
 #include <map>
+#include <stdexcept>
 #include <string>
 #include <utility>
+#include <vector>
 #include "SetHandler.h"
 #include "DataSet.h"
 #include "PosteriorEstimator.h"
@@ -873,4 +875,165 @@ TEST(ScoresSortTest, IsSortedByScoreMatchesTheOrderOfTheSort)
     size_t k = 0;
     for (const ScoreHolder& sh : scored) EXPECT_EQ(order[k++], sh.pPSM);
     FeatureNames::resetNumFeatures();
+}
+
+namespace {
+
+// Scores with access to the protected members that the q value and p value
+// tests set or compare.
+class ExposedScores : public Scores {
+ public:
+  explicit ExposedScores(bool usePi0) : Scores(usePi0) {}
+  void setPi0(double pi0) { pi0_ = pi0; }
+  using Scores::getScoreLabelPairs;
+  using Scores::getTargetPValues;
+};
+
+// calcQvals must give bit for bit the q values and the count of
+// PosteriorEstimator::getQValues on the (score, isTarget) pairs, including
+// the out_of_range of its mix-max lookup with skipDecoysPlusOne when the
+// best-scoring group with decoys has a single decoy. Returns whether
+// getQValues threw.
+bool expectQvalsAsGetQValues(ExposedScores& scores, double pi0,
+                             double nullTargetWinProb, bool skipDecoysPlusOne,
+                             double fdr, const std::string& what) {
+  scores.setPi0(pi0);
+  scores.setNullTargetWinProb(nullTargetWinProb);
+  std::vector<std::pair<double, bool> > combined;
+  scores.getScoreLabelPairs(combined);
+  std::vector<double> expected;
+  PosteriorEstimator::setNegative(true);
+  bool expectThrow = false;
+  try {
+    PosteriorEstimator::getQValues(pi0, combined, expected, skipDecoysPlusOne,
+                                   nullTargetWinProb);
+  } catch (const std::out_of_range&) {
+    expectThrow = true;
+  }
+  if (expectThrow) {
+    EXPECT_THROW(scores.calcQvals(fdr, skipDecoysPlusOne), std::out_of_range)
+        << what;
+    return true;
+  }
+  const int numPos = scores.calcQvals(fdr, skipDecoysPlusOne);
+  EXPECT_EQ(expected.size(), scores.size()) << what;
+  int expectedPos = 0;
+  size_t ix = 0;
+  for (const ScoreHolder& sh : scores) {
+    if (ix >= expected.size() || expected[ix] != sh.q) {
+      ADD_FAILURE() << what << ", position " << ix;
+      return false;
+    }
+    if (expected[ix] < fdr && combined[ix].second) ++expectedPos;
+    ++ix;
+  }
+  EXPECT_EQ(expectedPos, numPos) << what;
+  return false;
+}
+
+void expectPValuesAsGetPValues(ExposedScores& scores, const std::string& what) {
+  std::vector<std::pair<double, bool> > combined;
+  scores.getScoreLabelPairs(combined);
+  std::vector<double> expected, pvals;
+  PosteriorEstimator::getPValues(combined, expected);
+  scores.getTargetPValues(pvals);
+  ASSERT_EQ(expected.size(), pvals.size()) << what;
+  for (size_t ix = 0; ix < pvals.size(); ++ix) {
+    ASSERT_EQ(expected[ix], pvals[ix]) << what << ", position " << ix;
+  }
+}
+
+const double kPi0s[] = {1.0, 0.7, 0.3};
+const double kNullTargetWinProbs[] = {0.5, 2.0 / 3.0, 0.75};
+
+}  // namespace
+
+// Every target/decoy pattern of up to 8 PSMs, with distinct scores, all
+// scores tied and blocks of tied scores.
+TEST(ScoresQvalueTest, AllSmallPatternsEqualGetQValues)
+{
+    std::vector<PSMDescription> psms(8);
+    int numThrows = 0;
+    for (int n = 0; n <= 8; ++n) {
+        for (int pattern = 0; pattern < (1 << n); ++pattern) {
+            for (int block : {1, 2, 3, 8}) {
+                ExposedScores scores(true);
+                for (int i = 0; i < n; ++i) {
+                    const bool isTarget = (pattern >> i) & 1;
+                    scores.addScoreHolder(ScoreHolder(
+                        -static_cast<double>(i / block),
+                        isTarget ? LabelType::TARGET : LabelType::DECOY,
+                        &psms[i]));
+                }
+                scores.recalculateSizes();
+                std::string what = "n=" + std::to_string(n) + " pattern=" +
+                                   std::to_string(pattern) +
+                                   " block=" + std::to_string(block);
+                expectPValuesAsGetPValues(scores, what);
+                for (double pi0 : kPi0s) {
+                    for (double nullTargetWinProb : kNullTargetWinProbs) {
+                        for (bool skip : {false, true}) {
+                            numThrows += expectQvalsAsGetQValues(
+                                scores, pi0, nullTargetWinProb, skip, 0.3,
+                                what + " pi0=" + std::to_string(pi0) +
+                                    " ntwp=" + std::to_string(nullTargetWinProb) +
+                                    " skip=" + std::to_string(skip));
+                        }
+                    }
+                }
+            }
+        }
+    }
+    EXPECT_GT(numThrows, 0);  // the out_of_range case was among them
+}
+
+// Larger random sets with many ties and pseudo targets (RESET), including
+// pi0 and nullTargetWinProb as the training sets and postMergeStep set them.
+TEST(ScoresQvalueTest, RandomSetsEqualGetQValues)
+{
+    const int numPsms = 20000;
+    std::vector<PSMDescription> psms(numPsms);
+    unsigned int seed = 2024u;
+    auto next = [&seed]() {
+        seed = seed * 1103515245u + 12345u;
+        return seed >> 8;
+    };
+    for (int coarseness : {3, 40, 1000000}) {
+        ExposedScores scores(true);
+        for (int i = 0; i < numPsms; ++i) {
+            const unsigned int r = next();
+            const LabelType label = r % 5 == 0   ? LabelType::PSEUDO_TARGET
+                                    : r % 5 < 3 ? LabelType::TARGET
+                                                : LabelType::DECOY;
+            const bool good = label == LabelType::TARGET && next() % 3 == 0;
+            const double score =
+                static_cast<double>(next() % coarseness) / coarseness +
+                (good ? 0.5 : 0.0);
+            psms[i].scan = static_cast<unsigned int>(i);
+            scores.addScoreHolder(ScoreHolder(score, label, &psms[i]));
+        }
+        scores.recalculateSizes();
+        std::sort(scores.begin(), scores.end(), std::greater<ScoreHolder>());
+        std::string what = "coarseness=" + std::to_string(coarseness);
+        expectPValuesAsGetPValues(scores, what);
+        for (double pi0 : kPi0s) {
+            for (double nullTargetWinProb : kNullTargetWinProbs) {
+                for (bool skip : {false, true}) {
+                    for (double fdr : {0.01, 0.1}) {
+                        expectQvalsAsGetQValues(
+                            scores, pi0, nullTargetWinProb, skip, fdr,
+                            what + " pi0=" + std::to_string(pi0) +
+                                " ntwp=" + std::to_string(nullTargetWinProb) +
+                                " skip=" + std::to_string(skip) +
+                                " fdr=" + std::to_string(fdr));
+                    }
+                }
+            }
+        }
+        // the pi0 that postMergeStep estimates from these p values
+        scores.postMergeStep();
+        ASSERT_LT(scores.getPi0(), 1.0);
+        expectQvalsAsGetQValues(scores, scores.getPi0(), 0.5, false, 0.01,
+                                what + " estimated pi0");
+    }
 }

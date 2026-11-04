@@ -210,8 +210,7 @@ class Scores {
   std::vector<ScoreHolder> scores_;
 
   void getScoreLabelPairs(std::vector<std::pair<double, bool> >& combined);
-  int calcQvals(double fdr, bool skipDecoysPlusOne,
-                std::vector<std::pair<double, bool> >& combined);
+  void getTargetPValues(std::vector<double>& pvals) const;
   int countTargetsBelowFdr(
       const std::vector<std::pair<double, bool> >& combined,
       double fdr,

@@ -28,6 +28,7 @@
 #include <memory>
 #include <set>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
@@ -508,38 +509,115 @@ void Scores::getScoreLabelPairs(std::vector<pair<double, bool> >& combined) {
 
 /**
  * Calculates the q-value for each psm in scores_: the q-value is the minimal
- * FDR of any set that includes the particular psm
+ * FDR of any set that includes the particular psm. The PSMs must be sorted
+ * by decreasing score.
+ *
+ * Gives the same q values as PosteriorEstimator::getQValues on the (score,
+ * isTarget) pairs of scores_ with setNegative(true), but writes them to the
+ * PSMs directly instead of building the pairs, the q values and the mix-max
+ * counts in arrays of their own.
  * @param fdr FDR threshold specified by user (default 0.01)
  * @return number of true positives
  */
 int Scores::calcQvals(double fdr, bool skipDecoysPlusOne) {
-  std::vector<pair<double, bool> > combined;
-  return calcQvals(fdr, skipDecoysPlusOne, combined);
-}
-
-int Scores::calcQvals(double fdr, bool skipDecoysPlusOne,
-                      std::vector<pair<double, bool> >& combined) {
   assert(totalNumberOfDecoys_ + totalNumberOfTargets_ == size());
 
-  getScoreLabelPairs(combined);
-
-  std::vector<double> qvals;
   PosteriorEstimator::setNegative(true);  // also get q-values for decoys
-  PosteriorEstimator::getQValues(pi0_, combined, qvals, skipDecoysPlusOne,
-                                 nullTargetWinProb_);
+  const std::size_t numScores = scores_.size();
+  if (numScores == 0) {
+    return 0;
+  }
+  const double pi0 = pi0_;
+  const double decoyFactor = nullTargetWinProb_ / (1.0 - nullTargetWinProb_);
 
-  // set q-values and count number of positives
-  // (countTargetsBelowFdr below has to give the same count)
-  std::vector<double>::const_iterator qIt = qvals.begin();
-  std::vector<ScoreHolder>::iterator scoreIt = scores_.begin();
+  // The mix-max correction of a tie group with decoys uses N_{w<=z} and
+  // N_{z<=z}, the numbers of targets and decoys that score at most as much as
+  // the (n_z_ge_w - 1)-th best decoy, which getQValues reads from the arrays
+  // of getMixMaxCounts. They follow from the totals and the counts above
+  // the group.
+  int numTargets = 0, numDecoys = 0;
+  if (pi0 < 1.0) {
+    for (const ScoreHolder& sh : scores_) {
+      (sh.isTarget() ? numTargets : numDecoys) += 1;
+    }
+  }
+  // the counts at the last tie group with decoys
+  int lastCntW = 0, lastCntZ = 0;
 
-  int numPos = 0;
-  for (; qIt != qvals.end(); ++qIt, ++scoreIt) {
-    scoreIt->q = *qIt;
-    if (scoreIt->q < fdr && scoreIt->isTarget())
-      ++numPos;
+  double estPx_lt_zj = 0.0;
+  double E_f1_mod_run_tot = 0.0;
+  double fdrValue = 0.0;
+
+  int n_z_ge_w = 1, n_w_ge_w = 0;  // N_{z>=w} and N_{w>=w}
+  if (skipDecoysPlusOne) n_z_ge_w = 0;
+  int numDecoysAbove = 0;  // decoys ranked at or above the current PSM
+
+  int decoyQueue = 0, targetQueue = 0;  // handles ties
+  std::size_t groupBegin = 0;
+  for (std::size_t ix = 0; ix < numScores; ++ix) {
+    if (scores_[ix].isTarget()) {
+      ++n_w_ge_w;  // target PSM
+      ++targetQueue;
+    } else {
+      ++n_z_ge_w;  // decoy PSM
+      ++numDecoysAbove;
+      ++decoyQueue;
+    }
+
+    // handles ties
+    if (ix + 1 == numScores || scores_[ix].score != scores_[ix + 1].score) {
+      if (pi0 < 1.0 && decoyQueue > 0) {
+        const int cntW = numTargets - (n_w_ge_w - targetQueue);
+        const int cntZ = numDecoys - (numDecoysAbove - decoyQueue);
+        // rank of the decoy whose counts are used, 1 for the best one
+        const int rank = n_z_ge_w - 1;
+        int cnt_w = cntW, cnt_z = cntZ;
+        if (rank <= numDecoysAbove - decoyQueue) {
+          // with skipDecoysPlusOne the decoy ranked just above a group with
+          // a single decoy, i.e. in the last group with decoys
+          if (rank < 1) {
+            throw std::out_of_range(
+                "Scores::calcQvals: no mix-max counts above the best decoy");
+          }
+          cnt_w = lastCntW;
+          cnt_z = lastCntZ;
+        }
+        lastCntW = cntW;
+        lastCntZ = cntZ;
+        estPx_lt_zj = (double)(cnt_w - pi0 * cnt_z) / ((1.0 - pi0) * cnt_z);
+        estPx_lt_zj = estPx_lt_zj > 1 ? 1 : estPx_lt_zj;
+        estPx_lt_zj = estPx_lt_zj < 0 ? 0 : estPx_lt_zj;
+        E_f1_mod_run_tot += decoyQueue * estPx_lt_zj * (1.0 - pi0);
+        if (VERB > 4) {
+          std::cerr << "Mix-max num negatives correction: "
+                    << (1.0 - pi0) * n_z_ge_w << " vs. " << E_f1_mod_run_tot
+                    << std::endl;
+        }
+      }
+
+      fdrValue = (n_z_ge_w * pi0 + E_f1_mod_run_tot) /
+                 (double)((std::max)(1, n_w_ge_w)) * decoyFactor;
+      const double groupFdr = (std::min)(fdrValue, 1.0);
+      for (std::size_t i = groupBegin; i <= ix; ++i) {
+        scores_[i].q = groupFdr;
+      }
+      groupBegin = ix + 1;
+      decoyQueue = 0;
+      targetQueue = 0;
+    }
   }
 
+  // Convert the FDRs into q-values, from the bottom up, and count the
+  // targets below fdr (countTargetsBelowFdr has to give the same count).
+  int numPos = 0;
+  double minFdr = scores_[numScores - 1].q;
+  for (std::size_t ix = numScores; ix--;) {
+    ScoreHolder& sh = scores_[ix];
+    // the same comparison as mymin in PosteriorEstimator::getQValues
+    minFdr = minFdr > sh.q ? sh.q : minFdr;
+    sh.q = minFdr;
+    if (sh.q < fdr && sh.isTarget()) ++numPos;
+  }
   return numPos;
 }
 
@@ -1030,12 +1108,46 @@ int Scores::getInitDirection(const double initialSelectionFdr,
   return bestPositives;
 }
 
-void Scores::checkSeparationAndSetPi0() {
-  std::vector<pair<double, bool> > combined;
-  getScoreLabelPairs(combined);
+/**
+ * The p values of the targets, in ascending order, from the decoys that
+ * score at least as much: the same as PosteriorEstimator::getPValues on the
+ * (score, isTarget) pairs of scores_, without building the pairs. The PSMs
+ * must be sorted by decreasing score.
+ */
+void Scores::getTargetPValues(std::vector<double>& pvals) const {
+  std::size_t numTargets = 0;
+  for (const ScoreHolder& sh : scores_) {
+    if (sh.isTarget()) ++numTargets;
+  }
+  pvals.clear();
+  pvals.reserve(numTargets);
+  std::size_t nDecoys = 1, posSame = 0, negSame = 0;
+  const std::size_t numScores = scores_.size();
+  for (std::size_t ix = 0; ix < numScores; ++ix) {
+    if (scores_[ix].isTarget()) {
+      ++posSame;
+    } else {
+      ++negSame;
+    }
+    if (ix + 1 == numScores || scores_[ix].score != scores_[ix + 1].score) {
+      for (std::size_t i = 0; i < posSame; ++i) {
+        pvals.push_back(static_cast<double>(nDecoys) +
+                        static_cast<double>(negSame * (i + 1)) /
+                            (double)(posSame + 1));
+      }
+      nDecoys += negSame;
+      negSame = 0;
+      posSame = 0;
+    }
+  }
+  for (double& p : pvals) {
+    p = p / static_cast<double>(nDecoys);
+  }
+}
 
+void Scores::checkSeparationAndSetPi0() {
   std::vector<double> pvals;
-  PosteriorEstimator::getPValues(combined, pvals);
+  getTargetPValues(pvals);
 
   pi0_ = 1.0;
   bool tooGoodSeparation = PosteriorEstimator::checkSeparation(pvals);
