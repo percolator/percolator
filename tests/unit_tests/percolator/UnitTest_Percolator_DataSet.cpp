@@ -79,10 +79,27 @@ TEST_F(DataSetTest, CheckPsmParsingWithFeatures)
     optionalFields.push_back(CALCMASS);
     DataSet::readPsm("Id\t1\t1\tPEPTIDE\tProteinList",
             1, optionalFields, true, myPsm, featurePool, psmStore, decoyPrefix);
+    // the number of features comes from the first PSM line of the input
+    FeatureNames::setNumFeatures(2);
+    featurePool.destroyPool();
+    featurePool.createPool(2u);
     DataSet::readPsm("Id\t1\t1\t2\t3\tPEPTIDE\tProteinList",
             1, optionalFields, true, myPsm, featurePool, psmStore, decoyPrefix);
+    EXPECT_EQ(3.0, myPsm->features[1]);
+    FeatureNames::resetNumFeatures();
+    FeatureNames::setNumFeatures(5);
+    featurePool.destroyPool();
+    featurePool.createPool(5u);
     DataSet::readPsm("Id\t1\t0.0\t1.1\t2.2\t3.3\t4.4\t5.5\tPEPTIDE\tProteinList",
             1, optionalFields, true, myPsm, featurePool, psmStore, decoyPrefix);
+    EXPECT_EQ(5.5, myPsm->features[4]);
+    ASSERT_EQ("PEPTIDE", myPsm->getFullPeptide());
+    // a line with one feature column more than the first one
+    EXPECT_THROW(DataSet::readPsm(
+            "Id\t1\t0.0\t1.1\t2.2\t3.3\t4.4\t5.5\t6.6\tPEPTIDE\tProteinList",
+            1, optionalFields, true, myPsm, featurePool, psmStore, decoyPrefix),
+            MyException);
+    FeatureNames::resetNumFeatures();
 }
 
 // Verify that only integer values are accepted for the label.
@@ -138,6 +155,37 @@ TEST_F(DataSetTest, CheckExpMassIsFinite)
         EXPECT_THROW(DataSet::readPsm(line, 7, optionalFields, true, myPsm,
                 featurePool, psmStore, decoyPrefix), MyException) << mass;
     }
+}
+
+// A peptide without flanks is used as it is, a number in the peptide column
+// (a line with an extra feature column) is an error, and protein inference
+// needs the flanks.
+TEST_F(DataSetTest, CheckPeptideFormat)
+{
+    DataSet::readPsm("Id\t1\tK.PEPTIDE.R\tP", 3, optionalFields, true, myPsm,
+            featurePool, psmStore, decoyPrefix);
+    ASSERT_EQ("PEPTIDE", myPsm->getPeptideSequenceView());
+    for (const char* peptide : {"PEPTIDE", "A", "NAN", "INF"}) {
+        std::string line = std::string("Id\t1\t") + peptide + "\tP";
+        DataSet::readPsm(line, 3, optionalFields, true, myPsm, featurePool,
+                psmStore, decoyPrefix);
+        EXPECT_EQ(peptide, myPsm->getPeptideSequenceView()) << peptide;
+    }
+    for (const char* number : {"0.5", "1", "-2e3"}) {
+        std::string line = std::string("Id\t1\t") + number + "\tP";
+        EXPECT_THROW(DataSet::readPsm(line, 3, optionalFields, true, myPsm,
+                featurePool, psmStore, decoyPrefix), MyException) << number;
+    }
+    ProteinProbEstimator::setCalcProteinLevelProb(true);
+    for (const char* peptide : {"PEPTIDE", "K.PEPTIDE", "PEPTIDE.R", "K..R"}) {
+        std::string line = std::string("Id\t1\t") + peptide + "\tP";
+        EXPECT_THROW(DataSet::readPsm(line, 3, optionalFields, true, myPsm,
+                featurePool, psmStore, decoyPrefix), MyException) << peptide;
+    }
+    DataSet::readPsm("Id\t1\t-.PEPTIDE.R\tP", 3, optionalFields, true, myPsm,
+            featurePool, psmStore, decoyPrefix);
+    ProteinProbEstimator::setCalcProteinLevelProb(false);
+    DataSet::resetWarnings();
 }
 
 // The feature pool can be destroyed and created again with another row

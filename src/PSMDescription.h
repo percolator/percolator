@@ -77,10 +77,19 @@ class PSMDescription {
         return *one == *other;
     }
 
+    // whether a peptide has the form X.PEPTIDE.Y, with one flanking residue
+    // (or '-') on each side
+    static bool hasFlanks(std::string_view pep) {
+        return pep.size() >= 5 && pep[1] == '.' && pep[pep.size() - 2] == '.';
+    }
     std::string getPeptideSequence() const { return std::string(getPeptideSequenceView()); }
-    // same as getPeptideSequence, without copying
+    // same as getPeptideSequence, without copying. The sequence without the
+    // flanks of X.PEPTIDE.Y; a peptide in any other form is used as it is.
+    // Never throws, so it can be used in comparators of parallel sorts.
     std::string_view getPeptideSequenceView() const {
-        return peptide.substr(2, peptide.size() - 4);
+        return hasFlanks(peptide)
+                   ? std::string_view(peptide.data() + 2, peptide.size() - 4)
+                   : peptide;
     }
     std::string_view getFullPeptideSequence() const { return peptide; }
     std::string getFlankN() const { return std::string(peptide.substr(0, 1)); }

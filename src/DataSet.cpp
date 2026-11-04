@@ -20,6 +20,7 @@
 
 FeatureNames DataSet::featureNames_;
 bool DataSet::decoyWarningTripped_ = false;
+bool DataSet::flankWarningTripped_ = false;
 
 DataSet::DataSet() {}
 
@@ -192,20 +193,8 @@ LabelType DataSet::readPsm(const std::string& line, const unsigned int lineNr,
     temp << "ERROR: Reading tab file, error reading PSM " << psm.getId() 
       << ". Check if a peptide and at least one protein are specified." << std::endl;
     throw MyException(temp.str());
-  } else if (ProteinProbEstimator::getCalcProteinLevelProb()) {
-    // MT: we only need the peptide sequences to be well formatted if protein inference is applied
-    if (peptide_seq.size() < 5) {
-      ostringstream temp;
-      temp << "ERROR: Reading tab file, the peptide sequence " << peptide_seq 
-        << " with PSM id " << psm.getId() << " is too short." << std::endl;
-      throw MyException(temp.str());
-    } else if (peptide_seq.at(1) != '.' && peptide_seq.at(peptide_seq.size()-1) != '.') {
-      ostringstream temp;
-      temp << "ERROR: Reading tab file, the peptide sequence " << peptide_seq 
-        << " with PSM id " << psm.getId() << " does not contain one or two of its"
-        << " flanking amino acids." << std::endl;
-      throw MyException(temp.str());
-    }
+  } else if (!PSMDescription::hasFlanks(peptide_seq)) {
+    checkUnflankedPeptide(peptide_seq, psm.getId(), lineNr);
   }
   
   std::vector<std::string_view> proteins;
@@ -259,6 +248,48 @@ LabelType DataSet::readPsm(const std::string& line, const unsigned int lineNr,
   psm.setProteins(psmStore.storeProteins(proteins), proteins.size());
   myPsm = psmStore.add(std::move(psm));
   return label;
+}
+
+/**
+ * Handles a peptide that is not of the form X.PEPTIDE.Y. Protein inference
+ * needs the flanks, and a number in the peptide column means that the line
+ * has more feature columns than the first PSM line, so both are errors.
+ * Otherwise the peptide is used as it is (see
+ * PSMDescription::getPeptideSequenceView), with one warning per run.
+ */
+void DataSet::checkUnflankedPeptide(std::string_view peptide,
+                                    std::string_view psmId,
+                                    unsigned int lineNr) {
+  // a digit is required, as the peptides NAN and INF would parse as numbers
+  std::string field(peptide);
+  TabReader numberReader(field);
+  numberReader.readDouble();
+  if (!numberReader.error() &&
+      std::any_of(field.begin(), field.end(),
+                  [](unsigned char c) { return std::isdigit(c) != 0; })) {
+    ostringstream temp;
+    temp << "ERROR: Reading tab file, the peptide column of PSM " << psmId
+         << " on line " << lineNr << " holds the number " << peptide
+         << ". The line has more feature columns than the first PSM line ("
+         << FeatureNames::getNumFeatures() << " features)." << std::endl;
+    throw MyException(temp.str());
+  }
+  if (ProteinProbEstimator::getCalcProteinLevelProb()) {
+    // the protein inference digests the protein sequences and needs flanks
+    ostringstream temp;
+    temp << "ERROR: Reading tab file, the peptide " << peptide << " of PSM "
+         << psmId << " on line " << lineNr << " is not of the form "
+         << "X.PEPTIDE.Y with one flanking amino acid (or '-') on each side, "
+         << "which protein inference needs." << std::endl;
+    throw MyException(temp.str());
+  }
+  if (!flankWarningTripped_) {
+    std::cerr << "Warning: the peptide " << peptide << " of PSM " << psmId
+              << " on line " << lineNr << " is not of the form X.PEPTIDE.Y "
+              << "with one flanking amino acid (or '-') on each side. Such "
+              << "peptides are used as they are." << std::endl;
+    flankWarningTripped_ = true;
+  }
 }
 
 void DataSet::registerPsm(PSMDescription* myPsm) {

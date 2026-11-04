@@ -18,6 +18,7 @@
 #define DATASET_H_
 
 #include <string>
+#include <string_view>
 #include <cassert>
 #include <cctype>
 #include <iostream>
@@ -81,14 +82,25 @@ class DataSet {
     PsmStore& psmStore, const std::string& decoyPrefix);
   
   void registerPsm(PSMDescription* myPsm);
+
+  // lets the warnings that are printed once per run be printed again
+  static void resetWarnings() {
+    decoyWarningTripped_ = false;
+    flankWarningTripped_ = false;
+  }
   
  protected:   
   
   std::vector<PSMDescription*> psms_;  // in input order, owned by a PsmStore
   LabelType label_ = LabelType::UNDEFINED;
   
+  static void checkUnflankedPeptide(std::string_view peptide,
+                                    std::string_view psmId,
+                                    unsigned int lineNr);
+
   static FeatureNames featureNames_;
   static bool decoyWarningTripped_;
+  static bool flankWarningTripped_;
 };
 
 #endif /*DATASET_H_*/
