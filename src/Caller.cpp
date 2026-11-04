@@ -35,6 +35,8 @@
 #include "MyException.h"
 #include "Option.h"
 #include "PickedProteinInterface.h"
+#include "PosteriorEstimator.h"
+#include "PseudoRandom.h"
 #include "ValidateTabFile.h"
 using namespace std;
 
@@ -74,7 +76,19 @@ Caller::Caller()
       useIrlsPep_(false),
       useInterpolatingPep_(true),
       usePavaPep_(false),
-      useTdcPep_(false) {}
+      useTdcPep_(false) {
+  // A process can run Percolator more than once (Crux, the unit tests).
+  // The settings below are process-wide and changed by the options and by
+  // the steps of a run, so they are set back to their initial values here,
+  // and every run gives the same results as in a new process.
+  PseudoRandom::setSeed(1u);
+  PosteriorEstimator::resetToDefaults();
+  ProteinProbEstimator::setCalcProteinLevelProb(false);
+  PSMDescription::setProteinNameSeparator("\t");
+  PSMDescription::resetSpectrumFileNames();
+  DataSet::resetFeatureNames();
+  DataSet::resetWarnings();
+}
 
 Caller::~Caller() {}
 

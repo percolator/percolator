@@ -52,6 +52,10 @@ class PosteriorEstimator {
   static void setReversed(bool status) {
 	  reversed = status;
   }
+  static bool getReversed() { return reversed; }
+  // Sets the process-wide settings of the estimation, which the options of
+  // qvality and earlier runs change, back to their initial values.
+  static void resetToDefaults();
   static void setNegative(bool negative) {
     includeNegativesInResult = negative;
   }

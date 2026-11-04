@@ -507,8 +507,12 @@ void PickedProteinInterface::estimatePEPs() {
   
   std::vector<double> peps;
   bool includeNegativesInResult = true;
+  // restored afterwards: a later PEP estimation in the same process, e.g.
+  // by a second run of Percolator, would otherwise see the list as reversed
+  const bool wasReversed = PosteriorEstimator::getReversed();
   PosteriorEstimator::setReversed(true);
   PosteriorEstimator::estimatePEP(combined, usePi0_, pi0_, peps, includeNegativesInResult);
+  PosteriorEstimator::setReversed(wasReversed);
   
   for (size_t i = 0; i < proteins_.size(); ++i) {
     proteins_.at(i).setPEP(peps.at(i));

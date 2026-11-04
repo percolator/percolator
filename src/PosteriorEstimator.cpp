@@ -39,7 +39,8 @@ using namespace std;
 #include "Globals.h"
 #include "IsotonicPEP.h"
 
-static int noIntervals = 500;
+static const int kDefaultNoIntervals = 500;
+static int noIntervals = kDefaultNoIntervals;
 static unsigned int numLambda = 100;
 static double maxLambda = 0.5;
 
@@ -48,6 +49,15 @@ bool PosteriorEstimator::pvalInput = false;
 bool PosteriorEstimator::competition = false;
 bool PosteriorEstimator::includeNegativesInResult = false;
 bool PosteriorEstimator::usePi0_ = true;
+
+void PosteriorEstimator::resetToDefaults() {
+  reversed = false;
+  pvalInput = false;
+  competition = false;
+  includeNegativesInResult = false;
+  usePi0_ = true;
+  noIntervals = kDefaultNoIntervals;
+}
 
 pair<double, bool> make_my_pair(double d, bool b) {
   return make_pair(d, b);

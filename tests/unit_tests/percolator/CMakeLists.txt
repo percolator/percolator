@@ -47,6 +47,7 @@ add_executable(gtest_unit
     UnitTest_Percolator_PSMDescription.cpp
     UnitTest_Percolator_PosteriorEstimator.cpp
     UnitTest_Percolator_SanityCheck.cpp
+    UnitTest_Percolator_Caller.cpp
 )
 
 # =============================
@@ -66,6 +67,7 @@ target_link_libraries(gtest_unit
     GTest::gtest
     GTest::gtest_main
     perclibrary
+    picked_protein
     dblas
 )
 if(NOT WIN32)
