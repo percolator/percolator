@@ -117,6 +117,13 @@ bool SanityCheck::validateDirection(vector<Scores>& testset,
   if (overFDR <= 0) {
     cerr << "No targets found with q<" << test_fdr_ << endl;
     resetDirection(trainset, w);
+    if (w.size() > 1u && !overRule_) {
+      cerr << "Hint: each of the " << w.size() << " test folds may be too "
+           << "small to reach q<" << test_fdr_ << ". --num-folds 1 trains and "
+           << "evaluates on the same PSMs," << endl
+           << "so its q values and PEPs are optimistic, and wrong for inputs "
+           << "without signal; a larger --testFDR is an alternative." << endl;
+    }
     return false;
   }
   if (initPositives_ > overFDR) {
