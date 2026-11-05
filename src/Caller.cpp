@@ -169,13 +169,12 @@ bool Caller::parseOptions(int argc, char** argv) {
       "Number of folds N of the cross-validation: the PSMs are split by "
       "spectrum into N parts, and each part is scored by SVMs trained on the "
       "other N-1 parts. Training time and memory grow with N. With N = 1 the "
-      "SVM is trained and evaluated on the same PSMs, which overfits, so the "
-      "reported q values and PEPs are optimistic; this is meant for inputs "
-      "too small to split. On synthetic data with N = 1, 4-12% of the target "
-      "PSMs with q < 0.01 were incorrect for inputs of 2,000 PSMs, 0.8-1.8% "
-      "for 10,000 PSMs and 0.7-0.8%, as with N = 3, for 200,000 PSMs or "
-      "more; with 100-500 PSMs and --testFDR 0.05, 22-50% of the targets "
-      "with q < 0.05 were incorrect. Default = 3.",
+      "SVM is trained and evaluated on the same PSMs, so the reported q "
+      "values and PEPs are optimistic: on synthetic data, about 1% of the "
+      "target PSMs with q < 0.01 were incorrect for 10,000 PSMs with many "
+      "features, 6-8% for small or weakly separating inputs, and all of them "
+      "for inputs without signal. N = 1 is meant for inputs too small to "
+      "split and is never switched on automatically. Default = 3.",
       "number");
   cmd.defineOption("", "classic-training",
                    "Train the SVMs as Percolator 3.09 did: every SVM is "
