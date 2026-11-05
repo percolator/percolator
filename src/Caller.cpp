@@ -1158,10 +1158,22 @@ int Caller::run() {
   if (numFoldsSet_ && numFolds > 1u) {
     const std::size_t numSpectra = allScores.getNumSpectra();
     if (numFolds > numSpectra) {
-      std::cerr << "Error: --num-folds " << numFolds << " is larger than the "
-                << "number of spectra (" << numSpectra << "), and each fold "
-                << "needs at least one spectrum." << std::endl;
-      return 0;
+      if (NO_TERMINATE) {
+        // at least two folds, since one fold is only used when asked for; with
+        // a single spectrum, one of them stays empty
+        const unsigned int cappedFolds =
+            static_cast<unsigned int>(std::max<std::size_t>(numSpectra, 2u));
+        std::cerr << "Warning: --num-folds " << numFolds << " is larger than "
+                  << "the number of spectra (" << numSpectra << "). "
+                  << "No-terminate flag set: using " << cappedFolds
+                  << " folds." << std::endl;
+        numFolds = cappedFolds;
+      } else {
+        std::cerr << "Error: --num-folds " << numFolds << " is larger than the "
+                  << "number of spectra (" << numSpectra << "), and each fold "
+                  << "needs at least one spectrum." << std::endl;
+        return 0;
+      }
     }
   }
 
