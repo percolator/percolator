@@ -5,6 +5,7 @@ Changes of results:
 * The I-spline PEP fit is solved exactly by an active-set method. The trust-region solver stopped at its iteration limit. PEPs change by up to about 0.06; calibration on synthetic data is unchanged.
 * Results no longer depend on the number of threads: all sort comparators are total orders, with the input line as the last tie-break. Only ties are affected.
 * New option --classic-training restores the previous training: fixed number of iterations, full grid in every iteration, CGLS solves from zero weights.
+* New option --num-folds N sets the number of cross-validation folds (default 3). With N = 1 the SVM is trained and evaluated on the same PSMs, for inputs too small to split; its q values and PEPs are optimistic. It is never switched on automatically; when no test fold reaches the test FDR, a hint suggests it or a larger --testFDR.
 * qvality estimates PEPs by I-spline regression of the target q values, as Percolator does; --pava-pep, --tdc-pep and --rank-pep select the other monotone regressions, and --irls-pep the previous P-IRLS method.
 * New option --tdc-pep (Percolator and qvality): PEPs from a monotone fit of the decoy rate p on the score, PEP = p/(1-p), scaled by pi0 and the target/decoy ratio for separate searches. The default remains the regression of the target q values.
 Fixes:
@@ -15,6 +16,7 @@ Fixes:
 * -Q/--pepxml-output has written nothing since the XML output was removed; it now prints a warning.
 * A non-finite experimental mass (nan, inf) is rejected with an error that names the PSM; it broke the ordering of PSMs.
 * A failed load of several input files (unreadable input, a header with fewer columns than the PSMs) left the temporary concatenated file behind.
+* With a single cross-validation bin (--num-folds 1, RESET), scores that cannot be rescaled are kept as they are instead of ending the run, so inputs of one to three spectra complete.
 * Multiple input files: infinite loop when a column was missing from the widest header; the temporary directory is now removed.
 * Out-of-bounds read in ProteinProbEstimator::lastProteinInGroup; uninitialised Peptide reference count (leak in protein digestion); leaked PSMs in the second pass of -N; 32-bit overflow of SVM buffer sizes above about 70 million active rows.
 * A plain cmake configure built without optimisation. Release is now the default.
