@@ -58,7 +58,7 @@ void Scores::merge(std::vector<Scores>& sv,
     cvBinScores->checkSeparationAndSetPi0();
     cvBinScores->calcQvals(fdr);
     if (!skipNormalizeScores) {
-      cvBinScores->normalizeScores(fdr, *weights);
+      cvBinScores->normalizeScores(fdr, *weights, sv.size() == 1u);
     }
     copy(cvBinScores->begin(), cvBinScores->end(), back_inserter(scores_));
   }
@@ -341,8 +341,13 @@ void Scores::recalculateSizes() {
  * Linear rescaling of SVM scores such that q=fdr = 0 and the median decoy = -1.
  * @param fdr fdr-cutoff to use, typically --trainFDR
  * @param weights SVM weights used to compute SVM scores
+ * @param singleBin whether these are the scores of the only cross-validation
+ * bin; if they cannot be rescaled, the raw SVM scores and weights are then
+ * kept with a warning instead of stopping, since a single bin needs no common
+ * scale
  */
-void Scores::normalizeScores(double fdr, std::vector<double>& weights) {
+void Scores::normalizeScores(double fdr, std::vector<double>& weights,
+                             bool singleBin) {
   unsigned int medianIndex = std::max(0u, totalNumberOfDecoys_ / 2u),
                decoys = 0u;
 
@@ -385,6 +390,12 @@ void Scores::normalizeScores(double fdr, std::vector<double>& weights) {
            << "decoy has score -1, but skipping rescaling." << std::endl;
       diff = 1.0;
       fdrScore += 1.0;
+    } else if (singleBin) {
+      cerr << "Warning: median decoy score <= score at " << fdr * 100
+           << "% FDR, the scores cannot be rescaled. Keeping the raw SVM "
+           << "scores, as there is only one cross-validation bin to merge."
+           << std::endl;
+      return;
     } else {
       throw MyException(oss.str());
     }

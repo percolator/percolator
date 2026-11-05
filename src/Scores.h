@@ -116,7 +116,11 @@ class Scores {
   void generateNegativeTrainingSet(AlgIn& data, const double cneg);
 
   void recalculateSizes();
-  void normalizeScores(double fdr, std::vector<double>& weights);
+  // singleBin: the scores are the only cross-validation bin, so they need
+  // no common scale, and they are kept as they are when they cannot be
+  // rescaled
+  void normalizeScores(double fdr, std::vector<double>& weights,
+                       bool singleBin = false);
 
   void weedOutRedundant();
   void weedOutRedundant(std::map<std::string, unsigned int>& peptideSpecCounts,

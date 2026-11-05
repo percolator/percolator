@@ -1264,7 +1264,8 @@ int Caller::run() {
 
     allScores.postMergeStep();
     allScores.calcQvals(selectionFdr_);
-    allScores.normalizeScores(selectionFdr_, rawWeights);
+    // with one fold, the scores of all PSMs come from a single bin
+    allScores.normalizeScores(selectionFdr_, rawWeights, numFolds == 1u);
   }
 
   calcAndOutputResult(allScores);
