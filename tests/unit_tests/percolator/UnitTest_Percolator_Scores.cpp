@@ -318,6 +318,96 @@ TEST_F(ScoresTest, CreateXvalSetsBySpectrumWithNFolds)
     }
 }
 
+// normalizeScores rescales the scores of each cross-validation bin to a
+// common scale before the bins are merged. When the median decoy does not
+// score below the score at the FDR threshold, which happens for tiny inputs,
+// this is impossible and an error, unless the bin is the only one: its raw
+// SVM scores and weights are then kept. A bin that can be rescaled is
+// rescaled in the same way with and without singleBin.
+TEST_F(ScoresTest, NormalizeScoresKeepsRawScoresOfASingleBin)
+{
+    FeatureNames::resetNumFeatures();
+    FeatureNames::setNumFeatures(2);
+    const double fdr = 0.01;
+    const std::vector<double> rawWeights = {0.5, -0.25, 1.0};
+    std::vector<PSMDescription> psms(20);
+    for (std::size_t i = 0; i < psms.size(); ++i) {
+        psms[i].scan = static_cast<unsigned int>(i);
+    }
+    // a decoy above three targets, sorted by score; with a single decoy
+    // there is no median decoy below the top score
+    const double unscalableScores[] = {4.0, 3.0, 2.0, 1.0};
+    auto unscalable = [&psms, &unscalableScores]() {
+        Scores scores(false);
+        for (std::size_t i = 0; i < 4; ++i) {
+            scores.addScoreHolder(ScoreHolder(unscalableScores[i],
+                i == 0 ? LabelType::DECOY : LabelType::TARGET, &psms[i]));
+        }
+        scores.recalculateSizes();
+        return scores;
+    };
+    auto expectUnchanged = [&unscalableScores](const Scores& scores) {
+        ASSERT_EQ(4u, scores.size());
+        std::size_t i = 0;
+        for (const ScoreHolder& sh : scores) {
+            EXPECT_EQ(unscalableScores[i++], sh.score);
+        }
+    };
+
+    {
+        SCOPED_TRACE("normalizeScores");
+        Scores scores = unscalable();
+        scores.calcQvals(fdr);
+        std::vector<double> w = rawWeights;
+        EXPECT_THROW(scores.normalizeScores(fdr, w), MyException);
+        EXPECT_NO_THROW(scores.normalizeScores(fdr, w, true));
+        EXPECT_EQ(rawWeights, w);
+        expectUnchanged(scores);
+    }
+    {
+        SCOPED_TRACE("merge of one bin");
+        std::vector<Scores> bins(1, unscalable());
+        std::vector<std::vector<double> > w(1, rawWeights);
+        Scores merged(false);
+        EXPECT_NO_THROW(merged.merge(bins, fdr, false, w));
+        EXPECT_EQ(rawWeights, w[0]);
+        expectUnchanged(merged);
+    }
+    {
+        SCOPED_TRACE("merge of two bins");
+        std::vector<Scores> bins(2, unscalable());
+        std::vector<std::vector<double> > w(2, rawWeights);
+        Scores merged(false);
+        EXPECT_THROW(merged.merge(bins, fdr, false, w), MyException);
+    }
+    {
+        SCOPED_TRACE("rescalable bin");
+        // 10 targets above 10 decoys
+        Scores scores[2] = {Scores(false), Scores(false)};
+        std::vector<double> w[2] = {rawWeights, rawWeights};
+        for (int k = 0; k < 2; ++k) {
+            for (std::size_t i = 0; i < 20; ++i) {
+                scores[k].addScoreHolder(ScoreHolder(
+                    20.0 - static_cast<double>(i),
+                    i < 10 ? LabelType::TARGET : LabelType::DECOY, &psms[i]));
+            }
+            scores[k].recalculateSizes();
+            scores[k].calcQvals(fdr);
+            EXPECT_NO_THROW(scores[k].normalizeScores(fdr, w[k], k == 1));
+        }
+        EXPECT_NE(rawWeights, w[0]);
+        EXPECT_EQ(w[0], w[1]);
+        ASSERT_EQ(20u, scores[0].size());
+        auto it0 = scores[0].begin();
+        auto it1 = scores[1].begin();
+        EXPECT_NE(20.0, it0->score);
+        for (; it0 != scores[0].end(); ++it0, ++it1) {
+            EXPECT_EQ(it0->score, it1->score);
+        }
+    }
+    FeatureNames::resetNumFeatures();
+}
+
 // countTargetsBelowFdr must report the same number of targets below the FDR
 // threshold as calcScoresAndQvals, also with many tied scores, with and
 // without the mix-max correction.
