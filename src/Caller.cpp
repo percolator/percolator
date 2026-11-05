@@ -170,10 +170,11 @@ bool Caller::parseOptions(int argc, char** argv) {
       "spectrum into N parts, and each part is scored by SVMs trained on the "
       "other N-1 parts. Training time and memory grow with N. With N = 1 the "
       "SVM is trained and evaluated on the same PSMs, so the reported q "
-      "values and PEPs are optimistic: on synthetic data, about 1% of the "
-      "target PSMs with q < 0.01 were incorrect for 10,000 PSMs with many "
-      "features, 6-8% for small or weakly separating inputs, and all of them "
-      "for inputs without signal. N = 1 is meant for inputs too small to "
+      "values and PEPs are optimistic: on synthetic data, 1-2% of the target "
+      "PSMs with q < 0.01 were incorrect for inputs of 10,000 PSMs with many "
+      "features, 4-19% per input for 1,000-5,000 PSMs or weakly separating "
+      "inputs, and all of them for inputs without signal. N = 1 is meant for "
+      "inputs too small to "
       "split and is never switched on automatically. Default = 3.",
       "number");
   cmd.defineOption("", "classic-training",
@@ -1155,7 +1156,9 @@ int Caller::run() {
     // - apply decoy factor in PosteriorEstimator::estimatePEP
   }
 
-  if (numFoldsSet_ && numFolds > 1u) {
+  // an explicit --num-folds 3 behaves like the default, which has never
+  // been checked against the number of spectra
+  if (numFoldsSet_ && numFolds > 1u && numFolds != kDefaultNumFolds) {
     const std::size_t numSpectra = allScores.getNumSpectra();
     if (numFolds > numSpectra) {
       if (NO_TERMINATE) {
@@ -1165,8 +1168,13 @@ int Caller::run() {
             static_cast<unsigned int>(std::max<std::size_t>(numSpectra, 2u));
         std::cerr << "Warning: --num-folds " << numFolds << " is larger than "
                   << "the number of spectra (" << numSpectra << "). "
-                  << "No-terminate flag set: using " << cappedFolds
-                  << " folds." << std::endl;
+                  << "No-terminate flag set: ";
+        if (cappedFolds < numFolds) {
+          std::cerr << "using " << cappedFolds << " folds." << std::endl;
+        } else {
+          std::cerr << "keeping " << cappedFolds << " folds, so at least one "
+                    << "of them stays empty." << std::endl;
+        }
         numFolds = cappedFolds;
       } else {
         std::cerr << "Error: --num-folds " << numFolds << " is larger than the "
