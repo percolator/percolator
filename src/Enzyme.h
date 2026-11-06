@@ -21,7 +21,6 @@
 #include <algorithm>
 #include <cstdlib>
 #include <iostream>
-#include <cstring> // needed for stricmp()
 #include <memory>
 #include <string>
 #include <assert.h>
@@ -61,13 +60,6 @@ class Enzyme {
     virtual bool isEnz(const char& n, const char& c) const = 0;
     virtual std::string toString() const = 0;
     virtual EnzymeType getET() const = 0;
-    
-  private:
-    
-    inline int stricmp (const std::string &s1,const std::string &s2)
-    {
-      return stricmp (s1.c_str(), s2.c_str()); // C's stricmp
-    }
 };
 
 class NoEnzyme : public Enzyme {
@@ -253,7 +245,7 @@ class Elastase : public Enzyme {
       return getString();
     }
     virtual bool isEnz(const char& n, const char& c) const {
-      return (((n == 'L' || n == 'V' || n == 'A' || n == 'G') && c != 'P')
+      return (((n == 'A' || n == 'L' || n == 'I' || n == 'V') && c != 'P')
           || n == '-' || c == '-');
     }
     virtual EnzymeType getET() const {
@@ -373,7 +365,7 @@ class GluC : public Enzyme {
       return getString();
     }
     virtual bool isEnz(const char& n, const char& c) const {
-      return (((n == 'E') && (c != 'P'))
+      return (((n == 'D' || n == 'E') && (c != 'P'))
           || n == '-' || c == '-');
     }
     virtual EnzymeType getET() const {
