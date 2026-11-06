@@ -425,7 +425,10 @@ bool Caller::parseOptions(int argc, char** argv) {
       "are counted in the merged out-of-fold list. If there are none, or "
       "fewer than for the initial direction counted in the same way, the "
       "default direction is used unless --override is given. With one fold, "
-      "as with --reset-algorithm, both are the same. Default = bins.",
+      "as with --reset-algorithm, both are the same. 'pooled' merges with "
+      "--merge-normalization train-decoys unless a scheme is given, and "
+      "cannot be combined with 'test', whose anchors are taken from each "
+      "test bin. Default = bins.",
       "check");
   cmd.defineOption(
       Option::EXPERIMENTAL_FEATURE, "composition-match",
@@ -757,6 +760,21 @@ bool Caller::parseOptions(int argc, char** argv) {
     } else if (directionCheck != "bins") {
       std::cerr << "Error: --direction-check has to be one out of \"bins\" "
                 << "or \"pooled\"." << std::endl;
+      return 0;
+    }
+  }
+  // The pooled check merges the test bins as the final list is merged. Its
+  // scheme takes the anchors from the training sets, which also exist for
+  // the small test bins that the pooled check is meant for.
+  if (check_.pooledCheck()) {
+    if (!cmd.isOptionSet("merge-normalization")) {
+      mergeNormalization_ = MergeNormalization::TRAIN_DECOYS;
+    } else if (mergeNormalization_ == MergeNormalization::TEST) {
+      std::cerr << "Error: --direction-check pooled cannot be combined with "
+                << "--merge-normalization test, whose anchors are taken from "
+                << "each test bin and do not exist for small bins. Use "
+                << "train-decoys (the default with pooled), train or none."
+                << std::endl;
       return 0;
     }
   }
