@@ -424,8 +424,12 @@ bool Caller::parseOptions(int argc, char** argv) {
       "list (see --merge-normalization), and the targets with q < --testFDR "
       "are counted in the merged out-of-fold list. If there are none, or "
       "fewer than for the initial direction counted in the same way, the "
-      "default direction is used unless --override is given. With one fold, "
-      "as with --reset-algorithm, both are the same. 'pooled' merges with "
+      "default direction is used unless --override is given. "
+      "'second-chance': 'bins', and where it would fall back, the trained "
+      "SVMs are kept if the count of 'pooled' with train-decoys keeps them; "
+      "the final list is then merged with train-decoys unless "
+      "--merge-normalization is given. With one fold, "
+      "as with --reset-algorithm, all are the same. 'pooled' merges with "
       "--merge-normalization train-decoys unless a scheme is given, and "
       "cannot be combined with 'test', whose anchors are taken from each "
       "test bin. Default = bins.",
@@ -755,18 +759,27 @@ bool Caller::parseOptions(int argc, char** argv) {
 
   if (cmd.isOptionSet("direction-check")) {
     const std::string directionCheck = cmd.options["direction-check"];
-    if (directionCheck == "pooled") {
-      check_.setPooledCheck(true);
-    } else if (directionCheck != "bins") {
-      std::cerr << "Error: --direction-check has to be one out of \"bins\" "
-                << "or \"pooled\"." << std::endl;
+    if (directionCheck == "bins") {
+      check_.setDirectionCheck(SanityCheck::DirectionCheck::BINS);
+    } else if (directionCheck == "second-chance") {
+      check_.setDirectionCheck(SanityCheck::DirectionCheck::SECOND_CHANCE);
+    } else if (directionCheck == "pooled") {
+      check_.setDirectionCheck(SanityCheck::DirectionCheck::POOLED);
+    } else {
+      std::cerr << "Error: --direction-check has to be one out of \"bins\", "
+                << "\"second-chance\" or \"pooled\"." << std::endl;
       return 0;
     }
+  }
+  // The second chance counts with train-decoys and merges with it when it
+  // keeps the trained SVMs; an explicit scheme is used in that case too.
+  if (cmd.isOptionSet("merge-normalization")) {
+    check_.setSecondChanceMergeScheme(mergeNormalization_);
   }
   // The pooled check merges the test bins as the final list is merged. Its
   // scheme takes the anchors from the training sets, which also exist for
   // the small test bins that the pooled check is meant for.
-  if (check_.pooledCheck()) {
+  if (check_.directionCheck() == SanityCheck::DirectionCheck::POOLED) {
     if (!cmd.isOptionSet("merge-normalization")) {
       mergeNormalization_ = MergeNormalization::TRAIN_DECOYS;
     } else if (mergeNormalization_ == MergeNormalization::TEST) {
@@ -1421,6 +1434,9 @@ int Caller::run() {
   // PSM of the training subset
   std::vector<std::vector<double> > rawFoldWeights;
   std::vector<std::pair<unsigned int, unsigned int> > subsetFolds;
+  // the scheme of the merge, which the second chance of the direction check
+  // can change
+  MergeNormalization usedMergeNormalization = mergeNormalization_;
   {
     CrossValidation crossValidation(
         quickValidation_, reportEachIteration_, testFdr_, selectionFdr_,
@@ -1468,6 +1484,7 @@ int Caller::run() {
     {
       StageTimer stageTimer("post-iteration processing");
       crossValidation.postIterationProcessing(allScores, check_);
+      usedMergeNormalization = crossValidation.usedMergeNormalization();
     }
 
     if (weightOutputFN_.size() > 0) {
@@ -1531,7 +1548,7 @@ int Caller::run() {
     // their own anchors. With the other schemes the averaged weights, which
     // were rescaled per fold in the merge, already give scores on the common
     // scale of the training sets, or raw scores with "none".
-    if (mergeNormalization_ == MergeNormalization::TEST) {
+    if (usedMergeNormalization == MergeNormalization::TEST) {
       allScores.calcQvals(selectionFdr_);
       // with one fold, the scores of all PSMs come from a single bin
       allScores.normalizeScores(selectionFdr_, rawWeights, numFolds == 1u);

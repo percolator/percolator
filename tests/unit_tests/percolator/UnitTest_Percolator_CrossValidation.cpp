@@ -207,7 +207,8 @@ TEST_F(CrossValidationTest, doStepTest)
 
 // The direction check of trainAndMerge
 struct DirectionCheckOptions {
-    bool pooled = false;    // --direction-check pooled
+    // --direction-check
+    SanityCheck::DirectionCheck check = SanityCheck::DirectionCheck::BINS;
     bool overrule = false;  // --override
     double testFdr = 0.05;  // a tiny one makes the check fail
 };
@@ -261,7 +262,7 @@ static void trainAndMerge(unsigned int numFolds, MergeNormalization scheme,
     Scores scores(false);
     scores.populateWithPSMs(setHandler);
     SanityCheck check;
-    check.setPooledCheck(checkOptions.pooled);
+    check.setDirectionCheck(checkOptions.check);
     check.setOverrule(checkOptions.overrule);
     crossValidation.preIterationSetup(scores, check, norm.get());
     crossValidation.train(norm.get());
@@ -404,7 +405,7 @@ TEST_F(CrossValidationTest, DirectionCheckPooledAndFailedChecks)
             std::vector<double> featuresBins, featuresPooled;
             trainAndMerge(numFolds, scheme, scoreBins, wBins, featuresBins);
             DirectionCheckOptions pooled;
-            pooled.pooled = true;
+            pooled.check = SanityCheck::DirectionCheck::POOLED;
             trainAndMerge(numFolds, scheme, scorePooled, wPooled,
                           featuresPooled, pooled);
             ASSERT_EQ(numFolds, wBins.size());
@@ -431,7 +432,8 @@ TEST_F(CrossValidationTest, DirectionCheckPooledAndFailedChecks)
                              << static_cast<int>(scheme));
                 DirectionCheckOptions failing;
                 failing.overrule = overrule;
-                failing.pooled = pooled;
+                failing.check = pooled ? SanityCheck::DirectionCheck::POOLED
+                                       : SanityCheck::DirectionCheck::BINS;
                 failing.testFdr = 1e-6;
                 std::map<unsigned int, double> scoreOf;
                 std::vector<std::vector<double> > w;

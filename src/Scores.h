@@ -54,6 +54,10 @@ enum class MergeNormalization {
   NONE           // the raw SVM scores
 };
 
+// The name of the scheme as --merge-normalization takes it: "test",
+// "train", "train-decoys" or "none".
+const char* mergeNormalizationName(MergeNormalization scheme);
+
 /*
  * The linear map score -> (score - offset) / scale that puts the SVM scores
  * of a cross-validation bin on the common scale. A scale <= 0 means that the

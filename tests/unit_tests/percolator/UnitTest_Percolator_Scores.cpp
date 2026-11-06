@@ -1224,7 +1224,9 @@ TEST_F(ScoresTest, PooledDirectionCheckOnHandMadeBins)
                                               << pooled);
             SanityCheck check;
             check.addDefaultWeights(defaultWeights);
-            check.setPooledCheck(pooled);
+            check.setDirectionCheck(pooled
+                                        ? SanityCheck::DirectionCheck::POOLED
+                                        : SanityCheck::DirectionCheck::BINS);
             check.setMergeScheme(MergeNormalization::TRAIN_DECOYS, 0.01, false);
             std::vector<Scores> bins = example.testBins(numBins);
             std::vector<Scores> trainBins = example.trainBins(numBins);

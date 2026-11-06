@@ -107,6 +107,13 @@ class CrossValidation {
   // are merged, see Caller's --merge-normalization
   void inline setMergeNormalization(MergeNormalization scheme) {
     mergeNormalization_ = scheme;
+    usedMergeNormalization_ = scheme;
+  }
+  // the scheme postIterationProcessing merged with: the one set above, or
+  // the scheme of the direction check's second chance when that kept the
+  // trained SVMs (SanityCheck::secondChanceMergeScheme)
+  MergeNormalization usedMergeNormalization() const {
+    return usedMergeNormalization_;
   }
 
  protected:
@@ -139,6 +146,7 @@ class CrossValidation {
   bool trainBestPositive_;
   bool skipNormalizeScores_;
   MergeNormalization mergeNormalization_ = MergeNormalization::TEST;
+  MergeNormalization usedMergeNormalization_ = MergeNormalization::TEST;
 
   double decoyFractionTraining_;
 

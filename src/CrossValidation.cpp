@@ -742,6 +742,13 @@ void CrossValidation::postIterationProcessing(Scores& fullset,
       testScores_[set].calcScoresAndQvals(weights_[set], selectionFdr_);
     }
   }
+  // When the second chance of the direction check kept the trained SVMs,
+  // whose test bins were too small for the per-bin count, the bins are
+  // merged as it counted them, with the training-set decoys, unless the
+  // caller chose another scheme for this case.
+  usedMergeNormalization_ = check.secondChanceKept()
+                                ? check.secondChanceMergeScheme()
+                                : mergeNormalization_;
 
   // With the TRAIN and TRAIN_DECOYS schemes, each test bin is rescaled by
   // anchors taken from its fold's training set, scored with the same final
@@ -750,12 +757,12 @@ void CrossValidation::postIterationProcessing(Scores& fullset,
   // anchors exist and are less noisy for small test bins.
   std::vector<ScoreScale> binScales;
   if (!skipNormalizeScores_ &&
-      (mergeNormalization_ == MergeNormalization::TRAIN ||
-       mergeNormalization_ == MergeNormalization::TRAIN_DECOYS)) {
+      (usedMergeNormalization_ == MergeNormalization::TRAIN ||
+       usedMergeNormalization_ == MergeNormalization::TRAIN_DECOYS)) {
     binScales.resize(numFolds_);
     for (std::size_t set = 0; set < numFolds_; ++set) {
       binScales[set] = trainScores_[set].calcScoreScale(
-          weights_[set], mergeNormalization_, selectionFdr_);
+          weights_[set], usedMergeNormalization_, selectionFdr_);
       if (VERB > 2) {
         std::cerr << "Split " << set + 1 << ": rescaling the test scores by "
                   << "the training set, offset " << binScales[set].offset
@@ -774,7 +781,7 @@ void CrossValidation::postIterationProcessing(Scores& fullset,
   // PSMs as when the check passes.
   if (recordTestFolds_ && trainedVectorsKept) recordTestFolds();
   fullset.merge(testScores_, selectionFdr_, skipNormalizeScores_, weights_,
-                mergeNormalization_, binScales);
+                usedMergeNormalization_, binScales);
 }
 
 /**

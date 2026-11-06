@@ -62,7 +62,7 @@ int SanityCheck::getInitDirection(vector<Scores>& testset,
       for (size_t set = 1; set < w.size(); ++set) {
         copy(w[0].begin(), w[0].end(), w[set].begin());
       }
-      initWeights_ = w[0];
+      fileWeights_ = w[0];
     } else {
       std::cerr << "WARNING: Could not find weights input file " << initWeightFN_
                 << ". Using default weights instead." << std::endl;
@@ -83,6 +83,12 @@ int SanityCheck::getInitDirection(vector<Scores>& testset,
         0, Scores::countMergedTargets(testset, trainset, w, mergeScheme_,
                                       mergeFdr_, skipNormalizeScores_,
                                       test_fdr));
+  }
+  // The second chance counts the initial direction in the merged list only
+  // when it runs; training changes w, so the vectors are kept for it.
+  initWeights_.clear();
+  if (useSecondChance(w.size())) {
+    initWeights_ = w;
   }
   return initPositives_;
 }
@@ -120,9 +126,74 @@ void SanityCheck::getDefaultDirection(vector<Scores>& trainset,
   }
 }
 
+bool SanityCheck::wrongSignOfDefaultDirection(
+    const vector<vector<double> >& w) const {
+  if (!initDefaultDir_) {
+    return false;
+  }
+  for (size_t set = 0; set < w.size(); ++set) {
+    if (w[set][static_cast<std::size_t>(abs(initDefaultDir_) - 1)] *
+            initDefaultDir_ <= 0) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool SanityCheck::secondChance(const vector<Scores>& testset,
+                               const vector<Scores>& trainset,
+                               const vector<vector<double> >& w,
+                               int& trainedCount) const {
+  // the anchors of the training sets exist for test bins of any size
+  const MergeNormalization counted = MergeNormalization::TRAIN_DECOYS;
+  trainedCount =
+      Scores::countMergedTargets(testset, trainset, w, counted, mergeFdr_,
+                                 skipNormalizeScores_, test_fdr_);
+  int initCount = 0;
+  if (initWeights_.size() == w.size()) {
+    initCount = std::max(
+        0, Scores::countMergedTargets(testset, trainset, initWeights_,
+                                      counted, mergeFdr_,
+                                      skipNormalizeScores_, test_fdr_));
+  }
+  const bool countsKeep = trainedCount > 0 && trainedCount >= initCount;
+  // the sign check of --default-direction applies as after a passed count
+  const bool wrongSign = countsKeep && wrongSignOfDefaultDirection(w);
+  const bool keep = countsKeep && !wrongSign;
+  cerr << "Second chance on the merged out-of-fold list"
+       << (skipNormalizeScores_ ? "" : ", rescaled by the training decoys")
+       << ": ";
+  if (trainedCount < 0) {
+    cerr << "the scores of a test bin cannot be rescaled with the trained "
+         << "weights";
+  } else {
+    cerr << trainedCount << " targets with q<" << test_fdr_
+         << " for the trained SVMs, " << initCount
+         << " for the initial direction";
+  }
+  if (overRule_) {
+    cerr << "; --override keeps the trained SVMs in any case." << endl;
+  } else if (keep) {
+    cerr << "; the trained SVMs are kept";
+    if (!skipNormalizeScores_) {
+      cerr << ", merged with "
+           << mergeNormalizationName(secondChanceMergeScheme_);
+    }
+    cerr << "." << endl;
+  } else if (wrongSign) {
+    cerr << "; the trained SVMs are not kept, as the weight of the main "
+         << "scoring direction (--default-direction) has the wrong sign."
+         << endl;
+  } else {
+    cerr << "; the trained SVMs are not kept." << endl;
+  }
+  return keep;
+}
+
 bool SanityCheck::validateDirection(vector<Scores>& testset,
                                     vector<Scores>& trainset,
                                     vector<vector<double> >& w) {
+  secondChanceKept_ = false;
   const bool pooled = usePooledCount(w.size());
   int overFDR = 0;
   if (pooled) {
@@ -146,40 +217,49 @@ bool SanityCheck::validateDirection(vector<Scores>& testset,
       overFDR += testset[set].calcScoresAndQvals(w[set], test_fdr_);
     }
   }
-  if (overFDR <= 0) {
-    cerr << "No targets found with q<" << test_fdr_ << endl;
-    resetDirection(trainset, w);
-    if (pooled && !overRule_) {
-      cerr << "Hint: q<" << test_fdr_ << " needs about " << 1.0 / test_fdr_
-           << " targets above the best-scoring decoy of the merged list; "
-           << "a larger --testFDR is an alternative." << endl;
-    } else if (w.size() > 1u && !overRule_) {
-      cerr << "Hint: each of the " << w.size() << " test folds may be too "
-           << "small to reach q<" << test_fdr_ << ". --num-folds 1 trains and "
-           << "evaluates on the same PSMs," << endl
-           << "so its q values and PEPs are optimistic, and wrong for inputs "
-           << "without signal; a larger --testFDR is an alternative." << endl;
+  bool keptBySecondChance = false;
+  if (overFDR <= 0 || initPositives_ > overFDR) {
+    if (overFDR <= 0) {
+      cerr << "No targets found with q<" << test_fdr_ << endl;
+    } else {
+      cerr << "Less identifications (" << overFDR << " vs " << initPositives_
+          << ") after percolator processing than before processing" << endl;
     }
-    return false;
-  }
-  if (initPositives_ > overFDR) {
-    cerr << "Less identifications (" << overFDR << " vs " << initPositives_
-        << ") after percolator processing than before processing" << endl;
-    resetDirection(trainset, w);
-    return false;
-  }
-  if (initDefaultDir_) {
-    for (size_t set = 0; set < w.size(); ++set) {
-      if (w[set][static_cast<std::size_t>(abs(initDefaultDir_) - 1)] * initDefaultDir_ <= 0) {
-        if (VERB > 1) {
-          cerr
-            << "Warning, wrong sign of the weight for main scoring direction"
-            << endl;
+    // Where the per-bin count would reset, the second chance judges the
+    // trained SVMs on the merged out-of-fold list, which small test bins
+    // do not limit. It decides nothing under --override.
+    const bool secondChanceTried = useSecondChance(w.size());
+    int pooledCount = 0;
+    keptBySecondChance = secondChanceTried &&
+                         secondChance(testset, trainset, w, pooledCount) &&
+                         !overRule_;
+    if (!keptBySecondChance) {
+      resetDirection(trainset, w);
+      if (overFDR <= 0 && !overRule_) {
+        if (pooled || (secondChanceTried && pooledCount <= 0)) {
+          cerr << "Hint: q<" << test_fdr_ << " needs about "
+               << 1.0 / test_fdr_ << " targets above the best-scoring decoy "
+               << "of the merged list; a larger --testFDR is an alternative."
+               << endl;
+        } else if (w.size() > 1u && !secondChanceTried) {
+          cerr << "Hint: each of the " << w.size() << " test folds may be too "
+               << "small to reach q<" << test_fdr_ << ". --num-folds 1 trains "
+               << "and evaluates on the same PSMs," << endl
+               << "so its q values and PEPs are optimistic, and wrong for "
+               << "inputs without signal; a larger --testFDR is an "
+               << "alternative." << endl;
         }
-        resetDirection(trainset, w);
-        return false;
       }
+      return false;
     }
+  }
+  if (wrongSignOfDefaultDirection(w)) {
+    if (VERB > 1) {
+      cerr << "Warning, wrong sign of the weight for main scoring direction"
+           << endl;
+    }
+    resetDirection(trainset, w);
+    return false;
   }
   if (pooled) {
     // the direction is kept: score the test bins with their folds' weights
@@ -188,6 +268,8 @@ bool SanityCheck::validateDirection(vector<Scores>& testset,
       testset[set].calcScoresAndQvals(w[set], test_fdr_);
     }
   }
+  // the per-bin count has already scored the test bins with w
+  secondChanceKept_ = keptBySecondChance;
   return true;
 }
 
@@ -288,12 +370,12 @@ void SanityCheck::readWeights(istream& weightStream, vector<double>& w) {
 
 void SanityCheck::resetDirection(vector<Scores>& trainset,
                                  vector<vector<double> >& w) {
-  if (!overRule_ && !initWeights_.empty()) {
+  if (!overRule_ && !fileWeights_.empty()) {
     // the vector given with -W, not the default that it replaced
     cerr << "Resetting score vector, using the initial weights from the "
          << "weights file. Use --override flag to prevent this." << endl;
     for (size_t set = 0; set < w.size(); ++set) {
-      w[set] = initWeights_;
+      w[set] = fileWeights_;
     }
   } else if (!overRule_) {
     cerr << "Resetting score vector, using default vector. Use --override flag to prevent this." << endl;

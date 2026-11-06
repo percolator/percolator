@@ -47,6 +47,20 @@
 #include "IsotonicPEP.h"
 #include "NumberFormatter.h"
 
+const char* mergeNormalizationName(MergeNormalization scheme) {
+  switch (scheme) {
+    case MergeNormalization::TEST:
+      return "test";
+    case MergeNormalization::TRAIN:
+      return "train";
+    case MergeNormalization::TRAIN_DECOYS:
+      return "train-decoys";
+    case MergeNormalization::NONE:
+      return "none";
+  }
+  return "unknown";
+}
+
 void Scores::merge(std::vector<Scores>& sv,
                    double fdr,
                    bool skipNormalizeScores,
