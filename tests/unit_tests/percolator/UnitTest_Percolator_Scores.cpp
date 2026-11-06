@@ -757,6 +757,230 @@ TEST_F(ScoresTest, NormalizeScoresKeepsRawScoresOfASingleBin)
     FeatureNames::resetNumFeatures();
 }
 
+// Synthetic PSMs with two features for the merge-normalization tests: a
+// third of the targets score like the decoys, the others higher.
+class MergeNormalizationData {
+  public:
+    static const std::size_t numFeatures = 2;
+    explicit MergeNormalizationData(int numPsms)
+        : features(numPsms * numFeatures), psms(numPsms), labels(numPsms) {
+        unsigned int seed = 4711u;
+        for (int i = 0; i < numPsms; ++i) {
+            seed = seed * 1103515245u + 12345u;
+            bool isTarget = (seed >> 16) % 2 == 0;
+            double* row = &features[i * numFeatures];
+            row[0] = static_cast<double>((seed >> 8) % 101) / 10.0 +
+                     (isTarget && i % 3 ? 4.0 : 0.0);
+            row[1] = static_cast<double>((seed >> 4) % 13) / 4.0;
+            psms[i].features = row;
+            psms[i].scan = static_cast<unsigned int>(i);
+            labels[i] = isTarget ? LabelType::TARGET : LabelType::DECOY;
+        }
+    }
+    // bin b holds the PSMs i with i % numBins == b, scored with w[b]
+    std::vector<Scores> bins(std::size_t numBins, bool usePi0,
+                             std::vector<std::vector<double> > w) {
+        std::vector<Scores> result(numBins, Scores(usePi0));
+        for (std::size_t i = 0; i < psms.size(); ++i) {
+            result[i % numBins].addScoreHolder(
+                ScoreHolder(0.0, labels[i], &psms[i]));
+        }
+        for (std::size_t b = 0; b < numBins; ++b) {
+            result[b].recalculateSizes();
+            result[b].calcScores(w[b]);
+        }
+        return result;
+    }
+    std::size_t binOf(const ScoreHolder& sh, std::size_t numBins) const {
+        return static_cast<std::size_t>(sh.pPSM - &psms[0]) % numBins;
+    }
+    std::vector<double> features;
+    std::vector<PSMDescription> psms;
+    std::vector<LabelType> labels;
+};
+
+// With the TRAIN scheme each bin is rescaled by the anchors of its fold's
+// training set. When the training set is the test bin itself, as with one
+// fold, the merge gives exactly the scores and weights of the TEST scheme,
+// also with the pi0 of separate searches and with several bins. With every
+// scheme the rescaled weights still give the merged scores, and with
+// TRAIN_DECOYS the decoys of a bin that is its own training set get mean 0
+// and standard deviation 1.
+TEST_F(ScoresTest, MergeWithTrainingAnchorsEqualsTestWhenTrainIsTest)
+{
+    typedef MergeNormalizationData Data;
+    FeatureNames::resetNumFeatures();
+    FeatureNames::setNumFeatures(Data::numFeatures);
+    const double fdr = 0.05;
+    Data data(600);
+    const std::vector<std::vector<double> > binWeights = {
+        {1.0, -0.5, 0.25}, {2.0, 0.3, -1.0}, {0.7, -0.1, 0.0}};
+    const MergeNormalization schemes[] = {
+        MergeNormalization::TEST, MergeNormalization::TRAIN,
+        MergeNormalization::TRAIN_DECOYS, MergeNormalization::NONE};
+
+    for (bool usePi0 : {false, true}) {
+        for (std::size_t numBins : {1u, 3u}) {
+            SCOPED_TRACE(::testing::Message() << "usePi0 " << usePi0
+                                              << ", " << numBins << " bins");
+            const std::vector<std::vector<double> > w0(
+                binWeights.begin(), binWeights.begin() + numBins);
+            std::map<MergeNormalization, std::vector<std::vector<double> > >
+                weights;
+            std::map<MergeNormalization, Scores> merged;
+            for (MergeNormalization scheme : schemes) {
+                std::vector<Scores> bins = data.bins(numBins, usePi0, w0);
+                // the training set of each bin is the bin itself
+                std::vector<Scores> trainSets = data.bins(numBins, usePi0, w0);
+                std::vector<ScoreScale> scales;
+                std::vector<std::vector<double> > w = w0;
+                for (std::size_t b = 0; b < numBins; ++b) {
+                    scales.push_back(
+                        trainSets[b].calcScoreScale(w[b], scheme, fdr));
+                }
+                Scores m(usePi0);
+                ASSERT_NO_THROW(m.merge(bins, fdr, false, w, scheme,
+                                        scheme == MergeNormalization::TEST
+                                            ? std::vector<ScoreScale>()
+                                            : scales));
+                // the weights give the merged scores
+                for (const ScoreHolder& sh : m) {
+                    const double expected =
+                        m.calcScore(sh.pPSM->features,
+                                    w[data.binOf(sh, numBins)]);
+                    EXPECT_NEAR(expected, sh.score,
+                                1e-12 * std::max(1.0, std::fabs(expected)));
+                }
+                if (scheme == MergeNormalization::NONE) {
+                    EXPECT_EQ(w0, w);
+                } else {
+                    EXPECT_NE(w0, w);
+                }
+                weights[scheme] = w;
+                merged.insert(std::make_pair(scheme, m));
+            }
+
+            const Scores& test = merged.at(MergeNormalization::TEST);
+            const Scores& train = merged.at(MergeNormalization::TRAIN);
+            EXPECT_EQ(weights[MergeNormalization::TEST],
+                      weights[MergeNormalization::TRAIN]);
+            ASSERT_EQ(test.size(), train.size());
+            for (auto it = test.begin(), jt = train.begin(); it != test.end();
+                 ++it, ++jt) {
+                EXPECT_EQ(it->pPSM, jt->pPSM);
+                EXPECT_EQ(it->score, jt->score);
+            }
+
+            if (numBins == 1u) {
+                double sum = 0.0, sumSquares = 0.0;
+                std::size_t numDecoys = 0u;
+                for (const ScoreHolder& sh :
+                     merged.at(MergeNormalization::TRAIN_DECOYS)) {
+                    if (sh.isDecoy()) {
+                        sum += sh.score;
+                        sumSquares += sh.score * sh.score;
+                        ++numDecoys;
+                    }
+                }
+                ASSERT_GT(numDecoys, 100u);
+                const double mean = sum / numDecoys;
+                EXPECT_NEAR(0.0, mean, 1e-12);
+                EXPECT_NEAR(1.0, (sumSquares - numDecoys * mean * mean) /
+                                     (numDecoys - 1), 1e-12);
+            }
+        }
+    }
+    FeatureNames::resetNumFeatures();
+}
+
+// The NONE scheme merges the raw SVM scores and keeps the weights, also for
+// bins that are too small to be rescaled. Training-set anchors that do not
+// exist are an error with several bins, as test-bin anchors are, while a
+// single bin keeps its raw scores.
+TEST_F(ScoresTest, MergeWithoutNormalizationKeepsRawScores)
+{
+    FeatureNames::resetNumFeatures();
+    FeatureNames::setNumFeatures(2);
+    const double fdr = 0.01;
+    const std::vector<double> rawWeights = {0.5, -0.25, 1.0};
+    std::vector<PSMDescription> psms(8);
+    // two bins without a median decoy below the score at q < fdr
+    const double rawScores[] = {4.0, 3.0, 2.0, 1.5, 1.0, 10.0, 0.5, 0.2};
+    const bool isDecoy[] = {true, false, false, true, false,
+                            false, true, false};
+    const std::size_t binEnd[] = {5, 8};
+    auto makeBins = [&](std::size_t numBins) {
+        std::vector<Scores> bins(numBins, Scores(false));
+        for (std::size_t i = 0; i < binEnd[numBins - 1]; ++i) {
+            bins[i < binEnd[0] ? 0 : 1].addScoreHolder(ScoreHolder(
+                rawScores[i], isDecoy[i] ? LabelType::DECOY : LabelType::TARGET,
+                &psms[i]));
+        }
+        for (Scores& bin : bins) {
+            bin.recalculateSizes();
+        }
+        return bins;
+    };
+    std::map<const PSMDescription*, double> rawScoreOf;
+    for (std::size_t i = 0; i < psms.size(); ++i) {
+        rawScoreOf[&psms[i]] = rawScores[i];
+    }
+
+    {
+        SCOPED_TRACE("none");
+        std::vector<Scores> bins = makeBins(2);
+        std::vector<std::vector<double> > w(2, rawWeights);
+        Scores merged(false);
+        ASSERT_NO_THROW(
+            merged.merge(bins, fdr, false, w, MergeNormalization::NONE));
+        EXPECT_EQ(std::vector<std::vector<double> >(2, rawWeights), w);
+        ASSERT_EQ(psms.size(), merged.size());
+        double previous = 1e9;
+        for (const ScoreHolder& sh : merged) {
+            EXPECT_EQ(rawScoreOf[sh.pPSM], sh.score);
+            EXPECT_LE(sh.score, previous);  // sorted
+            previous = sh.score;
+        }
+    }
+    {
+        SCOPED_TRACE("test");
+        std::vector<Scores> bins = makeBins(2);
+        std::vector<std::vector<double> > w(2, rawWeights);
+        Scores merged(false);
+        EXPECT_THROW(merged.merge(bins, fdr, false, w), MyException);
+    }
+    for (MergeNormalization scheme :
+         {MergeNormalization::TRAIN, MergeNormalization::TRAIN_DECOYS}) {
+        SCOPED_TRACE(static_cast<int>(scheme));
+        const ScoreScale missing;  // scale 0: the anchors do not exist
+        {
+            std::vector<Scores> bins = makeBins(2);
+            std::vector<std::vector<double> > w(2, rawWeights);
+            Scores merged(false);
+            EXPECT_THROW(merged.merge(bins, fdr, false, w, scheme,
+                                      std::vector<ScoreScale>(2, missing)),
+                         MyException);
+            // the scales of all bins are needed
+            EXPECT_THROW(merged.merge(bins, fdr, false, w, scheme,
+                                      std::vector<ScoreScale>(1)),
+                         MyException);
+        }
+        {
+            std::vector<Scores> bins = makeBins(1);
+            std::vector<std::vector<double> > w(1, rawWeights);
+            Scores merged(false);
+            EXPECT_NO_THROW(merged.merge(bins, fdr, false, w, scheme,
+                                         std::vector<ScoreScale>(1, missing)));
+            EXPECT_EQ(rawWeights, w[0]);
+            ASSERT_EQ(binEnd[0], merged.size());
+            for (const ScoreHolder& sh : merged) {
+                EXPECT_EQ(rawScoreOf[sh.pPSM], sh.score);
+            }
+        }
+    }
+    FeatureNames::resetNumFeatures();
+}
+
 // countTargetsBelowFdr must report the same number of targets below the FDR
 // threshold as calcScoresAndQvals, also with many tied scores, with and
 // without the mix-max correction.

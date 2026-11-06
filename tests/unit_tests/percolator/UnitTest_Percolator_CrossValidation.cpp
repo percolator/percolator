@@ -211,18 +211,22 @@ struct DirectionCheckOptions {
     double testFdr = 0.05;  // a tiny one makes the check fail
 };
 
-// Trains and merges with numFolds folds on 450 targets and 450 decoys. Half
-// of the targets score higher in both features, so that the SVM improves on
-// the initial direction of a single feature. Returns the final weights, and
-// checks that the final weights of each fold give the merged scores of its
-// test bin: each PSM was scored by the fold of its own test bin.
-static void trainAndMerge(unsigned int numFolds,
+// Trains and merges with numFolds folds and the given merge scheme on 450
+// targets and 450 decoys. Half of the targets score higher in both features,
+// so that the SVM improves on the initial direction of a single feature.
+// Returns the merged score of each scan and the final weights, and checks
+// that the final weights of each fold give the merged scores of its test
+// bin: each PSM was scored by the fold of its own test bin.
+static void trainAndMerge(unsigned int numFolds, MergeNormalization scheme,
+                          std::map<unsigned int, double>& scoreOf,
                           std::vector<std::vector<double> >& weights,
-                          const DirectionCheckOptions& checkOptions) {
+                          std::vector<double>& features,
+                          const DirectionCheckOptions& checkOptions =
+                              DirectionCheckOptions()) {
     FeatureNames::resetNumFeatures();
     FeatureNames::setNumFeatures(2);
     const int numPsms = 900;
-    std::vector<double> features(2 * numPsms, 0.0);
+    features.assign(2 * numPsms, 0.0);
     SetHandler setHandler(0);
     PsmStore psmStore;
     DataSet* targets = new DataSet();
@@ -252,6 +256,7 @@ static void trainAndMerge(unsigned int numFolds,
     CrossValidationEx crossValidation(false, false, checkOptions.testFdr,
                                       0.05, 0.05, 0.0, 0.0, 10, false, 1,
                                       false, 1, false, 1.0, numFolds);
+    crossValidation.setMergeNormalization(scheme);
     Scores scores(false);
     scores.populateWithPSMs(setHandler);
     SanityCheck check;
@@ -267,6 +272,10 @@ static void trainAndMerge(unsigned int numFolds,
     }
     crossValidation.postIterationProcessing(scores, check);
 
+    scoreOf.clear();
+    for (const ScoreHolder& sh : scores) {
+        scoreOf[sh.pPSM->scan] = sh.score;
+    }
     weights = crossValidation.weights();
     ASSERT_EQ(static_cast<std::size_t>(numPsms), binOf.size());
     ASSERT_EQ(static_cast<unsigned int>(numPsms), scores.size());
@@ -293,12 +302,15 @@ TEST_F(CrossValidationTest, FailedDirectionCheckScoresEachBinWithItsOwnVector)
     auto isSingleFeature = [](const std::vector<double>& w) {
         return (w[0] == 0.0) != (w[1] == 0.0);
     };
+    std::map<unsigned int, double> scoreOf;
+    std::vector<double> features;
     for (unsigned int numFolds : {3u, 5u}) {
         {
             SCOPED_TRACE(::testing::Message() << numFolds
                                               << " folds, check passes");
             std::vector<std::vector<double> > w;
-            trainAndMerge(numFolds, w, DirectionCheckOptions());
+            trainAndMerge(numFolds, MergeNormalization::TEST, scoreOf, w,
+                          features);
             ASSERT_EQ(numFolds, w.size());
             for (const std::vector<double>& wFold : w) {
                 EXPECT_FALSE(isSingleFeature(wFold));  // trained, not reset
@@ -312,7 +324,8 @@ TEST_F(CrossValidationTest, FailedDirectionCheckScoresEachBinWithItsOwnVector)
             failing.overrule = overrule;
             failing.testFdr = 1e-6;
             std::vector<std::vector<double> > w;
-            trainAndMerge(numFolds, w, failing);
+            trainAndMerge(numFolds, MergeNormalization::TEST, scoreOf, w,
+                          features, failing);
             ASSERT_EQ(numFolds, w.size());
             for (const std::vector<double>& wFold : w) {
                 EXPECT_EQ(!overrule, isSingleFeature(wFold));
@@ -324,6 +337,43 @@ TEST_F(CrossValidationTest, FailedDirectionCheckScoresEachBinWithItsOwnVector)
                 }
             }
         }
+    }
+}
+
+// With one fold the training set is the test bin, so the training-set
+// anchors of --merge-normalization train are the test-bin anchors: the
+// merged scores and the weights equal those of the default scheme exactly.
+// With three folds every scheme gives scores that the final weights
+// describe; none leaves the SVM weights as trained.
+TEST_F(CrossValidationTest, MergeNormalizationSchemes)
+{
+    std::map<unsigned int, double> scoreTest, scoreOther;
+    std::vector<std::vector<double> > wTest, wOther;
+    std::vector<double> featuresTest, featuresOther;
+    {
+        SCOPED_TRACE("one fold");
+        trainAndMerge(1u, MergeNormalization::TEST, scoreTest, wTest,
+                      featuresTest);
+        trainAndMerge(1u, MergeNormalization::TRAIN, scoreOther, wOther,
+                      featuresOther);
+        EXPECT_EQ(wTest, wOther);
+        ASSERT_EQ(scoreTest.size(), scoreOther.size());
+        ASSERT_EQ(900u, scoreTest.size());
+        // one PSM per scan, compared in scan order
+        auto it = scoreTest.begin();
+        auto jt = scoreOther.begin();
+        for (; it != scoreTest.end(); ++it, ++jt) {
+            EXPECT_EQ(it->second, jt->second);
+        }
+    }
+    for (MergeNormalization scheme :
+         {MergeNormalization::TEST, MergeNormalization::TRAIN,
+          MergeNormalization::TRAIN_DECOYS, MergeNormalization::NONE}) {
+        SCOPED_TRACE(::testing::Message() << "three folds, scheme "
+                                          << static_cast<int>(scheme));
+        trainAndMerge(3u, scheme, scoreOther, wOther, featuresOther);
+        EXPECT_EQ(900u, scoreOther.size());
+        EXPECT_EQ(3u, wOther.size());
     }
 }
 
