@@ -260,7 +260,9 @@ std::size_t Scores::getNumSpectra() const {
  * their spectrum scan number. Each PSM is put in the test set of one fold and
  * in the training sets of the other xval_fold - 1 folds, and all PSMs of a
  * spectrum go to the same fold. With xval_fold = 1 the only training set and
- * the only test set both hold all PSMs.
+ * the only test set both hold all PSMs. With at least as many spectra as
+ * folds, every test set holds at least one spectrum; a spectrum ends where
+ * the scan number changes in the order of the split.
  * @param train vector containing the training sets of PSMs
  * @param test vector containing the test sets of PSMs
  * @param xval_fold number of folds in train and test
@@ -311,6 +313,24 @@ void Scores::createXvalSetsBySpectrum(std::vector<Scores>& train,
     }
   }
 
+  // The folds are filled with whole spectra while remain counts PSMs, so a
+  // fold can take more PSMs than its share, and with uneven spectra or many
+  // folds the spectra could run out before every fold has one. Once the
+  // spectra left are as many as the folds that are still empty, each of them
+  // goes to an empty fold. A draw is only changed where it would have left a
+  // fold empty: a spectrum that goes to a non-empty fold at that point
+  // leaves more empty folds than spectra. The spectra are counted as the
+  // loop below delimits them, by a change of the scan number between
+  // neighbours.
+  std::size_t spectraLeft = 1u;
+  for (std::size_t i = 1u; i < scores_.size(); ++i) {
+    if (scores_[i].pPSM->scan != scores_[i - 1u].pPSM->scan) {
+      ++spectraLeft;
+    }
+  }
+  std::vector<bool> foldIsEmpty(xval_fold, true);
+  std::size_t numEmptyFolds = xval_fold;
+
   // put scores into the folds; choose a fold (at random) and change it only
   // when scores from a new spectra are encountered
   unsigned int previousSpectrum = scores_.begin()->pPSM->scan;
@@ -328,6 +348,21 @@ void Scores::createXvalSetsBySpectrum(std::vector<Scores>& train,
       while (remain[randIndex] <= 0) {
         randIndex = PseudoRandom::lcg_rand() % xval_fold;
       }
+    }
+    if (it == scores_.begin() || previousSpectrum != curScan) {
+      // spectraLeft counts this spectrum and the ones after it
+      if (spectraLeft == numEmptyFolds && !foldIsEmpty[randIndex]) {
+        // the first empty fold, without a random draw
+        randIndex = 0u;
+        while (!foldIsEmpty[randIndex]) {
+          ++randIndex;
+        }
+      }
+      if (foldIsEmpty[randIndex]) {
+        foldIsEmpty[randIndex] = false;
+        --numEmptyFolds;
+      }
+      --spectraLeft;
     }
 
     // if we use multiple folds with RESET, assign 1-decoyFractionTraining as
