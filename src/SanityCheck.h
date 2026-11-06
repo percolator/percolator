@@ -21,14 +21,18 @@
 #include <string>
 #include <vector>
 
-class Scores;
+#include "Scores.h"
+
 class Normalizer;
 
 /*
  * SanityCheck sets the initial direction of the SVM, either from an input
  * weight file, a default direction given by the user or in the input file,
  * or the single most discriminative feature, and checks that the trained
- * direction is not worse than the initial one.
+ * direction is not worse than the initial one: either by the targets with
+ * q < test FDR summed over the test bins, each with its own q values (bins,
+ * the default), or by those of the merged out-of-fold list (pooled, see
+ * Caller's --direction-check).
  */
 class SanityCheck {
  public:
@@ -51,6 +55,18 @@ class SanityCheck {
   void setOverrule(bool orl) { overRule_ = orl; }
   // with --override a failed check keeps the trained direction
   bool getOverrule() const { return overRule_; }
+  // count the targets with q < test FDR in the merged out-of-fold list
+  // instead of in each test bin; with one bin both are the same
+  void setPooledCheck(bool pooled) { pooledCheck_ = pooled; }
+  bool pooledCheck() const { return pooledCheck_; }
+  // how the test bins are merged, which the pooled check repeats, see
+  // Scores::merge and Scores::countMergedTargets
+  void setMergeScheme(MergeNormalization scheme, double fdr,
+                      bool skipNormalizeScores) {
+    mergeScheme_ = scheme;
+    mergeFdr_ = fdr;
+    skipNormalizeScores_ = skipNormalizeScores;
+  }
   void addDefaultWeights(const std::vector<double>& defaultWeights) {
     defaultWeights_ = defaultWeights;
   }
@@ -63,6 +79,10 @@ class SanityCheck {
  protected:
   void getDefaultDirection(std::vector<Scores>& trainset,
                            std::vector<std::vector<double> >& w);
+  // whether the targets are counted in the merged list of these bins
+  bool usePooledCount(std::size_t numBins) const {
+    return pooledCheck_ && numBins > 1u;
+  }
 
   int initPositives_ = 0;
   double test_fdr_ = 0.01, initial_train_fdr_ = 0.01;
@@ -78,6 +98,11 @@ class SanityCheck {
   std::vector<double> initWeights_;
   // input from concatenated search, i.e. not separate target and decoy searches
   bool concatenatedSearch_ = true;
+  // the pooled direction check and the merge it repeats
+  bool pooledCheck_ = false;
+  MergeNormalization mergeScheme_ = MergeNormalization::TEST;
+  double mergeFdr_ = 0.01;
+  bool skipNormalizeScores_ = false;
 };
 
 #endif /*SANITYCHECK_H_*/

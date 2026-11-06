@@ -75,6 +75,15 @@ int SanityCheck::getInitDirection(vector<Scores>& testset,
   for (size_t set = 0; set < w.size(); ++set) {
     initPositives_ += testset[set].calcScoresAndQvals(w[set], test_fdr);
   }
+  // The pooled check compares the trained direction with the initial one
+  // counted in the same way: per fold, merged and pooled. The bins are
+  // still scored above, so that both checks leave them in the same state.
+  if (usePooledCount(w.size())) {
+    initPositives_ = std::max(
+        0, Scores::countMergedTargets(testset, trainset, w, mergeScheme_,
+                                      mergeFdr_, skipNormalizeScores_,
+                                      test_fdr));
+  }
   return initPositives_;
 }
 
@@ -114,14 +123,37 @@ void SanityCheck::getDefaultDirection(vector<Scores>& trainset,
 bool SanityCheck::validateDirection(vector<Scores>& testset,
                                     vector<Scores>& trainset,
                                     vector<vector<double> >& w) {
+  const bool pooled = usePooledCount(w.size());
   int overFDR = 0;
-  for (size_t set = 0; set < w.size(); ++set) {
-    overFDR += testset[set].calcScoresAndQvals(w[set], test_fdr_);
+  if (pooled) {
+    // on copies: the test bins are only scored once the direction is decided
+    overFDR = Scores::countMergedTargets(testset, trainset, w, mergeScheme_,
+                                         mergeFdr_, skipNormalizeScores_,
+                                         test_fdr_);
+    if (overFDR < 0) {
+      cerr << "The scores of a test bin cannot be rescaled to merge the "
+           << "bins with the trained weights" << endl;
+      resetDirection(trainset, w);
+      return false;
+    }
+    if (VERB > 1) {
+      cerr << "Found " << overFDR << " targets with q<" << test_fdr_
+           << " in the merged out-of-fold list, " << initPositives_
+           << " in the initial direction" << endl;
+    }
+  } else {
+    for (size_t set = 0; set < w.size(); ++set) {
+      overFDR += testset[set].calcScoresAndQvals(w[set], test_fdr_);
+    }
   }
   if (overFDR <= 0) {
     cerr << "No targets found with q<" << test_fdr_ << endl;
     resetDirection(trainset, w);
-    if (w.size() > 1u && !overRule_) {
+    if (pooled && !overRule_) {
+      cerr << "Hint: q<" << test_fdr_ << " needs about " << 1.0 / test_fdr_
+           << " targets above the best-scoring decoy of the merged list; "
+           << "a larger --testFDR is an alternative." << endl;
+    } else if (w.size() > 1u && !overRule_) {
       cerr << "Hint: each of the " << w.size() << " test folds may be too "
            << "small to reach q<" << test_fdr_ << ". --num-folds 1 trains and "
            << "evaluates on the same PSMs," << endl
@@ -147,6 +179,13 @@ bool SanityCheck::validateDirection(vector<Scores>& testset,
         resetDirection(trainset, w);
         return false;
       }
+    }
+  }
+  if (pooled) {
+    // the direction is kept: score the test bins with their folds' weights
+    // for the merge, as the count of the bins check does
+    for (size_t set = 0; set < w.size(); ++set) {
+      testset[set].calcScoresAndQvals(w[set], test_fdr_);
     }
   }
   return true;

@@ -97,7 +97,7 @@ void Scores::merge(std::vector<Scores>& sv,
   postMergeStep();
 }
 
-void Scores::postMergeStep() {
+void Scores::postMergeStep(bool tooGoodSeparationIsError) {
   parallelSort(scores_.begin(), scores_.end(), greater<ScoreHolder>());
   totalNumberOfDecoys_ = static_cast<unsigned int>(
       count_if(scores_.begin(), scores_.end(), mem_fn(&ScoreHolder::isDecoy)));
@@ -105,7 +105,56 @@ void Scores::postMergeStep() {
       count_if(scores_.begin(), scores_.end(), mem_fn(&ScoreHolder::isTarget)));
   targetDecoySizeRatio_ =
       totalNumberOfTargets_ / max(1.0, (double)totalNumberOfDecoys_);
-  checkSeparationAndSetPi0();
+  checkSeparationAndSetPi0(tooGoodSeparationIsError);
+}
+
+int Scores::countMergedTargets(const std::vector<Scores>& testBins,
+                               const std::vector<Scores>& trainBins,
+                               const std::vector<std::vector<double> >& w,
+                               MergeNormalization scheme,
+                               double fdr,
+                               bool skipNormalizeScores,
+                               double testFdr) {
+  assert(testBins.size() == w.size());
+  if (testBins.empty()) {
+    return 0;
+  }
+  const bool fromTrainingSets = scheme == MergeNormalization::TRAIN ||
+                                scheme == MergeNormalization::TRAIN_DECOYS;
+  assert(!fromTrainingSets || trainBins.size() == testBins.size());
+  // a positive linear map does not change the q values of a single bin
+  const bool rescale = !skipNormalizeScores &&
+                       scheme != MergeNormalization::NONE &&
+                       testBins.size() > 1u;
+  Scores merged(testBins[0].usePi0_);
+  merged.nullTargetWinProb_ = testBins[0].nullTargetWinProb_;
+  size_t numScores = 0;
+  for (const Scores& binScores : testBins) {
+    numScores += binScores.scores_.size();
+  }
+  merged.scores_.reserve(numScores);
+  for (std::size_t bin = 0; bin < testBins.size(); ++bin) {
+    Scores binScores(testBins[bin]);
+    std::vector<double> binWeights(w[bin]);
+    binScores.calcScores(binWeights);
+    if (rescale) {
+      ScoreScale s;
+      if (fromTrainingSets) {
+        Scores trainScores(trainBins[bin]);
+        s = trainScores.calcScoreScale(binWeights, scheme, fdr);
+      } else {
+        s = binScores.calcScoreScale(binWeights, scheme, fdr);
+      }
+      if (s.scale <= 0) {
+        return -1;
+      }
+      binScores.applyScoreScale(s, binWeights, false, scheme, fdr);
+    }
+    merged.scores_.insert(merged.scores_.end(), binScores.scores_.begin(),
+                          binScores.scores_.end());
+  }
+  merged.postMergeStep(false);
+  return merged.calcQvals(testFdr);
 }
 
 double Scores::calcScore(const double* feat,

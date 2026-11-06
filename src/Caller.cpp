@@ -415,6 +415,19 @@ bool Caller::parseOptions(int argc, char** argv) {
       "effect with --static. Default = test.",
       "scheme");
   cmd.defineOption(
+      Option::EXPERIMENTAL_FEATURE, "direction-check",
+      "How the trained SVMs are checked against the initial direction. "
+      "'bins': the targets with q < --testFDR are counted within each test "
+      "bin, with the bin's own q values, so a bin needs about 1/testFDR "
+      "targets above its best decoy. 'pooled': each test bin is scored with "
+      "its fold's SVM, the bins are rescaled and merged as for the final "
+      "list (see --merge-normalization), and the targets with q < --testFDR "
+      "are counted in the merged out-of-fold list. If there are none, or "
+      "fewer than for the initial direction counted in the same way, the "
+      "default direction is used unless --override is given. With one fold, "
+      "as with --reset-algorithm, both are the same. Default = bins.",
+      "check");
+  cmd.defineOption(
       Option::EXPERIMENTAL_FEATURE, "composition-match",
       "Run an implementation of the Percolator-RESET psmsAndPeptides with "
       "target-decoy matching based on composition.",
@@ -734,6 +747,17 @@ bool Caller::parseOptions(int argc, char** argv) {
         mergeNormalization_ != MergeNormalization::TEST) {
       std::cerr << "Warning: --merge-normalization has no effect with "
                 << "--static, whose scores are not rescaled." << std::endl;
+    }
+  }
+
+  if (cmd.isOptionSet("direction-check")) {
+    const std::string directionCheck = cmd.options["direction-check"];
+    if (directionCheck == "pooled") {
+      check_.setPooledCheck(true);
+    } else if (directionCheck != "bins") {
+      std::cerr << "Error: --direction-check has to be one out of \"bins\" "
+                << "or \"pooled\"." << std::endl;
+      return 0;
     }
   }
 

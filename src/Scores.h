@@ -100,7 +100,26 @@ class Scores {
              MergeNormalization scheme = MergeNormalization::TEST,
              const std::vector<ScoreScale>& binScales =
                  std::vector<ScoreScale>());
-  void postMergeStep();
+  // tooGoodSeparationIsError = false sets pi0 = 1 without a message when the
+  // separation is too good
+  void postMergeStep(bool tooGoodSeparationIsError = true);
+  // The number of targets with q < testFdr in the list that merge would give
+  // for the test bins scored with the weights w, one per bin: each bin is
+  // rescaled as the scheme says, with the anchors of TRAIN and TRAIN_DECOYS
+  // taken from trainBins[bin] scored with w[bin] (see calcScoreScale), and
+  // the merged list gets its pi0 and q values as the final list does
+  // (postMergeStep, calcQvals), except that a too good separation gives
+  // pi0 = 1 instead of an error; the best PSM per spectrum of -Y is not
+  // selected. Works on copies, so neither the bins nor the weights change.
+  // Returns -1 when the scores of one of several bins cannot be rescaled,
+  // which would end the merge.
+  static int countMergedTargets(const std::vector<Scores>& testBins,
+                                const std::vector<Scores>& trainBins,
+                                const std::vector<std::vector<double> >& w,
+                                MergeNormalization scheme,
+                                double fdr,
+                                bool skipNormalizeScores,
+                                double testFdr);
 
   iterator begin() { return scores_.begin(); }
   iterator end() { return scores_.end(); }

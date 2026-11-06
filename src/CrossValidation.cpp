@@ -162,6 +162,10 @@ int CrossValidation::preIterationSetup(Scores& fullset,
   weights_ = vector<vector<double> >(
       numFolds_, vector<double>(FeatureNames::getNumFeatures() + 1));
   StageTimer stageTimer("initial direction");
+  // the pooled direction check merges the test bins as
+  // postIterationProcessing does
+  check.setMergeScheme(mergeNormalization_, selectionFdr_,
+                       skipNormalizeScores_);
   int numPositive =
       check.getInitDirection(testScores_, trainScores_, pNorm, weights_,
                                testFdr_, initialSelectionFdr_);
