@@ -21,6 +21,7 @@
 #endif
 #include <algorithm>
 #include <cmath>
+#include <map>
 #include <vector>
 #include "SetHandler.h"
 #include "CrossValidation.h"
@@ -54,6 +55,9 @@ public:
     }
     std::vector< std::vector<double> > const& weights(void) const {
         return weights_;
+    }
+    std::vector<Scores> const& testBins(void) const {
+        return testScores_;
     }
 };
 
@@ -199,6 +203,128 @@ TEST_F(CrossValidationTest, doStepTest)
     delete crossValidation;
   }
   FeatureNames::resetNumFeatures();
+}
+
+// The direction check of trainAndMerge
+struct DirectionCheckOptions {
+    bool overrule = false;  // --override
+    double testFdr = 0.05;  // a tiny one makes the check fail
+};
+
+// Trains and merges with numFolds folds on 450 targets and 450 decoys. Half
+// of the targets score higher in both features, so that the SVM improves on
+// the initial direction of a single feature. Returns the final weights, and
+// checks that the final weights of each fold give the merged scores of its
+// test bin: each PSM was scored by the fold of its own test bin.
+static void trainAndMerge(unsigned int numFolds,
+                          std::vector<std::vector<double> >& weights,
+                          const DirectionCheckOptions& checkOptions) {
+    FeatureNames::resetNumFeatures();
+    FeatureNames::setNumFeatures(2);
+    const int numPsms = 900;
+    std::vector<double> features(2 * numPsms, 0.0);
+    SetHandler setHandler(0);
+    PsmStore psmStore;
+    DataSet* targets = new DataSet();
+    DataSet* decoys = new DataSet();
+    targets->setLabel(LabelType::TARGET);
+    decoys->setLabel(LabelType::DECOY);
+    unsigned int seed = 2024u;
+    for (int i = 0; i < numPsms; ++i) {
+        seed = seed * 1103515245u + 12345u;
+        const bool isTarget = i % 2 == 0;
+        PSMDescription* psm = psmStore.add(PSMDescription());
+        psm->features = &features[2 * i];
+        const bool isCorrect = isTarget && i % 4 == 0;
+        psm->features[0] = static_cast<double>((seed >> 8) % 1000) / 250.0 +
+                           (isCorrect ? 2.5 : 0.0);
+        psm->features[1] = static_cast<double>((seed >> 4) % 1000) / 250.0 +
+                           (isCorrect ? 2.5 : 0.0);
+        psm->scan = static_cast<unsigned int>(1 + i);
+        (isTarget ? targets : decoys)->registerPsm(psm);
+    }
+    setHandler.push_back_dataset(std::unique_ptr<DataSet>(targets));
+    setHandler.push_back_dataset(std::unique_ptr<DataSet>(decoys));
+    std::unique_ptr<Normalizer> norm = Normalizer::create(Normalizer::STDV);
+    setHandler.normalizeFeatures(*norm);
+
+    PseudoRandom::setSeed(1u);
+    CrossValidationEx crossValidation(false, false, checkOptions.testFdr,
+                                      0.05, 0.05, 0.0, 0.0, 10, false, 1,
+                                      false, 1, false, 1.0, numFolds);
+    Scores scores(false);
+    scores.populateWithPSMs(setHandler);
+    SanityCheck check;
+    check.setOverrule(checkOptions.overrule);
+    crossValidation.preIterationSetup(scores, check, norm.get());
+    crossValidation.train(norm.get());
+    // the bin of each PSM, before the merge empties the bins
+    std::map<const PSMDescription*, std::size_t> binOf;
+    for (std::size_t bin = 0; bin < numFolds; ++bin) {
+        for (const ScoreHolder& sh : crossValidation.testBins()[bin]) {
+            binOf[sh.pPSM] = bin;
+        }
+    }
+    crossValidation.postIterationProcessing(scores, check);
+
+    weights = crossValidation.weights();
+    ASSERT_EQ(static_cast<std::size_t>(numPsms), binOf.size());
+    ASSERT_EQ(static_cast<unsigned int>(numPsms), scores.size());
+    for (const ScoreHolder& sh : scores) {
+        const double expected =
+            scores.calcScore(sh.pPSM->features, weights[binOf[sh.pPSM]]);
+        EXPECT_NEAR(expected, sh.score,
+                    1e-12 * std::max(1.0, std::fabs(sh.score)))
+            << "bin " << binOf[sh.pPSM];
+    }
+    FeatureNames::resetNumFeatures();
+}
+
+// trainAndMerge finds each test bin scored with its own fold's final
+// weights. When the check passes, they are the trained ones. When it fails,
+// here by a test FDR that no target reaches, they are, with --override, the
+// trained ones, which were not trained on that bin, and otherwise the
+// default vector of a single feature chosen on the fold's training set.
+// Before, all bins were scored with the first fold's vector after a failed
+// check; after a reset this failed even where the folds chose the same
+// feature, since each fold's default vector kept its trained bias.
+TEST_F(CrossValidationTest, FailedDirectionCheckScoresEachBinWithItsOwnVector)
+{
+    auto isSingleFeature = [](const std::vector<double>& w) {
+        return (w[0] == 0.0) != (w[1] == 0.0);
+    };
+    for (unsigned int numFolds : {3u, 5u}) {
+        {
+            SCOPED_TRACE(::testing::Message() << numFolds
+                                              << " folds, check passes");
+            std::vector<std::vector<double> > w;
+            trainAndMerge(numFolds, w, DirectionCheckOptions());
+            ASSERT_EQ(numFolds, w.size());
+            for (const std::vector<double>& wFold : w) {
+                EXPECT_FALSE(isSingleFeature(wFold));  // trained, not reset
+            }
+        }
+        for (bool overrule : {false, true}) {
+            SCOPED_TRACE(::testing::Message() << numFolds
+                                              << " folds, failed check, "
+                                              << "override " << overrule);
+            DirectionCheckOptions failing;
+            failing.overrule = overrule;
+            failing.testFdr = 1e-6;
+            std::vector<std::vector<double> > w;
+            trainAndMerge(numFolds, w, failing);
+            ASSERT_EQ(numFolds, w.size());
+            for (const std::vector<double>& wFold : w) {
+                EXPECT_EQ(!overrule, isSingleFeature(wFold));
+            }
+            if (overrule) {
+                // each fold keeps its own trained weights
+                for (unsigned int fold = 1; fold < numFolds; ++fold) {
+                    EXPECT_NE(w[0], w[fold]);
+                }
+            }
+        }
+    }
 }
 
 // More folds than spectra leave a fold without PSMs, which

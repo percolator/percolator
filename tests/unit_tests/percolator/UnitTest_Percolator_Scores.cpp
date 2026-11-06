@@ -29,6 +29,7 @@
 #include <limits>
 #include <map>
 #include <memory>
+#include <random>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -37,6 +38,7 @@
 #include "DataSet.h"
 #include "PosteriorEstimator.h"
 #include "ProteinProbEstimator.h"
+#include "SanityCheck.h"
 #include "Scores.h"
 
 namespace {
@@ -360,6 +362,309 @@ TEST_F(ScoresTest, CreateXvalSetsBySpectrumWithNFolds)
             EXPECT_EQ(scores.negSize(), test[0].negSize());
         }
     }
+}
+
+// The test fold of each PSM as createXvalSetsBySpectrum assigned it before
+// the fold capacity was fixed, from the same random draws: remain counts
+// PSMs, but the folds are filled with whole spectra. sorted holds the PSMs in
+// the order of the split (OrderScanHash); labels receives the labels of the
+// test sets, pseudo targets included.
+static std::vector<std::size_t> previousFoldAssignment(
+    const Scores& sorted, unsigned int numFolds, double decoyFractionTraining,
+    std::vector<LabelType>& labels) {
+    std::vector<int> remain(numFolds);
+    int fold = static_cast<int>(numFolds);
+    int ix = static_cast<int>(std::distance(sorted.begin(), sorted.end()));
+    while (fold--) {
+        remain[static_cast<std::size_t>(fold)] = ix / (fold + 1);
+        ix -= remain[static_cast<std::size_t>(fold)];
+    }
+    std::vector<std::size_t> foldOf;
+    labels.clear();
+    unsigned int previousScan = sorted.begin()->pPSM->scan;
+    std::size_t randIndex = PseudoRandom::lcg_rand() % numFolds;
+    for (const ScoreHolder& sh : sorted) {
+        if (sh.pPSM->scan != previousScan) {
+            randIndex = PseudoRandom::lcg_rand() % numFolds;
+            while (remain[randIndex] <= 0) {
+                randIndex = PseudoRandom::lcg_rand() % numFolds;
+            }
+        }
+        LabelType label = sh.label;
+        if (numFolds > 1u && decoyFractionTraining < 1.0 &&
+            label == LabelType::DECOY &&
+            PseudoRandom::lcg_uniform_rand() > decoyFractionTraining) {
+            label = LabelType::PSEUDO_TARGET;
+        }
+        foldOf.push_back(randIndex);
+        labels.push_back(label);
+        --remain[randIndex];
+        previousScan = sh.pPSM->scan;
+    }
+    return foldOf;
+}
+
+// The test fold and label of each PSM after createXvalSetsBySpectrum, in the
+// order it leaves scores in, and the next random number.
+struct FoldSplit {
+    std::vector<std::size_t> foldOf;
+    std::vector<LabelType> labels;
+    unsigned long nextRandom = 0;
+    std::size_t numEmptyFolds = 0;
+};
+
+static FoldSplit splitIntoFolds(Scores& scores, unsigned int numFolds,
+                                double decoyFractionTraining,
+                                unsigned long seed) {
+    PseudoRandom::setSeed(seed);
+    std::vector<Scores> train, test;
+    scores.createXvalSetsBySpectrum(train, test, numFolds,
+                                    decoyFractionTraining);
+    FoldSplit split;
+    split.nextRandom = PseudoRandom::lcg_rand();
+    std::map<const PSMDescription*, std::pair<std::size_t, LabelType> > of;
+    for (std::size_t fold = 0; fold < numFolds; ++fold) {
+        if (test[fold].begin() == test[fold].end()) {
+            ++split.numEmptyFolds;
+        }
+        for (const ScoreHolder& sh : test[fold]) {
+            of[sh.pPSM] = std::make_pair(fold, sh.label);
+        }
+    }
+    for (const ScoreHolder& sh : scores) {
+        split.foldOf.push_back(of.at(sh.pPSM).first);
+        split.labels.push_back(of.at(sh.pPSM).second);
+    }
+    return split;
+}
+
+// The same with the assignment before the fix, on the order that
+// createXvalSetsBySpectrum left scores in.
+static FoldSplit previousSplit(const Scores& sorted, unsigned int numFolds,
+                               double decoyFractionTraining,
+                               unsigned long seed) {
+    PseudoRandom::setSeed(seed);
+    FoldSplit split;
+    split.foldOf = previousFoldAssignment(sorted, numFolds,
+                                          decoyFractionTraining, split.labels);
+    split.nextRandom = PseudoRandom::lcg_rand();
+    std::vector<bool> used(numFolds, false);
+    split.numEmptyFolds = numFolds;
+    for (std::size_t fold : split.foldOf) {
+        if (!used[fold]) {
+            used[fold] = true;
+            --split.numEmptyFolds;
+        }
+    }
+    return split;
+}
+
+// The first index where two splits differ in the fold or the label of a
+// PSM, or their size if they agree. A plain loop: under GCC's parallel mode,
+// which the build uses, comparing vectors with == starts threads.
+static std::size_t firstDifference(const FoldSplit& a, const FoldSplit& b) {
+    const std::size_t n = std::min(a.foldOf.size(), b.foldOf.size());
+    for (std::size_t i = 0; i < n; ++i) {
+        if (a.foldOf[i] != b.foldOf[i] || a.labels[i] != b.labels[i]) {
+            return i;
+        }
+    }
+    return n;
+}
+
+// The spectra as the split delimits them: a new one starts where the scan
+// number changes between neighbours.
+static std::size_t numSplitSpectra(const Scores& sorted) {
+    std::size_t numSpectra = 0;
+    const PSMDescription* previous = NULL;
+    for (const ScoreHolder& sh : sorted) {
+        if (previous == NULL || previous->scan != sh.pPSM->scan) {
+            ++numSpectra;
+        }
+        previous = sh.pPSM;
+    }
+    return numSpectra;
+}
+
+// PSMs of a separate search: each spectrum alternates targets and decoys.
+static void fillScores(Scores& scores, std::vector<PSMDescription>& psms) {
+    for (std::size_t i = 0; i < psms.size(); ++i) {
+        psms[i].setLineNr(static_cast<unsigned int>(i + 1));
+        scores.addScoreHolder(ScoreHolder(
+            0.0, i % 2 ? LabelType::DECOY : LabelType::TARGET, &psms[i]));
+    }
+    scores.recalculateSizes();
+}
+
+// The folds are filled with whole spectra, but their capacity is counted in
+// PSMs. With uneven spectra and many folds, a fold could take more spectra
+// than its share and leave another fold without any, which ended the run
+// (the empty-fold error of CrossValidation::preIterationSetup). With at
+// least as many spectra as folds, every fold now gets one, with and without
+// the pseudo targets of RESET; the assignment before the fix left folds
+// empty on these inputs.
+TEST_F(ScoresTest, CreateXvalSetsBySpectrumFillsEveryFold)
+{
+    // 120 spectra of 1 to 5 PSMs
+    std::vector<PSMDescription> psms;
+    for (unsigned int scan = 1; scan <= 120; ++scan) {
+        for (unsigned int k = 0; k <= (scan * 7) % 5; ++k) {
+            psms.emplace_back();
+            psms.back().scan = scan;
+        }
+    }
+    std::size_t previousEmpty = 0;
+    for (unsigned int numFolds : {120u, 119u, 100u, 60u, 30u, 10u}) {
+        for (double decoyFractionTraining : {1.0, 0.5}) {
+            SCOPED_TRACE(::testing::Message() << numFolds << " folds, "
+                                              << decoyFractionTraining);
+            Scores scores(false);
+            fillScores(scores, psms);
+            const FoldSplit split =
+                splitIntoFolds(scores, numFolds, decoyFractionTraining, 1u);
+            EXPECT_EQ(120u, numSplitSpectra(scores));
+            EXPECT_EQ(0u, split.numEmptyFolds);
+            // a spectrum is in one fold
+            for (std::size_t i = 1; i < psms.size(); ++i) {
+                if (scores.begin()[i].pPSM->scan ==
+                    scores.begin()[i - 1].pPSM->scan) {
+                    EXPECT_EQ(split.foldOf[i - 1], split.foldOf[i]);
+                }
+            }
+            previousEmpty += previousSplit(scores, numFolds,
+                                           decoyFractionTraining, 1u)
+                                 .numEmptyFolds;
+        }
+    }
+    EXPECT_LT(0u, previousEmpty);
+}
+
+// The fix changes no assignment that left every fold with a spectrum, nor
+// the random draws: on random inputs (1 to 6 PSMs per spectrum, one or two
+// spectrum files with shared scan numbers, up to 3 folds more than spectra,
+// with and without RESET's pseudo targets) the folds, labels and the next
+// random number equal those of the assignment before the fix whenever that
+// left no fold empty, and also when there are fewer spectra than folds.
+// Otherwise no fold is empty now.
+TEST_F(ScoresTest, CreateXvalSetsBySpectrumKeepsAssignmentsWithoutEmptyFolds)
+{
+    std::mt19937 generator(404u);
+    std::size_t numUnchanged = 0, numFewerSpectra = 0, numFilled = 0;
+    for (int run = 0; run < 2000; ++run) {
+        const unsigned int numScans = 1u + generator() % 60u;
+        const unsigned int maxPsms = 1u + generator() % 6u;
+        const unsigned int numFiles = 1u + generator() % 2u;
+        std::vector<PSMDescription> psms;
+        for (unsigned int file = 0; file < numFiles; ++file) {
+            for (unsigned int scan = 1; scan <= numScans; ++scan) {
+                if (numFiles > 1u && generator() % 3u == 0u) {
+                    continue;  // not every scan in every file
+                }
+                const unsigned int n = 1u + generator() % maxPsms;
+                for (unsigned int k = 0; k < n; ++k) {
+                    psms.emplace_back();
+                    psms.back().specFileNr = file;
+                    psms.back().scan = 1000u + scan;
+                }
+            }
+        }
+        if (psms.empty()) {
+            continue;
+        }
+        Scores scores(false);
+        fillScores(scores, psms);
+        const unsigned int numSpectra =
+            static_cast<unsigned int>(scores.getNumSpectra());
+        const unsigned int numFolds =
+            1u + generator() % std::min(numSpectra + 3u, 100u);
+        const double decoyFractionTraining =
+            generator() % 2u ? 1.0 : 0.5;
+        const unsigned long seed = 1u + generator() % 1000u;
+        SCOPED_TRACE(::testing::Message()
+                     << "run " << run << ": " << psms.size() << " PSMs, "
+                     << numSpectra << " spectra, " << numFolds << " folds, "
+                     << decoyFractionTraining << ", seed " << seed);
+        const FoldSplit split =
+            splitIntoFolds(scores, numFolds, decoyFractionTraining, seed);
+        const FoldSplit previous =
+            previousSplit(scores, numFolds, decoyFractionTraining, seed);
+        if (previous.numEmptyFolds == 0u ||
+            numSplitSpectra(scores) < numFolds) {
+            ASSERT_EQ(previous.foldOf.size(), split.foldOf.size());
+            EXPECT_EQ(previous.foldOf.size(), firstDifference(previous, split));
+            EXPECT_EQ(previous.nextRandom, split.nextRandom);
+            EXPECT_EQ(previous.numEmptyFolds, split.numEmptyFolds);
+            ++(previous.numEmptyFolds == 0u ? numUnchanged : numFewerSpectra);
+        } else {
+            EXPECT_EQ(0u, split.numEmptyFolds);
+            ++numFilled;
+        }
+    }
+    EXPECT_LT(500u, numUnchanged);
+    EXPECT_LT(50u, numFewerSpectra);
+    EXPECT_LT(50u, numFilled);
+}
+
+// Scores::getInitDirection picks the single feature that separates best and
+// sets every other weight to 0, the bias included. After a failed direction
+// check, SanityCheck::resetDirection calls it on each fold's training set
+// with the fold's trained weights in place, which kept their bias.
+TEST_F(ScoresTest, DefaultDirectionAfterResetHasZeroBias)
+{
+    FeatureNames::resetNumFeatures();
+    FeatureNames::setNumFeatures(2);
+    // two folds of 20 targets and 20 decoys; feature 1 separates the
+    // targets (higher values) from the decoys, feature 2 does not
+    const std::size_t numFolds = 2, numPsms = 40;
+    std::vector<double> features(2 * numFolds * numPsms);
+    std::vector<PSMDescription> psms(numFolds * numPsms);
+    std::vector<Scores> testBins(numFolds, Scores(false)),
+        trainBins(numFolds, Scores(false));
+    for (std::size_t i = 0; i < psms.size(); ++i) {
+        const bool isTarget = i % 2 == 0;
+        psms[i].features = &features[2 * i];
+        psms[i].features[0] =
+            static_cast<double>(i % numPsms) + (isTarget ? 100.0 : 0.0);
+        psms[i].features[1] = static_cast<double>((i * 7) % 11);
+        psms[i].scan = static_cast<unsigned int>(i + 1);
+        const ScoreHolder sh(0.0,
+                             isTarget ? LabelType::TARGET : LabelType::DECOY,
+                             &psms[i]);
+        const std::size_t fold = i / numPsms;
+        testBins[fold].addScoreHolder(sh);
+        trainBins[1 - fold].addScoreHolder(sh);
+    }
+    for (std::size_t fold = 0; fold < numFolds; ++fold) {
+        testBins[fold].recalculateSizes();
+        trainBins[fold].recalculateSizes();
+    }
+    const std::vector<double> defaultVector = {1.0, 0.0, 0.0};
+    {
+        std::vector<double> direction = {0.3, -2.0, 7.5};
+        trainBins[0].getInitDirection(0.01, direction);
+        EXPECT_EQ(defaultVector, direction);
+    }
+    for (bool overrule : {false, true}) {
+        SCOPED_TRACE(overrule);
+        SanityCheck check;
+        check.setOverrule(overrule);
+        std::vector<std::vector<double> > w(numFolds,
+                                            std::vector<double>(3, 0.0));
+        // a test FDR that no target reaches makes the check fail
+        check.getInitDirection(testBins, trainBins, NULL, w, 1e-6, 0.01);
+        const std::vector<std::vector<double> > trained = {{0.5, 0.25, 3.0},
+                                                           {0.4, -0.1, -2.0}};
+        w = trained;
+        EXPECT_FALSE(check.validateDirection(testBins, trainBins, w));
+        if (overrule) {
+            EXPECT_EQ(trained, w);
+        } else {
+            for (const std::vector<double>& wFold : w) {
+                EXPECT_EQ(defaultVector, wFold);
+            }
+        }
+    }
+    FeatureNames::resetNumFeatures();
 }
 
 // normalizeScores rescales the scores of each cross-validation bin to a
