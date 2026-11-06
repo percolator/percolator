@@ -6,12 +6,17 @@ Exits with status 1 if the files differ beyond the given tolerances.
   compare_results.py --exact base.txt new.txt
   compare_results.py base.txt new.txt   # tolerance mode
 
-Tolerance mode joins rows on the first column (PSMId or protein id) and
-reports the number of targets below the q-value threshold, the Jaccard index
-of the accepted sets, the largest q-value and PEP differences and the Spearman
-correlation of the scores. Percolator can write the same PSMId more than once
-(the input may repeat a SpecId); the first, best-scoring row of a key is then
-used and the number of repeated keys is reported on stderr.
+Tolerance mode joins the rows of the two files and reports the number of
+targets below the q-value threshold, the Jaccard index of the accepted sets,
+the largest q-value and PEP differences and the Spearman correlation of the
+scores. The rows are joined on (--key auto):
+  - the peptide, if every row of both files has a different peptide (peptide
+    level: the PSMId names the best PSM of a peptide, which may differ);
+  - otherwise the PSMId and the peptide (PSM level: the input may repeat a
+    SpecId for different peptides);
+  - the first column if there is no peptide column (protein level).
+If a file still repeats a key, the first, best-scoring row of the key is used
+and the number of repeated keys is reported on stderr.
 """
 
 import argparse
@@ -19,28 +24,59 @@ import math
 import sys
 
 
-def read_table(path):
+def read_rows(path):
     with open(path) as f:
         header = f.readline().rstrip("\n").split("\t")
-        rows, first_line = {}, {}
-        repeated, example = 0, None
-        for line_nr, line in enumerate(f, 2):
-            if not line.strip():
-                continue
-            fields = line.rstrip("\n").split("\t")
-            key = fields[0]
-            if key in rows:
-                # rows are sorted best first, so the first row of a key is kept
-                repeated += 1
-                if example is None:
-                    example = (key, first_line[key], line_nr)
-                continue
-            rows[key] = fields
-            first_line[key] = line_nr
+        rows = [(line_nr, line.rstrip("\n").split("\t"))
+                for line_nr, line in enumerate(f, 2) if line.strip()]
+    return header, rows
+
+
+def key_function(mode, header_base, rows_base, header_new, rows_new):
+    """Return the name of the join key and a function from a header to a key
+    function of a row."""
+    def peptide_unique(header, rows):
+        ix = header.index("peptide")
+        peptides = set()
+        for _, fields in rows:
+            if fields[ix] in peptides:
+                return False
+            peptides.add(fields[ix])
+        return True
+    has_peptide = "peptide" in header_base and "peptide" in header_new
+    if mode == "auto":
+        if not has_peptide:
+            mode = "first"
+        elif peptide_unique(header_base, rows_base) and peptide_unique(header_new, rows_new):
+            mode = "peptide"
+        else:
+            mode = "psm"
+    if mode != "first" and not has_peptide:
+        raise SystemExit("--key %s needs a peptide column in both files" % mode)
+    if mode == "first":
+        return mode, lambda header: (lambda fields: fields[0])
+    if mode == "peptide":
+        return mode, lambda header: (lambda fields, ix=header.index("peptide"): fields[ix])
+    return mode, lambda header: (lambda fields, ix=header.index("peptide"): (fields[0], fields[ix]))
+
+
+def index_rows(path, rows, key):
+    """Map each key to its first row; rows are sorted best first."""
+    table, first_line = {}, {}
+    repeated, example = 0, None
+    for line_nr, fields in rows:
+        k = key(fields)
+        if k in table:
+            repeated += 1
+            if example is None:
+                example = (k, first_line[k], line_nr)
+            continue
+        table[k] = fields
+        first_line[k] = line_nr
     if repeated:
         print("warning: %s: %d rows repeat an earlier key and are ignored, e.g. %r "
               "on lines %d and %d" % ((path, repeated) + example), file=sys.stderr)
-    return header, rows
+    return table
 
 
 def same_bytes(path1, path2, block_size=1 << 20):
@@ -106,6 +142,9 @@ def main():
     ap.add_argument("--min-jaccard", type=float, default=0.995)
     ap.add_argument("--max-dq", type=float, default=1e-3)
     ap.add_argument("--max-dpep", type=float, default=None)
+    ap.add_argument("--key", choices=["auto", "first", "psm", "peptide"], default="auto",
+                    help="join rows on the first column, on PSMId and peptide, or on the "
+                         "peptide; auto chooses as described above")
     args = ap.parse_args()
 
     if args.exact:
@@ -113,8 +152,12 @@ def main():
         print("identical" if same else "DIFFERENT", args.base, args.new)
         sys.exit(0 if same else 1)
 
-    hb, base = read_table(args.base)
-    hn, new = read_table(args.new)
+    hb, rows_b = read_rows(args.base)
+    hn, rows_n = read_rows(args.new)
+    key_name, key_for = key_function(args.key, hb, rows_b, hn, rows_n)
+    base = index_rows(args.base, rows_b, key_for(hb))
+    new = index_rows(args.new, rows_n, key_for(hn))
+    del rows_b, rows_n
     qb, qn = column(hb, "q-value"), column(hn, "q-value")
     pb, pn = column(hb, "posterior_error_prob"), column(hn, "posterior_error_prob")
     sb = column(hb, "score") if "score" in hb else None
@@ -132,7 +175,7 @@ def main():
     if sb is not None and sn is not None:
         rho = spearman([float(base[k][sb]) for k in common], [float(new[k][sn]) for k in common])
 
-    print("rows base=%d new=%d common=%d" % (len(base), len(new), len(common)))
+    print("rows base=%d new=%d common=%d key=%s" % (len(base), len(new), len(common), key_name))
     print("accepted (q<%g) base=%d new=%d rel.change=%.5f jaccard=%.5f" %
           (args.fdr, len(acc_b), len(acc_n), count_change, jaccard))
     print("max|dq|=%.3g max|dPEP|=%.3g spearman(score)=%.6f" % (max_dq, max_dpep, rho))
