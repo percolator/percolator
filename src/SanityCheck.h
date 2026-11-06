@@ -49,6 +49,8 @@ class SanityCheck {
     initDefaultDirName_ = dirName;
   }
   void setOverrule(bool orl) { overRule_ = orl; }
+  // with --override a failed check keeps the trained direction
+  bool getOverrule() const { return overRule_; }
   void addDefaultWeights(const std::vector<double>& defaultWeights) {
     defaultWeights_ = defaultWeights;
   }
