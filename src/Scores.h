@@ -41,6 +41,30 @@ class SetHandler;
 class AlgIn;
 
 /*
+ * How Scores::merge puts the SVM scores of the cross-validation bins on a
+ * common scale before merging them, see Caller's --merge-normalization.
+ */
+enum class MergeNormalization {
+  TEST,          // the score of the last PSM with q < fdr and the median
+                 // decoy of each test bin become 0 and -1
+  TRAIN,         // as TEST, with both scores taken from the fold's training
+                 // set scored with the fold's weights
+  TRAIN_DECOYS,  // (score - mean) / sd of the decoys of the fold's training
+                 // set scored with the fold's weights
+  NONE           // the raw SVM scores
+};
+
+/*
+ * The linear map score -> (score - offset) / scale that puts the SVM scores
+ * of a cross-validation bin on the common scale. A scale <= 0 means that the
+ * anchors of the map do not exist, e.g. for too few decoys.
+ */
+struct ScoreScale {
+  double offset = 0.0;
+  double scale = 0.0;
+};
+
+/*
  * Scores is a container of ScoreHolders that allows you to do a sorted merge
  * of vectors of ScoreHolder.
  *
@@ -64,12 +88,18 @@ class Scores {
         totalNumberOfTargets_(0) {}
 
   // Replaces the PSMs of this set by those of the cross-validation bins sv,
-  // each scored, normalized and given q values, and sorted by score. The
-  // bins are emptied.
+  // scored with the weights all_w, and rescales each bin's scores and
+  // weights as the scheme says: TEST takes the anchors from the bin's own
+  // scores, TRAIN and TRAIN_DECOYS take binScales[bin] (see calcScoreScale),
+  // NONE keeps the raw scores. The result is sorted by score, and the bins
+  // are emptied.
   void merge(std::vector<Scores>& sv,
              double fdr,
              bool skipNormalizeScores,
-             std::vector<std::vector<double> >& all_w);
+             std::vector<std::vector<double> >& all_w,
+             MergeNormalization scheme = MergeNormalization::TEST,
+             const std::vector<ScoreScale>& binScales =
+                 std::vector<ScoreScale>());
   void postMergeStep();
 
   iterator begin() { return scores_.begin(); }
@@ -161,6 +191,28 @@ class Scores {
   // rescaled
   void normalizeScores(double fdr, std::vector<double>& weights,
                        bool singleBin = false);
+  // The rescaling of the scheme taken from these scores, which have to be
+  // sorted, with q values for TEST and TRAIN: the score of the last PSM with
+  // q < fdr above the median decoy becomes 0 and the median decoy -1 (TEST,
+  // TRAIN), or the decoys get mean 0 and standard deviation 1
+  // (TRAIN_DECOYS). NONE gives the identity.
+  ScoreScale getScoreScale(MergeNormalization scheme, double fdr) const;
+  // Scores these PSMs with w, sorts them and returns getScoreScale(scheme,
+  // fdr), with the q values computed as merge does for a test bin, except
+  // that a too good separation gives pi0 = 1 instead of an error. Used to
+  // take the anchors of TRAIN and TRAIN_DECOYS from a training set.
+  ScoreScale calcScoreScale(std::vector<double>& w,
+                            MergeNormalization scheme,
+                            double fdr);
+  // Rescales the scores and the weights by s. When s.scale <= 0 this is an
+  // error, except with --no-terminate and for the only bin (singleBin),
+  // which keeps its raw scores and weights as normalizeScores does; scheme
+  // and fdr only word the message.
+  void applyScoreScale(const ScoreScale& s,
+                       std::vector<double>& weights,
+                       bool singleBin,
+                       MergeNormalization scheme,
+                       double fdr);
 
   void weedOutRedundant();
   void weedOutRedundant(std::map<std::string, unsigned int>& peptideSpecCounts,
@@ -214,7 +266,9 @@ class Scores {
       const std::vector<std::pair<double, bool> >& combined,
       double fdr,
       bool skipDecoysPlusOne) const;
-  void checkSeparationAndSetPi0();
+  // tooGoodSeparationIsError = false sets pi0 = 1 without a message when the
+  // separation is too good
+  void checkSeparationAndSetPi0(bool tooGoodSeparationIsError = true);
   bool is_output_rt_ = false;
 };
 

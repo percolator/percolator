@@ -50,7 +50,17 @@
 void Scores::merge(std::vector<Scores>& sv,
                    double fdr,
                    bool skipNormalizeScores,
-                   std::vector<std::vector<double> >& all_w) {
+                   std::vector<std::vector<double> >& all_w,
+                   MergeNormalization scheme,
+                   const std::vector<ScoreScale>& binScales) {
+  const bool fromTrainingSets = scheme == MergeNormalization::TRAIN ||
+                                scheme == MergeNormalization::TRAIN_DECOYS;
+  if (!skipNormalizeScores && fromTrainingSets &&
+      binScales.size() != sv.size()) {
+    throw MyException(
+        "Error: the training-set rescaling of the cross-validation bins is "
+        "missing.\n");
+  }
   scores_.clear();
   size_t numScores = 0;
   for (const Scores& binScores : sv) {
@@ -59,16 +69,26 @@ void Scores::merge(std::vector<Scores>& sv,
   scores_.reserve(numScores);
   std::vector<Scores>::iterator cvBinScores = sv.begin();
   std::vector<std::vector<double> >::iterator weights = all_w.begin();
-  for (; cvBinScores != sv.end(); cvBinScores++, weights++) {
+  for (std::size_t bin = 0; cvBinScores != sv.end();
+       cvBinScores++, weights++, ++bin) {
     // the test sets are usually sorted already, by calcScores
     if (!cvBinScores->isSortedByScore()) {
       parallelSort(cvBinScores->begin(), cvBinScores->end(),
                    greater<ScoreHolder>());
     }
-    cvBinScores->checkSeparationAndSetPi0();
-    cvBinScores->calcQvals(fdr);
+    // the q values of a bin are only needed for its own anchors; the merged
+    // list gets new ones
+    if (scheme == MergeNormalization::TEST) {
+      cvBinScores->checkSeparationAndSetPi0();
+      cvBinScores->calcQvals(fdr);
+    }
     if (!skipNormalizeScores) {
-      cvBinScores->normalizeScores(fdr, *weights, sv.size() == 1u);
+      if (scheme == MergeNormalization::TEST) {
+        cvBinScores->normalizeScores(fdr, *weights, sv.size() == 1u);
+      } else if (fromTrainingSets) {
+        cvBinScores->applyScoreScale(binScales[bin], *weights,
+                                     sv.size() == 1u, scheme, fdr);
+      }
     }
     copy(cvBinScores->begin(), cvBinScores->end(), back_inserter(scores_));
     // release the bin before the sort of all PSMs
@@ -438,9 +458,6 @@ void Scores::recalculateSizes() {
  */
 void Scores::normalizeScores(double fdr, std::vector<double>& weights,
                              bool singleBin) {
-  unsigned int medianIndex = std::max(0u, totalNumberOfDecoys_ / 2u),
-               decoys = 0u;
-
   if (scores_.size() == 0) {
     ostringstream oss;
     oss << "Error: no scored PSMs were provided.\n";
@@ -452,8 +469,52 @@ void Scores::normalizeScores(double fdr, std::vector<double>& weights,
       throw MyException(oss.str());
     }
   }
+  applyScoreScale(getScoreScale(MergeNormalization::TEST, fdr), weights,
+                  singleBin, MergeNormalization::TEST, fdr);
+}
 
-  std::vector<ScoreHolder>::iterator it = scores_.begin();
+ScoreScale Scores::getScoreScale(MergeNormalization scheme,
+                                 double fdr) const {
+  ScoreScale s;
+  if (scheme == MergeNormalization::NONE) {
+    s.scale = 1.0;
+    return s;
+  }
+  if (scheme == MergeNormalization::TRAIN_DECOYS) {
+    // mean and sample standard deviation of the decoy scores, in two passes
+    double sum = 0.0;
+    std::size_t numDecoys = 0u;
+    for (const ScoreHolder& sh : scores_) {
+      if (sh.isDecoy()) {
+        sum += sh.score;
+        ++numDecoys;
+      }
+    }
+    if (numDecoys == 0u) {
+      return s;
+    }
+    const double mean = sum / static_cast<double>(numDecoys);
+    double sumSquares = 0.0;
+    for (const ScoreHolder& sh : scores_) {
+      if (sh.isDecoy()) {
+        sumSquares += (sh.score - mean) * (sh.score - mean);
+      }
+    }
+    s.offset = mean;
+    s.scale = numDecoys > 1u ? std::sqrt(sumSquares /
+                                         static_cast<double>(numDecoys - 1u))
+                             : 0.0;
+    return s;
+  }
+  // TEST and TRAIN: the score of the last PSM with q < fdr above the median
+  // decoy, or the top score when there is none, and the median decoy; with
+  // fewer than two decoys there is no median decoy and the scale is negative
+  if (scores_.empty()) {
+    return s;
+  }
+  unsigned int medianIndex = std::max(0u, totalNumberOfDecoys_ / 2u),
+               decoys = 0u;
+  std::vector<ScoreHolder>::const_iterator it = scores_.begin();
   double fdrScore = it->score;
   double medianDecoyScore = fdrScore + 1.0;
 
@@ -467,22 +528,63 @@ void Scores::normalizeScores(double fdr, std::vector<double>& weights,
       }
     }
   }
+  s.offset = fdrScore;
+  s.scale = fdrScore - medianDecoyScore;
+  return s;
+}
 
-  double diff = fdrScore - medianDecoyScore;
-  if (diff <= 0) {
+ScoreScale Scores::calcScoreScale(std::vector<double>& w,
+                                  MergeNormalization scheme,
+                                  double fdr) {
+  calcScores(w);
+  if (scheme == MergeNormalization::TEST ||
+      scheme == MergeNormalization::TRAIN) {
+    checkSeparationAndSetPi0(false);
+    calcQvals(fdr);
+  }
+  return getScoreScale(scheme, fdr);
+}
+
+void Scores::applyScoreScale(const ScoreScale& s,
+                             std::vector<double>& weights,
+                             bool singleBin,
+                             MergeNormalization scheme,
+                             double fdr) {
+  double offset = s.offset;
+  double scale = s.scale;
+  if (scale <= 0) {
+    const bool decoySpread = scheme == MergeNormalization::TRAIN_DECOYS;
+    auto describe = [&](std::ostream& os) {
+      if (decoySpread) {
+        os << "the decoys of a training set have no spread in their scores";
+      } else {
+        os << "median decoy score <= score at " << fdr * 100 << "% FDR";
+        if (scheme == MergeNormalization::TRAIN) {
+          os << " in a training set";
+        }
+      }
+    };
     ostringstream oss;
-    oss << "Error: median decoy score <= score at " << fdr * 100
-        << "% FDR. Cannot rescale scores to merge cross validation bins, try "
-        << "lowering --trainFDR.\n";
+    oss << "Error: ";
+    describe(oss);
+    oss << ". Cannot rescale scores to merge cross validation bins, try "
+        << (decoySpread ? "fewer folds (--num-folds)" : "lowering --trainFDR")
+        << ".\n";
     if (NO_TERMINATE) {
-      cerr << oss.str()
-           << "No-terminate flag set: apply offset such that median "
-           << "decoy has score -1, but skipping rescaling." << std::endl;
-      diff = 1.0;
-      fdrScore += 1.0;
+      cerr << oss.str();
+      if (decoySpread) {
+        cerr << "No-terminate flag set: subtract the mean decoy score, but "
+             << "skipping rescaling." << std::endl;
+      } else {
+        cerr << "No-terminate flag set: apply offset such that median "
+             << "decoy has score -1, but skipping rescaling." << std::endl;
+        offset += 1.0;
+      }
+      scale = 1.0;
     } else if (singleBin) {
-      cerr << "Warning: median decoy score <= score at " << fdr * 100
-           << "% FDR, the scores cannot be rescaled. Keeping the raw SVM "
+      cerr << "Warning: ";
+      describe(cerr);
+      cerr << ", the scores cannot be rescaled. Keeping the raw SVM "
            << "scores, as there is only one cross-validation bin to merge."
            << std::endl;
       return;
@@ -493,10 +595,10 @@ void Scores::normalizeScores(double fdr, std::vector<double>& weights,
 
   std::vector<ScoreHolder>::iterator scoreIt = scores_.begin();
   for (; scoreIt != scores_.end(); ++scoreIt) {
-    scoreIt->score -= fdrScore;
-    scoreIt->score /= diff;
+    scoreIt->score -= offset;
+    scoreIt->score /= scale;
   }
-  Normalizer::endScoreNormalizeWeights(weights, weights, fdrScore, diff);
+  Normalizer::endScoreNormalizeWeights(weights, weights, offset, scale);
 }
 
 /**
@@ -1206,12 +1308,15 @@ void Scores::getTargetPValues(std::vector<double>& pvals) const {
   }
 }
 
-void Scores::checkSeparationAndSetPi0() {
+void Scores::checkSeparationAndSetPi0(bool tooGoodSeparationIsError) {
   std::vector<double> pvals;
   getTargetPValues(pvals);
 
   pi0_ = 1.0;
   bool tooGoodSeparation = PosteriorEstimator::checkSeparation(pvals);
+  if (tooGoodSeparation && !tooGoodSeparationIsError) {
+    return;
+  }
   if (tooGoodSeparation) {
     ostringstream oss;
     oss << "Error in the input data: too good separation between target "
