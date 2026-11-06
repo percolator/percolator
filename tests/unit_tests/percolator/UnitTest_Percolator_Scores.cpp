@@ -1272,6 +1272,80 @@ TEST_F(ScoresTest, PooledDirectionCheckOnHandMadeBins)
     FeatureNames::resetNumFeatures();
 }
 
+// The second chance on the hand-made example, whose default direction,
+// lower x, separates nothing. At q < 0.25 no bin reaches the test FDR on
+// its own, so the per-bin count would reset; the merged list rescaled by
+// the training decoys holds 12 targets with q < 0.25, the initial
+// direction none, so the trained weights are kept, the bins stay scored
+// with them and the merge is to use train-decoys. At q < 0.05, which the
+// first 12 targets (q = 1/12) miss, the merged list holds none and the
+// check resets as bins does. With --override the decision is that of bins,
+// and with one bin there is no second chance. The check leaves the random
+// number generator as it found it.
+TEST_F(ScoresTest, SecondChanceOnHandMadeBins)
+{
+    typedef PooledCountExample Example;
+    FeatureNames::resetNumFeatures();
+    FeatureNames::setNumFeatures(1);
+    Example example;
+    const std::vector<double> defaultWeights = {-1.0, 0.0};
+    struct Case {
+        std::size_t numBins;
+        double testFdr;
+        bool overrule;
+        bool keep;
+    };
+    const Case cases[] = {{Example::numBins, 0.25, false, true},
+                          {Example::numBins, 0.05, false, false},
+                          {Example::numBins, 0.25, true, false},
+                          {1u, 0.25, false, false}};
+    for (const Case& c : cases) {
+        SCOPED_TRACE(::testing::Message() << c.numBins << " bins, testFdr "
+                                          << c.testFdr << ", override "
+                                          << c.overrule);
+        SanityCheck check;
+        check.addDefaultWeights(defaultWeights);
+        check.setDirectionCheck(SanityCheck::DirectionCheck::SECOND_CHANCE);
+        check.setOverrule(c.overrule);
+        // the scheme of the pooled check; the second chance counts with
+        // train-decoys whatever it is
+        check.setMergeScheme(MergeNormalization::TEST, 0.01, false);
+        std::vector<Scores> bins = example.testBins(c.numBins);
+        std::vector<Scores> trainBins = example.trainBins(c.numBins);
+        std::vector<std::vector<double> > w(c.numBins,
+                                            std::vector<double>(2));
+        EXPECT_EQ(0, check.getInitDirection(bins, trainBins, NULL, w,
+                                            c.testFdr, c.testFdr));
+        const std::vector<std::vector<double> > trained(
+            example.w.begin(), example.w.begin() + c.numBins);
+        w = trained;
+        PseudoRandom::setSeed(7u);
+        const uint64_t randomState = PseudoRandom::getSeed();
+        EXPECT_EQ(c.keep, check.validateDirection(bins, trainBins, w));
+        EXPECT_EQ(randomState, PseudoRandom::getSeed());
+        EXPECT_EQ(c.keep, check.secondChanceKept());
+        EXPECT_EQ(MergeNormalization::TRAIN_DECOYS,
+                  check.secondChanceMergeScheme());
+        if (c.keep || c.overrule) {
+            EXPECT_EQ(trained, w);
+        } else {
+            EXPECT_EQ(std::vector<std::vector<double> >(c.numBins,
+                                                        defaultWeights),
+                      w);
+        }
+        if (c.keep) {
+            // the per-bin count scored the bins with their folds' weights
+            for (std::size_t b = 0; b < c.numBins; ++b) {
+                for (const ScoreHolder& sh : bins[b]) {
+                    EXPECT_DOUBLE_EQ(w[b][0] * sh.pPSM->features[0] + w[b][1],
+                                     sh.score);
+                }
+            }
+        }
+    }
+    FeatureNames::resetNumFeatures();
+}
+
 // countTargetsBelowFdr must report the same number of targets below the FDR
 // threshold as calcScoresAndQvals, also with many tied scores, with and
 // without the mix-max correction.

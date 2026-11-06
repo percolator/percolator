@@ -21,6 +21,7 @@
 #endif
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <map>
 #include <vector>
 #include "SetHandler.h"
@@ -58,6 +59,9 @@ public:
     }
     std::vector<Scores> const& testBins(void) const {
         return testScores_;
+    }
+    std::vector<Scores> const& trainBins(void) const {
+        return trainScores_;
     }
 };
 
@@ -205,12 +209,30 @@ TEST_F(CrossValidationTest, doStepTest)
   FeatureNames::resetNumFeatures();
 }
 
-// The direction check of trainAndMerge
+// The direction check and the data of trainAndMerge
 struct DirectionCheckOptions {
     // --direction-check
     SanityCheck::DirectionCheck check = SanityCheck::DirectionCheck::BINS;
     bool overrule = false;  // --override
     double testFdr = 0.05;  // a tiny one makes the check fail
+    // the merge after the second chance kept the trained SVMs
+    MergeNormalization secondChanceScheme = MergeNormalization::TRAIN_DECOYS;
+    bool signal = true;     // without, no target is correct
+    bool separate = false;  // pi0 and q values of separate searches (mix-max)
+};
+
+// What trainAndMerge observed besides the scores and weights
+struct DirectionCheckResult {
+    bool secondChanceKept = false;
+    MergeNormalization usedScheme = MergeNormalization::TEST;
+    // validateDirection, run on copies before postIterationProcessing,
+    // left the random number generator as it found it
+    bool checkKeptRandomState = false;
+    // the state after postIterationProcessing, whose merge draws numbers
+    // for the pi0 of separate searches
+    uint64_t randomStateAfterMerge = 0u;
+    // estimating the pi0 of the merged list once more moved the generator
+    bool pi0EstimateDraws = false;
 };
 
 // Trains and merges with numFolds folds and the given merge scheme on 450
@@ -224,7 +246,8 @@ static void trainAndMerge(unsigned int numFolds, MergeNormalization scheme,
                           std::vector<std::vector<double> >& weights,
                           std::vector<double>& features,
                           const DirectionCheckOptions& checkOptions =
-                              DirectionCheckOptions()) {
+                              DirectionCheckOptions(),
+                          DirectionCheckResult* result = nullptr) {
     FeatureNames::resetNumFeatures();
     FeatureNames::setNumFeatures(2);
     const int numPsms = 900;
@@ -241,7 +264,7 @@ static void trainAndMerge(unsigned int numFolds, MergeNormalization scheme,
         const bool isTarget = i % 2 == 0;
         PSMDescription* psm = psmStore.add(PSMDescription());
         psm->features = &features[2 * i];
-        const bool isCorrect = isTarget && i % 4 == 0;
+        const bool isCorrect = checkOptions.signal && isTarget && i % 4 == 0;
         psm->features[0] = static_cast<double>((seed >> 8) % 1000) / 250.0 +
                            (isCorrect ? 2.5 : 0.0);
         psm->features[1] = static_cast<double>((seed >> 4) % 1000) / 250.0 +
@@ -256,14 +279,16 @@ static void trainAndMerge(unsigned int numFolds, MergeNormalization scheme,
 
     PseudoRandom::setSeed(1u);
     CrossValidationEx crossValidation(false, false, checkOptions.testFdr,
-                                      0.05, 0.05, 0.0, 0.0, 10, false, 1,
-                                      false, 1, false, 1.0, numFolds);
+                                      0.05, 0.05, 0.0, 0.0, 10,
+                                      checkOptions.separate, 1, false, 1,
+                                      false, 1.0, numFolds);
     crossValidation.setMergeNormalization(scheme);
-    Scores scores(false);
+    Scores scores(checkOptions.separate);
     scores.populateWithPSMs(setHandler);
     SanityCheck check;
     check.setDirectionCheck(checkOptions.check);
     check.setOverrule(checkOptions.overrule);
+    check.setSecondChanceMergeScheme(checkOptions.secondChanceScheme);
     crossValidation.preIterationSetup(scores, check, norm.get());
     crossValidation.train(norm.get());
     // the bin of each PSM, before the merge empties the bins: the weights
@@ -275,7 +300,21 @@ static void trainAndMerge(unsigned int numFolds, MergeNormalization scheme,
             binOf[sh.pPSM] = bin;
         }
     }
+    if (result) {
+        SanityCheck checkCopy(check);
+        std::vector<Scores> testCopy(crossValidation.testBins());
+        std::vector<Scores> trainCopy(crossValidation.trainBins());
+        std::vector<std::vector<double> > wCopy(crossValidation.weights());
+        const uint64_t before = PseudoRandom::getSeed();
+        checkCopy.validateDirection(testCopy, trainCopy, wCopy);
+        result->checkKeptRandomState = PseudoRandom::getSeed() == before;
+    }
     crossValidation.postIterationProcessing(scores, check);
+    if (result) {
+        result->secondChanceKept = check.secondChanceKept();
+        result->usedScheme = crossValidation.usedMergeNormalization();
+        result->randomStateAfterMerge = PseudoRandom::getSeed();
+    }
 
     scoreOf.clear();
     for (const ScoreHolder& sh : scores) {
@@ -290,6 +329,11 @@ static void trainAndMerge(unsigned int numFolds, MergeNormalization scheme,
         EXPECT_NEAR(expected, sh.score,
                     1e-12 * std::max(1.0, std::fabs(sh.score)))
             << "bin " << binOf[sh.pPSM];
+    }
+    if (result) {
+        const uint64_t before = PseudoRandom::getSeed();
+        scores.postMergeStep(false);
+        result->pi0EstimateDraws = PseudoRandom::getSeed() != before;
     }
     FeatureNames::resetNumFeatures();
 }
@@ -449,6 +493,187 @@ TEST_F(CrossValidationTest, DirectionCheckPooledAndFailedChecks)
                     EXPECT_NE(w[0], w[2]);
                 }
             }
+        }
+    }
+}
+
+// Whether all folds hold a single-feature vector, as after a reset
+static bool allSingleFeature(const std::vector<std::vector<double> >& w) {
+    for (const std::vector<double>& wFold : w) {
+        if ((wFold[0] == 0.0) == (wFold[1] == 0.0)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+static void expectSameScores(const std::map<unsigned int, double>& a,
+                             const std::map<unsigned int, double>& b) {
+    ASSERT_EQ(a.size(), b.size());
+    for (auto it = a.begin(), jt = b.begin(); it != a.end(); ++it, ++jt) {
+        EXPECT_EQ(it->first, jt->first);
+        EXPECT_EQ(it->second, jt->second);
+    }
+}
+
+// The second chance on small test bins with signal. At --testFDR 0.01 a
+// test bin of 300 PSMs would need about 100 targets above its best decoy,
+// so the per-bin count fails and bins falls back to single-feature
+// vectors, merged with the test scheme, as before the second chance. The
+// merged out-of-fold list of 900 PSMs does reach q < 0.01, more often than
+// with the initial direction, so second-chance keeps the trained SVMs and
+// merges with train-decoys: the same scores and weights as pooled. Another
+// scheme set for that case is used instead, and with --override the second
+// chance changes nothing. The checks leave the random number generator as
+// they found it, also with the pi0 of separate searches, whose estimate
+// does draw from it.
+TEST_F(CrossValidationTest, SecondChanceKeepsTheSvmsOfSmallBins)
+{
+    typedef SanityCheck::DirectionCheck Check;
+    for (bool separate : {false, true}) {
+        SCOPED_TRACE(::testing::Message() << "separate " << separate);
+        DirectionCheckOptions options;
+        options.testFdr = 0.01;
+        options.separate = separate;
+        std::map<unsigned int, double> scoreBins, scoreSc, scorePooled;
+        std::vector<std::vector<double> > wBins, wSc, wPooled;
+        std::vector<double> features;
+        DirectionCheckResult bins, sc, pooled;
+        options.check = Check::BINS;
+        trainAndMerge(3u, MergeNormalization::TEST, scoreBins, wBins,
+                      features, options, &bins);
+        options.check = Check::SECOND_CHANCE;
+        trainAndMerge(3u, MergeNormalization::TEST, scoreSc, wSc, features,
+                      options, &sc);
+        options.check = Check::POOLED;
+        trainAndMerge(3u, MergeNormalization::TRAIN_DECOYS, scorePooled,
+                      wPooled, features, options, &pooled);
+
+        EXPECT_TRUE(allSingleFeature(wBins));
+        EXPECT_FALSE(bins.secondChanceKept);
+        EXPECT_EQ(MergeNormalization::TEST, bins.usedScheme);
+
+        EXPECT_TRUE(sc.secondChanceKept);
+        EXPECT_EQ(MergeNormalization::TRAIN_DECOYS, sc.usedScheme);
+        ASSERT_EQ(3u, wSc.size());
+        for (const std::vector<double>& wFold : wSc) {
+            EXPECT_NE(0.0, wFold[0]);
+            EXPECT_NE(0.0, wFold[1]);
+        }
+        EXPECT_EQ(wPooled, wSc);
+        expectSameScores(scorePooled, scoreSc);
+
+        for (const DirectionCheckResult* r : {&bins, &sc, &pooled}) {
+            EXPECT_TRUE(r->checkKeptRandomState);
+            EXPECT_EQ(separate, r->pi0EstimateDraws);
+        }
+        EXPECT_EQ(pooled.randomStateAfterMerge, sc.randomStateAfterMerge);
+
+        // another scheme for the merge after the second chance
+        {
+            std::map<unsigned int, double> scoreTrain, scorePooledTrain;
+            std::vector<std::vector<double> > wTrain, wPooledTrain;
+            DirectionCheckResult train;
+            options.check = Check::SECOND_CHANCE;
+            options.secondChanceScheme = MergeNormalization::TRAIN;
+            trainAndMerge(3u, MergeNormalization::TEST, scoreTrain, wTrain,
+                          features, options, &train);
+            options.secondChanceScheme = MergeNormalization::TRAIN_DECOYS;
+            EXPECT_TRUE(train.secondChanceKept);
+            EXPECT_EQ(MergeNormalization::TRAIN, train.usedScheme);
+            options.check = Check::POOLED;
+            trainAndMerge(3u, MergeNormalization::TRAIN, scorePooledTrain,
+                          wPooledTrain, features, options);
+            EXPECT_EQ(wPooledTrain, wTrain);
+            expectSameScores(scorePooledTrain, scoreTrain);
+        }
+        // --override: the trained SVMs stay with either check, and the
+        // second chance does not change the merge
+        {
+            std::map<unsigned int, double> scoreOBins, scoreOSc;
+            std::vector<std::vector<double> > wOBins, wOSc;
+            DirectionCheckResult oBins, oSc;
+            options.overrule = true;
+            options.check = Check::BINS;
+            trainAndMerge(3u, MergeNormalization::TEST, scoreOBins, wOBins,
+                          features, options, &oBins);
+            options.check = Check::SECOND_CHANCE;
+            trainAndMerge(3u, MergeNormalization::TEST, scoreOSc, wOSc,
+                          features, options, &oSc);
+            options.overrule = false;
+            EXPECT_FALSE(oSc.secondChanceKept);
+            EXPECT_EQ(MergeNormalization::TEST, oSc.usedScheme);
+            EXPECT_EQ(wOBins, wOSc);
+            expectSameScores(scoreOBins, scoreOSc);
+            EXPECT_EQ(oBins.randomStateAfterMerge, oSc.randomStateAfterMerge);
+            EXPECT_FALSE(allSingleFeature(wOSc));
+        }
+    }
+}
+
+// The second chance on inputs without signal, where no target is correct:
+// the merged out-of-fold list holds no target with q < --testFDR, the
+// trained SVMs are not kept, and second-chance gives exactly the scores,
+// weights and final random state of bins, also for separate searches,
+// whose pi0 estimates draw from the generator.
+TEST_F(CrossValidationTest, SecondChanceRejectsAnInputWithoutSignal)
+{
+    typedef SanityCheck::DirectionCheck Check;
+    for (bool separate : {false, true}) {
+        SCOPED_TRACE(::testing::Message() << "separate " << separate);
+        DirectionCheckOptions options;
+        options.signal = false;
+        options.separate = separate;
+        std::map<unsigned int, double> scoreBins, scoreSc;
+        std::vector<std::vector<double> > wBins, wSc;
+        std::vector<double> features;
+        DirectionCheckResult bins, sc;
+        options.check = Check::BINS;
+        trainAndMerge(3u, MergeNormalization::TEST, scoreBins, wBins,
+                      features, options, &bins);
+        options.check = Check::SECOND_CHANCE;
+        trainAndMerge(3u, MergeNormalization::TEST, scoreSc, wSc, features,
+                      options, &sc);
+        EXPECT_TRUE(allSingleFeature(wBins));
+        EXPECT_FALSE(sc.secondChanceKept);
+        EXPECT_EQ(MergeNormalization::TEST, sc.usedScheme);
+        EXPECT_EQ(wBins, wSc);
+        expectSameScores(scoreBins, scoreSc);
+        EXPECT_TRUE(sc.checkKeptRandomState);
+        EXPECT_EQ(separate, sc.pi0EstimateDraws);
+        EXPECT_EQ(bins.randomStateAfterMerge, sc.randomStateAfterMerge);
+    }
+}
+
+// Where the per-bin count passes, second-chance is bins: the same scores
+// and weights, merged with the test scheme, for one, three and five folds.
+// bins itself is the check of r2/fixes, which the failed-check test above
+// covers with the default options of trainAndMerge.
+TEST_F(CrossValidationTest, SecondChanceIsBinsWhereTheBinsPass)
+{
+    typedef SanityCheck::DirectionCheck Check;
+    for (unsigned int numFolds : {1u, 3u, 5u}) {
+        for (bool separate : {false, true}) {
+            SCOPED_TRACE(::testing::Message() << numFolds << " folds, "
+                                              << "separate " << separate);
+            DirectionCheckOptions options;
+            options.separate = separate;
+            std::map<unsigned int, double> scoreBins, scoreSc;
+            std::vector<std::vector<double> > wBins, wSc;
+            std::vector<double> features;
+            DirectionCheckResult bins, sc;
+            options.check = Check::BINS;
+            trainAndMerge(numFolds, MergeNormalization::TEST, scoreBins,
+                          wBins, features, options, &bins);
+            options.check = Check::SECOND_CHANCE;
+            trainAndMerge(numFolds, MergeNormalization::TEST, scoreSc, wSc,
+                          features, options, &sc);
+            EXPECT_FALSE(allSingleFeature(wBins));
+            EXPECT_FALSE(sc.secondChanceKept);
+            EXPECT_EQ(MergeNormalization::TEST, sc.usedScheme);
+            EXPECT_EQ(wBins, wSc);
+            expectSameScores(scoreBins, scoreSc);
+            EXPECT_EQ(bins.randomStateAfterMerge, sc.randomStateAfterMerge);
         }
     }
 }
