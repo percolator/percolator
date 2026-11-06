@@ -412,7 +412,9 @@ bool Caller::parseOptions(int argc, char** argv) {
       "rescaled in this way before they are averaged, and only 'test' "
       "rescales the scores of all PSMs once more. With one fold, as with "
       "--reset-algorithm, only the scale of the reported scores changes. No "
-      "effect with --static. Default = test.",
+      "effect with --static. Default = test; train-decoys with "
+      "--direction-check pooled, and in a run whose trained SVMs the "
+      "second chance of --direction-check keeps.",
       "scheme");
   cmd.defineOption(
       Option::EXPERIMENTAL_FEATURE, "direction-check",
@@ -423,14 +425,18 @@ bool Caller::parseOptions(int argc, char** argv) {
       "its fold's SVM, the bins are rescaled and merged as for the final "
       "list (see --merge-normalization), and the targets with q < --testFDR "
       "are counted in the merged out-of-fold list. If there are none, or "
-      "fewer than for the initial direction counted in the same way, the "
-      "default direction is used unless --override is given. "
-      "'second-chance': 'bins', and where it would fall back, the trained "
-      "SVMs are kept if the count of 'pooled' with train-decoys keeps them; "
-      "the final list is then merged with train-decoys unless "
-      "--merge-normalization is given. With one fold, "
-      "as with --reset-algorithm, all are the same. 'pooled' merges with "
-      "--merge-normalization train-decoys unless a scheme is given, and "
+      "fewer than for the initial direction counted in the same way, each "
+      "fold falls back to the default direction chosen on its training set, "
+      "unless --override is given. 'second-chance': 'bins', and only where "
+      "that would fall back, the count of 'pooled' with train-decoys decides "
+      "instead, so that small test bins alone do not discard the trained "
+      "SVMs; if it keeps them, that run is merged with train-decoys unless "
+      "--merge-normalization is given. Runs that pass 'bins' are not "
+      "changed. With one fold, as with --reset-algorithm, all three are the "
+      "same. With -N the check uses the PSMs trained on, and with --static "
+      "the merged raw scores of the given weights. 'pooled' merges with "
+      "--merge-normalization train-decoys unless a scheme is given, also "
+      "with one fold, where only the scale of the scores changes, and "
       "cannot be combined with 'test', whose anchors are taken from each "
       "test bin. Default = second-chance.",
       "check");
