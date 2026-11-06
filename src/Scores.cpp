@@ -1100,9 +1100,9 @@ int Scores::getInitDirection(const double initialSelectionFdr,
       }
     }
   }
-  for (std::size_t ix = FeatureNames::getNumFeatures(); ix--;) {
-    direction[ix] = 0;
-  }
+  // the bias too: after a direction reset, direction holds the trained
+  // weights of the fold
+  std::fill(direction.begin(), direction.end(), 0.0);
 
   if (bestPositives <= 0) {
     ostringstream oss;

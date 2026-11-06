@@ -725,14 +725,17 @@ void CrossValidation::postIterationProcessing(Scores& fullset,
 
   const bool directionValid =
       check.validateDirection(testScores_, trainScores_, weights_);
-  // With --override the folds keep their trained vectors, and each test
-  // bin is scored with its own fold's vector: the other folds' vectors
-  // were trained on it.
+  // With --override the folds keep their trained vectors when the check
+  // fails; otherwise it resets them.
   const bool trainedVectorsKept = directionValid || check.getOverrule();
   if (!directionValid) {
+    // Each test bin is scored with its own fold's vector: after a reset the
+    // vector given with --init-weights, the same in all folds, or else the
+    // default vector chosen on that fold's training set; with --override the
+    // trained vector, since the other folds' vectors were trained on the
+    // bin. The weights written with -w then describe the scores.
     for (std::size_t set = 0; set < numFolds_; ++set) {
-      testScores_[set].calcScoresAndQvals(
-          trainedVectorsKept ? weights_[set] : weights_[0], selectionFdr_);
+      testScores_[set].calcScoresAndQvals(weights_[set], selectionFdr_);
     }
   }
   // the default direction of validateDirection was the last use of the
