@@ -9,6 +9,9 @@ Changes of results:
 * qvality estimates PEPs by I-spline regression of the target q values, as Percolator does; --pava-pep, --tdc-pep and --rank-pep select the other monotone regressions, and --irls-pep the previous P-IRLS method.
 * New option --tdc-pep (Percolator and qvality): PEPs from a monotone fit of the decoy rate p on the score, PEP = p/(1-p), scaled by pi0 and the target/decoy ratio for separate searches. The default remains the regression of the target q values.
 Fixes:
+* --override: when the direction check failed, all test bins were scored with the first fold's SVM, which was trained on the other bins. Each bin is now scored with its own fold's SVM.
+* After a direction reset, all test bins were scored with the default vector chosen on the first fold's training set, which holds the other bins, and the default vectors kept their folds' trained bias. Each bin is now scored with the default vector chosen on its own fold's training set, with bias 0, and the weights written with -w describe the scores of every fold. Only runs that reset change, and only where the folds choose different features; otherwise only the bias of the second and later folds in the -w file changes.
+* The cross-validation split filled the folds with whole spectra but counted their capacity in PSMs, so with uneven spectra or many folds (--num-folds) a fold could stay empty and the run stopped, although there were more spectra than folds. Every fold now gets a spectrum; splits that left no fold empty are unchanged.
 * --train-best-positive corrupted the training folds with nested cross-validation, which RESET also uses.
 * RESET: the pseudo-target labels differed between runs, and a single fold led to a division by zero in the stopping rule.
 * --quick-validation with --nested-xval-bins > 1 retrained with a Cpos/Cneg pair that had not been evaluated.
@@ -37,6 +40,7 @@ Interface changes (Crux and other library users):
 * Normalizer::getNormalizer, resetNormalizer and setType replaced by Normalizer::create; Enzyme::createEnzyme returns std::unique_ptr.
 * CGLS and L2_SVM_MFN take std::vector arguments; vector_double and vector_int removed; AlgIn is a value type.
 * Scores::calcPep takes a fourth argument (tdc); InferPEP::tdc_to_pep takes an optional odds factor; PosteriorEstimator has an estimateMonotonePEP member.
+* Scores::getInitDirection sets every element of the direction vector to 0 before it sets the chosen feature, the bias included.
 * Globals: logger and stream redirection functions removed. Timer::getStartTimeStr returns std::string. ScoreHolder has no virtual destructor and no p field.
 
 v3.09

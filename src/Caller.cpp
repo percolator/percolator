@@ -250,7 +250,8 @@ bool Caller::parseOptions(int argc, char** argv) {
                    TRUE_IF_SET);
   cmd.defineOption("O", "override",
                    "Override error check and do not fall back on default score "
-                   "vector in case of suspect score vector from SVM.",
+                   "vector in case of suspect score vector from SVM. Each "
+                   "test bin is then scored with its own fold's SVM.",
                    "", TRUE_IF_SET);
   cmd.defineOption("S", "seed",
                    "Set seed of the random number generator. Default = 1.",
