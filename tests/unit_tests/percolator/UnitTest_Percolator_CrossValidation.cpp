@@ -207,6 +207,7 @@ TEST_F(CrossValidationTest, doStepTest)
 
 // The direction check of trainAndMerge
 struct DirectionCheckOptions {
+    bool pooled = false;    // --direction-check pooled
     bool overrule = false;  // --override
     double testFdr = 0.05;  // a tiny one makes the check fail
 };
@@ -260,10 +261,13 @@ static void trainAndMerge(unsigned int numFolds, MergeNormalization scheme,
     Scores scores(false);
     scores.populateWithPSMs(setHandler);
     SanityCheck check;
+    check.setPooledCheck(checkOptions.pooled);
     check.setOverrule(checkOptions.overrule);
     crossValidation.preIterationSetup(scores, check, norm.get());
     crossValidation.train(norm.get());
-    // the bin of each PSM, before the merge empties the bins
+    // the bin of each PSM, before the merge empties the bins: the weights
+    // give the merged scores, as each PSM was scored by the fold of its test
+    // bin
     std::map<const PSMDescription*, std::size_t> binOf;
     for (std::size_t bin = 0; bin < numFolds; ++bin) {
         for (const ScoreHolder& sh : crossValidation.testBins()[bin]) {
@@ -374,6 +378,76 @@ TEST_F(CrossValidationTest, MergeNormalizationSchemes)
         trainAndMerge(3u, scheme, scoreOther, wOther, featuresOther);
         EXPECT_EQ(900u, scoreOther.size());
         EXPECT_EQ(3u, wOther.size());
+    }
+}
+
+// The pooled direction check only takes the decision. On these data both
+// checks keep the trained direction, and the merged scores and weights of
+// pooled equal those of bins, with one fold (where pooled is bins) and with
+// three. When the check fails, here by a test FDR that no target reaches,
+// trainAndMerge finds each test bin scored with its own fold's final
+// weights: with --override the trained ones, which were not trained on that
+// bin, and otherwise the default vector of a single feature chosen on the
+// fold's training set.
+TEST_F(CrossValidationTest, DirectionCheckPooledAndFailedChecks)
+{
+    auto isSingleFeature = [](const std::vector<double>& w) {
+        return (w[0] == 0.0) != (w[1] == 0.0);
+    };
+    for (unsigned int numFolds : {1u, 3u}) {
+        for (MergeNormalization scheme :
+             {MergeNormalization::TEST, MergeNormalization::TRAIN_DECOYS}) {
+            SCOPED_TRACE(::testing::Message() << numFolds << " folds, scheme "
+                                              << static_cast<int>(scheme));
+            std::map<unsigned int, double> scoreBins, scorePooled;
+            std::vector<std::vector<double> > wBins, wPooled;
+            std::vector<double> featuresBins, featuresPooled;
+            trainAndMerge(numFolds, scheme, scoreBins, wBins, featuresBins);
+            DirectionCheckOptions pooled;
+            pooled.pooled = true;
+            trainAndMerge(numFolds, scheme, scorePooled, wPooled,
+                          featuresPooled, pooled);
+            ASSERT_EQ(numFolds, wBins.size());
+            for (const std::vector<double>& w : wBins) {
+                EXPECT_FALSE(isSingleFeature(w));  // trained, not reset
+            }
+            EXPECT_EQ(wBins, wPooled);
+            ASSERT_EQ(scoreBins.size(), scorePooled.size());
+            for (auto it = scoreBins.begin(), jt = scorePooled.begin();
+                 it != scoreBins.end(); ++it, ++jt) {
+                EXPECT_EQ(it->first, jt->first);
+                EXPECT_EQ(it->second, jt->second);
+            }
+        }
+    }
+    for (bool overrule : {false, true}) {
+        for (bool pooled : {false, true}) {
+            for (MergeNormalization scheme :
+                 {MergeNormalization::TEST, MergeNormalization::TRAIN_DECOYS,
+                  MergeNormalization::NONE}) {
+                SCOPED_TRACE(::testing::Message()
+                             << "failed check, override " << overrule
+                             << ", pooled " << pooled << ", scheme "
+                             << static_cast<int>(scheme));
+                DirectionCheckOptions failing;
+                failing.overrule = overrule;
+                failing.pooled = pooled;
+                failing.testFdr = 1e-6;
+                std::map<unsigned int, double> scoreOf;
+                std::vector<std::vector<double> > w;
+                std::vector<double> features;
+                trainAndMerge(3u, scheme, scoreOf, w, features, failing);
+                ASSERT_EQ(3u, w.size());
+                for (const std::vector<double>& wFold : w) {
+                    EXPECT_EQ(!overrule, isSingleFeature(wFold));
+                }
+                if (overrule) {
+                    // each fold keeps its own trained weights
+                    EXPECT_NE(w[0], w[1]);
+                    EXPECT_NE(w[0], w[2]);
+                }
+            }
+        }
     }
 }
 

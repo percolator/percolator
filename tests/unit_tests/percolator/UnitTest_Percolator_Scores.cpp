@@ -981,6 +981,294 @@ TEST_F(ScoresTest, MergeWithoutNormalizationKeepsRawScores)
     FeatureNames::resetNumFeatures();
 }
 
+// A hand-made example of the pooled direction check: three test bins of six
+// PSMs with a single feature x, scored by three folds whose weights put x on
+// different scales: x, 2x + 1 and x / 2 - 1. The decoys of every fold's
+// training set have x = -1, 0 and 1, so train-decoys maps each fold's
+// scores back to x exactly, and the merged out-of-fold list is ordered by x:
+//   x    10 9.8 9.5 9 8.8 8.5 8 7.8 7.5 7 6.8 6.5 6.2 6 5.5 5 3 1
+//   T/D  T  T   T   T T   T   T T   T   T T   T   D   D D   T T D
+// With q = (decoys + 1) / targets the first 12 targets have q = 1/12 and the
+// targets at 5 and 3 have q = 4/14. Within each bin only 4 targets precede
+// the best decoy, which gives q = 1/4 at best.
+class PooledCountExample {
+  public:
+    static constexpr std::size_t numBins = 3, binSize = 6, trainSize = 5;
+    PooledCountExample()
+        : features(numBins * (binSize + trainSize)),
+          psms(features.size()),
+          labels(features.size()) {
+        const double testX[numBins][binSize] = {{10, 9, 8, 7, 6, 5},
+                                                {9.5, 8.5, 7.5, 6.5, 5.5, 1},
+                                                {9.8, 8.8, 7.8, 6.8, 6.2, 3}};
+        const bool testIsTarget[numBins][binSize] = {{1, 1, 1, 1, 0, 1},
+                                                     {1, 1, 1, 1, 0, 0},
+                                                     {1, 1, 1, 1, 0, 1}};
+        const double trainX[trainSize] = {-1, 0, 1, 4, 5};
+        const bool trainIsTarget[trainSize] = {0, 0, 0, 1, 1};
+        std::size_t i = 0;
+        for (std::size_t bin = 0; bin < numBins; ++bin) {
+            for (std::size_t j = 0; j < binSize; ++j, ++i) {
+                set(i, testX[bin][j], testIsTarget[bin][j]);
+            }
+            for (std::size_t j = 0; j < trainSize; ++j, ++i) {
+                set(i, trainX[j], trainIsTarget[j]);
+            }
+        }
+    }
+    // bin b, or the training set of fold b, unscored
+    std::vector<Scores> testBins(std::size_t n = numBins) {
+        return sets(n, 0, binSize);
+    }
+    std::vector<Scores> trainBins(std::size_t n = numBins) {
+        return sets(n, binSize, trainSize);
+    }
+    // the score of each test PSM rescaled by hand with the mean and the
+    // sample standard deviation of its fold's training decoys, or raw
+    std::vector<std::pair<double, bool> > handMerged(bool rescale) const {
+        std::vector<std::pair<double, bool> > merged;
+        for (std::size_t bin = 0; bin < numBins; ++bin) {
+            const std::size_t first = bin * (binSize + trainSize);
+            double sum = 0.0, sumSquares = 0.0;
+            int numDecoys = 0;
+            for (std::size_t i = first + binSize; i < first + binSize + trainSize;
+                 ++i) {
+                if (labels[i] == LabelType::DECOY) {
+                    sum += score(bin, i);
+                    ++numDecoys;
+                }
+            }
+            const double mean = sum / numDecoys;
+            for (std::size_t i = first + binSize; i < first + binSize + trainSize;
+                 ++i) {
+                if (labels[i] == LabelType::DECOY) {
+                    sumSquares += (score(bin, i) - mean) * (score(bin, i) - mean);
+                }
+            }
+            const double sd = std::sqrt(sumSquares / (numDecoys - 1));
+            for (std::size_t i = first; i < first + binSize; ++i) {
+                merged.push_back(std::make_pair(
+                    rescale ? (score(bin, i) - mean) / sd : score(bin, i),
+                    labels[i] == LabelType::TARGET));
+            }
+        }
+        return merged;
+    }
+    std::vector<std::vector<double> > w = {
+        {1.0, 0.0}, {2.0, 1.0}, {0.5, -1.0}};
+    std::vector<double> features;
+    std::vector<PSMDescription> psms;
+    std::vector<LabelType> labels;
+
+  private:
+    void set(std::size_t i, double x, bool isTarget) {
+        features[i] = x;
+        psms[i].features = &features[i];
+        psms[i].scan = static_cast<unsigned int>(i);
+        labels[i] = isTarget ? LabelType::TARGET : LabelType::DECOY;
+    }
+    double score(std::size_t bin, std::size_t i) const {
+        return w[bin][0] * features[i] + w[bin][1];
+    }
+    std::vector<Scores> sets(std::size_t n, std::size_t offset,
+                             std::size_t size) {
+        std::vector<Scores> result(n, Scores(false));
+        for (std::size_t bin = 0; bin < n; ++bin) {
+            const std::size_t first = bin * (binSize + trainSize) + offset;
+            for (std::size_t i = first; i < first + size; ++i) {
+                result[bin].addScoreHolder(ScoreHolder(0.0, labels[i], &psms[i]));
+            }
+            result[bin].recalculateSizes();
+        }
+        return result;
+    }
+};
+
+// The targets with q = (decoys + 1) / targets < testFdr, counted directly.
+static int directCount(std::vector<std::pair<double, bool> > merged,
+                       double testFdr) {
+    std::sort(merged.begin(), merged.end(),
+              [](const std::pair<double, bool>& a,
+                 const std::pair<double, bool>& b) {
+                  return a.first > b.first;
+              });
+    std::vector<double> q(merged.size());
+    int decoys = 0, targets = 0;
+    for (std::size_t i = 0; i < merged.size(); ++i) {
+        (merged[i].second ? targets : decoys) += 1;
+        q[i] = (decoys + 1.0) / std::max(1, targets);
+    }
+    for (std::size_t i = merged.size() - 1; i-- > 0;) {
+        q[i] = std::min(q[i], q[i + 1]);
+    }
+    int count = 0;
+    for (std::size_t i = 0; i < merged.size(); ++i) {
+        if (merged[i].second && q[i] < testFdr) {
+            ++count;
+        }
+    }
+    return count;
+}
+
+// The pooled count of Scores::countMergedTargets equals a direct count of
+// the q values of the hand-made merged list, and the count of merge and
+// calcQvals, which give the final list; it leaves the bins as they are. A
+// training set whose decoys do not spread cannot rescale its bin (-1), and
+// with one bin the pooled count is the bin's own count.
+TEST_F(ScoresTest, CountMergedTargetsEqualsDirectCount)
+{
+    typedef PooledCountExample Example;
+    FeatureNames::resetNumFeatures();
+    FeatureNames::setNumFeatures(1);
+    Example example;
+    const double fdr = 0.01;  // the anchors of train-decoys do not use it
+    const MergeNormalization trainDecoys = MergeNormalization::TRAIN_DECOYS;
+
+    // the hand-made count of the comment above
+    EXPECT_EQ(12, directCount(example.handMerged(true), 0.25));
+    EXPECT_EQ(14, directCount(example.handMerged(true), 0.3));
+    for (double testFdr : {0.25, 0.3, 0.5}) {
+        SCOPED_TRACE(testFdr);
+        std::vector<Scores> bins = example.testBins();
+        const std::vector<Scores> trainBins = example.trainBins();
+        const int count = Scores::countMergedTargets(
+            bins, trainBins, example.w, trainDecoys, fdr, false, testFdr);
+        EXPECT_EQ(directCount(example.handMerged(true), testFdr), count);
+        // on copies: the bins are not scored
+        for (const Scores& bin : bins) {
+            for (const ScoreHolder& sh : bin) {
+                EXPECT_EQ(0.0, sh.score);
+            }
+        }
+        // the final list of the same bins
+        std::vector<ScoreScale> scales;
+        std::vector<std::vector<double> > w = example.w;
+        std::vector<Scores> scaleSets = example.trainBins();
+        for (std::size_t b = 0; b < Example::numBins; ++b) {
+            bins[b].calcScores(w[b]);
+            scales.push_back(scaleSets[b].calcScoreScale(w[b], trainDecoys, fdr));
+        }
+        Scores merged(false);
+        merged.merge(bins, fdr, false, w, trainDecoys, scales);
+        EXPECT_EQ(merged.calcQvals(testFdr), count);
+        // the raw scores, with none or without rescaling (--static)
+        const int rawCount = directCount(example.handMerged(false), testFdr);
+        EXPECT_EQ(rawCount, Scores::countMergedTargets(
+                                example.testBins(), trainBins, example.w,
+                                MergeNormalization::NONE, fdr, false, testFdr));
+        EXPECT_EQ(rawCount, Scores::countMergedTargets(
+                                example.testBins(), trainBins, example.w,
+                                trainDecoys, fdr, true, testFdr));
+    }
+    // no bin reaches q < 0.25 on its own, the merged list does
+    {
+        std::vector<Scores> bins = example.testBins();
+        int binsCount = 0;
+        for (std::size_t b = 0; b < Example::numBins; ++b) {
+            std::vector<double> w = example.w[b];
+            binsCount += bins[b].calcScoresAndQvals(w, 0.25);
+        }
+        EXPECT_EQ(0, binsCount);
+    }
+    // a training set with a single decoy gives no standard deviation
+    {
+        std::vector<Scores> trainBins = example.trainBins();
+        Scores oneDecoy(false);
+        for (const ScoreHolder& sh : trainBins[1]) {
+            if (sh.isTarget() || sh.pPSM->features[0] == 0.0) {
+                oneDecoy.addScoreHolder(sh);
+            }
+        }
+        oneDecoy.recalculateSizes();
+        trainBins[1] = oneDecoy;
+        EXPECT_EQ(-1, Scores::countMergedTargets(example.testBins(), trainBins,
+                                                 example.w, trainDecoys, fdr,
+                                                 false, 0.25));
+    }
+    // one bin: rescaling does not change the order, and the pooled count is
+    // the bin's own count, with every scheme
+    for (MergeNormalization scheme :
+         {MergeNormalization::TEST, MergeNormalization::TRAIN, trainDecoys,
+          MergeNormalization::NONE}) {
+        SCOPED_TRACE(static_cast<int>(scheme));
+        std::vector<Scores> bins = example.testBins(1);
+        std::vector<std::vector<double> > w(1, example.w[0]);
+        const int count = Scores::countMergedTargets(
+            bins, example.trainBins(1), w, scheme, fdr, false, 0.3);
+        EXPECT_EQ(4, count);
+        EXPECT_EQ(bins[0].calcScoresAndQvals(w[0], 0.3), count);
+    }
+    FeatureNames::resetNumFeatures();
+}
+
+// SanityCheck on the hand-made example. The default direction, lower x,
+// separates nothing in either check. No bin reaches q < 0.25 with the
+// trained weights on its own, so the bins check resets to the default
+// direction; the merged list holds 12 targets with q < 0.25, so the pooled
+// check keeps the trained weights and only then scores the bins with them.
+// With one bin both checks give the same counts and decision.
+TEST_F(ScoresTest, PooledDirectionCheckOnHandMadeBins)
+{
+    typedef PooledCountExample Example;
+    FeatureNames::resetNumFeatures();
+    FeatureNames::setNumFeatures(1);
+    Example example;
+    const std::vector<double> defaultWeights = {-1.0, 0.0};
+    for (std::size_t numBins : {Example::numBins, std::size_t(1)}) {
+        const double testFdr = numBins == 1u ? 0.3 : 0.25;
+        const std::vector<std::vector<double> > trained(
+            example.w.begin(), example.w.begin() + numBins);
+        std::vector<Scores> binsAfter[2];
+        for (bool pooled : {false, true}) {
+            SCOPED_TRACE(::testing::Message() << numBins << " bins, pooled "
+                                              << pooled);
+            SanityCheck check;
+            check.addDefaultWeights(defaultWeights);
+            check.setPooledCheck(pooled);
+            check.setMergeScheme(MergeNormalization::TRAIN_DECOYS, 0.01, false);
+            std::vector<Scores> bins = example.testBins(numBins);
+            std::vector<Scores> trainBins = example.trainBins(numBins);
+            std::vector<std::vector<double> > w(numBins,
+                                                std::vector<double>(2));
+            EXPECT_EQ(0, check.getInitDirection(bins, trainBins, NULL, w,
+                                                testFdr, testFdr));
+            EXPECT_EQ(std::vector<std::vector<double> >(numBins,
+                                                        defaultWeights),
+                      w);
+            w = trained;
+            const bool keep = numBins == 1u || pooled;
+            EXPECT_EQ(keep, check.validateDirection(bins, trainBins, w));
+            if (keep) {
+                EXPECT_EQ(trained, w);
+                // the bins are scored with their folds' weights
+                for (std::size_t b = 0; b < numBins; ++b) {
+                    for (const ScoreHolder& sh : bins[b]) {
+                        EXPECT_DOUBLE_EQ(
+                            w[b][0] * sh.pPSM->features[0] + w[b][1],
+                            sh.score);
+                    }
+                }
+            } else {
+                EXPECT_EQ(std::vector<std::vector<double> >(numBins,
+                                                            defaultWeights),
+                          w);
+            }
+            binsAfter[pooled] = bins;
+        }
+        if (numBins == 1u) {
+            ASSERT_EQ(binsAfter[0][0].size(), binsAfter[1][0].size());
+            for (auto it = binsAfter[0][0].begin(),
+                      jt = binsAfter[1][0].begin();
+                 it != binsAfter[0][0].end(); ++it, ++jt) {
+                EXPECT_EQ(it->pPSM, jt->pPSM);
+                EXPECT_EQ(it->score, jt->score);
+                EXPECT_EQ(it->q, jt->q);
+            }
+        }
+    }
+    FeatureNames::resetNumFeatures();
+}
+
 // countTargetsBelowFdr must report the same number of targets below the FDR
 // threshold as calcScoresAndQvals, also with many tied scores, with and
 // without the mix-max correction.
