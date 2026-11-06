@@ -400,6 +400,21 @@ bool Caller::parseOptions(int argc, char** argv) {
                    "Run an implementation of the Percolator-RESET Algorithm.",
                    "", TRUE_IF_SET);
   cmd.defineOption(
+      Option::EXPERIMENTAL_FEATURE, "merge-normalization",
+      "How the SVM scores of the cross-validation bins are put on a common "
+      "scale before they are merged. 'test': the score at q = --trainFDR "
+      "and the median decoy of each test bin become 0 and -1. 'train': the "
+      "same two scores are taken from the fold's training set, scored with "
+      "the fold's final weights, which is less noisy for small test bins. "
+      "'train-decoys': the decoys of the fold's training set get mean 0 and "
+      "standard deviation 1. 'none': the raw SVM scores. The weights written "
+      "with -w describe the rescaled scores. With -N the folds' weights are "
+      "rescaled in this way before they are averaged, and only 'test' "
+      "rescales the scores of all PSMs once more. With one fold, as with "
+      "--reset-algorithm, only the scale of the reported scores changes. No "
+      "effect with --static. Default = test.",
+      "scheme");
+  cmd.defineOption(
       Option::EXPERIMENTAL_FEATURE, "composition-match",
       "Run an implementation of the Percolator-RESET psmsAndPeptides with "
       "target-decoy matching based on composition.",
@@ -697,6 +712,29 @@ bool Caller::parseOptions(int argc, char** argv) {
     }
   } else {
     skipNormalizeScores_ = false;
+  }
+
+  if (cmd.isOptionSet("merge-normalization")) {
+    const std::string scheme = cmd.options["merge-normalization"];
+    if (scheme == "test") {
+      mergeNormalization_ = MergeNormalization::TEST;
+    } else if (scheme == "train") {
+      mergeNormalization_ = MergeNormalization::TRAIN;
+    } else if (scheme == "train-decoys") {
+      mergeNormalization_ = MergeNormalization::TRAIN_DECOYS;
+    } else if (scheme == "none") {
+      mergeNormalization_ = MergeNormalization::NONE;
+    } else {
+      std::cerr << "Error: --merge-normalization has to be one out of "
+                << "\"test\", \"train\", \"train-decoys\" or \"none\"."
+                << std::endl;
+      return 0;
+    }
+    if (cmd.isOptionSet("static") &&
+        mergeNormalization_ != MergeNormalization::TEST) {
+      std::cerr << "Warning: --merge-normalization has no effect with "
+                << "--static, whose scores are not rescaled." << std::endl;
+    }
   }
 
   if (cmd.isOptionSet("nested-xval-bins")) {
@@ -1356,6 +1394,7 @@ int Caller::run() {
     // with -N, the test fold of each subset PSM, for getTestFolds below
     crossValidation.setRecordTestFolds(setHandler.getMaxPSMs() > 0u &&
                                        numFolds > 1u);
+    crossValidation.setMergeNormalization(mergeNormalization_);
 
     int firstNumberOfPositives =
         crossValidation.preIterationSetup(allScores, check_, pNorm_.get());
@@ -1403,8 +1442,9 @@ int Caller::run() {
       // positives too high, and the decoys would no longer model the
       // incorrect targets. These PSMs keep the score of their test fold,
       // as without -N. Unless score normalization is switched off, merge()
-      // has rescaled the weights of each fold to a common scale (q = fdr at
-      // 0, median decoy at -1), which their average shares.
+      // has rescaled the weights of each fold to the common scale of the
+      // merge scheme (with test: q = fdr at 0, median decoy at -1), which
+      // their average shares.
       if (numFolds > 1u) {
         crossValidation.getRawFoldWeights(rawFoldWeights, pNorm_.get());
         crossValidation.getTestFolds(subsetFolds);
@@ -1445,9 +1485,15 @@ int Caller::run() {
     }
 
     allScores.postMergeStep();
-    allScores.calcQvals(selectionFdr_);
-    // with one fold, the scores of all PSMs come from a single bin
-    allScores.normalizeScores(selectionFdr_, rawWeights, numFolds == 1u);
+    // Only the test scheme rescales the scores of all PSMs once more, by
+    // their own anchors. With the other schemes the averaged weights, which
+    // were rescaled per fold in the merge, already give scores on the common
+    // scale of the training sets, or raw scores with "none".
+    if (mergeNormalization_ == MergeNormalization::TEST) {
+      allScores.calcQvals(selectionFdr_);
+      // with one fold, the scores of all PSMs come from a single bin
+      allScores.normalizeScores(selectionFdr_, rawWeights, numFolds == 1u);
+    }
   }
 
   calcAndOutputResult(allScores);

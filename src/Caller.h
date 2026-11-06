@@ -101,6 +101,8 @@ class Caller {
   double selectedCpos_, selectedCneg_;
   bool classicTraining_ = false;
   bool inPlaceTraining_ = false;
+  // --merge-normalization
+  MergeNormalization mergeNormalization_ = MergeNormalization::TEST;
   bool reportEachIteration_, quickValidation_, trainBestPositive_,
       skipNormalizeScores_, useResetAlgorithm_,
       useCompositionMatch_, useIrlsPep_, useInterpolatingPep_, usePavaPep_,

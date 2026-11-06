@@ -775,10 +775,12 @@ void SetHandler::readAndScorePSMs(istream& dataStream, std::string& psmLine,
  * the other PSMs, which the averaged weights scored: for each fold, an
  * affine map gives its PSMs the mean and standard deviation of the scores
  * of all other PSMs. Both groups are random samples of the PSMs, and the
- * map uses no labels. The weights of each fold were rescaled by merge()
- * with its test set's labels (score 0 at q = fdr), which on a small test set
- * favours a fold whose decoys happen to score low; the map undoes that.
- * Nothing changes if there are no other PSMs.
+ * map uses no labels. With the merge scheme test, the weights of each fold
+ * were rescaled by merge() with its test set's labels (score 0 at q = fdr),
+ * which on a small test set favours a fold whose decoys happen to score low;
+ * the map undoes that. With the other schemes (--merge-normalization) it
+ * puts the fold's scores on the scale of the averaged weights in the same
+ * way. Nothing changes if there are no other PSMs.
  * @param rows (index in allScores, fold) of the PSMs scored by a fold
  */
 void SetHandler::rescaleFoldScores(
