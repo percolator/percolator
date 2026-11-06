@@ -647,6 +647,7 @@ TEST_F(ScoresTest, DefaultDirectionAfterResetHasZeroBias)
     for (bool overrule : {false, true}) {
         SCOPED_TRACE(overrule);
         SanityCheck check;
+        check.setDirectionCheck(SanityCheck::DirectionCheck::BINS);
         check.setOverrule(overrule);
         std::vector<std::vector<double> > w(numFolds,
                                             std::vector<double>(3, 0.0));

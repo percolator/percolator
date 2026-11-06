@@ -432,7 +432,7 @@ bool Caller::parseOptions(int argc, char** argv) {
       "as with --reset-algorithm, all are the same. 'pooled' merges with "
       "--merge-normalization train-decoys unless a scheme is given, and "
       "cannot be combined with 'test', whose anchors are taken from each "
-      "test bin. Default = bins.",
+      "test bin. Default = second-chance.",
       "check");
   cmd.defineOption(
       Option::EXPERIMENTAL_FEATURE, "composition-match",
