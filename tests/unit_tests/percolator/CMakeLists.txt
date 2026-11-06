@@ -51,6 +51,7 @@ add_executable(gtest_unit
     UnitTest_Percolator_CompositionSorter.cpp
     UnitTest_Percolator_TrainingMemory.cpp
     UnitTest_Percolator_ParallelSort.cpp
+    UnitTest_Percolator_ProteinDigest.cpp
 )
 
 # =============================
@@ -59,6 +60,7 @@ add_executable(gtest_unit
 target_include_directories(gtest_unit
   PRIVATE
     ${PERCOLATOR_SOURCE_DIR}/src
+    ${PERCOLATOR_SOURCE_DIR}/src/picked_protein
     ${CMAKE_BINARY_DIR}/src
 )
 
