@@ -103,6 +103,11 @@ class CrossValidation {
   // let postIterationProcessing list the input line and fold of every test
   // PSM for getTestFolds, before the merge empties the test sets (-N)
   void inline setRecordTestFolds(bool on) { recordTestFolds_ = on; }
+  // how the scores of the test bins are put on a common scale before they
+  // are merged, see Caller's --merge-normalization
+  void inline setMergeNormalization(MergeNormalization scheme) {
+    mergeNormalization_ = scheme;
+  }
 
  protected:
   std::vector<AlgIn> svmInputs_;
@@ -133,6 +138,7 @@ class CrossValidation {
 
   bool trainBestPositive_;
   bool skipNormalizeScores_;
+  MergeNormalization mergeNormalization_ = MergeNormalization::TEST;
 
   double decoyFractionTraining_;
 

@@ -738,8 +738,29 @@ void CrossValidation::postIterationProcessing(Scores& fullset,
       testScores_[set].calcScoresAndQvals(weights_[set], selectionFdr_);
     }
   }
-  // the default direction of validateDirection was the last use of the
-  // training sets; merge empties the test sets
+
+  // With the TRAIN and TRAIN_DECOYS schemes, each test bin is rescaled by
+  // anchors taken from its fold's training set, scored with the same final
+  // weights as the test bin. The training set holds (numFolds_ - 1) times
+  // as many PSMs as the test bin, or the same PSMs with one fold, so the
+  // anchors exist and are less noisy for small test bins.
+  std::vector<ScoreScale> binScales;
+  if (!skipNormalizeScores_ &&
+      (mergeNormalization_ == MergeNormalization::TRAIN ||
+       mergeNormalization_ == MergeNormalization::TRAIN_DECOYS)) {
+    binScales.resize(numFolds_);
+    for (std::size_t set = 0; set < numFolds_; ++set) {
+      binScales[set] = trainScores_[set].calcScoreScale(
+          weights_[set], mergeNormalization_, selectionFdr_);
+      if (VERB > 2) {
+        std::cerr << "Split " << set + 1 << ": rescaling the test scores by "
+                  << "the training set, offset " << binScales[set].offset
+                  << " and scale " << binScales[set].scale << std::endl;
+      }
+    }
+  }
+  // the default direction of validateDirection and the anchors above were
+  // the last use of the training sets; merge empties the test sets
   std::vector<Scores>().swap(trainScores_);
   // After a reset the weights of each fold are a fallback picked per fold,
   // e.g. the best single feature of its training set, which can be a noise
@@ -748,7 +769,8 @@ void CrossValidation::postIterationProcessing(Scores& fullset,
   // --override the folds keep their trained vectors, which score their test
   // PSMs as when the check passes.
   if (recordTestFolds_ && trainedVectorsKept) recordTestFolds();
-  fullset.merge(testScores_, selectionFdr_, skipNormalizeScores_, weights_);
+  fullset.merge(testScores_, selectionFdr_, skipNormalizeScores_, weights_,
+                mergeNormalization_, binScales);
 }
 
 /**
