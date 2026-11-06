@@ -110,7 +110,8 @@ class Scores {
   // the merged list gets its pi0 and q values as the final list does
   // (postMergeStep, calcQvals), except that a too good separation gives
   // pi0 = 1 instead of an error; the best PSM per spectrum of -Y is not
-  // selected. Works on copies, so neither the bins nor the weights change.
+  // selected. Works on copies, so neither the bins nor the weights change,
+  // and leaves the global random number generator in the state it found.
   // Returns -1 when the scores of one of several bins cannot be rescaled,
   // which would end the merge.
   static int countMergedTargets(const std::vector<Scores>& testBins,

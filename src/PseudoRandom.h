@@ -30,6 +30,12 @@
 class PseudoRandom {
  public:
   inline static void setSeed(unsigned long s) { seed_ = s; }
+  // The state of the generator: the last seed set or the last number drawn.
+  // setSeed(getSeed()) restores it, so that code that draws numbers which
+  // must not influence the rest of the run can leave the sequence as it
+  // found it. The state is below 2^32 unless a larger seed was set, which
+  // unsigned long holds wherever it is wider than 32 bits.
+  inline static uint64_t getSeed() { return seed_; }
   static unsigned long lcg_rand();
   static double lcg_uniform_rand();
   const static uint64_t kRandMax = 4294967291u;

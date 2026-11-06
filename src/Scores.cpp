@@ -108,6 +108,23 @@ void Scores::postMergeStep(bool tooGoodSeparationIsError) {
   checkSeparationAndSetPi0(tooGoodSeparationIsError);
 }
 
+namespace {
+// Puts the global random number generator back into the state it had when
+// the guard was made, at every exit of the scope.
+class RandomStateGuard {
+ public:
+  RandomStateGuard() : state_(PseudoRandom::getSeed()) {}
+  ~RandomStateGuard() {
+    PseudoRandom::setSeed(static_cast<unsigned long>(state_));
+  }
+  RandomStateGuard(const RandomStateGuard&) = delete;
+  RandomStateGuard& operator=(const RandomStateGuard&) = delete;
+
+ private:
+  uint64_t state_;
+};
+}  // namespace
+
 int Scores::countMergedTargets(const std::vector<Scores>& testBins,
                                const std::vector<Scores>& trainBins,
                                const std::vector<std::vector<double> >& w,
@@ -115,6 +132,12 @@ int Scores::countMergedTargets(const std::vector<Scores>& testBins,
                                double fdr,
                                bool skipNormalizeScores,
                                double testFdr) {
+  // With separate searches, pi0 is estimated from bootstrap samples drawn
+  // from the global generator, here for the merged list and, with the test
+  // and train schemes, for the anchors of each bin. A count that moved the
+  // generator would change the later draws (the pi0 of the final list, the
+  // PEPs), so a run would differ from the same run without the count.
+  RandomStateGuard randomStateGuard;
   assert(testBins.size() == w.size());
   if (testBins.empty()) {
     return 0;
