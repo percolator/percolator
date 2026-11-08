@@ -26,6 +26,9 @@
 #include "CrossValidation.h"
 #include "Globals.h"
 #include "PseudoRandom.h"
+#include "NoNormalizer.h"
+#include <cstdio>
+#include <fstream>
 
 /* A subclass of CrossValidation that gives us access to some
  * protected fields.
@@ -393,4 +396,58 @@ TEST(LineSearchTest, ChunkedSortGivesTheSameStepAsAFullSort)
 #ifdef _OPENMP
     omp_set_num_threads(numThreads);
 #endif
+}
+
+/* When the trained direction fails the sanity check, the initial vector
+ * read with -W is restored, not the default direction (the best single
+ * feature), which -W had replaced.
+ */
+TEST_F(CrossValidationTest, ResetRestoresWeightFileVector)
+{
+    FeatureNames::resetNumFeatures();
+    FeatureNames::setNumFeatures(2);
+    const std::string weightFile = ::testing::TempDir() + "perc_reset_w.txt";
+    {
+        std::ofstream out(weightFile);
+        out << "# weights\nf1\tf2\tm0\n"
+            << "9\t9\t9\n"           // normalized weights, skipped
+            << "0.5\t-2\t0.25\n";    // raw weights, which are read
+    }
+    // the second feature separates the targets, the first does not
+    std::vector<double> features;
+    std::vector<PSMDescription> psms(40);
+    for (int i = 0; i < 40; ++i) {
+        const bool target = i % 2 == 0;
+        features.push_back(static_cast<double>(i % 5));
+        features.push_back(target ? 10.0 + i : -10.0 - i);
+    }
+    std::vector<Scores> sets(1, Scores(false));
+    for (int i = 0; i < 40; ++i) {
+        psms[i].features = &features[2 * i];
+        psms[i].scan = static_cast<unsigned int>(i);
+        sets[0].addScoreHolder(ScoreHolder(0.0,
+            i % 2 == 0 ? LabelType::TARGET : LabelType::DECOY, &psms[i]));
+    }
+    sets[0].recalculateSizes();
+    NoNormalizer norm;
+    std::vector<double*> none, noneRt;
+    norm.setSet(none, noneRt, 2, 0);
+    for (bool withWeightFile : {true, false}) {
+        SanityCheck check;
+        if (withWeightFile) check.setInitWeightFN(weightFile);
+        std::vector<std::vector<double> > w(1, std::vector<double>(3, 0.0));
+        check.getInitDirection(sets, sets, &norm, w, 0.01, 0.01);
+        const std::vector<double> initial = w[0];
+        if (withWeightFile) {
+            EXPECT_EQ(initial, std::vector<double>({0.5, -2.0, 0.25}));
+        }
+        // the default direction sets the feature weights only, so the
+        // trained bias is 0 there
+        std::vector<std::vector<double> > trained(
+            1, {7.0, 7.0, withWeightFile ? 7.0 : 0.0});
+        check.resetDirection(sets, trained);
+        EXPECT_EQ(trained[0], initial) << "weight file " << withWeightFile;
+    }
+    std::remove(weightFile.c_str());
+    FeatureNames::resetNumFeatures();
 }

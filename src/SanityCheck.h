@@ -72,6 +72,8 @@ class SanityCheck {
   int initDefaultDir_ = 0;
   // initial direction given in the input file
   std::vector<double> defaultWeights_;
+  // normalized initial weights read from the weights file (-W), if any
+  std::vector<double> initWeights_;
   // input from concatenated search, i.e. not separate target and decoy searches
   bool concatenatedSearch_ = true;
 };

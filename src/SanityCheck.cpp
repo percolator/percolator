@@ -62,6 +62,7 @@ int SanityCheck::getInitDirection(vector<Scores>& testset,
       for (size_t set = 1; set < w.size(); ++set) {
         copy(w[0].begin(), w[0].end(), w[set].begin());
       }
+      initWeights_ = w[0];
     } else {
       std::cerr << "WARNING: Could not find weights input file " << initWeightFN_
                 << ". Using default weights instead." << std::endl;
@@ -248,7 +249,14 @@ void SanityCheck::readWeights(istream& weightStream, vector<double>& w) {
 
 void SanityCheck::resetDirection(vector<Scores>& trainset,
                                  vector<vector<double> >& w) {
-  if (!overRule_) {
+  if (!overRule_ && !initWeights_.empty()) {
+    // the vector given with -W, not the default that it replaced
+    cerr << "Resetting score vector, using the initial weights from the "
+         << "weights file. Use --override flag to prevent this." << endl;
+    for (size_t set = 0; set < w.size(); ++set) {
+      w[set] = initWeights_;
+    }
+  } else if (!overRule_) {
     cerr << "Resetting score vector, using default vector. Use --override flag to prevent this." << endl;
     getDefaultDirection(trainset, w);
   }
