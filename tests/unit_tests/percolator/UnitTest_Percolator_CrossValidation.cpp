@@ -678,6 +678,23 @@ TEST_F(CrossValidationTest, SecondChanceIsBinsWhereTheBinsPass)
     }
 }
 
+// Without a chosen scheme, up to the default three folds merge with test,
+// so their outputs do not change; more folds, whose test bins are smaller,
+// merge with train-decoys.
+TEST_F(CrossValidationTest, DefaultMergeNormalizationOfTheFolds)
+{
+    for (unsigned int numFolds : {1u, 2u, 3u}) {
+        SCOPED_TRACE(numFolds);
+        EXPECT_EQ(MergeNormalization::TEST,
+                  CrossValidation::defaultMergeNormalization(numFolds));
+    }
+    for (unsigned int numFolds : {4u, 5u, 10u, 1000u}) {
+        SCOPED_TRACE(numFolds);
+        EXPECT_EQ(MergeNormalization::TRAIN_DECOYS,
+                  CrossValidation::defaultMergeNormalization(numFolds));
+    }
+}
+
 // More folds than spectra leave a fold without PSMs, which
 // preIterationSetup reports as an error. With as many folds as spectra of
 // equal size, each fold gets one spectrum.

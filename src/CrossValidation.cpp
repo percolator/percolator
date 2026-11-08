@@ -784,6 +784,12 @@ void CrossValidation::postIterationProcessing(Scores& fullset,
                 usedMergeNormalization_, binScales);
 }
 
+MergeNormalization CrossValidation::defaultMergeNormalization(
+    unsigned int numFolds) {
+  return numFolds <= 3u ? MergeNormalization::TEST
+                        : MergeNormalization::TRAIN_DECOYS;
+}
+
 /**
  * Prints the weights of the normalized vector to a stream
  * @param weightStream stream where the weights are written to

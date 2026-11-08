@@ -115,6 +115,11 @@ class CrossValidation {
   MergeNormalization usedMergeNormalization() const {
     return usedMergeNormalization_;
   }
+  // The scheme for numFolds folds when none is chosen: test up to three
+  // folds, the default, whose test bins hold a third of the PSMs or more;
+  // train-decoys with more folds, since the q = fdr anchor of test is noisy
+  // in smaller test bins (see Caller's --num-folds).
+  static MergeNormalization defaultMergeNormalization(unsigned int numFolds);
 
  protected:
   std::vector<AlgIn> svmInputs_;
