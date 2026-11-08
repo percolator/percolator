@@ -42,7 +42,7 @@ builder_adr="../builders/"
 vagbox_name="box-cutter/fedora23"
 vagbox_url=""
 
-while getopts “hab:s:r:p:” OPTION; do
+while getopts "hab:s:r:p:" OPTION; do
     case $OPTION in
         h)  usage;exit 1;;
         a)  alive="1";;

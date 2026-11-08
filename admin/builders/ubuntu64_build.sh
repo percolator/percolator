@@ -1,7 +1,7 @@
 #!/bin/bash
 # managing input arguments
 
-while getopts “s:b:r:t:” OPTION; do
+while getopts "s:b:r:t:d:" OPTION; do
     case $OPTION in
         s) src_dir=${OPTARG};;
         t) branch=${OPTARG};;
@@ -14,12 +14,6 @@ done
 
 # get current architecture
 ARCH=$(uname -m)
-
-sudo apt-get -y install gawk;
-if [[ ! -z `echo -e "$(lsb_release -r)" | gawk '($2>="22.04"){print
-    $2}'` ]]; then
-    sudo apt-get -y install libcurl4-openssl-dev;
-fi
 
 if [[ -z ${build_type} ]]; then
     build_type="Release";

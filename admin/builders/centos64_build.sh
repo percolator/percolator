@@ -35,7 +35,6 @@ whoami
 ${SUDO} dnf clean all
 ${SUDO} dnf -y distro-sync
 ${SUDO} dnf -y install gcc gcc-c++ wget rpm-build cmake git
-${SUDO} dnf -y install zlib-devel bzip2-devel
 ${SUDO} dnf -y install epel-release
 ${SUDO} dnf -y install gtest-devel
 

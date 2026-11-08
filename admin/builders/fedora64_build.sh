@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # managing input arguments
-while getopts “s:b:r:t:” OPTION; do
+while getopts "s:b:r:t:" OPTION; do
   case $OPTION in
     s) src_dir=${OPTARG};;
     t) branch=${OPTARG};;
