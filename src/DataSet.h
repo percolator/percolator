@@ -48,9 +48,9 @@ enum OptionalField {
 
 // The fields of a PSM line before its features, see DataSet::readPsmHeader
 struct PsmHeader {
-  // the id, as a view into the line, the scan number, the experimental mass
-  // and the line number
+  // the scan number, the experimental mass and the line number
   PSMDescription psm;
+  std::string_view id;  // a view into the line
   int label = 0;
   // the starts of the fields that DataSet::readPsmBody parses, if present
   const char* calcMassField = NULL;
@@ -130,9 +130,9 @@ class DataSet {
   static bool flankWarningTripped_;
 
   static void readFeaturesAndProteins(TabReader& reader, LabelType label,
-    bool readProteins, PSMDescription& psm, PSMDescription*& myPsm,
-    FeatureMemoryPool& featurePool, PsmStore& psmStore,
-    const std::string& decoyPrefix);
+    bool readProteins, PSMDescription& psm, std::string_view id,
+    PSMDescription*& myPsm, FeatureMemoryPool& featurePool,
+    PsmStore& psmStore, const std::string& decoyPrefix);
 };
 
 #endif /*DATASET_H_*/

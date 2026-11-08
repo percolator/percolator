@@ -212,3 +212,54 @@ TEST(FeatureMemoryPoolTest, ReuseAfterDestroy)
         for (size_t j = 0; j < width; ++j) ASSERT_EQ(static_cast<double>(i), rows[i][j]);
     }
 }
+
+// The id, peptide and proteins of a PSM come back from its record for short,
+// empty and long strings (lengths of 255 and more use a longer length
+// field), protein lists of any length, and records longer than a block.
+TEST(PsmStoreTest, StringRecords)
+{
+    PsmStore psmStore;
+    EXPECT_EQ("", PSMDescription().getId());
+    EXPECT_EQ("", PSMDescription().getFullPeptide());
+    EXPECT_TRUE(PSMDescription().proteins().empty());
+    const size_t lengths[] = {0, 1, 7, 254, 255, 256, 70000, 300000};
+    std::vector<PSMDescription*> psms;
+    std::vector<std::string> ids, peptides;
+    std::vector<std::vector<std::string> > proteinLists;
+    for (size_t i = 0; i < 64; ++i) {
+        ids.push_back(std::string(lengths[i % 8], static_cast<char>('a' + i % 26)));
+        peptides.push_back(std::string(lengths[(i / 8) % 8], 'P') + std::to_string(i));
+        std::vector<std::string> proteins;
+        for (size_t k = 0; k < (i * 7) % 11; ++k) {
+            proteins.push_back("prot_" + std::to_string((i + k) % 5));
+        }
+        proteinLists.push_back(proteins);
+        std::vector<std::string_view> views(proteins.begin(), proteins.end());
+        PSMDescription* psm = psmStore.add(PSMDescription());
+        psm->scan = static_cast<unsigned int>(i);
+        psmStore.storeStrings(*psm, ids.back(), peptides.back(), views);
+        psms.push_back(psm);
+    }
+    for (size_t i = 0; i < psms.size(); ++i) {
+        EXPECT_EQ(ids[i], psms[i]->getId()) << i;
+        EXPECT_EQ(peptides[i], psms[i]->getFullPeptide()) << i;
+        EXPECT_EQ(i, psms[i]->scan);
+        PSMDescription::ProteinList proteins = psms[i]->proteins();
+        ASSERT_EQ(proteinLists[i].size(), proteins.size()) << i;
+        size_t k = 0;
+        for (const std::string& protein : proteins) {
+            EXPECT_EQ(proteinLists[i][k], protein);
+            EXPECT_EQ(proteinLists[i][k], proteins[k]);
+            ++k;
+        }
+        if (k > 1) {  // each protein name is stored once
+            EXPECT_EQ(&proteins[0], &psms[i]->proteins()[0]);
+        }
+    }
+    std::ostringstream out;
+    psms[5]->printProteins(out);
+    std::string appended;
+    psms[5]->appendProteins(appended);
+    EXPECT_EQ(out.str(), appended);
+    EXPECT_EQ("prot_0\tprot_1", appended);
+}

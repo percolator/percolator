@@ -29,9 +29,9 @@
 
 /*
  * PsmStore owns PSMDescription objects in fixed-size blocks, together with
- * the characters of their ids and peptides and their protein lists. All
- * addresses stay valid while more PSMs are added, and there is no heap
- * allocation per PSM. Protein names are stored once each.
+ * the records of their ids, peptides and protein lists. All addresses stay
+ * valid while more PSMs are added, and there is no heap allocation per PSM.
+ * Protein names are stored once each.
  */
 class PsmStore {
  public:
@@ -62,53 +62,28 @@ class PsmStore {
     freeSlots_.push_back(psm);
   }
 
-  // copies the characters into the store and returns a view of the copy
-  std::string_view storeString(std::string_view s) {
-    if (s.size() > kCharBlockSize / 4) {  // too long to share a block
-      longStrings_.emplace_back(new char[s.size()]);
-      std::memcpy(longStrings_.back().get(), s.data(), s.size());
-      return std::string_view(longStrings_.back().get(), s.size());
-    }
-    if (charBlocks_.empty() || charUsed_ + s.size() > kCharBlockSize) {
-      charBlocks_.emplace_back(new char[kCharBlockSize]);
-      charUsed_ = 0;
-    }
-    char* dest = charBlocks_.back().get() + charUsed_;
-    std::memcpy(dest, s.data(), s.size());
-    charUsed_ += s.size();
-    return std::string_view(dest, s.size());
-  }
-
-  // stores a list of protein names, each name only once in the store, and
-  // returns the first element of the stored list of n names
-  const std::string* const* storeProteins(
-      const std::vector<std::string_view>& names) {
-    const size_t n = names.size();
-    if (n == 0) return nullptr;
-    const std::string** list;
-    if (n > kListBlockSize / 4) {  // too long to share a block
-      longLists_.emplace_back(new const std::string*[n]);
-      list = longLists_.back().get();
-    } else {
-      if (listBlocks_.empty() || listUsed_ + n > kListBlockSize) {
-        listBlocks_.emplace_back(new const std::string*[kListBlockSize]);
-        listUsed_ = 0;
-      }
-      list = listBlocks_.back().get() + listUsed_;
-      listUsed_ += n;
-    }
-    for (size_t i = 0; i < n; ++i) {
-      auto found = proteinIndex_.find(names[i]);
+  // Copies the id, the peptide and the protein names of psm into the store,
+  // each protein name only once, and points psm to the copies; see
+  // PSMDescription::setStrings.
+  void storeStrings(PSMDescription& psm, std::string_view id,
+                    std::string_view peptide,
+                    const std::vector<std::string_view>& proteins) {
+    proteinList_.resize(proteins.size());
+    for (size_t i = 0; i < proteins.size(); ++i) {
+      auto found = proteinIndex_.find(proteins[i]);
       if (found == proteinIndex_.end()) {
-        proteinNames_.emplace_back(names[i]);  // deque elements never move
+        proteinNames_.emplace_back(proteins[i]);  // deque elements never move
         found = proteinIndex_
                     .emplace(std::string_view(proteinNames_.back()),
                              &proteinNames_.back())
                     .first;
       }
-      list[i] = found->second;
+      proteinList_[i] = found->second;
     }
-    return list;
+    const size_t size =
+        PSMDescription::recordSize(id, peptide, proteins.size());
+    psm.setStrings(allocate(size), id, peptide, proteinList_.data(),
+                   proteinList_.size());
   }
 
   void clear() {
@@ -116,13 +91,11 @@ class PsmStore {
     freeSlots_.clear();
     numUsed_ = 0;
     charBlocks_.clear();
-    longStrings_.clear();
+    longRecords_.clear();
     charUsed_ = 0;
-    listBlocks_.clear();
-    longLists_.clear();
-    listUsed_ = 0;
     proteinIndex_.clear();
     proteinNames_.clear();
+    proteinList_.clear();
   }
 
  private:
@@ -131,15 +104,27 @@ class PsmStore {
   std::vector<PSMDescription*> freeSlots_;
   size_t numUsed_ = 0;
 
-  // strings and lists are packed into the last block; long ones get their own
+  // records are packed into the last block; long ones get their own
+  char* allocate(size_t size) {
+    if (size > kCharBlockSize / 4) {  // too long to share a block
+      longRecords_.emplace_back(new char[size]);
+      return longRecords_.back().get();
+    }
+    if (charBlocks_.empty() || charUsed_ + size > kCharBlockSize) {
+      charBlocks_.emplace_back(new char[kCharBlockSize]);
+      charUsed_ = 0;
+    }
+    char* dest = charBlocks_.back().get() + charUsed_;
+    charUsed_ += size;
+    return dest;
+  }
+
   static const size_t kCharBlockSize = 1u << 20;
-  std::vector<std::unique_ptr<char[]> > charBlocks_, longStrings_;
+  std::vector<std::unique_ptr<char[]> > charBlocks_, longRecords_;
   size_t charUsed_ = 0;
-  static const size_t kListBlockSize = 1u << 16;
-  std::vector<std::unique_ptr<const std::string*[]> > listBlocks_, longLists_;
-  size_t listUsed_ = 0;
   std::deque<std::string> proteinNames_;
   std::unordered_map<std::string_view, const std::string*> proteinIndex_;
+  std::vector<const std::string*> proteinList_;  // reused by storeStrings
 };
 
 #endif /* PSM_STORE_H_ */

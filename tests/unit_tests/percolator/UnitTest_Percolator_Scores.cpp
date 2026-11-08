@@ -67,6 +67,13 @@ static std::string const psmNames[] = { "ABC", "DEF", "GHI", "JKL", "MNO" };
 class ScoreHolderTest : public ::testing::Test {
   protected:
     bool checkOrder(std::vector<ScoreHolder> const *scores, ...);
+    // a PSM with the given peptide, owned by the fixture
+    PSMDescription* newPsm(const std::string& peptide) {
+        PSMDescription* psm = psmStore.add(PSMDescription());
+        psmStore.storeStrings(*psm, "", peptide, {});
+        return psm;
+    }
+    PsmStore psmStore;
 };
 
 // A simple function that verifies that the scores in a vector are in
@@ -95,7 +102,7 @@ TEST_F(ScoreHolderTest, CheckOrderingFunctions)
     // scan values are assigned [ 2, 3, 4, 0, 1 ]
     scores.clear();
     for (int i = 0 ; i < 5 ; ++i) {
-        PSMDescription *pPSM = new PSMDescription(psmNames[i]);
+        PSMDescription *pPSM = newPsm(psmNames[i]);
         pPSM->scan = (i + 2) % 5;
         scores.push_back(ScoreHolder(1.0 + i, LabelType::TARGET, pPSM));
     }
@@ -108,7 +115,7 @@ TEST_F(ScoreHolderTest, CheckOrderingFunctions)
     // scan values are assigned [ 0, 0, 1, 1, 2]
     scores.clear();
     for (int i = 0 ; i < 5 ; ++i) {
-        PSMDescription *pPSM = new PSMDescription(psmNames[i]);
+        PSMDescription *pPSM = newPsm(psmNames[i]);
         pPSM->specFileNr = 3 + i / 2;
         pPSM->scan = i / 2;
         scores.push_back(ScoreHolder(1.0 + i, LabelType::TARGET, pPSM));
@@ -123,7 +130,7 @@ TEST_F(ScoreHolderTest, CheckOrderingFunctions)
     // scan values are assigned [ 2, 3, 4, 0, 1 ]
     scores.clear();
     for (int i = 0 ; i < 5 ; ++i) {
-        PSMDescription *pPSM = new PSMDescription(psmNames[i]);
+        PSMDescription *pPSM = newPsm(psmNames[i]);
         pPSM->specFileNr = i / 2;
         pPSM->scan = (i + 2) % 5;
         scores.push_back(ScoreHolder(1.0 + i, LabelType::TARGET, pPSM));
@@ -166,7 +173,7 @@ TEST_F(ScoreHolderTest, CheckUniquenessFilter)
     // scan values are assigned [ 0, 0, 1, 1, 2 ]
     scores.clear();
     for (int i = 0 ; i < 5 ; ++i) {
-        PSMDescription *pPSM = new PSMDescription(psmNames[i]);
+        PSMDescription *pPSM = newPsm(psmNames[i]);
         pPSM->scan = i / 2;
         scores.push_back(ScoreHolder(1.0 + i, LabelType::TARGET, pPSM));
     }
@@ -181,7 +188,7 @@ TEST_F(ScoreHolderTest, CheckUniquenessFilter)
     // scan values are assigned [ 0, 0, 1, 1, 2 ]
     scores.clear();
     for (int i = 0 ; i < 5 ; ++i) {
-        PSMDescription *pPSM = new PSMDescription(psmNames[i]);
+        PSMDescription *pPSM = newPsm(psmNames[i]);
         pPSM->specFileNr = i / 3;
         pPSM->scan = i / 2;
         scores.push_back(ScoreHolder(1.0 + i, LabelType::TARGET, pPSM));
@@ -224,10 +231,12 @@ TEST_F(ScoresTest, CheckPopulating)
     set2->setLabel(LabelType::DECOY);
     for (int i = 0 ; i < 5 ; ++i) {
         PSMDescription *psm;
-        psm = psmStore.add(PSMDescription(psmNames[i]));
+        psm = psmStore.add(PSMDescription());
+        psmStore.storeStrings(*psm, "", psmNames[i], {});
         psm->scan = 100 + i;
         set1->registerPsm(psm);
-        psm = psmStore.add(PSMDescription(psmNames[i]));
+        psm = psmStore.add(PSMDescription());
+        psmStore.storeStrings(*psm, "", psmNames[i], {});
         psm->scan = 105 + i;
         set2->registerPsm(psm);
     }

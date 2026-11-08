@@ -17,6 +17,8 @@
 #ifndef PSMDESCRIPTION_H_
 #define PSMDESCRIPTION_H_
 #include <cmath>
+#include <cstdint>
+#include <cstring>
 #include <iostream>
 #include <limits>
 #include <map>
@@ -36,31 +38,39 @@
 class PSMDescription {
    public:
     PSMDescription() = default;
-    // the characters of peptide are not copied and must outlive the PSM
-    explicit PSMDescription(std::string_view peptide) : peptide(peptide) {}
 
     // view of the protein names of a PSM, in input order
     class ProteinList {
      public:
         class const_iterator {
          public:
-            explicit const_iterator(const std::string* const* p) : p_(p) {}
-            const std::string& operator*() const { return **p_; }
-            const std::string* operator->() const { return *p_; }
-            const_iterator& operator++() { ++p_; return *this; }
+            // p points to the stored, possibly unaligned, name pointers
+            explicit const_iterator(const char* p) : p_(p) {}
+            const std::string& operator*() const { return *load(); }
+            const std::string* operator->() const { return load(); }
+            const_iterator& operator++() { p_ += sizeof(const std::string*); return *this; }
             bool operator==(const const_iterator& other) const { return p_ == other.p_; }
             bool operator!=(const const_iterator& other) const { return p_ != other.p_; }
          private:
-            const std::string* const* p_;
+            const std::string* load() const {
+                const std::string* name;
+                std::memcpy(&name, p_, sizeof(name));
+                return name;
+            }
+            const char* p_;
         };
-        ProteinList(const std::string* const* first, size_t n) : first_(first), n_(n) {}
+        ProteinList(const char* first, size_t n) : first_(first), n_(n) {}
         const_iterator begin() const { return const_iterator(first_); }
-        const_iterator end() const { return const_iterator(first_ + n_); }
+        const_iterator end() const {
+            return const_iterator(first_ + n_ * sizeof(const std::string*));
+        }
         size_t size() const { return n_; }
         bool empty() const { return n_ == 0; }
-        const std::string& operator[](size_t i) const { return *first_[i]; }
+        const std::string& operator[](size_t i) const {
+            return *const_iterator(first_ + i * sizeof(const std::string*));
+        }
      private:
-        const std::string* const* first_;
+        const char* first_;
         size_t n_;
     };
 
@@ -87,13 +97,15 @@ class PSMDescription {
     // flanks of X.PEPTIDE.Y; a peptide in any other form is used as it is.
     // Never throws, so it can be used in comparators of parallel sorts.
     std::string_view getPeptideSequenceView() const {
+        const std::string_view peptide = getFullPeptide();
         return hasFlanks(peptide)
                    ? std::string_view(peptide.data() + 2, peptide.size() - 4)
                    : peptide;
     }
-    std::string_view getFullPeptideSequence() const { return peptide; }
-    std::string getFlankN() const { return std::string(peptide.substr(0, 1)); }
+    std::string_view getFullPeptideSequence() const { return getFullPeptide(); }
+    std::string getFlankN() const { return std::string(getFullPeptide().substr(0, 1)); }
     std::string getFlankC() const {
+        const std::string_view peptide = getFullPeptide();
         return std::string(peptide.substr(peptide.size() - 1, peptide.size()));
     }
 
@@ -103,27 +115,63 @@ class PSMDescription {
     void appendProteins(std::string& out) const;
 
     bool operator<(const PSMDescription& other) const {
-        return (peptide < other.peptide) ||
-               (peptide == other.peptide && getRetentionTime() < other.getRetentionTime());
+        return (getFullPeptide() < other.getFullPeptide()) ||
+               (getFullPeptide() == other.getFullPeptide() &&
+                getRetentionTime() < other.getRetentionTime());
     }
 
     bool operator==(const PSMDescription& other) const {
-        return (peptide == other.peptide);
+        return (getFullPeptide() == other.getFullPeptide());
     }
 
-    // the characters of id and pep_seq are not copied and must outlive the
-    // PSM, e.g. by being stored in a PsmStore
-    inline void setId(std::string_view id) { id_ = id; }
-    inline std::string_view getId() const { return id_; }
+    // The id, peptide and protein names of a PSM are stored together in one
+    // record, usually by PsmStore::storeStrings: the length of the peptide
+    // (one byte, or a byte 255 and four bytes for a length of 255 or more)
+    // and its characters, the length and the characters of the id, and the
+    // pointers to the protein names, unaligned. A PSM thus needs a single
+    // pointer to its strings. The peptide comes first, as the comparators of
+    // the peptide-level sorts read it.
+    static size_t recordSize(std::string_view id, std::string_view peptide,
+                             size_t numProteins) {
+        return lengthSize(peptide.size()) + peptide.size() +
+               lengthSize(id.size()) + id.size() +
+               numProteins * sizeof(const std::string*);
+    }
+    // writes the record of recordSize bytes to record, which must outlive the
+    // PSM, and points the PSM to it
+    void setStrings(char* record, std::string_view id, std::string_view peptide,
+                    const std::string* const* proteins, size_t numProteins) {
+        char* p = writeLength(record, peptide.size());
+        if (!peptide.empty()) std::memcpy(p, peptide.data(), peptide.size());
+        p = writeLength(p + peptide.size(), id.size());
+        if (!id.empty()) std::memcpy(p, id.data(), id.size());
+        p += id.size();
+        if (numProteins > 0) {
+            std::memcpy(p, proteins, numProteins * sizeof(const std::string*));
+        }
+        record_ = record;
+        numProteins_ = static_cast<unsigned int>(numProteins);
+    }
 
-    std::string_view getFullPeptide() const { return peptide; }
-    void setPeptide(std::string_view pep_seq) { peptide = pep_seq; }
-
-    ProteinList proteins() const { return ProteinList(proteins_, numProteins_); }
-    // the list is not copied and must outlive the PSM
-    void setProteins(const std::string* const* list, size_t n) {
-        proteins_ = list;
-        numProteins_ = static_cast<unsigned int>(n);
+    std::string_view getFullPeptide() const {
+        if (record_ == nullptr) return std::string_view();
+        size_t peptideLength;
+        const char* p = readLength(record_, peptideLength);
+        return std::string_view(p, peptideLength);
+    }
+    std::string_view getId() const {
+        if (record_ == nullptr) return std::string_view();
+        size_t peptideLength, idLength;
+        const char* p = readLength(record_, peptideLength);
+        p = readLength(p + peptideLength, idLength);
+        return std::string_view(p, idLength);
+    }
+    ProteinList proteins() const {
+        if (record_ == nullptr) return ProteinList(nullptr, 0u);
+        size_t peptideLength, idLength;
+        const char* p = readLength(record_, peptideLength);
+        p = readLength(p + peptideLength, idLength);
+        return ProteinList(p + idLength, numProteins_);
     }
     static inline void setProteinNameSeparator(const std::string sep) {
         proteinNameSeparator_ = sep;
@@ -169,21 +217,46 @@ class PSMDescription {
     unsigned int specFileNr = 0u;
 
    protected:
-    std::string_view id_;
-    std::string_view peptide;
-    const std::string* const* proteins_ = nullptr;
+    static size_t lengthSize(size_t length) { return length < 255u ? 1u : 5u; }
+    static char* writeLength(char* p, size_t length) {
+        if (length < 255u) {
+            *p = static_cast<char>(length);
+            return p + 1;
+        }
+        *p = static_cast<char>(255);
+        const uint32_t longLength = static_cast<uint32_t>(length);
+        std::memcpy(p + 1, &longLength, sizeof(longLength));
+        return p + 5;
+    }
+    static const char* readLength(const char* p, size_t& length) {
+        const unsigned char shortLength = static_cast<unsigned char>(*p);
+        if (shortLength < 255u) {
+            length = shortLength;
+            return p + 1;
+        }
+        uint32_t longLength;
+        std::memcpy(&longLength, p + 1, sizeof(longLength));
+        length = longLength;
+        return p + 5;
+    }
+
+    const char* record_ = nullptr;  // see setStrings
     unsigned int numProteins_ = 0u;
-    unsigned int lineNr_ = 0u;  // fills the padding after numProteins_
+    unsigned int lineNr_ = 0u;
     static std::string proteinNameSeparator_;
     static vector<std::string> spectraFileNames_;
     static size_t lastSpectrumFileIndex_;
 };
 
 inline std::ostream& operator<<(std::ostream& out, PSMDescription& psm) {
-    out << "Peptide: " << psm.peptide << endl;
+    out << "Peptide: " << psm.getFullPeptide() << endl;
     out << "Spectrum scan number: " << psm.scan << endl;
     out << endl;
     return out;
 }
+
+// 56 bytes on 64-bit platforms, for every PSM in every stage of a run
+static_assert(sizeof(void*) != 8 || sizeof(PSMDescription) == 56,
+              "PSMDescription has grown");
 
 #endif /*PSMDESCRIPTION_H_*/

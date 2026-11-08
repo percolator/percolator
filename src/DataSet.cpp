@@ -133,10 +133,10 @@ LabelType DataSet::readPsm(const std::string& line, const unsigned int lineNr,
     PsmStore& psmStore, const std::string& decoyPrefix) {
   TabReader reader(line);
   
-  // Parsed into a local object, which only goes into the store when the
-  // line is complete. Until then its strings are views into line.
+  // Parsed into a local object and views into line, which only go into the
+  // store when the line is complete.
   PSMDescription psm;
-  psm.setId(reader.readView());
+  const std::string_view id = reader.readView();
   LabelType label = reader.readInt() == 1 ? LabelType::TARGET : LabelType::DECOY;
   
   bool hasScannr = false;
@@ -148,7 +148,7 @@ LabelType DataSet::readPsm(const std::string& line, const unsigned int lineNr,
         if (reader.error()) {
           ostringstream temp;
           temp << "ERROR: Reading tab file, error reading scan number of PSM " 
-              << psm.getId() << ". Check if scan number is an integer." << std::endl;
+              << id << ". Check if scan number is an integer." << std::endl;
           throw MyException(temp.str());
         } else {
           hasScannr = true;
@@ -164,7 +164,7 @@ LabelType DataSet::readPsm(const std::string& line, const unsigned int lineNr,
           if (!NO_TERMINATE) {
             ostringstream temp;
             temp << "ERROR: Reading tab file, the experimental mass of PSM "
-                << psm.getId() << " on line " << lineNr << " is "
+                << id << " on line " << lineNr << " is "
                 << psm.expMass << " instead of a finite number." << std::endl;
             throw MyException(temp.str());
           }
@@ -180,7 +180,7 @@ LabelType DataSet::readPsm(const std::string& line, const unsigned int lineNr,
       } case DELTAMASS: {
           ostringstream temp;
           temp << "ERROR: The parser tries to allocate a deprecated delta mass field for the PSM " 
-              << psm.getId() << std::endl;
+              << id << std::endl;
           throw MyException(temp.str());
         break;
       } case FILENAME: {
@@ -196,18 +196,18 @@ LabelType DataSet::readPsm(const std::string& line, const unsigned int lineNr,
   }
   if (!hasScannr) psm.scan = lineNr;
   psm.setLineNr(lineNr);
-  readFeaturesAndProteins(reader, label, readProteins, psm, myPsm, featurePool,
-                          psmStore, decoyPrefix);
+  readFeaturesAndProteins(reader, label, readProteins, psm, id, myPsm,
+                          featurePool, psmStore, decoyPrefix);
   return label;
 }
 
 /**
  * Reads the features, peptide and proteins of a PSM line whose earlier
- * fields reader has read into psm, and moves psm into the store.
+ * fields reader has read into psm and id, and moves psm into the store.
  */
 void DataSet::readFeaturesAndProteins(TabReader& reader, LabelType label,
-    bool readProteins, PSMDescription& psm, PSMDescription*& myPsm,
-    FeatureMemoryPool& featurePool, PsmStore& psmStore,
+    bool readProteins, PSMDescription& psm, std::string_view id,
+    PSMDescription*& myPsm, FeatureMemoryPool& featurePool, PsmStore& psmStore,
     const std::string& decoyPrefix) {
   unsigned int numFeatures = static_cast<unsigned int>(FeatureNames::getNumFeatures());
   double* featureRow = featurePool.allocate();
@@ -217,7 +217,7 @@ void DataSet::readFeaturesAndProteins(TabReader& reader, LabelType label,
     if (!isfinite(featureRow[j])) {
       ostringstream oss;
       oss << "ERROR: Reached strange feature with val=" << featureRow[j]
-           << " col=" << j << " for PSM with id " << psm.getId() << endl;
+           << " col=" << j << " for PSM with id " << id << endl;
       if (NO_TERMINATE) {
         std::cerr << oss.str();
         std::cerr << "No-terminate flag set: setting value to 0 and ignoring the error." << std::endl;
@@ -230,20 +230,19 @@ void DataSet::readFeaturesAndProteins(TabReader& reader, LabelType label,
   if (reader.error()) {
     ostringstream temp;
     temp << "ERROR: Reading tab file, error reading in feature vector of PSM " 
-      << psm.getId() << ". Check if there are enough features on this line and "
+      << id << ". Check if there are enough features on this line and "
       << "if they are all floating point numbers or integers." << std::endl;
     throw MyException(temp.str());
   }
   
-  psm.setPeptide(reader.readView());
-  const std::string_view peptide_seq = psm.getFullPeptide();
+  const std::string_view peptide_seq = reader.readView();
   if (reader.error()) {
     ostringstream temp;
-    temp << "ERROR: Reading tab file, error reading PSM " << psm.getId() 
+    temp << "ERROR: Reading tab file, error reading PSM " << id 
       << ". Check if a peptide and at least one protein are specified." << std::endl;
     throw MyException(temp.str());
   } else if (!PSMDescription::hasFlanks(peptide_seq)) {
-    checkUnflankedPeptide(peptide_seq, psm.getId(), psm.getLineNr());
+    checkUnflankedPeptide(peptide_seq, id, psm.getLineNr());
   }
   
   std::vector<std::string_view> proteins;
@@ -267,7 +266,7 @@ void DataSet::readFeaturesAndProteins(TabReader& reader, LabelType label,
       // if this is not the case, it means the user probably incorrectly provided proteins as a tab separated input
       if (!reader.error()) {
         ostringstream temp;
-        temp << "ERROR: Reading tab file, error reading PSM " << psm.getId() 
+        temp << "ERROR: Reading tab file, error reading PSM " << id 
           << ". Found tab character after reading proteins even though " << PSMDescription::getProteinNameSeparator() 
           << " was specified as --protein-name-separator." << std::endl;
         if (NO_TERMINATE) {
@@ -292,9 +291,7 @@ void DataSet::readFeaturesAndProteins(TabReader& reader, LabelType label,
       }
     }
   }
-  psm.setId(psmStore.storeString(psm.getId()));
-  psm.setPeptide(psmStore.storeString(psm.getFullPeptide()));
-  psm.setProteins(psmStore.storeProteins(proteins), proteins.size());
+  psmStore.storeStrings(psm, id, peptide_seq, proteins);
   myPsm = psmStore.add(std::move(psm));
 }
 
@@ -319,7 +316,7 @@ void DataSet::readFeaturesAndProteins(TabReader& reader, LabelType label,
 bool DataSet::readPsmHeader(TabReader& reader, const unsigned int lineNr,
     const std::vector<OptionalField>& optionalFields, PsmHeader& header) {
   PSMDescription& psm = header.psm;
-  psm.setId(reader.readView());
+  header.id = reader.readView();
   if (reader.error()) return false;
   header.label = reader.readInt();
   if (reader.error()) return false;
@@ -400,8 +397,8 @@ bool DataSet::readPsmBody(TabReader& reader, PsmHeader& header,
   }
   if (header.hasFileName) psm.setSpectrumFileName(header.fileName);
   label = header.label == 1 ? LabelType::TARGET : LabelType::DECOY;
-  readFeaturesAndProteins(reader, label, readProteins, psm, myPsm, featurePool,
-                          psmStore, decoyPrefix);
+  readFeaturesAndProteins(reader, label, readProteins, psm, header.id, myPsm,
+                          featurePool, psmStore, decoyPrefix);
   return true;
 }
 
