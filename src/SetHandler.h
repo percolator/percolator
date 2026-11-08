@@ -60,14 +60,6 @@ struct PSMDescriptionPriority {
 */
 typedef std::pair<int, double> ScanId;
 
-struct ScanIdHash {
-  // noexcept lets the hash table skip storing the hash code in every node
-  size_t operator()(const ScanId& scanId) const noexcept {
-    return std::hash<int>()(scanId.first) ^
-           (std::hash<double>()(scanId.second) << 1);
-  }
-};
-
 /*
 * SetHandler is a class that provides functionality to handle training,
 * testing, Xval data sets, reads/writes from/to a file, prints them.

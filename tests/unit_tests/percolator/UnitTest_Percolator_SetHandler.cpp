@@ -374,3 +374,57 @@ TEST(SeparateSearchDetectorTest, FindsPairsAcrossChecks)
     }
     EXPECT_FALSE(none.foundSeparateSearches());
 }
+
+// ScanIdPriorityTable against the hash table that the -N path used before:
+// the same lookups succeed, with the same priorities, new priorities are
+// drawn in the same order, and the byte of each scan id keeps what was
+// written to it, here the labels seen so far, also when the table grows.
+TEST(ScanIdPriorityTableTest, MatchesHashTable)
+{
+    struct PairHash {
+        size_t operator()(const std::pair<int, double>& p) const {
+            return std::hash<int>()(p.first) ^ (std::hash<double>()(p.second) << 1);
+        }
+    };
+    const double masses[] = {0.0, -0.0, 1.5, 2.25, -7.0, 1e300,
+                             std::numeric_limits<double>::quiet_NaN()};
+    std::mt19937 rng(11);
+    for (int trial = 0; trial < 60; ++trial) {
+        // the larger trials make the table grow several times
+        const size_t n = trial < 50 ? rng() % 500 : 200000 + rng() % 300000;
+        const int numScans = 1 + static_cast<int>(rng() % (n + 1));
+        std::unordered_map<std::pair<int, double>,
+                           std::pair<uint32_t, uint8_t>, PairHash> expected;
+        ScanIdPriorityTable table;
+        uint32_t counterA = 0, counterB = 0;
+        for (size_t i = 0; i < n; ++i) {
+            const int scan = static_cast<int>(rng() % numScans) - numScans / 3;
+            double mass = masses[rng() % 7];
+            if (rng() % 3 == 0) mass += 1.0;
+            const uint8_t labelBit = rng() % 2 == 0 ? 1u : 2u;
+            auto key = std::make_pair(scan, mass);
+            auto it = expected.find(key);
+            uint32_t expectedPriority;
+            uint8_t expectedByte = 0u;
+            if (it != expected.end()) {
+                expectedPriority = it->second.first;
+                expectedByte = it->second.second;
+                it->second.second |= labelBit;
+            } else {
+                expectedPriority = ++counterA * 2654435761u;
+                expected.emplace(key, std::make_pair(expectedPriority, labelBit));
+            }
+            uint32_t priority = 0;
+            bool found = it == expected.end();
+            uint8_t& byte = table.findOrInsert(
+                scan, mass, [&]() { return ++counterB * 2654435761u; },
+                priority, found);
+            ASSERT_EQ(it != expected.end(), found) << "trial " << trial << " i " << i;
+            ASSERT_EQ(expectedPriority, priority);
+            ASSERT_EQ(expectedByte, byte);
+            byte |= labelBit;
+        }
+        EXPECT_EQ(counterA, counterB);
+        EXPECT_GE(expected.size(), table.size());  // NaN masses are not stored
+    }
+}

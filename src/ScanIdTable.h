@@ -19,6 +19,9 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <cstdint>
+#include <cstring>
+#include <limits>
 #include <vector>
 
 /*
@@ -94,6 +97,98 @@ class SeparateSearchDetector {
   size_t sorted_ = 0;  // keys_[0, sorted_) is sorted
   size_t nextCheck_ = 1u << 16;
   bool found_ = false;
+};
+
+/*
+ * Hash table from a scan id to the sampling priority of the first PSM with
+ * that scan id, for the reservoir sampling of -N, and one byte that the
+ * caller may use, e.g. for the label of that PSM. Scan ids are equal as in
+ * SeparateSearchDetector.
+ *
+ * Open addressing with linear probing in one array of 16-byte entries plus
+ * the bytes in a second array: no allocation per scan id, and less than half
+ * the memory of a node-based hash table.
+ */
+class ScanIdPriorityTable {
+ public:
+  // If the scan id was stored before, sets found to true and priority to its
+  // priority. Otherwise stores it with the priority newPriority() and the
+  // byte 0, and sets found to false. Returns the byte of the scan id, which
+  // stays valid until the next call. A scan id with a NaN mass is never
+  // stored, so it gets a new priority and a new byte every time.
+  template <class NewPriority>
+  uint8_t& findOrInsert(int scan, double mass, NewPriority newPriority,
+                        uint32_t& priority, bool& found) {
+    if (mass != mass) {
+      priority = static_cast<uint32_t>(newPriority());
+      found = false;
+      unstoredByte_ = 0u;
+      return unstoredByte_;
+    }
+    if (10 * (size_ + 1) > 7 * slots_.size()) grow();
+    size_t i = slotOf(scan, mass);
+    for (; !isEmpty(slots_[i]); i = (i + 1) & mask_) {
+      if (slots_[i].scan == scan && slots_[i].mass == mass) {
+        priority = slots_[i].priority;
+        found = true;
+        return bytes_[i];
+      }
+    }
+    priority = static_cast<uint32_t>(newPriority());
+    slots_[i] = Slot{mass, scan, priority};
+    bytes_[i] = 0u;
+    ++size_;
+    found = false;
+    return bytes_[i];
+  }
+
+  size_t size() const { return size_; }
+
+ private:
+  struct Slot {
+    double mass;  // NaN in an empty slot
+    int scan;
+    uint32_t priority;
+  };
+  static bool isEmpty(const Slot& slot) { return slot.mass != slot.mass; }
+
+  size_t slotOf(int scan, double mass) const {
+    if (mass == 0.0) mass = 0.0;  // the same hash for -0.0
+    uint64_t bits;
+    std::memcpy(&bits, &mass, sizeof(bits));
+    uint64_t h = bits ^ (static_cast<uint64_t>(static_cast<uint32_t>(scan)) *
+                         0x9E3779B97F4A7C15ULL);
+    // the finalizer of MurmurHash3
+    h ^= h >> 33;
+    h *= 0xff51afd7ed558ccdULL;
+    h ^= h >> 33;
+    h *= 0xc4ceb9fe1a85ec53ULL;
+    h ^= h >> 33;
+    return static_cast<size_t>(h) & mask_;
+  }
+
+  void grow() {
+    const Slot empty = {std::numeric_limits<double>::quiet_NaN(), 0, 0u};
+    std::vector<Slot> oldSlots(std::max<size_t>(slots_.size() * 2, 1u << 16),
+                               empty);
+    std::vector<uint8_t> oldBytes(oldSlots.size(), 0u);
+    oldSlots.swap(slots_);
+    oldBytes.swap(bytes_);
+    mask_ = slots_.size() - 1;
+    for (size_t j = 0; j < oldSlots.size(); ++j) {
+      if (isEmpty(oldSlots[j])) continue;
+      size_t i = slotOf(oldSlots[j].scan, oldSlots[j].mass);
+      while (!isEmpty(slots_[i])) i = (i + 1) & mask_;
+      slots_[i] = oldSlots[j];
+      bytes_[i] = oldBytes[j];
+    }
+  }
+
+  std::vector<Slot> slots_;  // the size is a power of 2
+  std::vector<uint8_t> bytes_;  // the byte of the scan id in slots_[i]
+  size_t size_ = 0;
+  size_t mask_ = 0;
+  uint8_t unstoredByte_ = 0u;  // the byte of a scan id with a NaN mass
 };
 
 #endif /* SCAN_ID_TABLE_H_ */

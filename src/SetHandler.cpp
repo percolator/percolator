@@ -329,9 +329,9 @@ void SetHandler::readPSMs(istream& dataStream, std::string& psmLine,
     }
   } else if (maxPSMs_ > 0u) { // reservoir sampling to create subset of size maxPSMs_
     std::priority_queue<PSMDescriptionPriority> subsetPSMs;
-    // ScanId -> (priority, labels seen as in addLabel)
-    std::unordered_map<ScanId, std::pair<size_t, unsigned char>, ScanIdHash>
-        scanIdLookUp;
+    // scan id -> (priority of its first PSM, labels seen as in addLabel);
+    // all PSMs of a scan id share its priority
+    ScanIdPriorityTable scanIdLookUp;
     unsigned int upperLimit = UINT_MAX;
     try {  // not indented: rethrowWithSource adds the file of the line
     do {
@@ -344,22 +344,21 @@ void SetHandler::readPSMs(istream& dataStream, std::string& psmLine,
       ScanId scanId = getScanId(psmLine, label, optionalFields, lineNr);
       bool isDecoy = (label == -1);
       const bool sampling = numSampledLines < kRepeatSampleLines;
-      size_t randIdx;
-      auto lookUp = scanIdLookUp.find(scanId);
-      if (lookUp != scanIdLookUp.end()) {
-        if (!addLabel(lookUp->second.second, isDecoy, sampling)) {
-          concatenatedSearch = false;
-        }
-        randIdx = lookUp->second.first;
-      } else {
-        randIdx = PseudoRandom::lcg_rand();
-        scanIdLookUp.emplace(scanId,
-                             std::make_pair(randIdx, labelBit(isDecoy)));
+      // the generator's values are below PseudoRandom::kRandMax < 2^32
+      uint32_t priority = 0u;
+      bool seen = false;
+      uint8_t& labels = scanIdLookUp.findOrInsert(
+          scanId.first, scanId.second, PseudoRandom::lcg_rand, priority, seen);
+      if (!seen) {
+        labels = labelBit(isDecoy);
+      } else if (!addLabel(labels, isDecoy, sampling)) {
+        concatenatedSearch = false;
       }
+      size_t randIdx = priority;
       if (sampling && ++numSampledLines == kRepeatSampleLines) {
         sampledSpectra_ = scanIdLookUp.size();
       }
-      
+
       if (label != 1 && label != -1) {
         warnIgnoredLabel(lineNr, numIgnoredLabels);
       } else if (subsetPSMs.size() < maxPSMs_ || randIdx < upperLimit) {
@@ -392,9 +391,10 @@ void SetHandler::readPSMs(istream& dataStream, std::string& psmLine,
   } else { // simply read all PSMs
     // only needed until a separate search is detected
     SeparateSearchDetector separateSearchDetector;
-    // ScanId -> labels seen as in addLabel, only for the first
-    // kRepeatSampleLines lines
-    std::unordered_map<ScanId, unsigned char, ScanIdHash> sampledScanIds;
+    // scan id -> labels seen as in addLabel, only for the first
+    // kRepeatSampleLines lines; the priorities are not used
+    std::unique_ptr<ScanIdPriorityTable> sampledScanIds(
+        new ScanIdPriorityTable());
     try {  // not indented: rethrowWithSource adds the file of the line
     do {
       if (lineNr % 1000000 == 0 && VERB > 1) {
@@ -409,14 +409,19 @@ void SetHandler::readPSMs(istream& dataStream, std::string& psmLine,
         concatenatedSearch = false;
       }
       if (numSampledLines < kRepeatSampleLines) {
-        auto inserted = sampledScanIds.emplace(scanId, labelBit(isDecoy));
-        if (!inserted.second) {
-          addLabel(inserted.first->second, isDecoy, true);
+        uint32_t unusedPriority = 0u;
+        bool seen = false;
+        uint8_t& labels = sampledScanIds->findOrInsert(
+            scanId.first, scanId.second, [] { return 0u; }, unusedPriority,
+            seen);
+        if (!seen) {
+          labels = labelBit(isDecoy);
+        } else {
+          addLabel(labels, isDecoy, true);
         }
         if (++numSampledLines == kRepeatSampleLines) {
-          sampledSpectra_ = sampledScanIds.size();
-          std::unordered_map<ScanId, unsigned char, ScanIdHash>().swap(
-              sampledScanIds);
+          sampledSpectra_ = sampledScanIds->size();
+          sampledScanIds.reset();
         }
       }
       if (label == 1) {
@@ -438,7 +443,7 @@ void SetHandler::readPSMs(istream& dataStream, std::string& psmLine,
       concatenatedSearch = false;
     }
     if (numSampledLines < kRepeatSampleLines) {
-      sampledSpectra_ = sampledScanIds.size();
+      sampledSpectra_ = sampledScanIds->size();
     }
     sampledLines_ = numSampledLines;
   }
