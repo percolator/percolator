@@ -20,7 +20,10 @@
  */
 
 #include <gtest/gtest.h>
+#include <fstream>
+#include <random>
 #include "DataSet.h"
+#include "TmpDir.h"
 
 class TabReaderTest : public ::testing::Test {
   protected:
@@ -132,4 +135,91 @@ TEST_F(TabReaderTest, CheckSequentialReading)
 
     reader.readInt();
     ASSERT_TRUE(reader.error());
+}
+
+// The decoy prefix detection as it was before it kept only the label and
+// protein columns: a std::string for every column of every row.
+static std::string findDecoyPrefixReference(const std::string& fileName,
+                                            int proteinIndex, int labelIndex) {
+  std::ifstream file(fileName.c_str());
+  std::string nextRow;
+  getline(file, nextRow);
+  std::vector<std::string> proteinNames;
+  while (getline(file, nextRow)) {
+    TabReader readerRow(nextRow);
+    int col = 0;
+    bool isDecoy = false;
+    while (!readerRow.error()) {
+      std::string value = readerRow.readString();
+      if (col == labelIndex && value == "-1") isDecoy = true;
+      if (col == proteinIndex && isDecoy) proteinNames.push_back(value);
+      col++;
+    }
+  }
+  auto rng = std::default_random_engine {};
+  std::shuffle(std::begin(proteinNames), std::end(proteinNames), rng);
+  int numElements = ceil(0.1 * proteinNames.size());
+  proteinNames.resize(numElements);
+  std::string prefix = TabFileValidator::getLongestCommonPrefix(proteinNames);
+  size_t loc = prefix.find("_");
+  if (loc != std::string::npos) prefix = prefix.substr(0, loc + 1);
+  return prefix;
+}
+
+// findDecoyPrefix gives the same prefix as before on generated files, with
+// and without common prefixes, with short rows, CRLF line ends and the label
+// column after the protein column.
+TEST(TabFileValidatorTest, FindDecoyPrefixMatchesReference)
+{
+  Globals::getInstance()->setVerbose(0);
+  TmpDir tmpDir;
+  const std::string fileName = tmpDir.getPath() + "/input.pin";
+  const char* prefixes[] = {"decoy_", "rev_", "DECOY", "", "XXX_y_", "d"};
+  std::mt19937 rng(3);
+  for (int trial = 0; trial < 120; ++trial) {
+    const int numCols = 3 + static_cast<int>(rng() % 5);
+    int labelIndex = static_cast<int>(rng() % numCols);
+    int proteinIndex = static_cast<int>(rng() % numCols);
+    if (proteinIndex == labelIndex) proteinIndex = (labelIndex + 1) % numCols;
+    const char* prefix = prefixes[rng() % 6];
+    const size_t numRows = trial < 100 ? rng() % 60 : 20000 + rng() % 20000;
+    {
+      std::ofstream out(fileName.c_str());
+      for (int c = 0; c < numCols; ++c) {
+        out << (c ? "\t" : "")
+            << (c == labelIndex ? "Label" : c == proteinIndex ? "Proteins" : "f");
+      }
+      out << "\n";
+      for (size_t r = 0; r < numRows; ++r) {
+        const bool isDecoy = rng() % 2 == 0;
+        const int cols = rng() % 10 == 0 ? static_cast<int>(rng() % numCols) + 1 : numCols;
+        for (int c = 0; c < cols; ++c) {
+          if (c) out << "\t";
+          if (c == labelIndex) {
+            out << (isDecoy ? "-1" : rng() % 5 ? "1" : "-1x");
+          } else if (c == proteinIndex) {
+            if (isDecoy && rng() % 50) out << prefix;
+            out << (rng() % 3 ? "prot_" : "p") << rng() % 1000;
+          } else {
+            out << rng() % 7;
+          }
+        }
+        if (trial % 4 == 1) out << "\r";
+        if (r + 1 < numRows || trial % 3) out << "\n";
+      }
+    }
+    EXPECT_EQ(findDecoyPrefixReference(fileName, proteinIndex, labelIndex),
+              TabFileValidator::findDecoyPrefix(fileName, proteinIndex, labelIndex))
+        << "trial " << trial;
+  }
+  {
+    std::ofstream out(fileName.c_str());
+    out << "SpecId\tLabel\tf\tPeptide\tProteins\n";
+    for (int r = 0; r < 100; ++r) {
+      out << "id" << r << "\t-1\t0.5\tK.PEP.K\tdecoy_prot_" << r << "\tdecoy_x\n";
+    }
+  }
+  EXPECT_EQ("decoy_", TabFileValidator::findDecoyPrefix(fileName, 4, 1));
+  EXPECT_EQ("decoy_", TabFileValidator::detectDecoyPrefix(fileName));
+  Globals::getInstance()->setVerbose(2);
 }
