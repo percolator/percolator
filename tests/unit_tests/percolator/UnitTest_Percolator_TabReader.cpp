@@ -128,6 +128,55 @@ TEST_F(TabReaderTest, CheckReadDoubleMatchesStrtod)
     }
 }
 
+// readSimpleDouble, the parser used without std::from_chars, either declines
+// a number or gives the same value bits and end as strtod.
+TEST_F(TabReaderTest, CheckReadSimpleDoubleMatchesStrtod)
+{
+  auto check = [](const std::string& text, long& accepted) {
+    const char* p = text.c_str();
+    double value = 0.0;
+    const char* next = NULL;
+    if (!TabReader::readSimpleDouble(p, p + text.size(), value, next)) return;
+    ++accepted;
+    char* strtodNext = NULL;
+    const double expected = strtod(p, &strtodNext);
+    ASSERT_EQ(0, memcmp(&expected, &value, sizeof(double))) << text;
+    ASSERT_EQ(strtodNext, next) << text;
+  };
+  long accepted = 0;
+  const char* edges[] = {
+      "0", "-0", "0.0", "-0.000", "1", "-1", "1.", ".5", "-.5", "5.e3",
+      "0.1", "3118.1104", "-0.56139", "1e22", "1e-22", "1e23", "1e-23",
+      "9007199254740992", "9007199254740993", "1234567890123456789",
+      "12345678901234567890", "0.0000000000000000000001",
+      "00000000000000000000001.5", "1.0000000000000000000000", "1e",
+      "1e+", "1e-", "+1", " 1", "1x", "1 ", "1\t2", "nan", "inf", "-inf",
+      "0x10", "1e5x", ".", "-", "-.", "e5", "", "4.9406564584124654e-324",
+      "1.7976931348623157e308", "0e99999999", "1e-0", "2.5E+3"};
+  for (const char* edge : edges) check(edge, accepted);
+  std::mt19937_64 rng(42);
+  for (long i = 0; i < 2000000; ++i) {
+    std::string text;
+    if (rng() & 1) text += '-';
+    const int numDigits = 1 + static_cast<int>(rng() % 20);
+    const int dot = static_cast<int>(rng() % (numDigits + 2));
+    for (int k = 0; k < numDigits; ++k) {
+      if (k == dot) text += '.';
+      text += static_cast<char>('0' + rng() % 10);
+    }
+    if (rng() % 4 == 0) {
+      text += (rng() & 1) ? 'e' : 'E';
+      text += std::to_string(static_cast<int>(rng() % 60) - 30);
+    }
+    if (rng() % 8 == 0) text += (rng() & 1) ? "\tx" : " ";
+    check(text, accepted);
+  }
+  // most numbers take the fast path where the platform allows it
+#if defined(FLT_EVAL_METHOD) && (FLT_EVAL_METHOD == 0 || FLT_EVAL_METHOD == 1)
+  EXPECT_GT(accepted, 1000000);
+#endif
+}
+
 // Tests reading a sequence of fields, including skipping fields.
 TEST_F(TabReaderTest, CheckSequentialReading)
 {

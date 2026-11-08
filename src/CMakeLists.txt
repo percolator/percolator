@@ -81,10 +81,10 @@ endif()
 #########################################
 # STANDARD LIBRARY FEATURES
 #########################################
-# std::to_chars for double is missing from older standard libraries (GCC
-# before 11), and libc++ provides it on macOS only from some deployment
-# targets on without announcing it with __cpp_lib_to_chars. The code falls
-# back to slower equivalents without it.
+# std::to_chars and std::from_chars for double are missing from older
+# standard libraries (GCC before 11), and libc++ provides them on macOS only
+# from some deployment targets on, without announcing them with
+# __cpp_lib_to_chars. The code falls back to slower equivalents without them.
 include(CheckCXXSourceCompiles)
 check_cxx_source_compiles("
 #include <charconv>
@@ -94,11 +94,21 @@ int main() {
   return std::to_chars(buf, buf + sizeof(buf), value,
                        std::chars_format::general, 6).ec == std::errc() ? 0 : 1;
 }" PERCOLATOR_HAVE_TO_CHARS_DOUBLE)
-if(PERCOLATOR_HAVE_TO_CHARS_DOUBLE)
-  set(PERCOLATOR_CHARCONV_DEFINITIONS PERCOLATOR_TO_CHARS_DOUBLE=1)
-else()
-  set(PERCOLATOR_CHARCONV_DEFINITIONS PERCOLATOR_TO_CHARS_DOUBLE=0)
-endif()
+check_cxx_source_compiles("
+#include <charconv>
+int main() {
+  const char text[] = \"0.5\";
+  double value = 0.0;
+  return std::from_chars(text, text + 3, value).ec == std::errc() ? 0 : 1;
+}" PERCOLATOR_HAVE_FROM_CHARS_DOUBLE)
+set(PERCOLATOR_CHARCONV_DEFINITIONS "")
+foreach(conversion TO_CHARS FROM_CHARS)
+  if(PERCOLATOR_HAVE_${conversion}_DOUBLE)
+    list(APPEND PERCOLATOR_CHARCONV_DEFINITIONS PERCOLATOR_${conversion}_DOUBLE=1)
+  else()
+    list(APPEND PERCOLATOR_CHARCONV_DEFINITIONS PERCOLATOR_${conversion}_DOUBLE=0)
+  endif()
+endforeach()
 # for every target in this directory and below; perclibrary passes them on
 # to the targets that link it, such as the unit tests
 add_compile_definitions(${PERCOLATOR_CHARCONV_DEFINITIONS})
