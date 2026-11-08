@@ -16,8 +16,6 @@
  *******************************************************************************/
 
 #include "PickedProteinCaller.h"
-#include "Version.h"
-#include "Option.h"
 #include "Globals.h"
 
 using namespace std;
@@ -36,62 +34,6 @@ void PickedProteinCaller::initConstraints(ENZYME_T enzyme, DIGEST_T digestion,
   min_peptide_length_ = min_peptide_length;
   max_peptide_length_ = max_peptide_length;
   max_miscleavages_ = max_miscleavages;
-}
-
-/* introductory message */
-string PickedProteinCaller::greeter() const {
-  ostringstream oss;
-  oss << "Picked-Protein version " << VERSION << ", ";
-  oss << "Build Date " << __DATE__ << " " << __TIME__ << endl;
-  oss << "Distributed under Apache License" << endl;
-  oss << "Written by Lukas Kall (lukas.kall@scilifelab.se) "
-         "and Matthew The (matthew.the@scilifelab.se)" << endl;
-  oss << "Usage:" << endl;
-  oss << "   picked-protein [options]" << endl << endl;
-  return oss.str();
-}
-
-/* parse the command line arguments */
-bool PickedProteinCaller::parseOptions(int argc, char** argv) {
-  ostringstream intro;
-  intro << greeter() << endl << "Usage:" << endl;
-  intro << "   picked-protein -i \"percolator_peptide_output\" -d \"fasta_protein_db\" " << endl;
-  CommandLineParser cmd(intro.str());
-  // define available options
-  cmd.defineOption("v",
-                   "verbose",
-                   "Set verbosity of output: 0=no processing info, 5=all. Default = 2.",
-                   "level");
-  cmd.defineOption("i",
-                   "peptide-in",
-                   "Tab-delimited peptide results file from Percolator.",
-                   "filename");
-  cmd.defineOption("d",
-                   "database",
-                   "Protein sequence database in FASTA format.",
-                   "filename");
-  cmd.defineOption("o",
-                   "protein-out",
-                   "Output file for inferred protein results.",
-                   "filename");
-
-  cmd.parseArgs(argc, argv);
-
-  // process options
-  if (cmd.isOptionSet("verbose")) {
-    Globals::getInstance()->setVerbose(cmd.getInt("verbose", 0, 10));
-  }
-  if (cmd.isOptionSet("database")) {
-    protein_db_file_ = cmd.options["database"];
-  }
-  if (cmd.isOptionSet("peptide-in")) {
-    peptide_input_file_ = cmd.options["peptide-in"];
-  }
-  if (cmd.isOptionSet("protein-out")) {
-    protein_output_file_ = cmd.options["protein-out"];
-  }
-  
-  return true;
 }
 
 void PickedProteinCaller::addToPeptideProteinMap(Database& db, 

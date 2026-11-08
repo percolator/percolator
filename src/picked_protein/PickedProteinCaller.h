@@ -45,10 +45,6 @@ class PickedProteinCaller{
       PercolatorCrux::DIGEST_T digestion, int min_peptide_length, 
       int max_peptide_length, int max_miscleavages);
   
-  std::string greeter() const;
-  
-  bool parseOptions(int argc, char** argv);
-  
   bool fastaHasDecoys() const { return fasta_has_decoys_; }
   
   void setFastaDatabase(const std::string& protein_db_file, 
@@ -69,7 +65,7 @@ class PickedProteinCaller{
   std::string decoyPattern_;
   bool fasta_has_decoys_;
   
-  std::string protein_db_file_, peptide_input_file_, protein_output_file_;
+  std::string protein_db_file_;
   
   void addToPeptideProteinMap(PercolatorCrux::Database& db, 
     size_t protein_idx, PercolatorCrux::PeptideConstraint& peptide_constraint,
