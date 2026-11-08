@@ -46,6 +46,19 @@ enum OptionalField {
   SCANNR, EXPMASS, CALCMASS, RETTIME, DELTAMASS, FILENAME
 };
 
+// The fields of a PSM line before its features, see DataSet::readPsmHeader
+struct PsmHeader {
+  // the id, as a view into the line, the scan number, the experimental mass
+  // and the line number
+  PSMDescription psm;
+  int label = 0;
+  // the starts of the fields that DataSet::readPsmBody parses, if present
+  const char* calcMassField = NULL;
+  const char* retentionTimeField = NULL;
+  bool hasFileName = false;
+  std::string_view fileName;
+};
+
 class DataSet {
  public:
   DataSet();
@@ -80,6 +93,20 @@ class DataSet {
     const std::vector<OptionalField>& optionalFields, bool readProteins,
     PSMDescription*& myPsm, FeatureMemoryPool& featurePool,
     PsmStore& psmStore, const std::string& decoyPrefix);
+
+  // A fast path for readPsm that reads the fields before the features only
+  // once; see DataSet.cpp. Both return false if the line has to be read with
+  // SetHandler::getScanId and readPsm instead.
+  static bool readPsmHeader(TabReader& reader, const unsigned int lineNr,
+    const std::vector<OptionalField>& optionalFields, PsmHeader& header);
+  static bool readPsmBody(TabReader& reader, PsmHeader& header,
+    bool readProteins, PSMDescription*& myPsm, LabelType& label,
+    FeatureMemoryPool& featurePool, PsmStore& psmStore,
+    const std::string& decoyPrefix);
+  // as above, and adds the PSM to this set
+  bool readPsmBody(TabReader& reader, PsmHeader& header,
+    FeatureMemoryPool& featurePool, PsmStore& psmStore,
+    const std::string& decoyPrefix);
   
   void registerPsm(PSMDescription* myPsm);
 
@@ -101,6 +128,11 @@ class DataSet {
   static FeatureNames featureNames_;
   static bool decoyWarningTripped_;
   static bool flankWarningTripped_;
+
+  static void readFeaturesAndProteins(TabReader& reader, LabelType label,
+    bool readProteins, PSMDescription& psm, PSMDescription*& myPsm,
+    FeatureMemoryPool& featurePool, PsmStore& psmStore,
+    const std::string& decoyPrefix);
 };
 
 #endif /*DATASET_H_*/

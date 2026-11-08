@@ -172,6 +172,9 @@ class SetHandler {
     int optionalFieldCount, std::vector<double>& init_values);
   ScanId getScanId(const std::string& psmLine, int& label,
     std::vector<OptionalField>& optionalFields, unsigned int lineNr);
+  bool readScanIdAndLabel(const std::string& psmLine, unsigned int lineNr,
+    std::vector<OptionalField>& optionalFields, TabReader& reader,
+    PsmHeader& header, ScanId& scanId, int& label);
     
   void readPSMs(std::istream& dataStream, std::string& psmLine,
     bool hasInitialValueRow, bool& separateSearches,

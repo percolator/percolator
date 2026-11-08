@@ -16,6 +16,7 @@
  */
 
 #include <gtest/gtest.h>
+#include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <limits>
@@ -427,4 +428,131 @@ TEST(ScanIdPriorityTableTest, MatchesHashTable)
         EXPECT_EQ(counterA, counterB);
         EXPECT_GE(expected.size(), table.size());  // NaN masses are not stored
     }
+}
+
+/* Gives the tests access to the two ways of reading a PSM line's header.
+ */
+class SetHandlerHeaderEx : public SetHandler {
+  public:
+    SetHandlerHeaderEx() : SetHandler(0) { }
+    ScanId getScanIdEx(const std::string& line, int& label,
+                       std::vector<OptionalField>& fields, unsigned int lineNr) {
+        return getScanId(line, label, fields, lineNr);
+    }
+    bool readScanIdAndLabelEx(const std::string& line, unsigned int lineNr,
+                              std::vector<OptionalField>& fields, TabReader& reader,
+                              PsmHeader& header, ScanId& scanId, int& label) {
+        return readScanIdAndLabel(line, lineNr, fields, reader, header, scanId, label);
+    }
+};
+
+static std::string bitsOf(double value) {
+    uint64_t bits;
+    memcpy(&bits, &value, sizeof(bits));
+    return std::to_string(bits);
+}
+
+static std::string describePsm(PSMDescription* psm, LabelType label) {
+    std::ostringstream out;
+    out << " label " << static_cast<int>(label) << " id " << psm->getId()
+        << " scan " << psm->scan << " exp " << bitsOf(psm->expMass)
+        << " calc " << bitsOf(psm->calcMass)
+        << " rt " << bitsOf(psm->getRetentionTime())
+        << " file " << psm->getSpectrumFileName() << " line " << psm->getLineNr()
+        << " pep " << psm->getFullPeptide() << " prot ";
+    psm->printProteins(out);
+    for (size_t i = 0; i < FeatureNames::getNumFeatures(); ++i) {
+        out << " f " << bitsOf(psm->features[i]);
+    }
+    return out.str();
+}
+
+// Reading a PSM line with the fast path of DataSet::readPsmHeader and
+// readPsmBody gives the same scan id, label, PSM, messages and exceptions as
+// getScanId followed by DataSet::readPsm, on valid and malformed lines.
+TEST(PsmHeaderTest, FastPathMatchesGetScanIdAndReadPsm)
+{
+    const int verbosity = Globals::getInstance()->getVerbose();
+    Globals::getInstance()->setVerbose(1);
+    FeatureNames::setNumFeatures(2);
+    FeatureMemoryPool featurePool;
+    featurePool.createPool(2);
+    PsmStore psmStore;
+    const std::string decoyPrefix = "decoy_";
+    SetHandlerHeaderEx sh;
+    const char* numbers[] = {"123", "1.5", "-0.0", "1e3", "0", "-7", "x", "",
+        "1.5 ", " 2", "1.5x", "nan", "inf", "1e400", "2147483648", "+4", "1."};
+    const char* labels[] = {"1", "-1", "0", "+1", "x", "1 ", " -1", "", "2"};
+    const char* texts[] = {"a.raw", "b.raw", "", "c d"};
+    const OptionalField allFields[] = {SCANNR, EXPMASS, CALCMASS, RETTIME,
+                                       FILENAME, DELTAMASS};
+    std::mt19937 rng(17);
+    int numSimple = 0;
+    for (int trial = 0; trial < 30000; ++trial) {
+        std::vector<OptionalField> fields;
+        const int numFields = static_cast<int>(rng() % 5);
+        for (int k = 0; k < numFields; ++k) {
+            fields.push_back(allFields[rng() % (trial % 50 == 0 ? 6 : 5)]);
+        }
+        auto pick = [&](const char* const* values, size_t n, size_t good) {
+            // mostly well-formed values
+            return std::string(values[rng() % 4 ? rng() % good : rng() % n]);
+        };
+        std::string line = (rng() % 20 ? "id" + std::to_string(trial) : "");
+        line += "\t" + pick(labels, 9, 3);
+        for (OptionalField field : fields) {
+            line += "\t";
+            line += field == FILENAME ? pick(texts, 4, 2) : pick(numbers, 17, 6);
+        }
+        for (int k = 0; k < 2; ++k) line += "\t" + pick(numbers, 17, 6);
+        line += rng() % 10 ? "\tK.PEPTIDE.R" : "\t";
+        line += rng() % 3 ? "\tP1" : "\tP1\tdecoy_P2";
+        if (rng() % 8 == 0) line = line.substr(0, rng() % (line.size() + 1));
+        if (rng() % 10 == 0) line.insert(rng() % (line.size() + 1), rng() % 2 ? "\t" : " ");
+        const unsigned int lineNr = 3 + static_cast<unsigned int>(trial);
+        Globals::getInstance()->setNoTerminate(trial % 3 == 0);
+
+        std::string results[2];
+        for (int fast = 0; fast < 2; ++fast) {
+            std::ostringstream messages;
+            std::streambuf* cerrBuffer = std::cerr.rdbuf(messages.rdbuf());
+            std::ostringstream result;
+            try {
+                int label = 0;
+                ScanId scanId;
+                TabReader reader(line);
+                PsmHeader header;
+                bool simple = false;
+                if (fast) {
+                    simple = sh.readScanIdAndLabelEx(line, lineNr, fields, reader,
+                                                     header, scanId, label);
+                    numSimple += simple ? 1 : 0;
+                } else {
+                    scanId = sh.getScanIdEx(line, label, fields, lineNr);
+                }
+                result << "scan " << scanId.first << " " << bitsOf(scanId.second)
+                       << " label " << label;
+                if (label == 1 || label == -1) {
+                    PSMDescription* psm = NULL;
+                    LabelType psmLabel = LabelType::UNDEFINED;
+                    if (!simple || !DataSet::readPsmBody(reader, header, true, psm,
+                            psmLabel, featurePool, psmStore, decoyPrefix)) {
+                        psmLabel = DataSet::readPsm(line, lineNr, fields, true, psm,
+                            featurePool, psmStore, decoyPrefix);
+                    }
+                    result << describePsm(psm, psmLabel);
+                }
+            } catch (const MyException& e) {
+                result << "exception " << e.what();
+            }
+            std::cerr.rdbuf(cerrBuffer);
+            results[fast] = result.str() + " messages " + messages.str();
+        }
+        ASSERT_EQ(results[0], results[1]) << "line " << line;
+    }
+    EXPECT_GT(numSimple, 5000);  // the fast path is exercised
+    Globals::getInstance()->setNoTerminate(false);
+    Globals::getInstance()->setVerbose(verbosity);
+    FeatureNames::resetNumFeatures();
+    PSMDescription::resetSpectrumFileNames();
 }

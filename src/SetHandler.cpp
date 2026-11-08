@@ -341,7 +341,11 @@ void SetHandler::readPSMs(istream& dataStream, std::string& psmLine,
       psmLine = rtrim(psmLine);
       
       int label = 0;
-      ScanId scanId = getScanId(psmLine, label, optionalFields, lineNr);
+      ScanId scanId;
+      TabReader reader(psmLine);
+      PsmHeader header;
+      const bool simple = readScanIdAndLabel(psmLine, lineNr, optionalFields,
+                                             reader, header, scanId, label);
       bool isDecoy = (label == -1);
       const bool sampling = numSampledLines < kRepeatSampleLines;
       // the generator's values are below PseudoRandom::kRandMax < 2^32
@@ -364,9 +368,14 @@ void SetHandler::readPSMs(istream& dataStream, std::string& psmLine,
       } else if (subsetPSMs.size() < maxPSMs_ || randIdx < upperLimit) {
         PSMDescriptionPriority psmPriority;
         bool readProteins = false;
-        psmPriority.label = DataSet::readPsm(psmLine, lineNr, optionalFields, 
-                                 readProteins, psmPriority.psm, featurePool_,
-                                 psmStore_, decoyPrefix_);
+        if (!simple ||
+            !DataSet::readPsmBody(reader, header, readProteins, psmPriority.psm,
+                                  psmPriority.label, featurePool_, psmStore_,
+                                  decoyPrefix_)) {
+          psmPriority.label = DataSet::readPsm(psmLine, lineNr, optionalFields,
+                                   readProteins, psmPriority.psm, featurePool_,
+                                   psmStore_, decoyPrefix_);
+        }
         psmPriority.priority = randIdx;
         subsetPSMs.push(psmPriority);
         if (subsetPSMs.size() > maxPSMs_) {
@@ -402,7 +411,11 @@ void SetHandler::readPSMs(istream& dataStream, std::string& psmLine,
       }
       psmLine = rtrim(psmLine);
       int label = 0;
-      ScanId scanId = getScanId(psmLine, label, optionalFields, lineNr);
+      ScanId scanId;
+      TabReader reader(psmLine);
+      PsmHeader header;
+      const bool simple = readScanIdAndLabel(psmLine, lineNr, optionalFields,
+                                             reader, header, scanId, label);
       bool isDecoy = (label == -1);
       if (concatenatedSearch &&
           separateSearchDetector.add(scanId.first, scanId.second, isDecoy)) {
@@ -424,12 +437,13 @@ void SetHandler::readPSMs(istream& dataStream, std::string& psmLine,
           sampledScanIds.reset();
         }
       }
-      if (label == 1) {
-        targetSet->readPsm(psmLine, lineNr, optionalFields, featurePool_,
+      if (label == 1 || label == -1) {
+        DataSet* dataSet = label == 1 ? targetSet.get() : decoySet.get();
+        if (!simple || !dataSet->readPsmBody(reader, header, featurePool_,
+                                             psmStore_, decoyPrefix_)) {
+          dataSet->readPsm(psmLine, lineNr, optionalFields, featurePool_,
                            psmStore_, decoyPrefix_);
-      } else if (label == -1) {
-        decoySet->readPsm(psmLine, lineNr, optionalFields, featurePool_,
-                          psmStore_, decoyPrefix_);
+        }
       } else {
         warnIgnoredLabel(lineNr, numIgnoredLabels);
       }
@@ -473,6 +487,26 @@ void SetHandler::addQueueToSets(
   }
 }
 
+/**
+ * Reads the label and the scan id of a PSM line, if possible with
+ * DataSet::readPsmHeader, which leaves reader and header ready for
+ * DataSet::readPsmBody, and otherwise with getScanId. Returns whether
+ * readPsmHeader succeeded.
+ */
+bool SetHandler::readScanIdAndLabel(const std::string& psmLine,
+    unsigned int lineNr, std::vector<OptionalField>& optionalFields,
+    TabReader& reader, PsmHeader& header, ScanId& scanId, int& label) {
+  if (DataSet::readPsmHeader(reader, lineNr, optionalFields, header)) {
+    label = header.label;
+    scanId = ScanId(static_cast<int>(header.psm.scan), header.psm.expMass);
+    return true;
+  }
+  scanId = getScanId(psmLine, label, optionalFields, lineNr);
+  return false;
+}
+
+// DataSet::readPsmHeader must fail for every line on which this function
+// reports an error or changes a value.
 ScanId SetHandler::getScanId(const std::string& psmLine, int& label,
     std::vector<OptionalField>& optionalFields, unsigned int lineNr) {
   ScanId scanId;
@@ -683,13 +717,24 @@ void SetHandler::readAndScorePSMs(istream& dataStream, std::string& psmLine,
     psmLine = rtrim(psmLine);
     // DataSet::readPsm would read any label other than 1 as a decoy, while
     // the training data ignore such lines
-    TabReader labelReader(psmLine);
-    labelReader.skip(1u);  // id
-    int label = labelReader.readInt();
+    TabReader reader(psmLine);
+    PsmHeader header;
+    const bool simple =
+        DataSet::readPsmHeader(reader, lineNr, optionalFields, header);
+    int label = header.label;
+    if (!simple) {
+      TabReader labelReader(psmLine);
+      labelReader.skip(1u);  // id
+      label = labelReader.readInt();
+    }
     if (label == 1 || label == -1) {
       ScoreHolder sh;
-      sh.label = DataSet::readPsm(psmLine, lineNr, optionalFields, readProteins,
-                                  sh.pPSM, featurePool_, psmStore_, decoyPrefix_);
+      if (!simple ||
+          !DataSet::readPsmBody(reader, header, readProteins, sh.pPSM, sh.label,
+                                featurePool_, psmStore_, decoyPrefix_)) {
+        sh.label = DataSet::readPsm(psmLine, lineNr, optionalFields, readProteins,
+                                    sh.pPSM, featurePool_, psmStore_, decoyPrefix_);
+      }
       allScores.scoreAndAddPSM(sh, rawWeights, featurePool_);
     }
     ++lineNr;

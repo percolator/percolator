@@ -45,6 +45,14 @@ class TabReader {
       : f_(line.c_str()), end_(line.c_str() + line.size()), err(0) {
     errno = 0;
   }
+  // reads from begin on in a line that ends with a NUL character at end
+  TabReader(const char* begin, const char* end) : f_(begin), end_(end), err(0) {
+    errno = 0;
+  }
+
+  // the start of the next field
+  const char* position() const { return f_; }
+  const char* lineEnd() const { return end_; }
   
   void advance(const char* next) {
     if (*next != '\0') {

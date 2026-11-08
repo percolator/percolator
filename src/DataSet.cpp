@@ -196,7 +196,19 @@ LabelType DataSet::readPsm(const std::string& line, const unsigned int lineNr,
   }
   if (!hasScannr) psm.scan = lineNr;
   psm.setLineNr(lineNr);
-  
+  readFeaturesAndProteins(reader, label, readProteins, psm, myPsm, featurePool,
+                          psmStore, decoyPrefix);
+  return label;
+}
+
+/**
+ * Reads the features, peptide and proteins of a PSM line whose earlier
+ * fields reader has read into psm, and moves psm into the store.
+ */
+void DataSet::readFeaturesAndProteins(TabReader& reader, LabelType label,
+    bool readProteins, PSMDescription& psm, PSMDescription*& myPsm,
+    FeatureMemoryPool& featurePool, PsmStore& psmStore,
+    const std::string& decoyPrefix) {
   unsigned int numFeatures = static_cast<unsigned int>(FeatureNames::getNumFeatures());
   double* featureRow = featurePool.allocate();
   psm.features = featureRow;
@@ -231,7 +243,7 @@ LabelType DataSet::readPsm(const std::string& line, const unsigned int lineNr,
       << ". Check if a peptide and at least one protein are specified." << std::endl;
     throw MyException(temp.str());
   } else if (!PSMDescription::hasFlanks(peptide_seq)) {
-    checkUnflankedPeptide(peptide_seq, psm.getId(), lineNr);
+    checkUnflankedPeptide(peptide_seq, psm.getId(), psm.getLineNr());
   }
   
   std::vector<std::string_view> proteins;
@@ -284,7 +296,126 @@ LabelType DataSet::readPsm(const std::string& line, const unsigned int lineNr,
   psm.setPeptide(psmStore.storeString(psm.getFullPeptide()));
   psm.setProteins(psmStore.storeProteins(proteins), proteins.size());
   myPsm = psmStore.add(std::move(psm));
-  return label;
+}
+
+/**
+ * The first half of a fast path for reading PSM lines, which reads the
+ * fields before the features only once, instead of in SetHandler::getScanId
+ * and again in readPsm. readPsmHeader reads the id, the label and the
+ * optional fields, and readPsmBody the rest of the line from where
+ * readPsmHeader stopped. Together they accept a line only if getScanId would
+ * neither report an error nor change a value and readPsm would read the
+ * fields before the features the same way: the experimental mass is finite,
+ * and the calculated mass and retention time end at a tab. Otherwise they
+ * return false and the caller reads the line with getScanId and readPsm, so
+ * that the messages on malformed lines stay the same. A new check on these
+ * fields in getScanId or readPsm must therefore also make the fast path
+ * return false.
+ *
+ * Like getScanId, readPsmHeader skips the calculated mass, the retention time
+ * and the spectrum file name; readPsmBody parses them, as it is only called
+ * for PSMs that are kept.
+ */
+bool DataSet::readPsmHeader(TabReader& reader, const unsigned int lineNr,
+    const std::vector<OptionalField>& optionalFields, PsmHeader& header) {
+  PSMDescription& psm = header.psm;
+  psm.setId(reader.readView());
+  if (reader.error()) return false;
+  header.label = reader.readInt();
+  if (reader.error()) return false;
+  bool hasScannr = false;
+  for (OptionalField field : optionalFields) {
+    switch (field) {
+      case SCANNR: {
+        psm.scan = static_cast<unsigned int>(reader.readInt());
+        if (reader.error()) return false;
+        hasScannr = true;
+        break;
+      } case EXPMASS: {
+        psm.expMass = reader.readDouble();
+        if (reader.error() || !isfinite(psm.expMass)) return false;
+        break;
+      } case CALCMASS: {
+        if (header.calcMassField != NULL) return false;  // a repeated column
+        header.calcMassField = reader.position();
+        reader.skip();
+        if (reader.error()) return false;
+        break;
+      } case RETTIME: {
+        if (header.retentionTimeField != NULL) return false;
+        header.retentionTimeField = reader.position();
+        reader.skip();
+        if (reader.error()) return false;
+        break;
+      } case FILENAME: {
+        if (header.hasFileName) return false;
+        header.fileName = reader.readView();
+        header.hasFileName = true;
+        if (reader.error()) return false;
+        break;
+      } default: {  // the deprecated delta mass, which readPsm reports
+        return false;
+      }
+    }
+  }
+  if (!hasScannr) psm.scan = lineNr;
+  psm.setLineNr(lineNr);
+  return true;
+}
+
+/*
+ * Parses the number of a field that starts at field and is followed by a
+ * tab. Returns false unless the number ends right before the tab, i.e.
+ * unless readPsm would read it and continue after the tab.
+ */
+static bool readFieldBeforeTab(const char* field, const char* lineEnd,
+                               double& value) {
+  const char* tab = strchr(field, '\t');
+  TabReader reader(field, lineEnd);
+  value = reader.readDouble();
+  return tab != NULL && !reader.error() && reader.position() == tab + 1;
+}
+
+/**
+ * The second half of the fast path of readPsmHeader: reads the rest of the
+ * line, moves the PSM into the store and returns true. Returns false without
+ * any effect if the line must be read with readPsm instead.
+ */
+bool DataSet::readPsmBody(TabReader& reader, PsmHeader& header,
+    bool readProteins, PSMDescription*& myPsm, LabelType& label,
+    FeatureMemoryPool& featurePool, PsmStore& psmStore,
+    const std::string& decoyPrefix) {
+  PSMDescription& psm = header.psm;
+  if (header.calcMassField != NULL &&
+      !readFieldBeforeTab(header.calcMassField, reader.lineEnd(), psm.calcMass)) {
+    return false;
+  }
+  if (header.retentionTimeField != NULL) {
+    double retentionTime;
+    if (!readFieldBeforeTab(header.retentionTimeField, reader.lineEnd(),
+                            retentionTime)) {
+      return false;
+    }
+    psm.setRetentionTime(retentionTime);
+  }
+  if (header.hasFileName) psm.setSpectrumFileName(header.fileName);
+  label = header.label == 1 ? LabelType::TARGET : LabelType::DECOY;
+  readFeaturesAndProteins(reader, label, readProteins, psm, myPsm, featurePool,
+                          psmStore, decoyPrefix);
+  return true;
+}
+
+bool DataSet::readPsmBody(TabReader& reader, PsmHeader& header,
+    FeatureMemoryPool& featurePool, PsmStore& psmStore,
+    const std::string& decoyPrefix) {
+  PSMDescription* myPsm = NULL;
+  LabelType label;
+  if (!readPsmBody(reader, header, true, myPsm, label, featurePool, psmStore,
+                   decoyPrefix)) {
+    return false;
+  }
+  registerPsm(myPsm);
+  return true;
 }
 
 /**
