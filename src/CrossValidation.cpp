@@ -415,18 +415,19 @@ int CrossValidation::doStep(const Normalizer* pNorm, double selectionFdr) {
         Scores& nestedTrainSet = nestedTrainScores.empty()
                                      ? trainScores_[set]
                                      : nestedTrainScores[nestedFold];
-        if ((VERB > 2) && (nestedFold == 0)) {
-          cerr << "Split " << set + 1 << ": Training with "
-               << svmInput.positives << " positives and "
-               << svmInput.negatives << " negatives" << std::endl;
-        }
         nestedTrainSet.generateNegativeTrainingSet(svmInput, 1.0);
         nestedTrainSet.generatePositiveTrainingSet(
             svmInput, selectionFdr, 1.0, trainBestPositive_);
-        if ((VERB > 2) && (nestedXvalBins_ > 1u)) {
-          cerr << "Split " << set + 1 << " nested fold " << nestedFold
-               << ": Training with " << svmInput.positives << " positives and "
-               << svmInput.negatives << " negatives" << std::endl;
+        // with nested cross validation, the training set of the whole fold
+        // is reported when it is built, in mergeCpCnPairs
+        if (VERB > 2) {
+          cerr << "Split " << set + 1;
+          if (nestedXvalBins_ > 1u) {
+            cerr << " nested fold " << nestedFold;
+          }
+          cerr << ": Training with " << svmInput.positives
+               << " positives and " << svmInput.negatives << " negatives"
+               << std::endl;
         }
       }
     }
@@ -631,6 +632,14 @@ int CrossValidation::mergeCpCnPairs(
           0.0);
       L2_SVM_MFN(svmInput, pOptions, weights_[set], outputs, bestCposes[set],
                  bestCposes[set] * bestCfracs[set]);
+    }
+    if (VERB > 2) {
+      for (unsigned int set = 0; set < numFolds_; ++set) {
+        const AlgIn& svmInput = svmInputs_[set * nestedXvalBins_];
+        cerr << "Split " << set + 1 << ": Training with "
+             << svmInput.positives << " positives and " << svmInput.negatives
+             << " negatives" << std::endl;
+      }
     }
   }
 
