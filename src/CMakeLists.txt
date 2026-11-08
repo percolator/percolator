@@ -157,12 +157,7 @@ ELSE(CRUX)
   endif()
 
   # SET LIBRARIES FOR PERCOLATOR
-  list(APPEND COMMON_LIBRARIES perclibrary picked_protein ${CURL_LIBRARIES} ${RPC_LIBRARIES})
-  if(NOT MSVC)
-    if(NOT APPLE)
-      list(APPEND COMMON_LIBRARIES stdc++)
-    endif(NOT APPLE)
-  endif(NOT MSVC)
+  list(APPEND COMMON_LIBRARIES perclibrary picked_protein)
 
   if(COVERAGE)
     target_link_libraries(percolator PRIVATE -fprofile-arcs ${COMMON_LIBRARIES})

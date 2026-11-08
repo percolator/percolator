@@ -1,8 +1,4 @@
-link_directories(${PERCOLATOR_BINARY_DIR}/src)
-
-file(GLOB QVALITY_SOURCES *.cpp)
-
-add_executable(qvality ${QVALITY_SOURCES})
+add_executable(qvality qvality_main.cpp)
 
 if(COVERAGE)
   target_link_libraries(qvality -fprofile-arcs)
