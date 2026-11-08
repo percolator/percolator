@@ -40,7 +40,8 @@ regenerate earlier files.
 --truth writes the ground truth of every PSM: whether it is correct, and its
 true PEP, the probability that a target with its features is incorrect under
 the generating model (1 for decoys). Ranking the targets by true PEP is the
-best possible ranking. For a peptide, the true PEP of its best PSM is close to the peptide's true
+best possible ranking (see oracle.py); true_pep.py compares PEPs with it.
+For a peptide, the true PEP of its best PSM is close to the peptide's true
 PEP at the top of the list, where the other PSMs of a correct peptide almost
 surely score lower.
 
