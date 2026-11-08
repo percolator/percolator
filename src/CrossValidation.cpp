@@ -774,6 +774,32 @@ void CrossValidation::getAvgWeights(std::vector<double>& weights,
   }
 }
 
+void CrossValidation::getRawFoldWeights(
+    std::vector<std::vector<double> >& weights,
+    const Normalizer* pNorm) {
+  weights.assign(weights_.size(),
+                 vector<double>(FeatureNames::getNumFeatures() + 1));
+  for (size_t set = 0; set < weights_.size(); ++set) {
+    pNorm->unnormalizeweight(weights_[set], weights[set]);
+  }
+}
+
+void CrossValidation::getTestFolds(
+    std::vector<std::pair<unsigned int, unsigned int> >& lineFolds) const {
+  lineFolds.clear();
+  size_t numPsms = 0;
+  for (const Scores& testSet : testScores_) {
+    numPsms += testSet.size();
+  }
+  lineFolds.reserve(numPsms);
+  for (unsigned int set = 0; set < testScores_.size(); ++set) {
+    for (const ScoreHolder& sh : testScores_[set]) {
+      lineFolds.emplace_back(sh.pPSM->getLineNr(), set);
+    }
+  }
+  std::sort(lineFolds.begin(), lineFolds.end());
+}
+
 void CrossValidation::printAllWeightsColumns(
     std::vector<std::vector<double> > weightMatrix,
     ostream& outputStream) {

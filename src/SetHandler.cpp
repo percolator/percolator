@@ -615,8 +615,10 @@ ScanId SetHandler::getScanId(const std::string& psmLine, int& label,
   return scanId;
 }
 
-int SetHandler::readAndScoreTab(istream& dataStream, 
-    std::vector<double>& rawWeights, Scores& allScores, SanityCheck& check) {
+int SetHandler::readAndScoreTab(istream& dataStream,
+    std::vector<double>& rawWeights, Scores& allScores, SanityCheck& check,
+    const std::vector<std::vector<double> >& foldWeights,
+    const std::vector<std::pair<unsigned int, unsigned int> >& lineFolds) {
   if (!dataStream) {
     std::cerr << "ERROR: Cannot open data stream." << std::endl;
     return 0;
@@ -688,7 +690,8 @@ int SetHandler::readAndScoreTab(istream& dataStream,
 
   // read in the data
   if (rawWeights.size() > 0) {
-    readAndScorePSMs(dataStream, psmLine, hasInitialValueRow, optionalFields, rawWeights, allScores);
+    readAndScorePSMs(dataStream, psmLine, hasInitialValueRow, optionalFields,
+                     rawWeights, allScores, foldWeights, lineFolds);
   } else {
     // detect if the input came from separate target and decoy searches or 
     // from a concatenated search by looking for scan+expMass combinations
@@ -706,9 +709,12 @@ int SetHandler::readAndScoreTab(istream& dataStream,
 
 void SetHandler::readAndScorePSMs(istream& dataStream, std::string& psmLine, 
     bool hasInitialValueRow, std::vector<OptionalField>& optionalFields, 
-    std::vector<double>& rawWeights, Scores& allScores) {
+    std::vector<double>& rawWeights, Scores& allScores,
+    const std::vector<std::vector<double> >& foldWeights,
+    const std::vector<std::pair<unsigned int, unsigned int> >& lineFolds) {
   unsigned int lineNr = (hasInitialValueRow ? 3u : 2u);
   bool readProteins = true;
+  size_t nextFold = 0;  // first entry of lineFolds not before lineNr
   try {  // not indented: rethrowWithSource adds the file of the line
   do {
     if (lineNr % 1000000 == 0 && VERB > 1) {
@@ -735,7 +741,14 @@ void SetHandler::readAndScorePSMs(istream& dataStream, std::string& psmLine,
         sh.label = DataSet::readPsm(psmLine, lineNr, optionalFields, readProteins,
                                     sh.pPSM, featurePool_, psmStore_, decoyPrefix_);
       }
-      allScores.scoreAndAddPSM(sh, rawWeights, featurePool_);
+      while (nextFold < lineFolds.size() && lineFolds[nextFold].first < lineNr) {
+        ++nextFold;
+      }
+      const bool inFold = nextFold < lineFolds.size() &&
+                          lineFolds[nextFold].first == lineNr;
+      allScores.scoreAndAddPSM(
+          sh, inFold ? foldWeights.at(lineFolds[nextFold].second) : rawWeights,
+          featurePool_);
     }
     ++lineNr;
   } while (getline(dataStream, psmLine));

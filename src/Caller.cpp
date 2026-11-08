@@ -1336,6 +1336,10 @@ int Caller::run() {
   // The cross-validation sets and SVM inputs are only needed for training,
   // the scope releases them before the post-processing steps.
   std::vector<double> rawWeights;
+  // with -N: the weights of each fold, and the input line and fold of each
+  // PSM of the training subset
+  std::vector<std::vector<double> > rawFoldWeights;
+  std::vector<std::pair<unsigned int, unsigned int> > subsetFolds;
   {
     CrossValidation crossValidation(
         quickValidation_, reportEachIteration_, testFdr_, selectionFdr_,
@@ -1389,6 +1393,18 @@ int Caller::run() {
 
     if (setHandler.getMaxPSMs() > 0u) {
       crossValidation.getAvgWeights(rawWeights, pNorm_.get());
+      // Each PSM of the subset was a test PSM of one fold and a training
+      // PSM of the others, so the averaged weights would score it
+      // in-sample: training decoys would score too low and training
+      // positives too high, and the decoys would no longer model the
+      // incorrect targets. These PSMs keep the score of their test fold,
+      // as without -N. Unless score normalization is switched off, merge()
+      // has rescaled the weights of each fold to a common scale (q = fdr at
+      // 0, median decoy at -1), which their average shares.
+      if (numFolds > 1u) {
+        crossValidation.getRawFoldWeights(rawFoldWeights, pNorm_.get());
+        crossValidation.getTestFolds(subsetFolds);
+      }
     }
   }
   setHandler.releaseFeatures();
@@ -1404,7 +1420,8 @@ int Caller::run() {
     fileStream.clear();
     fileStream.seekg(0, ios::beg);
     success = setHandler.readAndScoreTab(fileStream, rawWeights, allScores,
-                                         check_);
+                                         check_, rawFoldWeights, subsetFolds);
+    std::vector<std::pair<unsigned int, unsigned int> >().swap(subsetFolds);
     // Reading input files (pin or temporary file)
     if (!success) {
       ostringstream temp;

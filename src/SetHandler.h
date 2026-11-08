@@ -85,8 +85,13 @@ class SetHandler {
   // Reads in tab delimited stream and returns a SanityCheck object based on
   // the presence of default weights. Returns 0 on error, 1 on success.
   int readTab(std::istream& dataStream, SanityCheck& check);
-  int readAndScoreTab(std::istream& dataStream, 
-    std::vector<double>& rawWeights, Scores& allScores, SanityCheck& check);
+  // With rawWeights, scores every PSM of the stream with them and adds it to
+  // allScores; a PSM whose input line is listed in lineFolds (sorted by
+  // line) is scored with foldWeights[fold] instead.
+  int readAndScoreTab(std::istream& dataStream,
+    std::vector<double>& rawWeights, Scores& allScores, SanityCheck& check,
+    const std::vector<std::vector<double> >& foldWeights = {},
+    const std::vector<std::pair<unsigned int, unsigned int> >& lineFolds = {});
   void addQueueToSets(std::priority_queue<PSMDescriptionPriority>& subsetPSMs,
     DataSet* targetSet, DataSet* decoySet);
   
@@ -180,8 +185,10 @@ class SetHandler {
     bool hasInitialValueRow, bool& separateSearches,
     std::vector<OptionalField>& optionalFields);
   void readAndScorePSMs(std::istream& dataStream, std::string& psmLine,
-    bool hasInitialValueRow, std::vector<OptionalField>& optionalFields, 
-    std::vector<double>& rawWeights, Scores& allScores);
+    bool hasInitialValueRow, std::vector<OptionalField>& optionalFields,
+    std::vector<double>& rawWeights, Scores& allScores,
+    const std::vector<std::vector<double> >& foldWeights,
+    const std::vector<std::pair<unsigned int, unsigned int> >& lineFolds);
 };
 
 #endif /*SETHANDLER_H_*/

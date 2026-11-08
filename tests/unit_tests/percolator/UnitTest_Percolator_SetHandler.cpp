@@ -151,6 +151,48 @@ TEST_F(SetHandlerTest, TestGoodReads)
             "id\t1\t0\t0\t\tP\n"));
 }
 
+// readAndScoreTab scores the PSMs on the lines listed in lineFolds with the
+// weights of their fold, and all others with rawWeights (the -N pass).
+TEST_F(SetHandlerTest, TestScoreWithFoldWeights)
+{
+    const char* input =
+            "id\tLabel\tScanNr\tf1\tf2\tPeptide\tProtein\n"
+            "a\t1\t1\t1.0\t2.0\tK.PEP.K\tP1\n"       // line 2
+            "b\t-1\t2\t3.0\t-1.0\tK.PEP.K\tdecoy_P1\n"  // line 3
+            "c\t0\t3\t1.0\t1.0\tK.PEP.K\tP1\n"       // line 4, ignored label
+            "d\t1\t4\t-2.0\t0.5\tK.PEP.K\tP1\n";     // line 5
+    std::vector<double> rawWeights = {1.0, 1.0, 0.5};  // f1, f2, bias
+    std::vector<std::vector<double> > foldWeights = {
+        {10.0, 0.0, 0.0}, {0.0, 100.0, -1.0}};
+    std::vector<std::pair<unsigned int, unsigned int> > lineFolds = {
+        {3u, 1u}, {4u, 0u}, {5u, 0u}};
+    std::map<std::string, double> expected = {
+        {"a", 1.0 + 2.0 + 0.5}, {"b", -100.0 - 1.0}, {"d", -20.0}};
+    for (int withFolds = 0; withFolds < 2; ++withFolds) {
+        SetHandler sh(0);
+        SanityCheck check;
+        Scores scores(false);
+        std::istringstream str(input);
+        if (withFolds) {
+            ASSERT_TRUE(sh.readAndScoreTab(str, rawWeights, scores, check,
+                                           foldWeights, lineFolds));
+        } else {
+            ASSERT_TRUE(sh.readAndScoreTab(str, rawWeights, scores, check));
+        }
+        ASSERT_EQ(scores.size(), 3u);
+        for (const ScoreHolder& h : scores) {
+            const std::string id(h.pPSM->getId());
+            if (withFolds) {
+                EXPECT_DOUBLE_EQ(h.score, expected[id]) << id;
+            } else {
+                double raw = id == "a" ? 3.5 : (id == "b" ? 2.5 : -1.0);
+                EXPECT_DOUBLE_EQ(h.score, raw) << id;
+            }
+        }
+        sh.reset();
+    }
+}
+
 // Validate an input file with a mix of feature columns.
 TEST_F(SetHandlerTest, TestReadWithFeatures)
 {

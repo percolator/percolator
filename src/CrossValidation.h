@@ -68,6 +68,12 @@ class CrossValidation {
   void printAllWeights(ostream& weightStream, const Normalizer* pNorm);
 
   void getAvgWeights(std::vector<double>& weights, const Normalizer* pNorm);
+  // the weights of each fold for unnormalized features, as getAvgWeights
+  void getRawFoldWeights(std::vector<std::vector<double> >& weights,
+                         const Normalizer* pNorm);
+  // (input line, fold) of every PSM in the test sets, sorted by line
+  void getTestFolds(
+      std::vector<std::pair<unsigned int, unsigned int> >& lineFolds) const;
 
   void inline setSelectedCpos(double cpos) { selectedCpos_ = cpos; }
   double inline getSelectedCpos() { return selectedCpos_; }
