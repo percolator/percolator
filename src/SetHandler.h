@@ -42,6 +42,7 @@
 #include "SanityCheck.h"
 #include "PseudoRandom.h"
 #include "FeatureMemoryPool.h"
+#include "ScanIdTable.h"
 #include "ValidateTabFile.h"
 
 struct PSMDescriptionPriority {

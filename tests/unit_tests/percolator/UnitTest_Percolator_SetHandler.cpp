@@ -18,7 +18,10 @@
 #include <gtest/gtest.h>
 #include <filesystem>
 #include <fstream>
+#include <limits>
+#include <random>
 #include <sstream>
+#include <unordered_map>
 #include "SetHandler.h"
 #include "ValidateTabFile.h"
 
@@ -271,4 +274,103 @@ TEST_F(SetHandlerTest, TestConcatenateSkipsFilesWithoutPsms)
     EXPECT_EQ(names[2], segments[1].fileName);
     in.close();
     fs::remove_all(dir);
+}
+
+// The search type is detected from scan ids (scan number and experimental
+// mass) that occur with both a decoy and another label.
+TEST_F(SetHandlerTest, TestSearchTypeDetection)
+{
+    const char* header = "id\tLabel\tScanNr\tExpMass\tFeature\tPeptide\tProtein\n";
+    const char* inputs[][2] = {
+        // {input lines, "1" if concatenated}
+        {"a\t1\t1\t100.0\t0.5\tK.PEP.K\tP\n"
+         "b\t-1\t2\t100.0\t0.5\tK.PEP.K\tP\n", "1"},
+        {"a\t1\t1\t100.0\t0.5\tK.PEP.K\tP\n"
+         "b\t-1\t1\t100.5\t0.5\tK.PEP.K\tP\n", "1"},
+        {"a\t1\t1\t100.0\t0.5\tK.PEP.K\tP\n"
+         "b\t-1\t1\t100.0\t0.5\tK.PEP.K\tP\n", "0"},
+        {"a\t1\t1\t0.0\t0.5\tK.PEP.K\tP\n"
+         "b\t-1\t1\t-0.0\t0.5\tK.PEP.K\tP\n", "0"},
+        // a label outside {1,-1} counts as a non-decoy
+        {"a\t0\t1\t100.0\t0.5\tK.PEP.K\tP\n"
+         "b\t1\t2\t100.0\t0.5\tK.PEP.K\tP\n"
+         "c\t-1\t1\t100.0\t0.5\tK.PEP.K\tP\n", "0"}};
+    Globals::getInstance()->setVerbose(0);
+    for (const auto& input : inputs) {
+        for (unsigned int maxPSMs : {0u, 10u}) {  // full read and -N
+            SetHandler sh(maxPSMs);
+            std::istringstream str(std::string(header) + input[0]);
+            SanityCheck check;
+            ASSERT_TRUE(sh.readTab(str, check));
+            EXPECT_EQ(input[1][0] == '1', check.concatenatedSearch())
+                << input[0] << "maxPSMs " << maxPSMs;
+        }
+    }
+    Globals::getInstance()->setVerbose(2);
+}
+
+// SeparateSearchDetector against a hash table keyed on (scan, mass), the
+// way the search type was detected before.
+TEST(SeparateSearchDetectorTest, MatchesHashTable)
+{
+    struct PairHash {
+        size_t operator()(const std::pair<int, double>& p) const {
+            return std::hash<int>()(p.first) ^ (std::hash<double>()(p.second) << 1);
+        }
+    };
+    const double masses[] = {0.0, -0.0, 1.5, 2.25, 1e300,
+                             std::numeric_limits<double>::quiet_NaN()};
+    std::mt19937 rng(7);
+    for (int trial = 0; trial < 400; ++trial) {
+        // up to 300k scan ids, so that some trials span several checks
+        const size_t n = trial < 390 ? rng() % 300 : 100000 + rng() % 200000;
+        const int numScans = 1 + static_cast<int>(rng() % (2 * n + 1));
+        const bool withDecoys = rng() % 4 != 0;
+        std::unordered_map<std::pair<int, double>, bool, PairHash> table;
+        bool expected = false;
+        SeparateSearchDetector detector;
+        bool found = false;
+        for (size_t i = 0; i < n; ++i) {
+            const int scan = static_cast<int>(rng() % numScans) - numScans / 2;
+            const double mass = masses[rng() % 6];
+            const bool isDecoy = withDecoys && rng() % 2 == 0;
+            auto inserted = table.emplace(std::make_pair(scan, mass), isDecoy);
+            if (!inserted.second && inserted.first->second != isDecoy) {
+                expected = true;
+            }
+            const bool foundNow = detector.add(scan, mass, isDecoy);
+            EXPECT_TRUE(!found || foundNow);  // stays found
+            found = foundNow;
+        }
+        EXPECT_EQ(expected, detector.foundSeparateSearches()) << "trial " << trial;
+    }
+}
+
+// A pair of scan ids far apart in the input is found, and a pair within the
+// first scan ids is found before the end.
+TEST(SeparateSearchDetectorTest, FindsPairsAcrossChecks)
+{
+    SeparateSearchDetector late;
+    late.add(-5, 1234.5, true);
+    for (int i = 0; i < 500000; ++i) {
+        EXPECT_FALSE(late.add(i, 1234.5, false));
+    }
+    EXPECT_FALSE(late.add(-5, 1234.5, true));  // the same label again
+    EXPECT_FALSE(late.add(-5, 1234.25, false));  // another mass
+    late.add(-5, 1234.5, false);
+    EXPECT_TRUE(late.foundSeparateSearches());
+
+    SeparateSearchDetector early;
+    bool foundEarly = false;
+    for (int i = 0; i < 300000 && !foundEarly; ++i) {
+        foundEarly = early.add(i / 2, 100.0, i % 2 == 1);
+    }
+    EXPECT_TRUE(foundEarly);
+    EXPECT_TRUE(early.foundSeparateSearches());
+
+    SeparateSearchDetector none;
+    for (int i = 0; i < 300000; ++i) {
+        none.add(i, 100.0, i % 2 == 1);
+    }
+    EXPECT_FALSE(none.foundSeparateSearches());
 }

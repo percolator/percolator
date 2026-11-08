@@ -390,9 +390,11 @@ void SetHandler::readPSMs(istream& dataStream, std::string& psmLine,
     
     addQueueToSets(subsetPSMs, targetSet.get(), decoySet.get());
   } else { // simply read all PSMs
-    // ScanId -> labels seen as in addLabel, only needed until a separate
-    // search is detected and the first kRepeatSampleLines lines are sampled
-    std::unordered_map<ScanId, unsigned char, ScanIdHash> scanIdLookUp;
+    // only needed until a separate search is detected
+    SeparateSearchDetector separateSearchDetector;
+    // ScanId -> labels seen as in addLabel, only for the first
+    // kRepeatSampleLines lines
+    std::unordered_map<ScanId, unsigned char, ScanIdHash> sampledScanIds;
     try {  // not indented: rethrowWithSource adds the file of the line
     do {
       if (lineNr % 1000000 == 0 && VERB > 1) {
@@ -402,18 +404,19 @@ void SetHandler::readPSMs(istream& dataStream, std::string& psmLine,
       int label = 0;
       ScanId scanId = getScanId(psmLine, label, optionalFields, lineNr);
       bool isDecoy = (label == -1);
-      const bool sampling = numSampledLines < kRepeatSampleLines;
-      if (concatenatedSearch || sampling) {
-        auto inserted = scanIdLookUp.emplace(scanId, labelBit(isDecoy));
-        if (!inserted.second &&
-            !addLabel(inserted.first->second, isDecoy, sampling)) {
-          concatenatedSearch = false;
+      if (concatenatedSearch &&
+          separateSearchDetector.add(scanId.first, scanId.second, isDecoy)) {
+        concatenatedSearch = false;
+      }
+      if (numSampledLines < kRepeatSampleLines) {
+        auto inserted = sampledScanIds.emplace(scanId, labelBit(isDecoy));
+        if (!inserted.second) {
+          addLabel(inserted.first->second, isDecoy, true);
         }
-        if (sampling && ++numSampledLines == kRepeatSampleLines) {
-          sampledSpectra_ = scanIdLookUp.size();
-        }
-        if (!concatenatedSearch && numSampledLines >= kRepeatSampleLines) {
-          scanIdLookUp.clear();
+        if (++numSampledLines == kRepeatSampleLines) {
+          sampledSpectra_ = sampledScanIds.size();
+          std::unordered_map<ScanId, unsigned char, ScanIdHash>().swap(
+              sampledScanIds);
         }
       }
       if (label == 1) {
@@ -430,13 +433,17 @@ void SetHandler::readPSMs(istream& dataStream, std::string& psmLine,
     } catch (const MyException& e) {
       rethrowWithSource(e, lineNr);
     }
+    if (concatenatedSearch &&
+        separateSearchDetector.foundSeparateSearches()) {
+      concatenatedSearch = false;
+    }
     if (numSampledLines < kRepeatSampleLines) {
-      sampledSpectra_ = scanIdLookUp.size();
+      sampledSpectra_ = sampledScanIds.size();
     }
     sampledLines_ = numSampledLines;
   }
   warnIgnoredLabelTotal(numIgnoredLabels);
-  
+
   numPsmLines_ = lineNr - (hasInitialValueRow ? 3u : 2u);
   if (VERB > 1) {
     std::cerr << "Found " << numPsmLines_ << " PSMs" << std::endl;
