@@ -1302,9 +1302,6 @@ int Caller::run() {
       numFolds = 1u;
       nestedXvalBins_ = 3u;
     }
-
-    // TODO:
-    // - apply decoy factor in PosteriorEstimator::estimatePEP
   }
 
   // an explicit --num-folds 3 behaves like the default, which has never

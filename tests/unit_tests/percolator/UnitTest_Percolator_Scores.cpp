@@ -1049,3 +1049,81 @@ TEST(ScoresQvalueTest, RandomSetsEqualGetQValues)
                                 what + " estimated pi0");
     }
 }
+
+// RESET keeps only the decoys that were not used for training, about half
+// of them, so each remaining decoy stands for two incorrect targets
+// (nullTargetWinProb 2/3). The q values account for this; the PEPs from the
+// target-decoy labels (--tdc-pep) and from logistic regression (--irls-pep)
+// must too. In the data below, half of the PSMs are incorrect targets, a
+// quarter correct targets and a quarter decoys. For every PEP method, the
+// mean PEP of the targets below q = 0.05 must be close to their fraction of
+// incorrect targets, and the tdc and irls PEPs must be twice those computed
+// with nullTargetWinProb 1/2.
+TEST(ScoresPepTest, ResetDecoyFactorScalesPeps)
+{
+    const int numPsms = 20000;
+    std::vector<PSMDescription> psms(numPsms);
+    std::vector<bool> incorrect(numPsms);
+    unsigned int seed = 4242u;
+    auto uniform = [&seed]() {
+        seed = seed * 1103515245u + 12345u;
+        return ((seed >> 8) + 0.5) / 16777216.0;
+    };
+    auto normal = [&uniform]() {
+        return std::sqrt(-2.0 * std::log(uniform())) *
+               std::cos(6.283185307179586 * uniform());
+    };
+    // method 0: from q values (default), 1: tdc, 2: irls
+    for (int method = 0; method < 3; ++method) {
+        std::vector<double> pepHalf;
+        for (double nullTargetWinProb : {0.5, 2.0 / 3.0}) {
+            Scores scores(false);
+            seed = 4242u;
+            for (int i = 0; i < numPsms; ++i) {
+                psms[i].scan = static_cast<unsigned int>(i);
+                const bool isDecoy = uniform() < 0.25;
+                const bool correct = !isDecoy && uniform() < 1.0 / 3.0;
+                incorrect[i] = !isDecoy && !correct;
+                scores.addScoreHolder(ScoreHolder(normal() + (correct ? 3.0 : 0.0),
+                    isDecoy ? LabelType::DECOY : LabelType::TARGET, &psms[i]));
+            }
+            scores.recalculateSizes();
+            scores.setNullTargetWinProb(nullTargetWinProb);
+            std::sort(scores.begin(), scores.end(), std::greater<ScoreHolder>());
+            scores.calcQvals(0.01);
+            scores.calcPep(method == 2, true, false, method == 1);
+            double sumPep = 0.0;
+            int n = 0, wrong = 0;
+            std::vector<double> peps;
+            for (const ScoreHolder& sh : scores) {
+                ASSERT_GE(sh.pep, 0.0);
+                ASSERT_LE(sh.pep, 1.0);
+                if (!sh.isTarget()) continue;
+                peps.push_back(sh.pep);
+                if (sh.q <= 0.05) {
+                    sumPep += sh.pep;
+                    wrong += incorrect[sh.pPSM - &psms[0]] ? 1 : 0;
+                    ++n;
+                }
+            }
+            if (nullTargetWinProb == 0.5) {
+                pepHalf = peps;
+                continue;
+            }
+            ASSERT_GT(n, 500);
+            ASSERT_GT(wrong, 20);
+            const double fdp = static_cast<double>(wrong) / n;
+            EXPECT_GT(sumPep / n, 0.7 * fdp) << "method " << method;
+            EXPECT_LT(sumPep / n, 1.4 * fdp) << "method " << method;
+            if (method > 0) {
+                ASSERT_EQ(peps.size(), pepHalf.size());
+                for (size_t i = 0; i < peps.size(); ++i) {
+                    if (pepHalf[i] < 0.25) {
+                        EXPECT_NEAR(peps[i], 2.0 * pepHalf[i], 1e-12)
+                            << "method " << method << " target " << i;
+                    }
+                }
+            }
+        }
+    }
+}

@@ -1200,6 +1200,10 @@ void Scores::checkSeparationAndSetPi0() {
 
 void Scores::calcPep(const bool spline, const bool interp, const bool pava,
                      const bool tdc) {
+    // Expected number of incorrect targets per decoy, as in the q values: 1
+    // in target-decoy competition, 2 with RESET, which keeps only the half
+    // of the decoys that were not used for training.
+    const double decoyFactor = nullTargetWinProb_ / (1.0 - nullTargetWinProb_);
     if (!spline && tdc) {
         // Fit the decoy rate p as a monotone function of the score and
         // report the odds p / (1 - p) as PEP, for targets and decoys alike.
@@ -1219,6 +1223,7 @@ void Scores::calcPep(const bool spline, const bool interp, const bool pava,
             for (double d : is_decoy) (d > 0.5 ? numDecoys : numTargets) += 1.0;
             oddsFactor = pi0_ * numTargets / std::max(1.0, numDecoys);
         }
+        oddsFactor *= decoyFactor;
         InferPEP reg(!pava);
         auto peps = interp ? reg.tdc_to_pep(is_decoy, sc, oddsFactor)
                            : reg.tdc_to_pep(is_decoy, {}, oddsFactor);
@@ -1266,7 +1271,8 @@ void Scores::calcPep(const bool spline, const bool interp, const bool pava,
 
         std::vector<double> peps;
         // Logistic regression on the data
-        PosteriorEstimator::estimatePEP(combined, usePi0_, pi0_, peps, true);
+        PosteriorEstimator::estimatePEP(combined, usePi0_, pi0_, peps, true,
+                                        decoyFactor);
         for (size_t ix = 0; ix < scores_.size(); ix++) {
             scores_[ix].pep = peps[ix];
         }
