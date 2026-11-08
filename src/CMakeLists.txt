@@ -78,6 +78,31 @@ if (MSVC)
   )
 endif()
 
+#########################################
+# STANDARD LIBRARY FEATURES
+#########################################
+# std::to_chars for double is missing from older standard libraries (GCC
+# before 11), and libc++ provides it on macOS only from some deployment
+# targets on without announcing it with __cpp_lib_to_chars. The code falls
+# back to slower equivalents without it.
+include(CheckCXXSourceCompiles)
+check_cxx_source_compiles("
+#include <charconv>
+int main() {
+  char buf[32];
+  double value = 0.5;
+  return std::to_chars(buf, buf + sizeof(buf), value,
+                       std::chars_format::general, 6).ec == std::errc() ? 0 : 1;
+}" PERCOLATOR_HAVE_TO_CHARS_DOUBLE)
+if(PERCOLATOR_HAVE_TO_CHARS_DOUBLE)
+  set(PERCOLATOR_CHARCONV_DEFINITIONS PERCOLATOR_TO_CHARS_DOUBLE=1)
+else()
+  set(PERCOLATOR_CHARCONV_DEFINITIONS PERCOLATOR_TO_CHARS_DOUBLE=0)
+endif()
+# for every target in this directory and below; perclibrary passes them on
+# to the targets that link it, such as the unit tests
+add_compile_definitions(${PERCOLATOR_CHARCONV_DEFINITIONS})
+
 #############################################################################
 # COMPILE PERCOLATOR
 ###############################################################################
@@ -93,6 +118,7 @@ if(OpenMP_CXX_FOUND)
 else()
   target_link_libraries(perclibrary PUBLIC ${COMMON_LIBRARIES})
 endif()
+target_compile_definitions(perclibrary INTERFACE ${PERCOLATOR_CHARCONV_DEFINITIONS})
 
 ###############################################################################
 # COMPILE INTERNAL LIBRARIES

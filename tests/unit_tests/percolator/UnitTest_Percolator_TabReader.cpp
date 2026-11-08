@@ -20,9 +20,16 @@
  */
 
 #include <gtest/gtest.h>
+#include <climits>
+#include <cstring>
 #include <fstream>
+#include <functional>
+#include <limits>
+#include <locale>
 #include <random>
+#include <sstream>
 #include "DataSet.h"
+#include "NumberFormatter.h"
 #include "TmpDir.h"
 
 class TabReaderTest : public ::testing::Test {
@@ -222,4 +229,97 @@ TEST(TabFileValidatorTest, FindDecoyPrefixMatchesReference)
   EXPECT_EQ("decoy_", TabFileValidator::findDecoyPrefix(fileName, 4, 1));
   EXPECT_EQ("decoy_", TabFileValidator::detectDecoyPrefix(fileName));
   Globals::getInstance()->setVerbose(2);
+}
+
+// NumberFormatter writes the same characters as operator<< on the stream it
+// was made for, on edge values and random bit patterns.
+TEST(NumberFormatterTest, MatchesOstream)
+{
+  std::ostringstream defaultStream;
+  EXPECT_EQ(PERCOLATOR_TO_CHARS_DOUBLE != 0,
+            NumberFormatter(defaultStream).sameAsStream());
+  if (!NumberFormatter(defaultStream).sameAsStream()) {
+    GTEST_SKIP() << "std::to_chars for double is not available";
+  }
+  const double inf = std::numeric_limits<double>::infinity();
+  const double nan = std::numeric_limits<double>::quiet_NaN();
+  const double edges[] = {
+      0.0, -0.0, 1.0, -1.0, 0.5, 2.5, 0.125, 0.1, 1.0 / 3, -2.0 / 3, 1e21,
+      1e-5, 1e-4, 9.9999949999999995e-05, 123456, 1234567, 999999.5, 9999995,
+      0.99999949999999999, 4.9406564584124654e-324, 2.2250738585072009e-308,
+      2.2250738585072014e-308, 1.7976931348623157e308, -1.7976931348623157e308,
+      1e100, 1e-100, 3.14159265358979, 1e16, 9007199254740993.0, inf, -inf,
+      nan, -nan, std::nan("1")};
+  for (int precision = 1; precision <= 17; ++precision) {
+    for (double value : edges) {
+      std::ostringstream expected;
+      expected.precision(precision);
+      expected << value;
+      const NumberFormatter format(expected);
+      ASSERT_TRUE(format.sameAsStream());
+      std::string actual;
+      format.append(actual, value);
+      EXPECT_EQ(expected.str(), actual) << "precision " << precision;
+    }
+  }
+  std::mt19937_64 rng(5);
+  for (int i = 0; i < 300000; ++i) {
+    uint64_t bits = rng();
+    double value;
+    memcpy(&value, &bits, sizeof(value));
+    if (i % 2) value = static_cast<double>(static_cast<int64_t>(rng() % 2000001) - 1000000) / 100000.0;
+    const int precision = i % 5 ? 6 : 1 + static_cast<int>(rng() % 17);
+    std::ostringstream expected;
+    expected.precision(precision);
+    expected << value;
+    std::string actual;
+    NumberFormatter(expected).append(actual, value);
+    ASSERT_EQ(expected.str(), actual) << "bits " << bits << " precision " << precision;
+  }
+  const long long integers[] = {0, 1, -1, 42, 2147483647, -2147483647 - 1,
+                                4294967295LL};
+  for (long long value : integers) {
+    std::ostringstream expected;
+    std::string actual;
+    if (value >= INT_MIN && value <= INT_MAX) {
+      expected << static_cast<int>(value);
+      NumberFormatter::appendInteger(actual, static_cast<int>(value));
+      EXPECT_EQ(expected.str(), actual);
+    }
+    if (value >= 0) {
+      expected.str("");
+      actual.clear();
+      expected << static_cast<unsigned int>(value);
+      NumberFormatter::appendInteger(actual, static_cast<unsigned int>(value));
+      EXPECT_EQ(expected.str(), actual);
+    }
+  }
+}
+
+// Streams whose output operator<< formats differently are left to operator<<.
+TEST(NumberFormatterTest, OtherStreamFormats)
+{
+  std::vector<std::function<void(std::ostream&)>> settings = {
+      [](std::ostream& os) { os << std::fixed; },
+      [](std::ostream& os) { os << std::scientific; },
+      [](std::ostream& os) { os << std::showpos; },
+      [](std::ostream& os) { os << std::showpoint; },
+      [](std::ostream& os) { os << std::uppercase; },
+      [](std::ostream& os) { os << std::hex; },
+      [](std::ostream& os) { os << std::showbase; },
+      [](std::ostream& os) { os.width(12); },
+      [](std::ostream& os) { os.precision(0); },
+      [](std::ostream& os) { os.precision(18); },
+      [](std::ostream& os) {
+        os.imbue(std::locale(std::locale::classic(), new std::numpunct<char>()));
+      }};
+  for (size_t i = 0; i < settings.size(); ++i) {
+    std::ostringstream os;
+    settings[i](os);
+    EXPECT_FALSE(NumberFormatter(os).sameAsStream()) << "setting " << i;
+  }
+  std::ostringstream os;
+  os << std::dec << std::left;
+  os.precision(10);
+  EXPECT_EQ(PERCOLATOR_TO_CHARS_DOUBLE != 0, NumberFormatter(os).sameAsStream());
 }

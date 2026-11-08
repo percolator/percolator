@@ -17,6 +17,7 @@
 
 #include "DataSet.h"
 #include <cmath>
+#include "NumberFormatter.h"
 
 FeatureNames DataSet::featureNames_;
 bool DataSet::decoyWarningTripped_ = false;
@@ -32,6 +33,42 @@ DataSet::~DataSet() {}
 
 bool DataSet::writeTabData(ofstream& out) {
   unsigned int nf = static_cast<unsigned int>(FeatureNames::getNumFeatures());
+  const NumberFormatter format(out);
+  if (format.sameAsStream()) {
+    // the lines are built in a buffer, which is written in large blocks
+    std::string buffer;
+    for (PSMDescription* psm : psms_) {
+      const double* featureRow = psm->features;
+      buffer.append(psm->getId());
+      buffer += '\t';
+      NumberFormatter::appendInteger(buffer, static_cast<int>(label_));
+      buffer += '\t';
+      NumberFormatter::appendInteger(buffer, psm->scan);
+      buffer += '\t';
+      format.append(buffer, psm->expMass);
+      buffer += '\t';
+      format.append(buffer, psm->calcMass);
+      if (psm->hasSpectrumFileName()) {
+        buffer += '\t';
+        buffer.append(psm->getSpectrumFileName());
+      }
+      for (unsigned int ix = 0; ix < nf; ix++) {
+        buffer += '\t';
+        format.append(buffer, featureRow[ix]);
+      }
+      buffer += '\t';
+      buffer.append(psm->getFullPeptide());
+      buffer += '\t';
+      psm->appendProteins(buffer);
+      buffer += '\n';
+      if (buffer.size() >= NumberFormatter::kWriteBlockSize) {
+        out.write(buffer.data(), static_cast<std::streamsize>(buffer.size()));
+        buffer.clear();
+      }
+    }
+    out.write(buffer.data(), static_cast<std::streamsize>(buffer.size()));
+    return true;
+  }
   std::vector<PSMDescription*>::iterator it = psms_.begin();
   for ( ; it != psms_.end(); ++it) {
     PSMDescription* psm = *it;

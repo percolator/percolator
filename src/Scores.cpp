@@ -45,6 +45,7 @@
 #include "SequentialSort.h"
 #include "ssl.h"
 #include "IsotonicPEP.h"
+#include "NumberFormatter.h"
 
 void Scores::merge(std::vector<Scores>& sv,
                    double fdr,
@@ -131,6 +132,43 @@ void Scores::print(LabelType label, std::ostream& os) {
     os << "\trt\n";
   } else {
     os << "\n";
+  }
+
+  const NumberFormatter format(os);
+  if (format.sameAsStream()) {
+    // the lines are built in a buffer, which is written in large blocks
+    std::string buffer;
+    for (; scoreIt != scores_.end(); ++scoreIt) {
+      if (scoreIt->label != label) continue;
+      PSMDescription* psm = scoreIt->pPSM;
+      buffer.append(psm->getId());
+      buffer += '\t';
+      const std::string& fileName = psm->getSpectrumFileName();
+      if (!fileName.empty()) {
+        buffer.append(fileName);
+        buffer += '\t';
+      }
+      format.append(buffer, scoreIt->score);
+      buffer += '\t';
+      format.append(buffer, scoreIt->q);
+      buffer += '\t';
+      format.append(buffer, scoreIt->pep);
+      buffer += '\t';
+      buffer.append(psm->getFullPeptide());
+      buffer += '\t';
+      psm->appendProteins(buffer);
+      if (is_output_rt_) {
+        buffer += '\t';
+        format.append(buffer, psm->getRetentionTime());
+      }
+      buffer += '\n';
+      if (buffer.size() >= NumberFormatter::kWriteBlockSize) {
+        os.write(buffer.data(), static_cast<std::streamsize>(buffer.size()));
+        buffer.clear();
+      }
+    }
+    os.write(buffer.data(), static_cast<std::streamsize>(buffer.size()));
+    return;
   }
 
   for (; scoreIt != scores_.end(); ++scoreIt) {

@@ -99,6 +99,8 @@ class PSMDescription {
 
     friend std::ostream& operator<<(std::ostream& out, PSMDescription& psm);
     void printProteins(std::ostream& out) const;
+    // appends the protein names as printProteins writes them
+    void appendProteins(std::string& out) const;
 
     bool operator<(const PSMDescription& other) const {
         return (peptide < other.peptide) ||
