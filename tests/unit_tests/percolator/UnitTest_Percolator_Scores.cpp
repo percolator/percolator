@@ -28,6 +28,7 @@
 #include <cstdarg>
 #include <limits>
 #include <map>
+#include <memory>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -67,9 +68,11 @@ static std::string const psmNames[] = { "ABC", "DEF", "GHI", "JKL", "MNO" };
 class ScoreHolderTest : public ::testing::Test {
   protected:
     bool checkOrder(std::vector<ScoreHolder> const *scores, ...);
-    // a PSM with the given peptide, owned by the fixture
+    // A ScoreHolder does not own its PSM, so the fixture keeps the PSMs,
+    // and their peptides, until the end of the test.
+    PSMDescription* newPsm() { return psmStore.add(PSMDescription()); }
     PSMDescription* newPsm(const std::string& peptide) {
-        PSMDescription* psm = psmStore.add(PSMDescription());
+        PSMDescription* psm = newPsm();
         psmStore.storeStrings(*psm, "", peptide, {});
         return psm;
     }
@@ -142,7 +145,7 @@ TEST_F(ScoreHolderTest, CheckOrderingFunctions)
     // labels are assigned [ -1, +1, -1, +1, -1 ]
     scores.clear();
     for (int i = 0 ; i < 5 ; ++i) {
-        PSMDescription *pPSM = new PSMDescription();
+        PSMDescription *pPSM = newPsm();
         pPSM->scan = 2 - i / 2;
         scores.push_back(ScoreHolder(1.0 + i, (i % 2 ? LabelType::TARGET : LabelType::DECOY), pPSM));
     }
@@ -154,7 +157,7 @@ TEST_F(ScoreHolderTest, CheckOrderingFunctions)
     // specFileNr values are assigned [ 0, 0, 1, 1, 2]
     scores.clear();
     for (int i = 0 ; i < 5 ; ++i) {
-        PSMDescription *pPSM = new PSMDescription();
+        PSMDescription *pPSM = newPsm();
         pPSM->specFileNr = i / 2;
         pPSM->scan = 2 - i / 2;
         scores.push_back(ScoreHolder(1.0 + i, (i % 2 ? LabelType::TARGET : LabelType::DECOY), pPSM));

@@ -130,13 +130,17 @@ TEST_F(CrossValidationTest, doStepTest)
     // values.
 
     PsmStore psmStore;
+    // a PSMDescription does not own its features
+    std::vector<double> featureRows(3 * N * 2);
+    double *nextRow = featureRows.data();
     DataSet *targets = new DataSet();
     DataSet *decoys = new DataSet();
     targets->setLabel(LabelType::TARGET);
     decoys->setLabel(LabelType::DECOY);
     for (int i = 0 ; i < 2 * N ; ++i) {
         PSMDescription *psm = psmStore.add(PSMDescription());
-        psm->features = new double[2];
+        psm->features = nextRow;
+        nextRow += 2;
         psm->features[0] = static_cast<double>(i) / N - 1E-6;
         psm->features[1] = static_cast<double>(i % 2);
         psm->scan = scanNumber++;
@@ -144,7 +148,8 @@ TEST_F(CrossValidationTest, doStepTest)
     }
     for (int i = 0 ; i < N ; ++i) {
         PSMDescription *psm = psmStore.add(PSMDescription());
-        psm->features = new double[2];
+        psm->features = nextRow;
+        nextRow += 2;
         psm->features[0] = static_cast<double>(i) / N;
         psm->features[1] = static_cast<double>(i % 2);
         psm->scan = scanNumber++;
