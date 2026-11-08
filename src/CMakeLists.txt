@@ -64,12 +64,6 @@ find_package(Threads REQUIRED)
 list(APPEND COMMON_LIBRARIES Threads::Threads)
 
 
-#########################################
-# COMPILE BLAS
-#########################################
-add_subdirectory(dblas)
-set (DBLAS_LIBRARIES ${DBLAS_LIBRARIES} dblas)
-
 if (MSVC)
   add_compile_definitions(
     _HAS_STD_BYTE=0     # disables std::byte so 'byte' in Windows headers is unambiguous
@@ -163,7 +157,7 @@ ELSE(CRUX)
   endif()
 
   # SET LIBRARIES FOR PERCOLATOR
-  list(APPEND COMMON_LIBRARIES perclibrary ${DBLAS_LIBRARIES} picked_protein ${CURL_LIBRARIES} ${RPC_LIBRARIES})
+  list(APPEND COMMON_LIBRARIES perclibrary picked_protein ${CURL_LIBRARIES} ${RPC_LIBRARIES})
   if(NOT MSVC)
     if(NOT APPLE)
       list(APPEND COMMON_LIBRARIES stdc++)

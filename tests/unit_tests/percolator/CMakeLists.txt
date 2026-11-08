@@ -35,6 +35,7 @@ include(GoogleTest)
 # =============================
 add_executable(gtest_unit
     Unit_tests_Percolator_main.cpp
+    UnitTest_Percolator_BlasLevel1.cpp
     UnitTest_Percolator_Option.cpp
     UnitTest_Percolator_TabReader.cpp
     UnitTest_Percolator_SetHandler.cpp
@@ -73,7 +74,6 @@ target_link_libraries(gtest_unit
     GTest::gtest_main
     perclibrary
     picked_protein
-    dblas
 )
 if(NOT WIN32)
   target_link_libraries(gtest_unit PRIVATE pthread)

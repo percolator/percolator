@@ -25,13 +25,8 @@ using namespace std;
 
 #include <stdarg.h>
 #include <cstring>
+#include "BlasLevel1.h"
 #include "Timer.h"
-
-extern "C" {
-  extern double ddot_(int *, double *, int *, double *, int *); // compute the dot product of two vectors
-  extern int daxpy_(int *, double *, double *, int *, double *, int *); // compute y := alpha * x + y
-  extern int dscal_(int *, double *, double *, int *); // Compute y := alpha * y
-}
 
 #define VERBOSE 1
 #define LOG2(x) 1.4426950408889634*log(x)
@@ -320,9 +315,6 @@ int CGLS(const AlgIn& data, const double lambda, const int cgitermax,
   double* q = workspace.q.data();
   int ii = 0;
   int i;
-  int n0 = n-1;
-  int inc = 1;
-  double one = 1;
   double negLambda = -lambda;
   double* r = workspace.r.data();
   for (i = n; i--;) {
@@ -335,9 +327,9 @@ int CGLS(const AlgIn& data, const double lambda, const int cgitermax,
     addScaledRow(z[i], data.row(ii), n, r);
   }
   double* p = workspace.p.data();
-  daxpy_(&n, &negLambda, beta, &inc, r, &inc);
+  blas::axpy(n, negLambda, beta, r);
   memcpy(p, r, sizeof(double)*static_cast<std::size_t>(n));
-  double omega1 = ddot_(&n, r, &inc, r, &inc);
+  double omega1 = blas::dot(n, r, r);
   double omega_p = omega1;
   double omega_q = 0.0;
   double inv_omega2 = 1 / omega1;
@@ -355,15 +347,15 @@ int CGLS(const AlgIn& data, const double lambda, const int cgitermax,
     inv_omega2 = 1 / omega1;
 
     memcpy(r, beta, sizeof(double)*static_cast<std::size_t>(n));
-    dscal_(&n, &negLambda, r, &inc);
+    blas::scal(n, negLambda, r);
 
-    daxpy_(&n, &gamma, p, &inc, beta, &inc);
-    dscal_(&active, &gamma, q, &inc);
+    blas::axpy(n, gamma, p, beta);
+    blas::scal(active, gamma, q);
 
     cglsFun2(active, J, Y, data, q, o, z, r, cpos, cneg);
 
-    omega_z = ddot_(&active, z, &inc, z, &inc);
-    omega1 = ddot_(&n, r, &inc, r, &inc);
+    omega_z = blas::dot(active, z, z);
+    omega1 = blas::dot(n, r, r);
 
     if (VERBOSE_CGLS) {
       cout << "..." << cgiter << " ( " << omega1 << " )";
@@ -375,9 +367,9 @@ int CGLS(const AlgIn& data, const double lambda, const int cgitermax,
     }
 
     scale = omega1 * inv_omega2;
-    dscal_(&n, &scale, p, &inc);
-    daxpy_(&n, &one, r, &inc, p, &inc);
-    omega_p = ddot_(&n, p, &inc, p, &inc);
+    blas::scal(n, scale, p);
+    blas::axpy(n, 1.0, r, p);
+    omega_p = blas::dot(n, p, p);
   }
   if (VERBOSE_CGLS) {
     cout << "...Done." << endl;
@@ -423,12 +415,11 @@ int L2_SVM_MFN(const AlgIn& data, const options& Options,
   double diff = 0.0;
   int ini = 0;
   int n0 = n-1;
-  int inc = 1;
   workspace.prepare(m, n, !Options.directSolve);
   // active examples first, inactive ones from the back
   int* activeSet = workspace.activeSubset.data();
   // initialize
-  F = 0.5 * lambda * ddot_(&n, w, &inc, w, &inc);
+  F = 0.5 * lambda * blas::dot(n, w, w);
   int active = 0;
   int inactive = m - 1; // l-1
   for (int i = 0; i < m; i++) {
@@ -507,9 +498,9 @@ int L2_SVM_MFN(const AlgIn& data, const options& Options,
                         workspace.deltas.data());
     F_old = F;
     double delta2 = 1-delta;
-    dscal_(&n, &delta2, w, &inc);
-    daxpy_(&n, &delta, w_bar, &inc, w, &inc);
-    F = 0.5 * lambda * ddot_(&n, w, &inc, w, &inc);
+    blas::scal(n, delta2, w);
+    blas::axpy(n, delta, w_bar, w);
+    F = 0.5 * lambda * blas::dot(n, w, w);
     active = 0;
     inactive = m - 1;
     for (int i = 0; i < m; i++) {
