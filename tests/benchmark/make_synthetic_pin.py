@@ -41,9 +41,14 @@ regenerate earlier files.
 true PEP, the probability that a target with its features is incorrect under
 the generating model (1 for decoys). Ranking the targets by true PEP is the
 best possible ranking (see oracle.py); true_pep.py compares PEPs with it.
-For a peptide, the true PEP of its best PSM is close to the peptide's true
-PEP at the top of the list, where the other PSMs of a correct peptide almost
-surely score lower.
+
+--peptide-truth writes the ground truth of every target peptide: whether it
+is correct (present), its number of PSMs, and its true PEP given the log
+likelihood ratio of its best PSM, i.e. the probability that a target peptide
+whose best PSM has this log likelihood ratio is incorrect, over the numbers
+of PSMs per peptide of the file. It differs from the true PEP of the best
+PSM: a correct peptide with many PSMs has a high best score. Not with
+--legacy or --mode native.
 
 Example:
   make_synthetic_pin.py -n 1000000 -f 30 --mode concatenated -o 1M.pin
@@ -144,6 +149,52 @@ class TruthModel:
         return 1.0 / (1.0 + math.exp(z))
 
 
+def log_sum_exp(values):
+    top = max(values)
+    if top == -math.inf:
+        return top
+    return top + math.log(sum(math.exp(v - top) for v in values))
+
+
+def write_peptide_truth(path, peptide_stats, target_peps, model):
+    """For a target peptide whose best PSM has log likelihood ratio m,
+      P(incorrect | m) = A / (A + B),
+      A = sum_k N_incorrect(k) k f0(m) F0(m)^(k-1),
+      B = sum_k N_correct(k) k f1(m) F1(m)^(k-1),
+    with N(k) the numbers of incorrect and correct peptides with k PSMs, and
+    f and F the density and distribution function of the log likelihood
+    ratio, N(-S/2, S) for incorrect and N(S/2, S) for correct PSMs."""
+    counts = ({}, {})  # incorrect, correct: k -> number of peptides
+    for k, _, correct in peptide_stats.values():
+        counts[int(correct)][k] = counts[int(correct)].get(k, 0) + 1
+    terms = [[(math.log(n) + math.log(k), k - 1) for k, n in c.items()] for c in counts]
+    half, sd = model.half, model.sd
+    log_norm = -math.log(sd) - 0.5 * math.log(2.0 * math.pi) if sd > 0 else 0.0
+
+    def log_parts(m, mean):
+        z = (m - mean) / sd
+        return log_norm - 0.5 * z * z, math.log(max(norm_cdf(z), 1e-300))
+
+    with open(path, "w") as f:
+        f.write("Peptide\tcorrect\tpsms\ttrue_pep\n")
+        for index in sorted(peptide_stats):
+            k, m, correct = peptide_stats[index]
+            if sd > 0:
+                log_f0, log_cdf0 = log_parts(m, -half)
+                log_f1, log_cdf1 = log_parts(m, half)
+                a = log_sum_exp([t + log_f0 + j * log_cdf0 for t, j in terms[0]] or [-math.inf])
+                b = log_sum_exp([t + log_f1 + j * log_cdf1 for t, j in terms[1]] or [-math.inf])
+                if a == -math.inf:
+                    pep = 0.0
+                elif b == -math.inf or b - a < -700.0:
+                    pep = 1.0
+                else:
+                    pep = 1.0 / (1.0 + math.exp(min(700.0, b - a)))
+            else:
+                pep = 1.0
+            f.write("%s\t%d\t%d\t%.6g\n" % (target_peps[index][0], int(correct), k, pep))
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("-n", "--num-psms", type=int, required=True,
@@ -171,6 +222,9 @@ def main():
     ap.add_argument("--truth", metavar="FILE",
                     help="write the SpecId, label, correctness and true PEP of every PSM "
                          "to FILE")
+    ap.add_argument("--peptide-truth", metavar="FILE",
+                    help="write the peptide, correctness, number of PSMs and true PEP of "
+                         "every target peptide to FILE")
     ap.add_argument("-o", "--output", default="-")
     args = ap.parse_args()
 
@@ -180,6 +234,8 @@ def main():
         ap.error("--num-psms must be even with --mode %s" % args.mode)
     if args.legacy and args.mode == "native":
         ap.error("--legacy cannot be used with --mode native")
+    if args.peptide_truth and (args.legacy or args.mode == "native"):
+        ap.error("--peptide-truth cannot be used with --legacy or --mode native")
     if not 0.0 <= args.correct_fraction <= 1.0:
         ap.error("--correct-fraction must be between 0 and 1")
     rng = random.Random(args.seed)
@@ -201,6 +257,8 @@ def main():
     truth = open(args.truth, "w") if args.truth else None
     if truth:
         truth.write("SpecId\tLabel\tcorrect\ttrue_pep\n")
+    # target peptide index -> [number of PSMs, best log likelihood ratio, correct]
+    peptide_stats = {} if args.peptide_truth else None
 
     def draw_features(correct):
         feats = []
@@ -227,7 +285,12 @@ def main():
         peptide, length = peps[index]
         if feats is None:
             feats = draw_features(correct)
-        true_pep = 1.0 if is_decoy or not truth else model.true_pep(model.llr(feats))
+        llr = model.llr(feats) if (truth or peptide_stats is not None) and not is_decoy else 0.0
+        true_pep = 1.0 if is_decoy or not truth else model.true_pep(llr)
+        if peptide_stats is not None and not is_decoy:
+            stats = peptide_stats.setdefault(index, [0, -math.inf, correct])
+            stats[0] += 1
+            stats[1] = max(stats[1], llr)
         feats = feats + ["1" if charge == c else "0" for c in (2, 3, 4)]
         feats += [str(int(rng.random() < 0.9)), str(int(rng.random() < 0.9)), str(rng.choice((0, 0, 0, 1, 2)))]
         feats.append(str(length))
@@ -280,6 +343,8 @@ def main():
         out.close()
     if truth:
         truth.close()
+    if peptide_stats is not None:
+        write_peptide_truth(args.peptide_truth, peptide_stats, target_peps, model)
 
 
 if __name__ == "__main__":

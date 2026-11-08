@@ -17,7 +17,8 @@ against ground truth. They need only the Python standard library.
     match also has an incorrect target candidate and reports the better one.
   - `--shift-scale` below 1 makes the data harder to separate.
   - `--truth FILE` writes whether each PSM is correct and its true PEP under
-    the generating model; it does not change the pin file.
+    the generating model, and `--peptide-truth FILE` the same for each
+    target peptide; they do not change the pin file.
   - `--legacy` reproduces files of earlier versions (e.g. a `1M_marked.pin`
     made with `-n 1000000 --mark-correct`). In their concatenated mode the
     decoys are 50% of the PSMs and the incorrect targets 35%, so Percolator's
@@ -38,8 +39,9 @@ against ground truth. They need only the Python standard library.
   of the targets accepted at q-value thresholds, the Brier score and a
   Hosmer-Lemeshow statistic along the score axis.
 - `true_pep.py` compares the PEPs of the best-ranked targets with their true
-  PEPs from `--truth` (median log10 ratio by rank band). Binned calibration
-  cannot see errors of orders of magnitude among PEPs below 0.001.
+  PEPs from `--truth` or `--peptide-truth` (median log10 ratio by rank
+  band). Binned calibration cannot see errors of orders of magnitude among
+  PEPs below 0.001.
 - `oracle.py` gives the largest number of correct targets at a true FDP of
   1% and 5% for the best possible ranking (by true PEP) and for the ranking
   of each result file.
@@ -56,8 +58,10 @@ Example:
 Ground truth, here for a harder data set:
 
     python3 make_synthetic_pin.py -n 500000 --correct-fraction 0.2 \
-        --shift-scale 0.6 --mark-correct --truth med.truth -o med.pin
+        --shift-scale 0.6 --mark-correct --truth med.truth \
+        --peptide-truth med.ptruth -o med.pin
     percolator -S 1 -m psms.txt -r peptides.txt med.pin
     python3 pep_calibration.py psms.txt
-    python3 true_pep.py med.truth psms.txt peptides.txt
+    python3 true_pep.py med.truth psms.txt
+    python3 true_pep.py med.ptruth peptides.txt
     python3 oracle.py med.truth psms.txt
