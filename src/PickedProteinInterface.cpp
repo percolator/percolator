@@ -17,7 +17,7 @@
 
 #include "PickedProteinInterface.h"
 
-using namespace PercolatorCrux;
+using PickedProtein::DigestType;
 
 PickedProteinInterface::PickedProteinInterface(const std::string& fastaDatabase,
     double pvalueCutoff, bool reportFragmentProteins, bool reportDuplicateProteins,
@@ -44,38 +44,23 @@ bool PickedProteinInterface::initialize(Scores& peptideScores, const Enzyme* enz
   
   std::string enzymeString = enzyme->getStringEnzyme();
   
-  ENZYME_T cruxEnzyme;
+  // the protease for the digestion of the database
+  Enzyme::EnzymeType digestEnzyme = enzyme->getEnzymeType();
   bool tryTrypsinP = false;
   std::unique_ptr<Enzyme> trypsinP;
-  switch (enzyme->getEnzymeType()) {
+  switch (digestEnzyme) {
     case Enzyme::TRYPSIN:
-      cruxEnzyme = TRYPSIN;
       tryTrypsinP = true;
       trypsinP = Enzyme::createEnzyme(Enzyme::TRYPSINP);
       break;
     case Enzyme::TRYPSINP:
-      cruxEnzyme = TRYPSINP;
-      break;
     case Enzyme::CHYMOTRYPSIN:
-      cruxEnzyme = CHYMOTRYPSIN;
-      break;
     case Enzyme::ELASTASE:
-      cruxEnzyme = ELASTASE;
-      break;
     case Enzyme::LYSN:
-      cruxEnzyme = LYSN;
-      break;
     case Enzyme::LYSC:
-      cruxEnzyme = LYSC;
-      break;
     case Enzyme::ARGC:
-      cruxEnzyme = ARGC;
-      break;
     case Enzyme::ASPN:
-      cruxEnzyme = ASPN;
-      break;
     case Enzyme::GLUC:
-      cruxEnzyme = GLUC;
       break;
     case Enzyme::NO_ENZYME:
     default:
@@ -87,7 +72,7 @@ bool PickedProteinInterface::initialize(Scores& peptideScores, const Enzyme* enz
         }
         enzymeString = NoEnzyme::getString();
       }
-      cruxEnzyme = NO_ENZYME;
+      digestEnzyme = Enzyme::NO_ENZYME;
       max_non_enzymatic_flanks = 2;
       break;
   }
@@ -159,7 +144,7 @@ bool PickedProteinInterface::initialize(Scores& peptideScores, const Enzyme* enz
       }
       max_non_enzymatic_flanks = max_non_enzymatic_flanks_trypsinp;
       max_miscleavages = max_miscleavages_trypsinp;
-      cruxEnzyme = TRYPSINP;
+      digestEnzyme = Enzyme::TRYPSINP;
       enzymeString = TrypsinP::getString();
     }
     
@@ -170,17 +155,17 @@ bool PickedProteinInterface::initialize(Scores& peptideScores, const Enzyme* enz
     }
   }
   
-  DIGEST_T digest;
+  DigestType digest;
   std::string digestString = "";
   if (max_non_enzymatic_flanks == 0) {
-    digest = FULL_DIGEST;
+    digest = DigestType::Full;
     digestString = "full";
   } else if (max_non_enzymatic_flanks == 1) {
-    digest = PARTIAL_DIGEST;
+    digest = DigestType::Partial;
     digestString = "partial";
   } else {
-    digest = NON_SPECIFIC_DIGEST;
-    cruxEnzyme = TRYPSIN; // Use trypsin to create candidate protein groups
+    digest = DigestType::NonSpecific;
+    digestEnzyme = Enzyme::TRYPSIN; // Use trypsin to create candidate protein groups
     digestString = "non-specific";
   }
   if (VERB > 1) {
@@ -192,7 +177,7 @@ bool PickedProteinInterface::initialize(Scores& peptideScores, const Enzyme* enz
               << ", max-miscleavages=" << max_miscleavages << std::endl;
   }
   PickedProteinCaller pickedProteinCaller;
-  pickedProteinCaller.initConstraints(cruxEnzyme, digest, min_peptide_length, 
+  pickedProteinCaller.initConstraints(digestEnzyme, digest, min_peptide_length, 
                                 max_peptide_length, max_miscleavages);
   
   groupProteins(peptideScores, pickedProteinCaller);

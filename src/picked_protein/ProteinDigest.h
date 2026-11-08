@@ -74,9 +74,9 @@ struct PeptideSpan {
  * the residue after the C-terminal one is given as '\0', so for it the rule
  * decides on the C-terminal residue alone. Missed cleavages are the
  * cleavage sites strictly inside the peptide. Partial digests reproduce the
- * PercolatorCrux digestion this replaces, which left out the peptides that
- * start at a cleavage site and end at the last non-cleavage position, when
- * that position is not the C terminus.
+ * PercolatorCrux digestion that this replaced, which left out the peptides
+ * that start at a cleavage site and end at the last non-cleavage position,
+ * when that position is not the C terminus.
  */
 void digestProtein(const std::string& sequence, const Enzyme& enzyme,
                    const DigestConstraint& constraint,

@@ -22,6 +22,7 @@
 #include <gtest/gtest.h>
 
 #include <algorithm>
+#include <fstream>
 #include <map>
 #include <random>
 #include <sstream>
@@ -30,12 +31,9 @@
 #include <vector>
 
 #include "Enzyme.h"
+#include "PickedProteinCaller.h"
 #include "ProteinDigest.h"
-// the PercolatorCrux digestion that ProteinDigest replaces
-#include "Peptide.h"
-#include "PeptideConstraint.h"
-#include "Protein.h"
-#include "ProteinPeptideIterator.h"
+#include "TmpDir.h"
 
 using PickedProtein::DigestConstraint;
 using PickedProtein::DigestType;
@@ -49,11 +47,14 @@ typedef std::vector<std::pair<int, int> > Spans;  // (0-based start, length)
 
 /*
  * Reference: the peptide selection of the PercolatorCrux
- * ProteinPeptideIterator (adapted from crux), which ProteinDigest replaces,
+ * ProteinPeptideIterator (adapted from crux), which ProteinDigest replaced,
  * transcribed with the same arrays of cleavage positions, the same pair
  * selection with its skipping of C-terminal positions, and the same array
  * bounds. Only the enzyme rule is taken from Enzyme.h. The residue after the
  * C terminus is '\0', as in the null-terminated sequence of the original.
+ * Before the old classes were removed, a test showed that this gives the
+ * same peptides in the same order as ProteinPeptideIterator, for every
+ * enzyme that it supported.
  */
 Spans legacyDigest(const std::string& seq, const Enzyme& enzyme,
                    DigestType digest, int minLength, int maxLength,
@@ -162,49 +163,6 @@ bool same(const std::vector<T>& a, const std::vector<T>& b) {
     if (!(a[i] == b[i])) return false;
   }
   return true;
-}
-
-// The old class itself, for the enzymes it supports.
-PercolatorCrux::ENZYME_T cruxEnzyme(Enzyme::EnzymeType type) {
-  switch (type) {
-    case Enzyme::NO_ENZYME: return PercolatorCrux::NO_ENZYME;
-    case Enzyme::TRYPSIN: return PercolatorCrux::TRYPSIN;
-    case Enzyme::TRYPSINP: return PercolatorCrux::TRYPSINP;
-    case Enzyme::CHYMOTRYPSIN: return PercolatorCrux::CHYMOTRYPSIN;
-    case Enzyme::ELASTASE: return PercolatorCrux::ELASTASE;
-    case Enzyme::LYSN: return PercolatorCrux::LYSN;
-    case Enzyme::LYSC: return PercolatorCrux::LYSC;
-    case Enzyme::ARGC: return PercolatorCrux::ARGC;
-    case Enzyme::ASPN: return PercolatorCrux::ASPN;
-    case Enzyme::GLUC: return PercolatorCrux::GLUC;
-    default: return PercolatorCrux::INVALID_ENZYME;
-  }
-}
-
-Spans oldIteratorDigest(const std::string& seq, Enzyme::EnzymeType type,
-                        DigestType digest, int minLength, int maxLength,
-                        int numMisCleavage) {
-  PercolatorCrux::DIGEST_T cruxDigest =
-      digest == DigestType::Full      ? PercolatorCrux::FULL_DIGEST
-      : digest == DigestType::Partial ? PercolatorCrux::PARTIAL_DIGEST
-                                      : PercolatorCrux::NON_SPECIFIC_DIGEST;
-  PercolatorCrux::Protein protein;
-  protein.setId("p");
-  protein.setSequence(seq.c_str());
-  protein.setLength(static_cast<unsigned int>(seq.size()));
-  PercolatorCrux::PeptideConstraint constraint(
-      cruxEnzyme(type), cruxDigest, minLength, maxLength, numMisCleavage);
-  PercolatorCrux::ProteinPeptideIterator it(&protein, &constraint);
-  Spans out;
-  while (it.hasNext()) {
-    PercolatorCrux::Peptide* peptide = it.next();
-    out.push_back(std::make_pair(
-        static_cast<int>(peptide->getSequencePointer() -
-                         protein.getSequencePointer()),
-        static_cast<int>(peptide->getLength())));
-    PercolatorCrux::Peptide::free(peptide);
-  }
-  return out;
 }
 
 const std::vector<std::string>& realProteins() {
@@ -351,34 +309,6 @@ TEST(ProteinDigestTest, SameAsLegacyDigestion) {
     }
   }
   EXPECT_GT(numSpans, 1000000u);
-}
-
-// The transcription above reproduces the old ProteinPeptideIterator, peptide
-// for peptide and in the same order, for all enzymes the iterator supports.
-TEST(ProteinDigestTest, LegacyDigestionMatchesProteinPeptideIterator) {
-  std::vector<std::string> proteins = realProteins();
-  std::vector<std::string> random = randomProteins(12, 200);
-  proteins.insert(proteins.end(), random.begin(), random.end());
-  for (Enzyme::EnzymeType type : kAllEnzymes) {
-    if (cruxEnzyme(type) == PercolatorCrux::INVALID_ENZYME) continue;
-    std::unique_ptr<Enzyme> enzyme = Enzyme::createEnzyme(type);
-    for (DigestType digest : kAllDigests) {
-      for (const Limits& lim : kLimits) {
-        if (skipCase(type, digest, lim)) continue;
-        for (const std::string& seq : proteins) {
-          Spans legacy = legacyDigest(seq, *enzyme, digest, lim.minLength,
-                                      lim.maxLength, lim.misCleavages);
-          Spans old = oldIteratorDigest(seq, type, digest, lim.minLength,
-                                        lim.maxLength, lim.misCleavages);
-          ASSERT_TRUE(same(legacy, old))
-              << enzyme->getStringEnzyme() << " digest "
-              << static_cast<int>(digest) << " limits " << lim.minLength
-              << "," << lim.maxLength << "," << lim.misCleavages
-              << " protein " << seq;
-        }
-      }
-    }
-  }
 }
 
 // Spot checks of the cleavage rules on a protein that ends in a cleavage
@@ -561,4 +491,83 @@ TEST(ProteinDigestTest, ReadFasta) {
   proteins.clear();
   EXPECT_TRUE(PickedProtein::readFasta(none, proteins));
   EXPECT_TRUE(proteins.empty());
+}
+
+// Fragments and duplicates of a small database, worked out by hand, in the
+// target pass and in the reversed-decoy pass that follows when the database
+// has no decoys.
+TEST(PickedProteinCallerTest, FragmentsAndDuplicates) {
+  TmpDir dir;
+  const std::string fasta = dir.getPath() + "/db.fasta";
+  {
+    std::ofstream out(fasta.c_str());
+    out << ">A first\nMAAAAKDDDDDREEEEEK\n"  // MAAAAK (and AAAAK) DDDDDR EEEEEK
+        << ">B\nDDDDDREEEEEK\n"              // in A, C and D: a fragment
+        << ">C\nMAAAAKDDDDDREEEEEK\n"        // the same as A
+        << ">D\nAAAAKDDDDDREEEEEK\n"         // A without its methionine
+        << ">E\nGGGGGK\n";
+  }
+  PickedProteinCaller caller;
+  caller.initConstraints(Enzyme::TRYPSIN, DigestType::Full, 4, 30, 0);
+  caller.setFastaDatabase(fasta, "decoy_");
+  std::map<std::string, std::string> fragments, duplicates;
+  ASSERT_FALSE(caller.getProteinFragmentsAndDuplicates(fragments, duplicates,
+                                                       false));
+  EXPECT_FALSE(caller.fastaHasDecoys());
+  // B is a fragment of the last protein that contains it; A and C have
+  // the same peptides, and so have D and the methionine-cleaved A, which
+  // counts as the same number of peptides.
+  EXPECT_EQ((std::map<std::string, std::string>{{"B", "D"}}), fragments);
+  EXPECT_EQ((std::map<std::string, std::string>{{"A", "C"}}), duplicates);
+  // reversed: only A and C share all their peptides (EEEEER DDDDDK AAAAM)
+  ASSERT_FALSE(caller.getProteinFragmentsAndDuplicates(fragments, duplicates,
+                                                       true));
+  EXPECT_EQ((std::map<std::string, std::string>{{"B", "D"}}), fragments);
+  EXPECT_EQ((std::map<std::string, std::string>{{"A", "C"},
+                                                {"decoy_A", "decoy_C"}}),
+            duplicates);
+  // the decoy pass reversed the kept proteins, so the next target pass
+  // reads the file again and gives the target result
+  fragments.clear();
+  duplicates.clear();
+  ASSERT_FALSE(caller.getProteinFragmentsAndDuplicates(fragments, duplicates,
+                                                       false));
+  EXPECT_EQ((std::map<std::string, std::string>{{"B", "D"}}), fragments);
+  EXPECT_EQ((std::map<std::string, std::string>{{"A", "C"}}), duplicates);
+
+  PickedProteinCaller missing;
+  missing.setFastaDatabase(dir.getPath() + "/missing.fasta", "decoy_");
+  EXPECT_TRUE(missing.getProteinFragmentsAndDuplicates(fragments, duplicates,
+                                                       false));
+}
+
+// Proteins of 39,999 residues or more made the old FASTA reader call
+// exit(1); they are now digested like any other.
+TEST(PickedProteinCallerTest, LongProteins) {
+  std::string longSeq(50000, 'A');
+  std::mt19937 rng(3);
+  const std::string residues = "ACDEFGHIKLMNPQRSTVWY";
+  for (char& c : longSeq) c = residues[rng() % residues.size()];
+  // "part" starts and ends at tryptic cleavage sites of the long protein
+  longSeq[19999] = 'K';
+  longSeq[20000] = 'A';
+  longSeq[44999] = 'K';
+  longSeq[45000] = 'A';
+  TmpDir dir;
+  const std::string fasta = dir.getPath() + "/long.fasta";
+  {
+    std::ofstream out(fasta.c_str());
+    out << ">long1\n" << longSeq << "\n>long2\n" << longSeq << "\n"
+        << ">part\n" << longSeq.substr(20000, 25000) << "\n";
+  }
+  PickedProteinCaller caller;
+  caller.initConstraints(Enzyme::TRYPSIN, DigestType::Full, 7, 30, 0);
+  caller.setFastaDatabase(fasta, "decoy_");
+  std::map<std::string, std::string> fragments, duplicates;
+  ASSERT_FALSE(caller.getProteinFragmentsAndDuplicates(fragments, duplicates,
+                                                       false));
+  EXPECT_EQ((std::map<std::string, std::string>{{"long1", "long2"}}),
+            duplicates);
+  EXPECT_EQ((std::map<std::string, std::string>{{"part", "long2"}}),
+            fragments);
 }

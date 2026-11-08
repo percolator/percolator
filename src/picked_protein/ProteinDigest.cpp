@@ -70,6 +70,7 @@ bool readFasta(std::istream& in, std::vector<FastaProtein>& proteins) {
     protein.id = firstWord(header);
     text.clear();  // getline leaves it unchanged on a failed stream
     std::getline(in, text, '>');
+    protein.sequence.reserve(text.size());  // no regrowth while appending
     appendResidues(text, protein.sequence);
     proteins.push_back(std::move(protein));
     // a '>' was found unless the stream ended
@@ -155,8 +156,28 @@ PeptideIndex::PeptideIndex(const std::vector<FastaProtein>& proteins,
   numPeptides_.resize(numIndexed);
   occurrenceBegin_.resize(numIndexed + 1);
 
-  std::vector<Occurrence> occurrences;
   std::vector<PeptideSpan> spans;
+  // count the occurrences first, so that their array is allocated once
+  size_t numOccurrences = 0;
+  for (size_t k = 0; k < numIndexed; ++k) {
+    const size_t protein = proteinIds_.empty() ? k : proteinIds_[k];
+    const std::string& sequence = proteins[protein].sequence;
+    spans.clear();
+    digestProtein(sequence, enzyme, constraint, spans);
+    numOccurrences += spans.size();
+    for (const PeptideSpan& span : spans) {
+      if (span.start == 0 && sequence[0] == 'M' &&
+          static_cast<long>(span.length) - 1 >= constraint.minLength) {
+        ++numOccurrences;
+      }
+    }
+  }
+  if (numOccurrences > std::numeric_limits<uint32_t>::max()) {
+    throw MyException(
+        "ERROR: too many peptides in the digest of the FASTA database.");
+  }
+  std::vector<Occurrence> occurrences;
+  occurrences.reserve(numOccurrences);
   std::hash<std::string_view> hasher;
   for (size_t k = 0; k < numIndexed; ++k) {
     const size_t protein = proteinIds_.empty() ? k : proteinIds_[k];
@@ -178,12 +199,7 @@ PeptideIndex::PeptideIndex(const std::vector<FastaProtein>& proteins,
       }
     }
   }
-  const size_t numOccurrences = occurrences.size();
   occurrenceBegin_[numIndexed] = numOccurrences;
-  if (numOccurrences > std::numeric_limits<uint32_t>::max()) {
-    throw MyException(
-        "ERROR: too many peptides in the digest of the FASTA database.");
-  }
   for (size_t i = 0; i < numOccurrences; ++i) {
     occurrences[i].index = static_cast<uint32_t>(i);
   }
@@ -193,13 +209,19 @@ PeptideIndex::PeptideIndex(const std::vector<FastaProtein>& proteins,
         .substr(o.start, o.length);
   };
   // group equal sequences, each group's proteins ascending
-  std::sort(occurrences.begin(), occurrences.end(),
-            [&sequenceOf](const Occurrence& a, const Occurrence& b) {
-              if (a.hash != b.hash) return a.hash < b.hash;
-              const int cmp = sequenceOf(a).compare(sequenceOf(b));
-              if (cmp != 0) return cmp < 0;
-              return a.protein < b.protein;
-            });
+  auto bySequence = [&sequenceOf](const Occurrence& a, const Occurrence& b) {
+    if (a.hash != b.hash) return a.hash < b.hash;
+    const int cmp = sequenceOf(a).compare(sequenceOf(b));
+    if (cmp != 0) return cmp < 0;
+    return a.protein < b.protein;
+  };
+#if defined(_GLIBCXX_PARALLEL) && defined(__GLIBCXX__)
+  // the parallel mergesort of libstdc++ would need a copy of all occurrences
+  std::sort(occurrences.begin(), occurrences.end(), bySequence,
+            __gnu_parallel::sequential_tag());
+#else
+  std::sort(occurrences.begin(), occurrences.end(), bySequence);
+#endif
   groupOfOccurrence_.resize(numOccurrences);
   groupProteins_.resize(numOccurrences);
   for (size_t i = 0; i < numOccurrences; ++i) {
