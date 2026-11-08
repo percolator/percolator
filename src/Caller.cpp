@@ -42,8 +42,7 @@
 using namespace std;
 
 Caller::Caller()
-    : tabInput_(true),
-      readStdIn_(false),
+    : readStdIn_(false),
       inputFN_(""),
       inputFNs_(),
       protEstimatorDecoyPrefix_("auto"),
@@ -55,9 +54,6 @@ Caller::Caller()
       decoyPsmResultFN_(""),
       decoyPeptideResultFN_(""),
       decoyProteinResultFN_(""),
-      analytics_(true),
-      useResetAlgorithm_(false),
-      useCompositionMatch_(false),
       reportUniquePeptides_(true),
       targetDecoyCompetition_(false),
       useMixMax_(false),
@@ -68,12 +64,14 @@ Caller::Caller()
       numIterations_(10),
       maxPSMs_(0u),
       nestedXvalBins_(1u),
+      numThreads_(3u),
       selectedCpos_(0.0),
       selectedCneg_(0.0),
       reportEachIteration_(false),
       quickValidation_(false),
       trainBestPositive_(false),
-      numThreads_(3u), 
+      useResetAlgorithm_(false),
+      useCompositionMatch_(false),
       useIrlsPep_(false),
       useInterpolatingPep_(true),
       usePavaPep_(false),
@@ -533,9 +531,6 @@ bool Caller::parseOptions(int argc, char** argv) {
   } else {
     enzyme_ = Enzyme::createEnzyme(Enzyme::TRYPSIN);
   }
-  if (cmd.isOptionSet("no-analytics")) {
-    analytics_ = false;
-  }
   if (cmd.isOptionSet("reset-algorithm")) {
     useResetAlgorithm_ = true;
   }
@@ -560,13 +555,11 @@ bool Caller::parseOptions(int argc, char** argv) {
   }
 
   if (cmd.isOptionSet("tab-in")) {
-    tabInput_ = true;
     inputFN_ = cmd.options["tab-in"];
   }
 
   if (cmd.isOptionSet("stdinput-tab")) {
     readStdIn_ = true;
-    tabInput_ = true;
   }
 
   if (cmd.isOptionSet("Cpos")) {
@@ -727,7 +720,6 @@ bool Caller::parseOptions(int argc, char** argv) {
 
   // if there is at least one argument left...
   if (cmd.arguments.size() >= 1) {
-    tabInput_ = true;
     inputFNs_ = cmd.arguments;  // then it's the pin input
     if (cmd.isOptionSet("tab-in")) {  // and if the tab input is also present
       cerr << "Error: use tab-delimited input format.";
@@ -773,7 +765,6 @@ bool Caller::parseOptions(int argc, char** argv) {
       std::string fastaDatabase = cmd.options["picked-protein"];
 
       // default options
-      double pickedProteinPvalueCutoff = 1.0;
       bool pickedProteinReportFragmentProteins = false;
       bool pickedProteinReportDuplicateProteins = false;
       if (cmd.isOptionSet("protein-report-fragments"))
@@ -782,8 +773,7 @@ bool Caller::parseOptions(int argc, char** argv) {
         pickedProteinReportDuplicateProteins = true;
 
       protEstimator_.reset(new PickedProteinInterface(
-          fastaDatabase, pickedProteinPvalueCutoff,
-          pickedProteinReportFragmentProteins,
+          fastaDatabase, pickedProteinReportFragmentProteins,
           pickedProteinReportDuplicateProteins, protEstimatorTrivialGrouping,
           protEstimatorAbsenceRatio, protEstimatorOutputEmpirQVal,
           protEstimatorDecoyPrefix_, protEstimatorPeptideQvalThreshold));
@@ -1041,8 +1031,6 @@ void Caller::checkIsWritable(const std::string& filePath) {
 
 std::istream& Caller::getDataInStream(std::ifstream& fileStream) {
   if (!readStdIn_) {
-    if (!tabInput_)
-      fileStream.exceptions(ifstream::badbit | ifstream::failbit);
     fileStream.open(inputFN_.c_str(), ios::in);
   } else if (maxPSMs_ > 0u) {
     maxPSMs_ = 0u;
@@ -1234,7 +1222,6 @@ int Caller::run() {
   if (inputFNs_.size() == 1) {
     inputFN_ = inputFNs_.at(0);
   } else if (inputFNs_.size() > 1) {
-    tabInput_ = true;
     tmpDir_ = std::make_unique<TmpDir>();
     ValidateTabFile validateTab;
     inputFN_ = validateTab.concatenateMultiplePINs(inputFNs_, tmpDir_->getPath(),

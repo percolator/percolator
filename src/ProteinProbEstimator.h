@@ -154,10 +154,6 @@ class ProteinProbEstimator {
     return !trivialGrouping_ || it+1 == proteins_.end() 
                              || it->getGroupId() != (it+1)->getGroupId();
   }
-  /** functions to count number of target and decoy proteins **/
-  unsigned countTargets(const std::vector<std::string> &proteinList);
-  unsigned countDecoys(const std::vector<std::string> &proteinList);
-  bool isTarget(const std::string& proteinName);
   bool isDecoy(const std::string& proteinName);
   
   /** print a tab delimited list of proteins probabilities in a file or stdout**/

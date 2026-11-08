@@ -912,7 +912,7 @@ int Scores::countTargetsBelowFdr(const FeatureRows& rows,
  * Starts a new training set in data with the decoys, in the order of this
  * set. generatePositiveTrainingSet then appends the positives.
  */
-void Scores::generateNegativeTrainingSet(AlgIn& data, const double cneg) {
+void Scores::generateNegativeTrainingSet(AlgIn& data, const double /*cneg*/) {
   data.clear();
   // room for the largest possible training set; only touched when used
   data.reserve(scores_.size());
@@ -932,7 +932,7 @@ void Scores::generateNegativeTrainingSet(AlgIn& data, const double cneg) {
  */
 void Scores::generatePositiveTrainingSet(AlgIn& data,
                                          const double fdr,
-                                         const double cpos,
+                                         const double /*cpos*/,
                                          const bool trainBestPositive) const {
   int p = 0;
   if (trainBestPositive) {
@@ -1271,17 +1271,6 @@ void Scores::calcPep(const bool spline, const bool interp, const bool pava,
             scores_[ix].pep = peps[ix];
         }
     }
-}
-
-unsigned Scores::getQvaluesBelowLevel(double level) {
-  unsigned hits = 0;
-  std::vector<ScoreHolder>::const_iterator scoreIt = scores_.begin();
-  for (; scoreIt != scores_.end(); ++scoreIt) {
-    if (scoreIt->isTarget() && scoreIt->q < level) {
-      hits++;
-    }
-  }
-  return hits;
 }
 
 void Scores::setUsePi0(bool usePi0) {

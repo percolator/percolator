@@ -60,42 +60,9 @@ class FeatureNames {
 
     int getFeatureNumber(const string& featureName);
 
-    int getMinCharge() {
-      return minCharge;
-    }
-    int getMaxCharge() {
-      return maxCharge;
-    }
-    int getChargeFeatNum() {
-      assert(1==0);
-      return chargeFeatNum;
-    }
-    int getEnzFeatNum() {
-      assert(1==0);
-      return enzFeatNum;
-    }
-    int getNumSPFeatNum() {
-      assert(1==0);
-      return numSPFeatNum;
-    }
-    int getPtmFeatNum() {
-      assert(1==0);
-      return ptmFeatNum;
-    }
-    int getIntraSetFeatNum() {
-      assert(1==0);
-      return intraSetFeatNum;
-    }
-    int getQuadraticFeatNum() {
-      assert(1==0);
-      return quadraticFeatNum;
-    }
   protected:
     vector<string> featureNames;
     static size_t numFeatures;
-    int minCharge, maxCharge;
-    int chargeFeatNum, enzFeatNum, numSPFeatNum, ptmFeatNum,
-        intraSetFeatNum, quadraticFeatNum;
 };
 
 #endif /*FEATURENAMES_H_*/

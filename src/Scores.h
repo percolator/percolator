@@ -168,7 +168,6 @@ class Scores {
   void weedOutRedundantTDC();
 
   void printRetentionTime(ostream& outs, double fdr);
-  unsigned getQvaluesBelowLevel(double level);
 
   void print(LabelType label, std::ostream& os = std::cout);
 

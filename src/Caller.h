@@ -74,7 +74,6 @@ class Caller {
   bool versionRequested_ = false;
 
   // file input parameters
-  bool tabInput_;
   bool readStdIn_;
   std::string inputFN_;
   std::vector<std::string> inputFNs_;
@@ -103,7 +102,7 @@ class Caller {
   bool classicTraining_ = false;
   bool inPlaceTraining_ = false;
   bool reportEachIteration_, quickValidation_, trainBestPositive_,
-      skipNormalizeScores_, analytics_, useResetAlgorithm_,
+      skipNormalizeScores_, useResetAlgorithm_,
       useCompositionMatch_, useIrlsPep_, useInterpolatingPep_, usePavaPep_,
       useTdcPep_;
 
