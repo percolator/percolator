@@ -5,7 +5,8 @@
 import os
 import sys
 
-pathToBinaries = "@pathToBinaries@"
+# ctest sets SYSTEM_TEST_BIN_DIR to the binaries of the build tree
+pathToBinaries = os.environ.get("SYSTEM_TEST_BIN_DIR", "@pathToBinaries@")
 pathToData = "@pathToData@"
 pathToOutputData = "@pathToOutputData@"
 success = True
