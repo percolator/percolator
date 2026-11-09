@@ -230,7 +230,14 @@ bool Caller::parseOptions(int argc, char** argv) {
       "the features in the PSM input file(s). Where the trained SVMs fail the "
       "check against the initial direction, every cross-validation fold falls "
       "back to these weights instead of a default direction, unless "
-      "--override is given.",
+      "--override is given. Weights trained on the same PSMs, such as the "
+      "--weights output of an earlier run on this input, have seen the test "
+      "bins, so such a fallback reports optimistic q values: on synthetic "
+      "sets of 1,000 to 10,000 PSMs the check failed in 94-98% of these "
+      "runs, and the mean false discovery proportion at q < 0.01 of the "
+      "runs that fell back was 2.0-4.3% (5.4% at 3,000 to 5,000 PSMs, "
+      "concatenated searches, 3 folds), against 1.0-1.1% for the earlier "
+      "run; with weights from other PSMs it was 0.7-0.9%.",
       "filename");
   cmd.defineOption(Option::NO_SHORT_OPT, "static",
                    "Use the provided initial weights as a static model. If "
@@ -461,9 +468,14 @@ bool Caller::parseOptions(int argc, char** argv) {
       "--merge-normalization, whose list has to be usable as well. "
       "Runs that pass 'bins' are not changed. With --init-weights a "
       "fallback restores the given weights, so the trained SVMs are kept "
-      "only where they give no fewer targets than those; weights trained on "
-      "the same PSMs have seen every test bin, so the q values can then be "
-      "optimistic, whichever list is kept. With one fold, as with "
+      "only where they give no fewer targets than those. On synthetic sets "
+      "of 1,000 to 10,000 PSMs, the runs that kept them had a mean false "
+      "discovery proportion at q < 0.01 of 0.8-1.6% with the weights of an "
+      "earlier run on the same PSMs and 1.2-1.9% with weights from other "
+      "PSMs (2.2% at 1,000 to 2,000 PSMs and 10 folds), against 0.9-1.3% "
+      "for runs without --init-weights that pass 'bins'; a fallback to "
+      "weights trained on the same PSMs is optimistic with every check "
+      "(see --init-weights). With one fold, as with "
       "--reset-algorithm, all three are the same. With -N the check uses "
       "the PSMs trained on, and with --static "
       "the merged raw scores of the given weights. 'pooled' merges with "
