@@ -84,8 +84,10 @@ int SanityCheck::getInitDirection(vector<Scores>& testset,
                                       mergeFdr_, skipNormalizeScores_,
                                       test_fdr));
   }
-  // The second chance counts the initial direction in the merged list only
-  // when it runs; training changes w, so the vectors are kept for it.
+  // The second chance counts the vectors of a reset only when it runs. They
+  // are the initial ones: the vector of --init-weights, which a reset
+  // restores, or the default vectors, which it chooses again on the same
+  // training sets. Training changes w, so they are kept for it.
   initWeights_.clear();
   if (useSecondChance(w.size())) {
     initWeights_ = w;
@@ -93,8 +95,8 @@ int SanityCheck::getInitDirection(vector<Scores>& testset,
   return initPositives_;
 }
 
-void SanityCheck::getDefaultDirection(vector<Scores>& trainset,
-                                      vector<vector<double> >& w) {
+void SanityCheck::getDefaultDirection(const vector<Scores>& trainset,
+                                      vector<vector<double> >& w) const {
     
   //If I have not been given a initial direction
   if (!initDefaultDir_) {
@@ -145,18 +147,23 @@ bool SanityCheck::secondChance(const vector<Scores>& testset,
                                const vector<vector<double> >& w,
                                int& trainedCount) const {
   // the anchors of the training sets exist for test bins of any size
-  const MergeNormalization counted = MergeNormalization::TRAIN_DECOYS;
-  trainedCount =
-      Scores::countMergedTargets(testset, trainset, w, counted, mergeFdr_,
-                                 skipNormalizeScores_, test_fdr_);
-  int initCount = 0;
-  if (initWeights_.size() == w.size()) {
-    initCount = std::max(
-        0, Scores::countMergedTargets(testset, trainset, initWeights_,
-                                      counted, mergeFdr_,
+  trainedCount = Scores::countMergedTargets(
+      testset, trainset, w, MergeNormalization::TRAIN_DECOYS, mergeFdr_,
+      skipNormalizeScores_, test_fdr_);
+  // The fallback that the second chance replaces, counted as the run would
+  // report it: the vectors of a reset (each fold's default vector, or the
+  // vector of --init-weights in all folds), merged with the run's scheme
+  // (test up to three folds) and counted at the test FDR. A fallback whose
+  // list cannot be used would end the run and counts 0.
+  int resetCount = 0;
+  const vector<vector<double> >& resetWeights = resetVectors();
+  if (resetWeights.size() == w.size()) {
+    resetCount = std::max(
+        0, Scores::countMergedTargets(testset, trainset, resetWeights,
+                                      mergeScheme_, mergeFdr_,
                                       skipNormalizeScores_, test_fdr_));
   }
-  const bool countsKeep = trainedCount > 0 && trainedCount >= initCount;
+  const bool countsKeep = trainedCount > 0 && trainedCount >= resetCount;
   // the sign check of --default-direction applies as after a passed count
   const bool wrongSign = countsKeep && wrongSignOfDefaultDirection(w);
   const bool keep = countsKeep && !wrongSign;
@@ -168,8 +175,12 @@ bool SanityCheck::secondChance(const vector<Scores>& testset,
          << "cannot be rescaled, or targets and decoys separate too well)";
   } else {
     cerr << trainedCount << " targets with q<" << test_fdr_
-         << " for the trained SVMs, " << initCount
-         << " for the initial direction";
+         << " for the trained SVMs, " << resetCount << " for the "
+         << (fileWeights_.empty() ? "default vectors" : "--init-weights vector")
+         << " of a reset";
+    if (!skipNormalizeScores_) {
+      cerr << " merged with " << mergeNormalizationName(mergeScheme_);
+    }
   }
   if (overRule_) {
     cerr << "; --override keeps the trained SVMs in any case." << endl;

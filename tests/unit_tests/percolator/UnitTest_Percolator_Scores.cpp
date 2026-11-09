@@ -25,7 +25,9 @@
 #endif
 #include <algorithm>
 #include <cmath>
+#include <cstdio>
 #include <cstdarg>
+#include <fstream>
 #include <limits>
 #include <map>
 #include <memory>
@@ -36,6 +38,7 @@
 #include <vector>
 #include "SetHandler.h"
 #include "DataSet.h"
+#include "Normalizer.h"
 #include "PosteriorEstimator.h"
 #include "ProteinProbEstimator.h"
 #include "SanityCheck.h"
@@ -1410,6 +1413,158 @@ TEST_F(ScoresTest, SecondChanceOnHandMadeBins)
             }
         }
     }
+    FeatureNames::resetNumFeatures();
+}
+
+// Two test bins of 6 targets and 3 decoys, with two features: f0 puts all
+// targets of a bin above its decoys, but the second bin's f0 is shifted by
+// +10 (targets 20..15, decoys 11, 10, 9), which its training set does not
+// show; f1 is not shifted and puts 3 targets of each bin above its first
+// decoy. The training sets choose f0 as the default direction. At
+// --testFDR 0.2 the trained vector f1 fails the per-bin count (q = 1/3 at
+// best), so the second chance runs:
+//   trained f1, merged with train-decoys:          6 targets with q < 0.2
+//   default f0, merged with train-decoys:          6 (the shifted bin's
+//                                                  decoys precede the
+//                                                  other bin's targets)
+//   default f0, merged with test, as reported:    12 (each bin anchored at
+//                                                  its own scores)
+// The reset, which merges with the run's test scheme, would report 12
+// targets, so the second chance must not keep the trained vector, as a
+// comparison with the initial direction counted with train-decoys (6) did.
+// With --init-weights f1 the initial direction is f1, and a reset restores
+// f1, which counts 6 with either scheme, so the second chance keeps the
+// trained vector there; against the default vectors f0 it would not.
+class ResetCountExample {
+  public:
+    static constexpr std::size_t numBins = 2;
+    ResetCountExample() {
+        const double tF0[6] = {10, 9, 8, 7, 6, 5}, dF0[3] = {1, 0, -1};
+        const double tF1[6] = {5, 4, 3, 2, 1, -2}, dF1[3] = {2.5, 0, -1};
+        // training sets: f0 separates all 4 targets, f1 only 2
+        const double trF0[7] = {4, 5, 6, 7, -1, 0, 1};
+        const double trF1[7] = {0.5, 1.5, -0.5, 2, -1, 0, 1};
+        for (std::size_t bin = 0; bin < numBins; ++bin) {
+            const double shift = bin == 1u ? 10.0 : 0.0;
+            for (std::size_t i = 0; i < 6; ++i) {
+                add(test[bin], tF0[i] + shift, tF1[i], true);
+            }
+            for (std::size_t i = 0; i < 3; ++i) {
+                add(test[bin], dF0[i] + shift, dF1[i], false);
+            }
+            for (std::size_t i = 0; i < 7; ++i) {
+                add(train[bin], trF0[i], trF1[i], i < 4u);
+            }
+        }
+    }
+    std::vector<Scores> testBins() const { return sets(test); }
+    std::vector<Scores> trainBins() const { return sets(train); }
+    const std::vector<std::vector<double> > f0 = {{1, 0, 0}, {1, 0, 0}};
+    const std::vector<std::vector<double> > f1 = {{0, 1, 0}, {0, 1, 0}};
+
+  private:
+    struct Psm {
+        double features[2];
+        PSMDescription psm;
+        bool isTarget;
+    };
+    void add(std::vector<std::unique_ptr<Psm> >& set, double x0, double x1,
+             bool isTarget) {
+        set.emplace_back(new Psm());
+        Psm& p = *set.back();
+        p.features[0] = x0;
+        p.features[1] = x1;
+        p.psm.features = p.features;
+        p.psm.scan = static_cast<unsigned int>(++numPsms);
+        p.isTarget = isTarget;
+    }
+    std::vector<Scores> sets(
+        const std::vector<std::unique_ptr<Psm> > (&psms)[numBins]) const {
+        std::vector<Scores> result(numBins, Scores(false));
+        for (std::size_t bin = 0; bin < numBins; ++bin) {
+            for (const std::unique_ptr<Psm>& p : psms[bin]) {
+                result[bin].addScoreHolder(ScoreHolder(
+                    0.0, p->isTarget ? LabelType::TARGET : LabelType::DECOY,
+                    &p->psm));
+            }
+            result[bin].recalculateSizes();
+        }
+        return result;
+    }
+    std::vector<std::unique_ptr<Psm> > test[numBins], train[numBins];
+    std::size_t numPsms = 0;
+};
+
+TEST_F(ScoresTest, SecondChanceComparesWithTheReportedReset)
+{
+    FeatureNames::resetNumFeatures();
+    // the weights file must name the features of the input
+    DataSet::resetFeatureNames();
+    DataSet::getFeatureNames().insertFeature("f0");
+    DataSet::getFeatureNames().insertFeature("f1");
+    FeatureNames::setNumFeatures(2);
+    ResetCountExample example;
+    const double testFdr = 0.2, fdr = 0.01;
+    typedef MergeNormalization Scheme;
+    // the three counts of the comment above
+    EXPECT_EQ(6, Scores::countMergedTargets(
+                     example.testBins(), example.trainBins(), example.f1,
+                     Scheme::TRAIN_DECOYS, fdr, false, testFdr));
+    EXPECT_EQ(6, Scores::countMergedTargets(
+                     example.testBins(), example.trainBins(), example.f0,
+                     Scheme::TRAIN_DECOYS, fdr, false, testFdr));
+    EXPECT_EQ(12, Scores::countMergedTargets(
+                      example.testBins(), example.trainBins(), example.f0,
+                      Scheme::TEST, fdr, false, testFdr));
+    // the reset of --init-weights f1 with the test scheme
+    EXPECT_EQ(6, Scores::countMergedTargets(
+                     example.testBins(), example.trainBins(), example.f1,
+                     Scheme::TEST, fdr, false, testFdr));
+    // --init-weights is read through the normalizer, the identity here
+    std::unique_ptr<Normalizer> norm = Normalizer::create(Normalizer::NONORM);
+    norm->setNumFeatures(2);
+    const std::string weightFile =
+        ::testing::TempDir() + "SecondChanceComparesWithTheReportedReset.txt";
+    {
+        std::ofstream out(weightFile.c_str());
+        out << "f0\tf1\tm0\n0\t1\t0\n0\t1\t0\n";
+    }
+    for (bool initWeights : {false, true}) {
+        // with train-decoys as the run's scheme, as with more than three
+        // folds, the reset reports 6 targets and the trained vector is kept;
+        // with --init-weights f1 the reset reports 6 with both schemes
+        for (Scheme scheme : {Scheme::TEST, Scheme::TRAIN_DECOYS}) {
+            SCOPED_TRACE(::testing::Message() << "--init-weights "
+                                              << initWeights << ", scheme "
+                                              << static_cast<int>(scheme));
+            SanityCheck check;
+            check.setDirectionCheck(SanityCheck::DirectionCheck::SECOND_CHANCE);
+            check.setMergeScheme(scheme, fdr, false);
+            if (initWeights) {
+                check.setInitWeightFN(weightFile);
+            }
+            std::vector<Scores> bins = example.testBins();
+            std::vector<Scores> trainBins = example.trainBins();
+            std::vector<std::vector<double> > w(
+                ResetCountExample::numBins, std::vector<double>(3));
+            // f0 per bin: 6 targets above 3 decoys, q = 1/6; f1: none
+            EXPECT_EQ(initWeights ? 0 : 12,
+                      check.getInitDirection(bins, trainBins, norm.get(), w,
+                                             testFdr, testFdr));
+            EXPECT_EQ(initWeights ? example.f1 : example.f0, w);
+            w = example.f1;
+            PseudoRandom::setSeed(11u);
+            const bool keep = initWeights || scheme == Scheme::TRAIN_DECOYS;
+            EXPECT_EQ(keep, check.validateDirection(bins, trainBins, w));
+            EXPECT_EQ(11u, PseudoRandom::getSeed());
+            EXPECT_EQ(keep, check.secondChanceKept());
+            // kept, or reset to the default vectors f0; --init-weights f1
+            // would also be restored by a reset
+            EXPECT_EQ(keep ? example.f1 : example.f0, w);
+        }
+    }
+    std::remove(weightFile.c_str());
+    DataSet::resetFeatureNames();
     FeatureNames::resetNumFeatures();
 }
 

@@ -195,7 +195,7 @@ class Scores {
   void populateWithPSMs(SetHandler& setHandler);
 
   int getInitDirection(const double initialSelectionFdr,
-                       std::vector<double>& direction);
+                       std::vector<double>& direction) const;
   void createXvalSetsBySpectrum(std::vector<Scores>& train,
                                 std::vector<Scores>& test,
                                 unsigned int xval_fold,
