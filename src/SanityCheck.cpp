@@ -27,6 +27,14 @@ using namespace std;
 #include "SanityCheck.h"
 #include "Globals.h"
 
+namespace {
+// why a merged count finds no usable list, see Scores::countMergedTargets
+const char* const kUnusableListReasons =
+    "the scores of a test bin cannot be rescaled, or targets and decoys "
+    "separate too well in a test bin (test, --static), in the merged list or "
+    "in its best PSM per spectrum (-Y) or per peptide";
+}  // namespace
+
 void SanityCheck::checkAndSetDefaultDir() {
   if (!initDefaultDir_ && initDefaultDirName_.size() > 0) {
     int sign = 1;
@@ -172,10 +180,8 @@ bool SanityCheck::secondChance(const vector<Scores>& testset,
        << (skipNormalizeScores_ ? "" : ", rescaled by the training decoys")
        << ": ";
   if (trainedCount < 0) {
-    cerr << "the trained SVMs give no usable list (the scores of a test bin "
-         << "cannot be rescaled, or targets and decoys separate too well in "
-         << "the merged list or in its best PSM per spectrum (-Y) or per "
-         << "peptide)";
+    cerr << "the trained SVMs give no usable list (" << kUnusableListReasons
+         << ")";
   } else {
     cerr << trainedCount << " targets with q<" << test_fdr_
          << " for the trained SVMs, " << resetCount << " for the "
@@ -217,9 +223,7 @@ bool SanityCheck::validateDirection(vector<Scores>& testset,
                                          test_fdr_, reportedLists_);
     if (overFDR < 0) {
       cerr << "The trained weights give no usable merged out-of-fold list: "
-           << "the scores of a test bin cannot be rescaled, or targets and "
-           << "decoys separate too well in it or in its best PSM per "
-           << "spectrum (-Y) or per peptide" << endl;
+           << kUnusableListReasons << endl;
       resetDirection(trainset, w);
       return false;
     }

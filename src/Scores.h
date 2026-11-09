@@ -129,9 +129,12 @@ class Scores {
   // lists made from them are not counted. Works on copies, so neither the
   // bins nor the weights change, and leaves the global random number
   // generator in the state it found.
+  // skipNormalizeScores (--static) merges the raw scores, which merge then
+  // treats as with TEST.
   // Returns -1, a list that cannot be used, when the scores of one of
   // several bins cannot be rescaled, which would end the merge, or when
-  // targets and decoys separate too well in the merged list or in one of
+  // targets and decoys separate too well in a bin whose pi0 the merge
+  // estimates (TEST, skipNormalizeScores), in the merged list or in one of
   // the lists the run makes from it (lists), which would end the run at
   // their postMergeStep.
   static int countMergedTargets(const std::vector<Scores>& testBins,

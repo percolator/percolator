@@ -1801,6 +1801,155 @@ TEST_F(ScoresTest, SecondChanceChecksTheReportedLists)
     FeatureNames::resetNumFeatures();
 }
 
+// Test bins and training sets of PSMs with one feature x, each PSM with its
+// own spectrum and peptide, scored with w = x.
+class OneFeatureSets {
+  public:
+    static constexpr std::size_t numBins = 2;
+    std::vector<Scores> testBins(bool usePi0) const {
+        return sets(test_, usePi0);
+    }
+    std::vector<Scores> trainBins(bool usePi0) const {
+        return sets(trainIsTest_ ? test_ : train_, usePi0);
+    }
+    const std::vector<std::vector<double> > w = {{1.0, 0.0}, {1.0, 0.0}};
+
+  protected:
+    // the test bins serve as their own training sets
+    bool trainIsTest_ = false;
+    void addTest(std::size_t bin, double x, bool isTarget) {
+        add(test_[bin], x, isTarget);
+    }
+    void addTrain(std::size_t bin, double x, bool isTarget) {
+        add(train_[bin], x, isTarget);
+    }
+
+  private:
+    struct Psm {
+        double x;
+        PSMDescription psm;
+        bool isTarget;
+    };
+    void add(std::vector<std::unique_ptr<Psm> >& set, double x,
+             bool isTarget) {
+        set.emplace_back(new Psm());
+        Psm& p = *set.back();
+        p.x = x;
+        p.psm.features = &p.x;
+        p.psm.scan = static_cast<unsigned int>(++numPsms_);
+        p.isTarget = isTarget;
+    }
+    std::vector<Scores> sets(
+        const std::vector<std::unique_ptr<Psm> > (&psms)[numBins],
+        bool usePi0) const {
+        std::vector<Scores> result(numBins, Scores(usePi0));
+        for (std::size_t bin = 0; bin < numBins; ++bin) {
+            for (const std::unique_ptr<Psm>& p : psms[bin]) {
+                result[bin].addScoreHolder(ScoreHolder(
+                    0.0, p->isTarget ? LabelType::TARGET : LabelType::DECOY,
+                    &p->psm));
+            }
+            result[bin].recalculateSizes();
+        }
+        return result;
+    }
+    std::vector<std::unique_ptr<Psm> > test_[numBins], train_[numBins];
+    std::size_t numPsms_ = 0;
+};
+
+// Whether the run's merge of these bins, scored with w, completes: with the
+// scheme, or as with test where the scores are not rescaled (--static), as
+// CrossValidation::postIterationProcessing merges them.
+static bool mergeCompletes(const OneFeatureSets& sets, bool usePi0,
+                           MergeNormalization scheme,
+                           bool skipNormalizeScores, double fdr) {
+    if (skipNormalizeScores) {
+        scheme = MergeNormalization::TEST;
+    }
+    std::vector<Scores> bins = sets.testBins(usePi0);
+    std::vector<Scores> trainBins = sets.trainBins(usePi0);
+    std::vector<std::vector<double> > w = sets.w;
+    std::vector<ScoreScale> scales;
+    for (std::size_t bin = 0; bin < bins.size(); ++bin) {
+        bins[bin].calcScores(w[bin]);
+        if (!skipNormalizeScores && (scheme == MergeNormalization::TRAIN ||
+                                     scheme == MergeNormalization::TRAIN_DECOYS)) {
+            scales.push_back(trainBins[bin].calcScoreScale(w[bin], scheme, fdr));
+        }
+    }
+    Scores merged(usePi0);
+    try {
+        merged.merge(bins, fdr, skipNormalizeScores, w, scheme, scales);
+    } catch (const MyException&) {
+        return false;
+    }
+    return true;
+}
+
+// Two test bins, which serve as their own training sets: the first of 150
+// targets with x in [10, 11.5) above 250 decoys with x in (-2.5, 0], which
+// separate too well on their own (p = 1/251 for every target); the second
+// of 100 targets with x in [10, 11), one decoy-like target with x = -5 and
+// 150 decoys with x in (-1.5, 0]. The decoy-like target keeps the merged
+// list usable with every scheme, and its 250 other targets precede all
+// decoys. Before it rescales the bins with test, the merge estimates each
+// bin's pi0, which ends the run at the first bin; so does the merge of the
+// raw scores of --static, which merges as test does.
+class TooGoodBinExample : public OneFeatureSets {
+  public:
+    TooGoodBinExample() {
+        trainIsTest_ = true;
+        for (std::size_t j = 0; j < 150; ++j) {
+            addTest(0, 10.0 + 0.01 * static_cast<double>(j), true);
+        }
+        for (std::size_t j = 0; j < 250; ++j) {
+            addTest(0, -0.01 * static_cast<double>(j), false);
+        }
+        for (std::size_t j = 0; j < 100; ++j) {
+            addTest(1, 10.0 + 0.01 * static_cast<double>(j), true);
+        }
+        addTest(1, -5.0, true);
+        for (std::size_t j = 0; j < 150; ++j) {
+            addTest(1, -0.01 * static_cast<double>(j), false);
+        }
+    }
+};
+
+// countMergedTargets finds the list of test unusable (-1) where a bin
+// separates too well, as merge then throws, also without rescaling
+// (--static); the other schemes, which estimate no pi0 for the bins, count
+// the usable merged list. Before, test counted it too, and the second
+// chance and the reset count could take a list whose merge ends the run.
+TEST_F(ScoresTest, CountMergedTargetsChecksEachBinOfTest)
+{
+    FeatureNames::resetNumFeatures();
+    FeatureNames::setNumFeatures(1);
+    TooGoodBinExample example;
+    const double fdr = 0.01, testFdr = 0.005;
+    typedef MergeNormalization Scheme;
+    for (Scheme scheme :
+         {Scheme::TEST, Scheme::TRAIN, Scheme::TRAIN_DECOYS, Scheme::NONE}) {
+        for (bool skipNormalizeScores : {false, true}) {
+            SCOPED_TRACE(::testing::Message()
+                         << "scheme " << static_cast<int>(scheme)
+                         << ", --static " << skipNormalizeScores);
+            const bool usable =
+                scheme != Scheme::TEST && !skipNormalizeScores;
+            const std::vector<Scores> bins = example.testBins(false);
+            PseudoRandom::setSeed(3u);
+            const int count = Scores::countMergedTargets(
+                bins, example.trainBins(false), example.w, scheme, fdr,
+                skipNormalizeScores, testFdr);
+            EXPECT_EQ(3u, PseudoRandom::getSeed());
+            // q = 1/250 above the first decoy
+            EXPECT_EQ(usable ? 250 : -1, count);
+            EXPECT_EQ(usable, mergeCompletes(example, false, scheme,
+                                             skipNormalizeScores, fdr));
+        }
+    }
+    FeatureNames::resetNumFeatures();
+}
+
 // countTargetsBelowFdr must report the same number of targets below the FDR
 // threshold as calcScoresAndQvals, also with many tied scores, with and
 // without the mix-max correction.

@@ -164,6 +164,12 @@ int Scores::countMergedTargets(const std::vector<Scores>& testBins,
   const bool rescale = !skipNormalizeScores &&
                        scheme != MergeNormalization::NONE &&
                        testBins.size() > 1u;
+  // Before it takes the anchors of test, the merge estimates the pi0 of each
+  // bin, which ends the run where the bin's targets and decoys separate too
+  // well; it does so without rescaling too (skipNormalizeScores, --static,
+  // which merges as test does).
+  const bool binsChecked =
+      scheme == MergeNormalization::TEST || skipNormalizeScores;
   Scores merged(testBins[0].usePi0_);
   merged.nullTargetWinProb_ = testBins[0].nullTargetWinProb_;
   size_t numScores = 0;
@@ -175,6 +181,9 @@ int Scores::countMergedTargets(const std::vector<Scores>& testBins,
     Scores binScores(testBins[bin]);
     std::vector<double> binWeights(w[bin]);
     binScores.calcScores(binWeights);
+    if (binsChecked && binScores.separatesTooWell()) {
+      return -1;
+    }
     if (rescale) {
       ScoreScale s;
       if (fromTrainingSets) {
