@@ -32,18 +32,18 @@ if [[ -d /opt/local/var/macports ]]
   then
     echo "[ Package manager ] : MacPorts "
     package_manager="sudo port"
-    other_packages="cmake bzip2 libiconv zlib"
+    other_packages="cmake libomp"
 elif [[ -f ${HOME}/bin/brew ]]
   then
     echo "[ Package manager ] : Homebrew "
     package_manager=$HOME/bin/brew
-    other_packages="pbzip2 lzlib llvm libomp"
+    other_packages="libomp"
 elif [[ -f /usr/local/bin/brew || -f /opt/homebrew/bin/brew ]]
   then
     echo "[ Package manager ] : Homebrew "
     package_manager="brew"
     ${package_manager} update || true # brew.rb raises an error on the vagrant box, just ignore it
-    other_packages="pbzip2 lzlib llvm libomp"
+    other_packages="libomp"
 else
     package_manager_installed=false
 fi

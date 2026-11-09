@@ -10,6 +10,17 @@ if(NOT CRUX AND APPLE AND ${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION} VERSION_
   cmake_policy(SET CMP0025 NEW)
 endif()
 
+# The macOS binaries run on macOS 12 and later, not only on the version of
+# the build machine. This has to be set before project(). A value given with
+# -DCMAKE_OSX_DEPLOYMENT_TARGET or in the MACOSX_DEPLOYMENT_TARGET
+# environment variable is kept.
+if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Darwin"
+   AND NOT DEFINED CMAKE_OSX_DEPLOYMENT_TARGET
+   AND "$ENV{MACOSX_DEPLOYMENT_TARGET}" STREQUAL "")
+  set(CMAKE_OSX_DEPLOYMENT_TARGET "12.0" CACHE STRING
+      "Minimum macOS version of the binaries")
+endif()
+
 project(PERCOLATOR)
 set(PERCOLATOR_SOURCE_DIR ${CMAKE_SOURCE_DIR})
 include("CommonCMake.txt")

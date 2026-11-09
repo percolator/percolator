@@ -13,20 +13,31 @@ set(COMMON_LIBRARIES "")
 find_package(OpenMP)
 # Help AppleClang find Homebrew's libomp if not auto-detected
 if(APPLE AND NOT OpenMP_CXX_FOUND)
-  # Common Homebrew prefix on Apple Silicon
-  set(_HOMEBREW_OMP_ROOT "/opt/homebrew/opt/libomp")
-  if (EXISTS "${_HOMEBREW_OMP_ROOT}/include" AND EXISTS "${_HOMEBREW_OMP_ROOT}/lib")
-    # Hint include/lib to CMake's OpenMP finder
-    set(OpenMP_CXX_FLAGS "-Xpreprocessor -fopenmp" CACHE STRING "" FORCE)
-    set(OpenMP_CXX_LIB_NAMES "omp" CACHE STRING "" FORCE)
-    set(OpenMP_omp_LIBRARY "${_HOMEBREW_OMP_ROOT}/lib/libomp.dylib" CACHE FILEPATH "" FORCE)
-    include_directories("${_HOMEBREW_OMP_ROOT}/include")
-    # Retry discovery
-    find_package(OpenMP)
-  endif()
+  # Homebrew prefixes on Apple silicon and on Intel
+  foreach(_HOMEBREW_OMP_ROOT "/opt/homebrew/opt/libomp" "/usr/local/opt/libomp")
+    if (EXISTS "${_HOMEBREW_OMP_ROOT}/include" AND EXISTS "${_HOMEBREW_OMP_ROOT}/lib")
+      # Link the static library where there is one, so that the binary
+      # runs without Homebrew
+      set(_HOMEBREW_OMP_LIBRARY "${_HOMEBREW_OMP_ROOT}/lib/libomp.a")
+      if (NOT EXISTS "${_HOMEBREW_OMP_LIBRARY}")
+        set(_HOMEBREW_OMP_LIBRARY "${_HOMEBREW_OMP_ROOT}/lib/libomp.dylib")
+      endif()
+      # Hint include/lib to CMake's OpenMP finder
+      set(OpenMP_CXX_FLAGS "-Xpreprocessor -fopenmp" CACHE STRING "" FORCE)
+      set(OpenMP_CXX_LIB_NAMES "omp" CACHE STRING "" FORCE)
+      set(OpenMP_omp_LIBRARY "${_HOMEBREW_OMP_LIBRARY}" CACHE FILEPATH "" FORCE)
+      include_directories("${_HOMEBREW_OMP_ROOT}/include")
+      # Retry discovery
+      find_package(OpenMP)
+      break()
+    endif()
+  endforeach()
 endif()
 if (OpenMP_CXX_FOUND)
     list(APPEND COMMON_LIBRARIES OpenMP::OpenMP_CXX)
+else()
+  message(WARNING "OpenMP was not found, so percolator will run on one "
+                  "thread only. On macOS, install libomp (brew install libomp).")
 endif()
 
 
