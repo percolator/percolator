@@ -68,7 +68,7 @@ mkdir -p $build_dir/percolator;
 cd $build_dir/percolator;
 echo "cmake percolator.....";
 (set -x;
-    cmake -DTARGET_ARCH=amd64 -DCMAKE_BUILD_TYPE=${build_type} -DCMAKE_INSTALL_PREFIX=/usr -DGOOGLE_TEST=1  $src_dir/percolator;
+    cmake -DCMAKE_BUILD_TYPE=${build_type} -DCMAKE_INSTALL_PREFIX=/usr -DGOOGLE_TEST=1  $src_dir/percolator;
 )
 #-----make------
 echo "make percolator (this will take few minutes).....";

@@ -107,8 +107,3 @@ endif()
 # Enable test
 # =============================
 add_test(NAME UnitTest_Percolator_RunAllTests COMMAND gtest_unit)
-
-# =============================
-# Install
-# =============================
-install(TARGETS gtest_unit EXPORT PERCOLATOR DESTINATION ./bin)

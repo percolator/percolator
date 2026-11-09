@@ -47,7 +47,7 @@ MESSAGE( STATUS )
 
 
 # Detect machine architecture, on UNIX:
-get_arch("${TARGET_ARCH}")
+get_arch()
 
 # STORE NEWLY SET VARIABLES IN *.h.cmake FILES
 load_config_files("${CMAKE_CURRENT_SOURCE_DIR}")
@@ -92,9 +92,5 @@ set(PACKAGE_NICKNAME "percolator${NICKNAME_SUFFIX}")
 
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Percolator and qvality, two post processors for shotgun proteomics data.")
 include("CPack.txt")
-
-set(CPACK_RPM_PACKAGE_DEPENDS "${CPACK_RPM_PACKAGE_DEPENDS} libc6, libgcc1")
-
-
 
 include(CPack)
