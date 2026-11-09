@@ -222,6 +222,8 @@ struct DirectionCheckOptions {
     // the sum of the two features separates every target from every decoy,
     // while neither feature does alone
     bool perfect = false;
+    // --static: the scores of the bins are not rescaled
+    bool skipNormalizeScores = false;
 };
 
 // What trainAndMerge observed besides the scores and weights
@@ -292,7 +294,8 @@ static void trainAndMerge(unsigned int numFolds, MergeNormalization scheme,
     CrossValidationEx crossValidation(false, false, checkOptions.testFdr,
                                       0.05, 0.05, 0.0, 0.0, 10,
                                       checkOptions.separate, 1, false, 1,
-                                      false, 1.0, numFolds);
+                                      checkOptions.skipNormalizeScores, 1.0,
+                                      numFolds);
     crossValidation.setMergeNormalization(scheme);
     Scores scores(checkOptions.separate);
     scores.populateWithPSMs(setHandler);
@@ -722,6 +725,57 @@ TEST_F(CrossValidationTest, TooGoodSeparationIsNotKeptByTheMergedCount)
         EXPECT_THROW(trainAndMerge(3u, MergeNormalization::TEST, scoreOf, w,
                                    features, options),
                      MyException);
+    }
+}
+
+// --static rescales nothing (skipNormalizeScores) and ignores the merge
+// scheme: every scheme gives the scores, weights and final random state of
+// test, and the merge reports test, which makes -N rescale the scores of all
+// PSMs. This holds for separate searches, whose pi0 estimate of each test
+// bin under test draws random numbers, and after the second chance kept the
+// trained SVMs (--testFDR 0.01), whose merge would otherwise use
+// train-decoys or the scheme set for that case.
+TEST_F(CrossValidationTest, StaticIgnoresTheMergeScheme)
+{
+    for (bool separate : {false, true}) {
+        for (bool secondChance : {false, true}) {
+            SCOPED_TRACE(::testing::Message() << "separate " << separate
+                                              << ", second chance "
+                                              << secondChance);
+            DirectionCheckOptions options;
+            options.check = SanityCheck::DirectionCheck::SECOND_CHANCE;
+            options.skipNormalizeScores = true;
+            options.separate = separate;
+            if (secondChance) {
+                options.testFdr = 0.01;
+            }
+            std::map<unsigned int, double> scoreTest;
+            std::vector<std::vector<double> > wTest;
+            std::vector<double> features;
+            DirectionCheckResult test;
+            trainAndMerge(3u, MergeNormalization::TEST, scoreTest, wTest,
+                          features, options, &test);
+            EXPECT_EQ(secondChance, test.secondChanceKept);
+            EXPECT_EQ(MergeNormalization::TEST, test.usedScheme);
+            EXPECT_FALSE(allSingleFeature(wTest));
+            for (MergeNormalization scheme :
+                 {MergeNormalization::TRAIN, MergeNormalization::TRAIN_DECOYS,
+                  MergeNormalization::NONE}) {
+                SCOPED_TRACE(static_cast<int>(scheme));
+                options.secondChanceScheme = scheme;
+                std::map<unsigned int, double> scoreOf;
+                std::vector<std::vector<double> > w;
+                DirectionCheckResult other;
+                trainAndMerge(3u, scheme, scoreOf, w, features, options,
+                              &other);
+                EXPECT_EQ(secondChance, other.secondChanceKept);
+                EXPECT_EQ(MergeNormalization::TEST, other.usedScheme);
+                EXPECT_EQ(wTest, w);
+                expectSameScores(scoreTest, scoreOf);
+                EXPECT_EQ(test.randomStateAfterMerge,
+                          other.randomStateAfterMerge);
+            }
+        }
     }
 }
 

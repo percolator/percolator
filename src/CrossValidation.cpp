@@ -745,10 +745,17 @@ void CrossValidation::postIterationProcessing(Scores& fullset,
   // When the second chance of the direction check kept the trained SVMs,
   // whose test bins were too small for the per-bin count, the bins are
   // merged as it counted them, with the training-set decoys, unless the
-  // caller chose another scheme for this case.
-  usedMergeNormalization_ = check.secondChanceKept()
-                                ? check.secondChanceMergeScheme()
-                                : mergeNormalization_;
+  // caller chose another scheme for this case. --static (skipNormalizeScores_)
+  // rescales nothing and ignores the scheme, after a second chance too: the
+  // bins are merged as with test, which also makes -N rescale the scores of
+  // all PSMs as before the schemes existed.
+  if (skipNormalizeScores_) {
+    usedMergeNormalization_ = MergeNormalization::TEST;
+  } else {
+    usedMergeNormalization_ = check.secondChanceKept()
+                                  ? check.secondChanceMergeScheme()
+                                  : mergeNormalization_;
+  }
 
   // With the TRAIN and TRAIN_DECOYS schemes, each test bin is rescaled by
   // anchors taken from its fold's training set, scored with the same final

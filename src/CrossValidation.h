@@ -111,7 +111,8 @@ class CrossValidation {
   }
   // the scheme postIterationProcessing merged with: the one set above, or
   // the scheme of the direction check's second chance when that kept the
-  // trained SVMs (SanityCheck::secondChanceMergeScheme)
+  // trained SVMs (SanityCheck::secondChanceMergeScheme); always test when
+  // the scores are not rescaled (skipNormalizeScores, --static)
   MergeNormalization usedMergeNormalization() const {
     return usedMergeNormalization_;
   }
