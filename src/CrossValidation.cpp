@@ -625,11 +625,24 @@ int CrossValidation::mergeCpCnPairs(
       trainScores_[set].generatePositiveTrainingSet(svmInput, selectionFdr,
                                                     1.0, trainBestPositive_);
 
-      // the SVM algorithm (see ssl.cpp) starts from zero weights and outputs
-      std::fill(weights_[set].begin(), weights_[set].end(), 0.0);
+      // The SVM algorithm (see ssl.cpp) starts from the fold's weights of
+      // the previous iteration, which are close to the new solution, as the
+      // grid solves do; in the first iteration, which holds the initial
+      // direction, and with classic training it starts from zero.
       std::vector<double> outputs(
           static_cast<std::size_t>(svmInput.positives + svmInput.negatives),
           0.0);
+      if (classicTraining_ || iteration_ == 0u) {
+        std::fill(weights_[set].begin(), weights_[set].end(), 0.0);
+      } else {
+        const std::vector<double>& w = weights_[set];
+        for (int i = 0; i < svmInput.m; ++i) {
+          const double* x = svmInput.row(i);
+          double o = 0.0;
+          for (int k = 0; k < svmInput.n; ++k) o += x[k] * w[k];
+          outputs[i] = o;
+        }
+      }
       L2_SVM_MFN(svmInput, pOptions, weights_[set], outputs, bestCposes[set],
                  bestCposes[set] * bestCfracs[set]);
     }
