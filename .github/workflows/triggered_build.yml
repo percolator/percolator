@@ -14,64 +14,119 @@ jobs:
     - name: configure_and_make
       run: ./admin/builders/ubuntu64_build.sh -s ${{ github.workspace }}/.. -r ${{ github.workspace }}/rel -b ${{ github.workspace }}/build
     - name: test
-      run: cd ${{ github.workspace }}/build/percolator && sudo make install && make test ARGS="-V"
+      run: cd ${{ github.workspace }}/build/percolator && ctest --output-on-failure
     - name: zip raw binary
-      run: zip -j ${{ github.workspace }}/rel/percolator-ubuntu-portable.zip ${{ github.workspace }}/build/percolator/src/percolator
+      run: zip -j ${{ github.workspace }}/rel/percolator-ubuntu-portable.zip ${{ github.workspace }}/build/percolator/src/percolator ${{ github.workspace }}/build/percolator/src/qvality/qvality
     - name: Upload packages
       uses: actions/upload-artifact@v4
       with:
         name: ubuntu-packages
         path: ${{ github.workspace }}/rel
 
-  build-centos:
+  # Binaries for older Linux systems (glibc 2.28: RHEL/AlmaLinux/Rocky 8 and
+  # later, e.g. HPC clusters). GCC 13 from gcc-toolset links the parts of
+  # libstdc++ that are newer than the system's statically, and STATIC=ON
+  # links libgomp statically where libgomp.a exists.
+  build-linux-portable:
     runs-on: ubuntu-latest
-    container: 'lukall/centos_runner:latest'
+    container: 'almalinux:8'
     steps:
+    - name: preinstall
+      run: dnf -y install gcc-toolset-13-gcc-c++ cmake make git python3 rpm-build zip binutils
     - uses: actions/checkout@v6
-    - name: environment fixes
-      run: |
-        # CentOS7 EOL fix for mirrors: https://serverfault.com/questions/1161816/mirrorlist-centos-org-no-longer-resolve/1161847#1161847
-        sed -i s/mirror.centos.org/vault.centos.org/g /etc/yum.repos.d/*.repo
-        sed -i s/^#.*baseurl=http/baseurl=http/g /etc/yum.repos.d/*.repo
-        sed -i s/^mirrorlist=http/#mirrorlist=http/g /etc/yum.repos.d/*.repo
-        # for some reason the checkout action inside a container does not check out to the github.workspace variable
-        mkdir -p $(dirname ${{ github.workspace }})
-        ln -s $(pwd) ${{ github.workspace }}
-        # install sudo
-        yum install sudo -y
-    - name: create_dirs
-      run: mkdir -p ${{ github.workspace }}/release ${{ github.workspace }}/../build
     - name: configure_and_make
       run: |
-        ./admin/builders/centos64_build.sh -s ${{ github.workspace }}/.. -r ${{ github.workspace }}/release -b ${{ github.workspace }}/../build
+        source /opt/rh/gcc-toolset-13/enable
+        cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DSTATIC=ON
+        cmake --build build -j 4
     - name: test
+      run: cd build && ctest --output-on-failure
+    - name: check_binaries
+      # no symbol newer than glibc 2.28 and the libstdc++ and libgomp of GCC 8
       run: |
-        cd -P ${{ github.workspace }}/../build/percolator && make install && make test ARGS="-V"
+        for bin in build/src/percolator build/src/qvality/qvality; do
+          bash tests/ci/check_symbol_versions.sh "$bin" GLIBC_2.28 GLIBCXX_3.4.25 CXXABI_1.3.11 GOMP_4.5
+        done
+    - name: package
+      run: |
+        mkdir -p rel
+        cd build && cpack -G RPM && cp -v percolator*.rpm ../rel/
     - name: zip raw binary
-      run: zip -j ${{ github.workspace }}/release/percolator-linux-portable.zip ${{ github.workspace }}/../build/percolator/src/percolator
+      run: zip -j rel/percolator-linux-x86_64-portable.zip build/src/percolator build/src/qvality/qvality
     - name: Upload packages
       uses: actions/upload-artifact@v4
       with:
-        name: centos-packages
-        path: ${{ github.workspace }}/release
+        name: linux-portable-packages
+        path: rel
 
+  # One build per architecture; osx-universal joins the two binaries.
   build-osx:
-    runs-on: macos-15
+    strategy:
+      matrix:
+        include:
+          - os: macos-15
+            arch: arm64
+          - os: macos-15-intel
+            arch: x86_64
+    runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v6
     - name: create_dirs
       run: mkdir -p ${{ github.workspace }}/rel ${{ github.workspace }}/build
     - name: configure_and_make
-      run: ./admin/builders/osx64_build.sh -s ${{ github.workspace }}/.. -r ${{ github.workspace }}/release -b ${{ github.workspace }}/build
+      run: ./admin/builders/osx64_build.sh -s ${{ github.workspace }}/.. -r ${{ github.workspace }}/rel -b ${{ github.workspace }}/build
     - name: test
-      run: cd ${{ github.workspace }}/build/percolator && sudo make install && make test ARGS="-V"
-    - name: zip raw binary
-      run: zip ${{ github.workspace }}/rel/percolator-osx-portable.zip ${{ github.workspace }}/build/percolator/src/percolator
+      run: cd ${{ github.workspace }}/build/percolator && ctest --output-on-failure
+    - name: check_binaries
+      # minos 12.0, and no Homebrew library (libomp is linked statically)
+      run: |
+        mkdir -p osx-bin
+        for bin in build/percolator/src/percolator build/percolator/src/qvality/qvality; do
+          lipo -info "$bin"
+          libs=$(otool -L "$bin")
+          echo "$libs"
+          minos=$(otool -l "$bin" | awk '/LC_BUILD_VERSION/ {f = 1} f && $1 == "minos" && !done {print $2; done = 1}')
+          echo "minos $minos"
+          test "$minos" = "12.0"
+          if grep -q -e libomp -e /opt/homebrew -e /usr/local <<< "$libs"; then
+            echo "$bin needs a Homebrew library"
+            exit 1
+          fi
+          cp "$bin" osx-bin/
+        done
+    - name: Upload binaries
+      uses: actions/upload-artifact@v4
+      with:
+        name: osx-binaries-${{ matrix.arch }}
+        path: osx-bin
     - name: Upload packages
       uses: actions/upload-artifact@v4
       with:
-        name: osx-packages
+        name: osx-packages-${{ matrix.arch }}
         path: ${{ github.workspace }}/rel
+
+  osx-universal:
+    needs: build-osx
+    runs-on: macos-15
+    steps:
+    - uses: actions/download-artifact@v4
+      with:
+        pattern: osx-binaries-*
+    - name: lipo
+      run: |
+        mkdir universal
+        for exe in percolator qvality; do
+          lipo -create -output universal/$exe osx-binaries-arm64/$exe osx-binaries-x86_64/$exe
+          chmod +x universal/$exe
+          lipo -info universal/$exe
+        done
+        mkdir rel
+        zip -j rel/percolator-osx-portable.zip universal/percolator universal/qvality
+    - name: Upload packages
+      uses: actions/upload-artifact@v4
+      with:
+        name: osx-packages-universal
+        path: rel
 
   build-windows:
     runs-on: windows-2022
