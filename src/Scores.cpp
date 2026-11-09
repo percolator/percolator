@@ -22,6 +22,7 @@
 #include <cassert>
 #include <cmath>
 #include <fstream>
+#include <functional>
 #include <iostream>
 #include <limits>
 #include <map>
@@ -44,16 +45,6 @@
 #include "SequentialSort.h"
 #include "ssl.h"
 #include "IsotonicPEP.h"
-
-namespace {
-inline bool inParallelRegion() {
-#ifdef _OPENMP
-  return omp_in_parallel() != 0;
-#else
-  return false;
-#endif
-}
-}  // namespace
 
 void Scores::merge(std::vector<Scores>& sv,
                    double fdr,
@@ -658,12 +649,9 @@ void Scores::getFeatureRows(FeatureRows& rows) const {
     rows[ix] = makeFeatureRow(scores_[ix].pPSM->features,
                               scores_[ix].isTarget());
   }
-  // the PSMs have distinct feature rows, so the order is unique
-  if (inParallelRegion()) {
-    sequentialSort(rows.begin(), rows.end());
-  } else {
-    std::sort(rows.begin(), rows.end());
-  }
+  // the PSMs have distinct feature rows, so the order is unique;
+  // parallelSort sorts on the calling thread inside a parallel region
+  parallelSort(rows.begin(), rows.end(), std::less<std::uintptr_t>());
 }
 
 namespace {
