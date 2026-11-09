@@ -1,0 +1,44 @@
+# Test recipe for the conda package. It follows the bioconda recipe
+# (bioconda-recipes/recipes/percolator) but builds the checked-out source.
+# .github/workflows/conda.yml builds it on Linux and macOS; see README.md.
+{% set version = "3.9.1" %}
+
+package:
+  name: percolator
+  version: {{ version }}
+
+source:
+  path: ../..
+
+build:
+  number: 0
+  run_exports:
+    - {{ pin_subpackage('percolator', max_pin="x") }}
+
+requirements:
+  build:
+    - {{ compiler('cxx') }}
+    - {{ stdlib('c') }}
+    - cmake
+    - make
+    - git  # FetchContent downloads Eigen
+  host:
+    - libboost-devel
+    - llvm-openmp  # [osx]
+  run:
+    - llvm-openmp  # [osx]
+
+test:
+  commands:
+    - percolator "${PREFIX}/testdata/percolatorTab" > /dev/null
+    - test -x "${PREFIX}/bin/qvality"
+    # OpenMP must come from the environment, never from Homebrew.
+    - otool -L "${PREFIX}/bin/percolator" | grep -q "@rpath/libomp.dylib"  # [osx]
+    - "! otool -L ${PREFIX}/bin/percolator | grep -q -e /opt/homebrew -e /usr/local"  # [osx]
+
+about:
+  home: https://github.com/percolator/percolator
+  license: Apache-2.0
+  license_family: APACHE
+  license_file: license.txt
+  summary: Semi-supervised learning for peptide identification from shotgun proteomics datasets.

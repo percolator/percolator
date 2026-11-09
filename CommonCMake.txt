@@ -64,7 +64,7 @@ set(CMAKE_MODULE_PATH ${PERCOLATOR_SOURCE_DIR}/cmake)
 # VERSION AND NAMESPACES
 set(CPACK_PACKAGE_VERSION_MAJOR "3")
 set(CPACK_PACKAGE_VERSION_MINOR "09")
-set(CPACK_PACKAGE_VERSION_PATCH "0")
+set(CPACK_PACKAGE_VERSION_PATCH "1")
 set(PIN_VERSION_MAJOR "1")
 set(PIN_VERSION_MINOR "3")
 set(POUT_VERSION_MAJOR "1")
@@ -87,10 +87,6 @@ IF(MINGW OR WIN32)
     set(CMAKE_LIBRARY_PATH ${CMAKE_LIBRARY_PATH} ${CMAKE_SOURCE_DIR}/lib/lib)
     add_definitions(-D_WIN32)
 ELSE(MINGW OR WIN32)
-    # On Linux you may optionally prefer static libs if STATIC is ON.
-    if(UNIX AND NOT APPLE AND STATIC)
-      list(PREPEND CMAKE_FIND_LIBRARY_SUFFIXES .a)
-    endif()
     list(APPEND CMAKE_INCLUDE_PATH /usr/include)
     list(APPEND CMAKE_LIBRARY_PATH /usr/lib /usr/lib64)
 ENDIF(MINGW OR WIN32)
@@ -98,14 +94,19 @@ ENDIF(MINGW OR WIN32)
 set(PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
 
 #STATIC/DYNAMIC LIBRARY INCLUSION
-if(APPLE)
-  set(CMAKE_FIND_LIBRARY_SUFFIXES .a ${CMAKE_FIND_LIBRARY_SUFFIXES})
-endif()
+# Static libraries are preferred by default on Windows only. The macOS
+# installer (admin/builders/osx64_build.sh) asks for them with -DSTATIC=ON;
+# package managers such as conda need dynamic linking.
 if(MINGW OR WIN32 OR APPLE)
   OPTION(BUILD_SHARED_LIBS "build static binaries." OFF)
+endif()
+if(MINGW OR WIN32)
   OPTION(STATIC "build static binaries. This is mainly intended for the win32-package and the MACOSX-bundle." ON )
-else(MINGW OR WIN32 OR APPLE)
+else()
   OPTION(STATIC "build static binaries. This is mainly intended for the win32-package and the MACOSX-bundle." OFF )
+endif()
+if(UNIX AND STATIC)
+  list(PREPEND CMAKE_FIND_LIBRARY_SUFFIXES .a)
 endif()
 
 ###############################################################################

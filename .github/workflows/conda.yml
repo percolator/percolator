@@ -1,0 +1,41 @@
+name: Conda build
+
+# Builds and tests the conda package from admin/conda with the conda-forge
+# compilers and pinnings, as bioconda does, before a release is submitted
+# to bioconda.
+
+on: [push, pull_request, workflow_dispatch]
+
+jobs:
+  conda-build:
+    name: conda-build (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        # ubuntu: linux-64, macos-15: osx-arm64, macos-15-intel: osx-64
+        os: [ubuntu-latest, macos-15, macos-15-intel]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash -el {0}
+    steps:
+    - uses: actions/checkout@v6
+    - uses: conda-incubator/setup-miniconda@v3
+      with:
+        miniforge-version: latest
+        conda-remove-defaults: true
+        channels: conda-forge
+        auto-activate-base: true
+        activate-environment: ""
+    - name: Install conda-build and the conda-forge pinnings
+      run: conda install -y conda-build conda-forge-pinning
+    - name: Use the SDK of the installed Xcode
+      if: runner.os == 'macOS'
+      run: printf 'CONDA_BUILD_SYSROOT:\n  - %s\n' "$(xcrun --sdk macosx --show-sdk-path)" > "$RUNNER_TEMP/sysroot.yaml"
+    - name: Build and test the package
+      run: |
+        configs=(-m "$CONDA_PREFIX/conda_build_config.yaml")
+        if [[ "$RUNNER_OS" == macOS ]]; then
+          configs+=(-m "$RUNNER_TEMP/sysroot.yaml")
+        fi
+        conda build admin/conda -c conda-forge "${configs[@]}"

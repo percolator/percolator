@@ -1,3 +1,11 @@
+v3.09.1
+Build fixes only; results are identical to v3.09.
+* macOS: the install honours CMAKE_INSTALL_PREFIX (it was always /usr/local) and CMAKE_OSX_ARCHITECTURES is only forced when TARGET_ARCH is given.
+* Static libraries are preferred on Windows only, or with -DSTATIC=ON, which the macOS installer build uses. New option HOMEBREW_LIBOMP to switch off the fallback to Homebrew's libomp.
+* Eigen is no longer installed with Percolator.
+* Linux: Boost.System is linked only where it exists; Boost 1.89 and later have no such library.
+* New script admin/builders/conda_build.sh for dynamically linked conda builds, a test recipe in admin/conda and a CI workflow that builds it on Linux and macOS.
+
 v3.09
 * Replaced I-spline rank-based PEP calibration with score-based I-spline calibration as the new default; use --rank-pep to opt back to the previous rank-based behaviour. (#403)
 * Added I-spline PEP calibration using a trust-region reflective constrained ridge regressor (ISplineTRRRegressor), replacing PAVA post-processing as the default smoother; use --pava-pep to revert to PAVA. (#399)

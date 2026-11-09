@@ -18,11 +18,16 @@ set(PERLUQVAL_VERSION "v${CPACK_PACKAGE_VERSION_MAJOR}-${CPACK_PACKAGE_VERSION_M
 IF(APPLE)
 	set(CPACK_GENERATOR productbuild)
 	set(CPACK_COMPONENTS_ALL Unspecified)
-  set(CMAKE_INSTALL_PREFIX /usr/local)
+  # CMAKE_INSTALL_PREFIX is not set here: it defaults to /usr/local on macOS,
+  # and a conda build must install into $PREFIX.
   set(CPACK_PACKAGING_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
   set(CPACK_PACKAGE_FILE_NAME "${PACKAGE_NICKNAME}-${PERLUQVAL_VERSION}-osx-${TARGET_ARCH}")
   set(CPACK_SOURCE_PACKAGE_FILE_NAME  "${PACKAGE_NICKNAME}-${PERLUQVAL_VERSION}-osx-src")
-	set(CMAKE_OSX_ARCHITECTURES ${TARGET_ARCH} CACHE STRING "Build architectures for OSX" FORCE)
+	# Leave the architecture to the toolchain, e.g. conda's cross-compilers,
+	# unless TARGET_ARCH is given.
+	if(TARGET_ARCH AND NOT CMAKE_OSX_ARCHITECTURES)
+		set(CMAKE_OSX_ARCHITECTURES ${TARGET_ARCH} CACHE STRING "Build architectures for OSX" FORCE)
+	endif()
 	set(CPACK_PACKAGE_ICON "${PERCOLATOR_SOURCE_DIR}/admin/win/nsi/percolator.ico")
 	set(CPACK_BUNDLE_NAME ${PACKAGE_NICKNAME})
 elseif(UNIX)
