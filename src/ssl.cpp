@@ -21,7 +21,6 @@
 using namespace std;
 #include "Globals.h"
 #include "ssl.h"
-#include "SequentialSort.h"
 
 #include <stdarg.h>
 #include <cstring>
@@ -574,9 +573,9 @@ double line_search(double* w, double* w_bar, double lambda, double* o,
   while (start < p) {
     const int end = (chunk < p - start) ? start + chunk : p;
     if (end < p) {
-      sequentialNthElement(deltas + start, deltas + end - 1, deltas + p);
+      std::nth_element(deltas + start, deltas + end - 1, deltas + p);
     }
-    sequentialSort(deltas + start, deltas + end);
+    std::sort(deltas + start, deltas + end);
     for (i = start; i < end; i++) {
       delta_prime = L + deltas[i].delta * (R - L);
       if (delta_prime >= 0) {

@@ -42,7 +42,6 @@
 #include "PosteriorEstimator.h"
 #include "Scores.h"
 #include "SetHandler.h"
-#include "SequentialSort.h"
 #include "ssl.h"
 #include "IsotonicPEP.h"
 #include "NumberFormatter.h"
@@ -969,11 +968,11 @@ template <class Better>
 int countSortedTargetsBelowFdr(std::vector<pair<double, bool> >& psms,
                                Better better, double fdr,
                                int initialDecoyCount, double decoyFactor) {
-  sequentialSort(psms.begin(), psms.end(),
-                 [better](const pair<double, bool>& a,
-                          const pair<double, bool>& b) {
-                   return better(a.first, b.first);
-                 });
+  std::sort(psms.begin(), psms.end(),
+            [better](const pair<double, bool>& a,
+                     const pair<double, bool>& b) {
+              return better(a.first, b.first);
+            });
   int numDecoys = initialDecoyCount, numTargets = 0, count = 0;
   const std::size_t n = psms.size();
   for (std::size_t i = 0; i < n; ++i) {
@@ -1068,18 +1067,17 @@ bool Scores::countTargetsBySelection(const FeatureRows& rows,
     double lowCut = 0.0, highCut = 0.0;
     std::vector<double>::iterator dv = decoyValues.begin();
     if (lowCount) {
-      sequentialNthElement(dv, dv + lowRank, decoyValues.end());
+      std::nth_element(dv, dv + lowRank, decoyValues.end());
       lowCut = dv[lowRank];
     }
     if (highCount) {
       if (!lowCount) {
-        sequentialNthElement(dv, dv + highRank, decoyValues.end());
+        std::nth_element(dv, dv + highRank, decoyValues.end());
       } else if (highRank > lowRank) {
         // the values from lowRank + 1 on are the larger ones
-        sequentialNthElement(dv + lowRank + 1, dv + highRank,
-                             decoyValues.end());
+        std::nth_element(dv + lowRank + 1, dv + highRank, decoyValues.end());
       } else if (highRank < lowRank) {
-        sequentialNthElement(dv, dv + highRank, dv + lowRank);
+        std::nth_element(dv, dv + highRank, dv + lowRank);
       }
       highCut = dv[highRank];
     }

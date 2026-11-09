@@ -11,7 +11,6 @@
 #include "Globals.h"
 #include "ParallelSort.h"
 #include "Scores.h"
-#include "SequentialSort.h"
 
 // helper for sorting ScoreHolder references by scan and score, to help TDC
 bool compareByScanThenScore(const ScoreHolder* lhs, const ScoreHolder* rhs) {
@@ -219,9 +218,9 @@ int CompositionSorter::sortScorePerPeptide() {
   // saves. The comparators are total orders (for scores that are not NaN),
   // so the result does not depend on the sort algorithm.
   for (size_t r = 0; r < numCompositions; ++r) {
-    sequentialSort(compositionPsms_.begin() + compositionStart[r],
-                   compositionPsms_.begin() + compositionStart[r + 1],
-                   byPeptide);
+    std::sort(compositionPsms_.begin() + compositionStart[r],
+              compositionPsms_.begin() + compositionStart[r + 1],
+              byPeptide);
   }
 
   // Comparator for sorting ScoreHolder references
@@ -238,8 +237,8 @@ int CompositionSorter::sortScorePerPeptide() {
            compositionPsms_[last].peptide == compositionPsms_[first].peptide) {
       ++last;
     }
-    sequentialSort(compositionPsms_.begin() + first,
-                   compositionPsms_.begin() + last, compareScoreHolder);
+    std::sort(compositionPsms_.begin() + first,
+              compositionPsms_.begin() + last, compareScoreHolder);
     first = last;
   }
   return 0;
