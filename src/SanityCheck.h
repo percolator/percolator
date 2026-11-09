@@ -32,7 +32,10 @@ class Normalizer;
  * direction is not worse than the initial one: by the targets with q < test
  * FDR summed over the test bins, each with its own q values, or by those of
  * the merged out-of-fold list, see DirectionCheck and Caller's
- * --direction-check.
+ * --direction-check. Where the trained direction is worse, the folds fall
+ * back (resetDirection) to the weights of the weights file in every fold,
+ * or else to the default direction chosen on each fold's training set,
+ * unless --override keeps the trained vectors.
  */
 class SanityCheck {
  public:

@@ -224,6 +224,9 @@ struct DirectionCheckOptions {
     bool perfect = false;
     // --static: the scores of the bins are not rescaled
     bool skipNormalizeScores = false;
+    // --init-weights: a weights file whose raw weights are the initial
+    // direction of every fold
+    std::string initWeightFN;
 };
 
 // What trainAndMerge observed besides the scores and weights
@@ -238,6 +241,9 @@ struct DirectionCheckResult {
     uint64_t randomStateAfterMerge = 0u;
     // estimating the pi0 of the merged list once more moved the generator
     bool pi0EstimateDraws = false;
+    // the (input line, fold) list of -N: the test PSMs that keep their
+    // test fold's score
+    std::size_t numTestFolds = 0u;
 };
 
 // Trains and merges with numFolds folds and the given merge scheme on 450
@@ -303,6 +309,10 @@ static void trainAndMerge(unsigned int numFolds, MergeNormalization scheme,
     check.setDirectionCheck(checkOptions.check);
     check.setOverrule(checkOptions.overrule);
     check.setSecondChanceMergeScheme(checkOptions.secondChanceScheme);
+    if (!checkOptions.initWeightFN.empty()) {
+        check.setInitWeightFN(checkOptions.initWeightFN);
+    }
+    crossValidation.setRecordTestFolds(true);
     crossValidation.preIterationSetup(scores, check, norm.get());
     crossValidation.train(norm.get());
     // the bin of each PSM, before the merge empties the bins: the weights
@@ -328,6 +338,9 @@ static void trainAndMerge(unsigned int numFolds, MergeNormalization scheme,
         result->secondChanceKept = check.secondChanceKept();
         result->usedScheme = crossValidation.usedMergeNormalization();
         result->randomStateAfterMerge = PseudoRandom::getSeed();
+        std::vector<std::pair<unsigned int, unsigned int> > testFolds;
+        crossValidation.getTestFolds(testFolds);
+        result->numTestFolds = testFolds.size();
     }
 
     scoreOf.clear();
@@ -829,6 +842,86 @@ TEST_F(CrossValidationTest, DefaultMergeNormalizationOfTheFolds)
     }
 }
 
+// After a failed check the folds fall back, unless --override keeps their
+// trained vectors: with --init-weights every fold to the weights of the file,
+// otherwise each fold to the default vector chosen on its training set, a
+// single feature here. trainAndMerge finds each bin scored with its own
+// fold's final weights in every case. With -N, the PSMs of the training
+// subset keep the score of their test fold only where the folds keep their
+// trained vectors: when the check passes and with --override; after a
+// reset, also to the weights of the file, all PSMs are scored with the
+// averaged weights, and the list of test folds is empty.
+TEST_F(CrossValidationTest, FallbackOfAFailedCheckAndTheTestFoldsOfMinusN)
+{
+    const std::string weightFile =
+        ::testing::TempDir() + "perc_fallback_w.txt";
+    {
+        // normalized weights (skipped), then the raw weights that are read;
+        // without a line of feature names, which is then not checked
+        std::ofstream out(weightFile);
+        out << "9\t9\t9\n"
+            << "1\t2\t0\n";
+    }
+    auto isSingleFeature = [](const std::vector<double>& w) {
+        return (w[0] == 0.0) != (w[1] == 0.0);
+    };
+    for (unsigned int numFolds : {3u, 5u}) {
+        for (bool withWeightFile : {false, true}) {
+            {
+                SCOPED_TRACE(::testing::Message()
+                             << numFolds << " folds, weights file "
+                             << withWeightFile << ", check passes");
+                DirectionCheckOptions passing;
+                if (withWeightFile) passing.initWeightFN = weightFile;
+                DirectionCheckResult result;
+                std::map<unsigned int, double> scoreOf;
+                std::vector<std::vector<double> > w;
+                std::vector<double> features;
+                trainAndMerge(numFolds, MergeNormalization::TEST, scoreOf, w,
+                              features, passing, &result);
+                EXPECT_EQ(900u, result.numTestFolds);
+            }
+            for (bool overrule : {false, true}) {
+                SCOPED_TRACE(::testing::Message()
+                             << numFolds << " folds, weights file "
+                             << withWeightFile << ", failed check, override "
+                             << overrule);
+                DirectionCheckOptions failing;
+                failing.overrule = overrule;
+                failing.testFdr = 1e-6;
+                if (withWeightFile) failing.initWeightFN = weightFile;
+                DirectionCheckResult result;
+                std::map<unsigned int, double> scoreOf;
+                std::vector<std::vector<double> > w;
+                std::vector<double> features;
+                trainAndMerge(numFolds, MergeNormalization::TEST, scoreOf, w,
+                              features, failing, &result);
+                ASSERT_EQ(numFolds, w.size());
+                EXPECT_EQ(overrule ? 900u : 0u, result.numTestFolds);
+                if (overrule) {
+                    for (unsigned int fold = 1; fold < numFolds; ++fold) {
+                        EXPECT_NE(w[0], w[fold]);
+                    }
+                } else if (withWeightFile) {
+                    // the file's vector in every fold, rescaled per bin by
+                    // the merge: the same ratio of the feature weights
+                    for (const std::vector<double>& wFold : w) {
+                        ASSERT_NE(0.0, wFold[1]);
+                        EXPECT_NEAR(w[0][0] / w[0][1], wFold[0] / wFold[1],
+                                    1e-12);
+                        EXPECT_FALSE(isSingleFeature(wFold));
+                    }
+                } else {
+                    for (const std::vector<double>& wFold : w) {
+                        EXPECT_TRUE(isSingleFeature(wFold));
+                    }
+                }
+            }
+        }
+    }
+    std::remove(weightFile.c_str());
+}
+
 // More folds than spectra leave a fold without PSMs, which
 // preIterationSetup reports as an error. With as many folds as spectra of
 // equal size, each fold gets one spectrum.
@@ -1073,10 +1166,9 @@ TEST_F(CrossValidationTest, ResetRestoresWeightFileVector)
         if (withWeightFile) {
             EXPECT_EQ(initial, std::vector<double>({0.5, -2.0, 0.25}));
         }
-        // the default direction sets the feature weights only, so the
-        // trained bias is 0 there
-        std::vector<std::vector<double> > trained(
-            1, {7.0, 7.0, withWeightFile ? 7.0 : 0.0});
+        // both fallbacks replace the trained bias as well: the default
+        // direction sets it to 0, as the initial one
+        std::vector<std::vector<double> > trained(1, {7.0, 7.0, 7.0});
         check.resetDirection(sets, trained);
         EXPECT_EQ(trained[0], initial) << "weight file " << withWeightFile;
     }

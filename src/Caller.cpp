@@ -227,7 +227,10 @@ bool Caller::parseOptions(int argc, char** argv) {
       "Read the unnormalized initial weights from the third line of the given "
       "file. This can be the output of the --weights option from a previous "
       "Percolator analysis. Note that the weights must be in the same order as "
-      "the features in the PSM input file(s).",
+      "the features in the PSM input file(s). Where the trained SVMs fail the "
+      "check against the initial direction, every cross-validation fold falls "
+      "back to these weights instead of a default direction, unless "
+      "--override is given.",
       "filename");
   cmd.defineOption(Option::NO_SHORT_OPT, "static",
                    "Use the provided initial weights as a static model. If "
@@ -254,8 +257,9 @@ bool Caller::parseOptions(int argc, char** argv) {
                    TRUE_IF_SET);
   cmd.defineOption("O", "override",
                    "Override error check and do not fall back on default score "
-                   "vector in case of suspect score vector from SVM. Each "
-                   "test bin is then scored with its own fold's SVM.",
+                   "vector (or the weights of --init-weights) in case of "
+                   "suspect score vector from SVM. Each test bin is then "
+                   "scored with its own fold's SVM.",
                    "", TRUE_IF_SET);
   cmd.defineOption("S", "seed",
                    "Set seed of the random number generator. Default = 1.",
@@ -443,8 +447,9 @@ bool Caller::parseOptions(int argc, char** argv) {
       "best PSM per peptide or, with --static, in a test bin, which would end "
       "the run; under --no-terminate such a list is treated as unusable as "
       "well), each fold falls "
-      "back to the default direction chosen on its training set, unless "
-      "--override is given. 'second-chance': 'bins', and only where "
+      "back to the default direction chosen on its training set, or to the "
+      "weights of --init-weights, unless --override is given. "
+      "'second-chance': 'bins', and only where "
       "that would fall back, the trained SVMs are counted as 'pooled' counts "
       "them, with train-decoys, and kept if their list can be used and "
       "gives targets and no fewer than the fallback would report: the "
