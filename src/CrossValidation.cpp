@@ -307,7 +307,7 @@ void CrossValidation::train(const Normalizer* pNorm) {
 void CrossValidation::checkWeightsFinite() const {
   for (size_t set = 0; set < weights_.size(); ++set) {
     for (size_t ix = 0; ix < weights_[set].size(); ++ix) {
-      if (std::isfinite(weights_[set][ix])) continue;
+      if (isfinite(weights_[set][ix])) continue;
       ostringstream oss;
       oss << "ERROR: The SVM weight of "
           << (ix < FeatureNames::getNumFeatures()
