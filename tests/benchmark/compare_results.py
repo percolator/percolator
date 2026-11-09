@@ -15,7 +15,11 @@ scores. The rows are joined on (--key auto):
   - otherwise the PSMId and the peptide (PSM level: the input may repeat a
     SpecId for different peptides);
   - the first column if there is no peptide column (protein level).
-If a file still repeats a key, the first, best-scoring row of the key is used
+A PSM-level file in which every peptide occurs once looks like a peptide-level
+file. If such files are joined on the peptide and some peptides have a
+different PSMId in the two files, a warning gives their number; use --key psm
+for PSM-level files. If a file repeats a key, the row with the highest score
+is used (the first of them on ties, or the first row without a score column),
 and the number of repeated keys is reported on stderr.
 """
 
@@ -49,6 +53,7 @@ def key_function(mode, header_base, rows_base, header_new, rows_new):
             mode = "first"
         elif peptide_unique(header_base, rows_base) and peptide_unique(header_new, rows_new):
             mode = "peptide"
+            warn_if_psmids_differ(header_base, rows_base, header_new, rows_new)
         else:
             mode = "psm"
     if mode != "first" and not has_peptide:
@@ -60,22 +65,53 @@ def key_function(mode, header_base, rows_base, header_new, rows_new):
     return mode, lambda header: (lambda fields, ix=header.index("peptide"): (fields[0], fields[ix]))
 
 
-def index_rows(path, rows, key):
-    """Map each key to its first row; rows are sorted best first."""
-    table, first_line = {}, {}
+def warn_if_psmids_differ(header_base, rows_base, header_new, rows_new):
+    """Called when every peptide occurs once in both files. Peptide-level and
+    PSM-level files then look alike; the level matters only for peptides
+    whose PSMId differs between the files, so name their number."""
+    def psmid_of(header, rows):
+        ix = header.index("peptide")
+        return {fields[ix]: fields[0] for _, fields in rows}
+    base, new = psmid_of(header_base, rows_base), psmid_of(header_new, rows_new)
+    common = base.keys() & new.keys()
+    moved = sorted(p for p in common if base[p] != new[p])
+    if moved:
+        print("warning: every peptide occurs once in both files, so the rows are "
+              "joined on the peptide, as for peptide-level results; %d of %d "
+              "common peptides have a different PSMId, e.g. %r: %r and %r. If "
+              "these are PSM-level results, use --key psm."
+              % (len(moved), len(common), moved[0], base[moved[0]], new[moved[0]]),
+              file=sys.stderr)
+
+
+def index_rows(path, rows, key, score_ix=None):
+    """Map each key to its row with the highest score (the first of them on
+    ties, or the first row if there is no score column)."""
+    def score(fields):
+        try:
+            value = float(fields[score_ix])
+        except (IndexError, ValueError):
+            return -math.inf
+        return value if not math.isnan(value) else -math.inf
+    table, line_of = {}, {}
     repeated, example = 0, None
     for line_nr, fields in rows:
         k = key(fields)
         if k in table:
             repeated += 1
             if example is None:
-                example = (k, first_line[k], line_nr)
+                example = (k, line_of[k], line_nr)
+            if score_ix is not None and score(fields) > score(table[k]):
+                table[k] = fields
+                line_of[k] = line_nr
             continue
         table[k] = fields
-        first_line[k] = line_nr
+        line_of[k] = line_nr
     if repeated:
-        print("warning: %s: %d rows repeat an earlier key and are ignored, e.g. %r "
-              "on lines %d and %d" % ((path, repeated) + example), file=sys.stderr)
+        print("warning: %s: %d rows repeat an earlier key; the %s row of each key "
+              "is used, e.g. %r on lines %d and %d"
+              % ((path, repeated, "best-scoring" if score_ix is not None else "first")
+                 + example), file=sys.stderr)
     return table
 
 
@@ -155,8 +191,8 @@ def main():
     hb, rows_b = read_rows(args.base)
     hn, rows_n = read_rows(args.new)
     key_name, key_for = key_function(args.key, hb, rows_b, hn, rows_n)
-    base = index_rows(args.base, rows_b, key_for(hb))
-    new = index_rows(args.new, rows_n, key_for(hn))
+    base = index_rows(args.base, rows_b, key_for(hb), hb.index("score") if "score" in hb else None)
+    new = index_rows(args.new, rows_n, key_for(hn), hn.index("score") if "score" in hn else None)
     del rows_b, rows_n
     qb, qn = column(hb, "q-value"), column(hn, "q-value")
     pb, pn = column(hb, "posterior_error_prob"), column(hn, "posterior_error_prob")
