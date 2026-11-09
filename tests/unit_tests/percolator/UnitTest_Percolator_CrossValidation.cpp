@@ -405,6 +405,10 @@ TEST(LineSearchTest, ChunkedSortGivesTheSameStepAsAFullSort)
 TEST_F(CrossValidationTest, ResetRestoresWeightFileVector)
 {
     FeatureNames::resetNumFeatures();
+    // the weights file must name the features of the input
+    DataSet::resetFeatureNames();
+    DataSet::getFeatureNames().insertFeature("f1");
+    DataSet::getFeatureNames().insertFeature("f2");
     FeatureNames::setNumFeatures(2);
     const std::string weightFile = ::testing::TempDir() + "perc_reset_w.txt";
     {
@@ -449,5 +453,6 @@ TEST_F(CrossValidationTest, ResetRestoresWeightFileVector)
         EXPECT_EQ(trained[0], initial) << "weight file " << withWeightFile;
     }
     std::remove(weightFile.c_str());
+    DataSet::resetFeatureNames();
     FeatureNames::resetNumFeatures();
 }
