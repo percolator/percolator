@@ -118,6 +118,7 @@ int CrossValidation::preIterationSetup(Scores& fullset,
 
   unsigned int decoysPerTarget = 1u;  // TODO: make this a command line argument
   double targetDecoySizeRatio = 1.0;
+  const size_t numPsms = fullset.size();
   {
     StageTimer stageTimer("cross-validation split");
     fullset.createXvalSetsBySpectrum(trainScores_, testScores_, numFolds_,
@@ -148,10 +149,10 @@ int CrossValidation::preIterationSetup(Scores& fullset,
   // the other test sets are then empty, so this is only reached with the
   // no-terminate flag; one fold trains on all PSMs.
   for (unsigned int set = 0; set < numFolds_; ++set) {
-    if (trainScores_[set].size() == 0 && fullset.size() > 0 && VERB > 0) {
+    if (trainScores_[set].size() == 0 && numPsms > 0 && VERB > 0) {
       cerr << "Warning: cross validation split " << set + 1 << " of "
            << numFolds_ << " has no PSMs to train on, as all "
-           << fullset.size() << " PSMs fall into its test set. The input "
+           << numPsms << " PSMs fall into its test set. The input "
            << "has too few spectra for " << numFolds_ << "-fold cross "
            << "validation." << endl;
     }
