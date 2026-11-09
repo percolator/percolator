@@ -105,19 +105,20 @@ class Scores {
              const std::vector<ScoreScale>& binScales =
                  std::vector<ScoreScale>());
   // tooGoodSeparationIsError = false sets pi0 = 1 without a message when the
-  // separation is too good
-  void postMergeStep(bool tooGoodSeparationIsError = true);
+  // separation is too good; returns whether it is
+  bool postMergeStep(bool tooGoodSeparationIsError = true);
   // The number of targets with q < testFdr in the list that merge would give
   // for the test bins scored with the weights w, one per bin: each bin is
   // rescaled as the scheme says, with the anchors of TRAIN and TRAIN_DECOYS
   // taken from trainBins[bin] scored with w[bin] (see calcScoreScale), and
   // the merged list gets its pi0 and q values as the final list does
-  // (postMergeStep, calcQvals), except that a too good separation gives
-  // pi0 = 1 instead of an error; the best PSM per spectrum of -Y is not
+  // (postMergeStep, calcQvals); the best PSM per spectrum of -Y is not
   // selected. Works on copies, so neither the bins nor the weights change,
   // and leaves the global random number generator in the state it found.
-  // Returns -1 when the scores of one of several bins cannot be rescaled,
-  // which would end the merge.
+  // Returns -1, a list that cannot be used, when the scores of one of
+  // several bins cannot be rescaled, which would end the merge, or when the
+  // merged list separates targets and decoys too well, which would end the
+  // run at the final list's postMergeStep.
   static int countMergedTargets(const std::vector<Scores>& testBins,
                                 const std::vector<Scores>& trainBins,
                                 const std::vector<std::vector<double> >& w,
@@ -291,8 +292,8 @@ class Scores {
       double fdr,
       bool skipDecoysPlusOne) const;
   // tooGoodSeparationIsError = false sets pi0 = 1 without a message when the
-  // separation is too good
-  void checkSeparationAndSetPi0(bool tooGoodSeparationIsError = true);
+  // separation is too good; returns whether it is
+  bool checkSeparationAndSetPi0(bool tooGoodSeparationIsError = true);
   bool is_output_rt_ = false;
 };
 

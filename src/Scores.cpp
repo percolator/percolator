@@ -111,7 +111,7 @@ void Scores::merge(std::vector<Scores>& sv,
   postMergeStep();
 }
 
-void Scores::postMergeStep(bool tooGoodSeparationIsError) {
+bool Scores::postMergeStep(bool tooGoodSeparationIsError) {
   parallelSort(scores_.begin(), scores_.end(), greater<ScoreHolder>());
   totalNumberOfDecoys_ = static_cast<unsigned int>(
       count_if(scores_.begin(), scores_.end(), mem_fn(&ScoreHolder::isDecoy)));
@@ -119,7 +119,7 @@ void Scores::postMergeStep(bool tooGoodSeparationIsError) {
       count_if(scores_.begin(), scores_.end(), mem_fn(&ScoreHolder::isTarget)));
   targetDecoySizeRatio_ =
       totalNumberOfTargets_ / max(1.0, (double)totalNumberOfDecoys_);
-  checkSeparationAndSetPi0(tooGoodSeparationIsError);
+  return checkSeparationAndSetPi0(tooGoodSeparationIsError);
 }
 
 namespace {
@@ -190,7 +190,12 @@ int Scores::countMergedTargets(const std::vector<Scores>& testBins,
     merged.scores_.insert(merged.scores_.end(), binScores.scores_.begin(),
                           binScores.scores_.end());
   }
-  merged.postMergeStep(false);
+  // The final list of these scores would end the run with "too good
+  // separation" (Caller's postMergeStep), so a count of it cannot keep
+  // them; a reset gives other scores.
+  if (merged.postMergeStep(false)) {
+    return -1;
+  }
   return merged.calcQvals(testFdr);
 }
 
@@ -1394,14 +1399,14 @@ void Scores::getTargetPValues(std::vector<double>& pvals) const {
   }
 }
 
-void Scores::checkSeparationAndSetPi0(bool tooGoodSeparationIsError) {
+bool Scores::checkSeparationAndSetPi0(bool tooGoodSeparationIsError) {
   std::vector<double> pvals;
   getTargetPValues(pvals);
 
   pi0_ = 1.0;
   bool tooGoodSeparation = PosteriorEstimator::checkSeparation(pvals);
   if (tooGoodSeparation && !tooGoodSeparationIsError) {
-    return;
+    return true;
   }
   if (tooGoodSeparation) {
     ostringstream oss;
@@ -1422,6 +1427,7 @@ void Scores::checkSeparationAndSetPi0(bool tooGoodSeparationIsError) {
   } else if (usePi0_) {
     pi0_ = PosteriorEstimator::estimatePi0(pvals);
   }
+  return tooGoodSeparation;
 }
 
 void Scores::calcPep(const bool spline, const bool interp, const bool pava,

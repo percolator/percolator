@@ -1202,6 +1202,73 @@ TEST_F(ScoresTest, CountMergedTargetsEqualsDirectCount)
     FeatureNames::resetNumFeatures();
 }
 
+// A merged list whose targets all precede at least 200 decoys separates too
+// well: the p values of all targets are below the smallest lambda of the pi0
+// estimate, and the final list's postMergeStep ends the run. Two bins of 150
+// targets above numDecoys decoys each: with 150 decoys per bin
+// countMergedTargets returns -1 with every scheme, and merge, which gives the
+// final list, throws; with 50 decoys per bin (101 p value steps) the list is
+// usable and all 300 targets have q < 0.01.
+TEST_F(ScoresTest, CountMergedTargetsOfATooGoodSeparationIsUnusable)
+{
+    FeatureNames::resetNumFeatures();
+    FeatureNames::setNumFeatures(1);
+    const std::size_t numBins = 2, numTargets = 150;
+    const double fdr = 0.01;
+    for (std::size_t numDecoys : {std::size_t(150), std::size_t(50)}) {
+        SCOPED_TRACE(numDecoys);
+        const bool tooGood = numDecoys == 150u;
+        const std::size_t binSize = numTargets + numDecoys;
+        std::vector<double> features(numBins * binSize);
+        std::vector<PSMDescription> psms(features.size());
+        std::vector<Scores> bins(numBins, Scores(false));
+        for (std::size_t bin = 0; bin < numBins; ++bin) {
+            for (std::size_t j = 0; j < binSize; ++j) {
+                const std::size_t i = bin * binSize + j;
+                const bool isTarget = j < numTargets;
+                // targets in [10, 11.5), decoys in (-1.5, 0], both spread
+                features[i] = isTarget ? 10.0 + 0.01 * static_cast<double>(j)
+                                       : -0.01 * static_cast<double>(j);
+                psms[i].features = &features[i];
+                psms[i].scan = static_cast<unsigned int>(i);
+                bins[bin].addScoreHolder(ScoreHolder(
+                    0.0, isTarget ? LabelType::TARGET : LabelType::DECOY,
+                    &psms[i]));
+            }
+            bins[bin].recalculateSizes();
+        }
+        const std::vector<std::vector<double> > w(numBins, {1.0, 0.0});
+        for (MergeNormalization scheme :
+             {MergeNormalization::TEST, MergeNormalization::TRAIN,
+              MergeNormalization::TRAIN_DECOYS, MergeNormalization::NONE}) {
+            SCOPED_TRACE(static_cast<int>(scheme));
+            // the bins serve as their own training sets
+            EXPECT_EQ(tooGood ? -1 : 300,
+                      Scores::countMergedTargets(bins, bins, w, scheme, fdr,
+                                                 false, fdr));
+        }
+        EXPECT_EQ(tooGood ? -1 : 300,
+                  Scores::countMergedTargets(bins, bins, w,
+                                             MergeNormalization::NONE, fdr,
+                                             true, fdr));
+        std::vector<Scores> scored(bins);
+        std::vector<std::vector<double> > wMerge(w);
+        for (std::size_t bin = 0; bin < numBins; ++bin) {
+            scored[bin].calcScores(wMerge[bin]);
+        }
+        Scores merged(false);
+        if (tooGood) {
+            EXPECT_THROW(merged.merge(scored, fdr, false, wMerge,
+                                      MergeNormalization::NONE),
+                         MyException);
+        } else {
+            merged.merge(scored, fdr, false, wMerge, MergeNormalization::NONE);
+            EXPECT_EQ(300, merged.calcQvals(fdr));
+        }
+    }
+    FeatureNames::resetNumFeatures();
+}
+
 // SanityCheck on the hand-made example. The default direction, lower x,
 // separates nothing in either check. No bin reaches q < 0.25 with the
 // trained weights on its own, so the bins check resets to the default

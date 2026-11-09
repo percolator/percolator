@@ -219,6 +219,9 @@ struct DirectionCheckOptions {
     MergeNormalization secondChanceScheme = MergeNormalization::TRAIN_DECOYS;
     bool signal = true;     // without, no target is correct
     bool separate = false;  // pi0 and q values of separate searches (mix-max)
+    // the sum of the two features separates every target from every decoy,
+    // while neither feature does alone
+    bool perfect = false;
 };
 
 // What trainAndMerge observed besides the scores and weights
@@ -238,6 +241,8 @@ struct DirectionCheckResult {
 // Trains and merges with numFolds folds and the given merge scheme on 450
 // targets and 450 decoys. Half of the targets score higher in both features,
 // so that the SVM improves on the initial direction of a single feature.
+// With checkOptions.perfect the targets get the features 2 + u and 2 - u,
+// with u in [-4, 4), and the decoys features in [-1, 1).
 // Returns the merged score of each scan and the final weights, and checks
 // that the final weights of each fold give the merged scores of its test
 // bin: each PSM was scored by the fold of its own test bin.
@@ -269,6 +274,12 @@ static void trainAndMerge(unsigned int numFolds, MergeNormalization scheme,
                            (isCorrect ? 2.5 : 0.0);
         psm->features[1] = static_cast<double>((seed >> 4) % 1000) / 250.0 +
                            (isCorrect ? 2.5 : 0.0);
+        if (checkOptions.perfect) {
+            const double u = static_cast<double>((seed >> 8) % 1000) / 125.0;
+            const double v = static_cast<double>((seed >> 4) % 1000) / 500.0;
+            psm->features[0] = isTarget ? u - 2.0 : u / 4.0 - 1.0;
+            psm->features[1] = isTarget ? 6.0 - u : v - 1.0;
+        }
         psm->scan = static_cast<unsigned int>(1 + i);
         (isTarget ? targets : decoys)->registerPsm(psm);
     }
@@ -642,6 +653,75 @@ TEST_F(CrossValidationTest, SecondChanceRejectsAnInputWithoutSignal)
         EXPECT_TRUE(sc.checkKeptRandomState);
         EXPECT_EQ(separate, sc.pi0EstimateDraws);
         EXPECT_EQ(bins.randomStateAfterMerge, sc.randomStateAfterMerge);
+    }
+}
+
+// A perfect separation by the trained SVMs: the targets have 4 as the sum
+// of their two features, the decoys less than 2, and neither feature
+// separates alone. At --testFDR 0.005 no test bin of about 150 targets
+// reaches the test FDR, so the per-bin count fails. The merged out-of-fold
+// list puts all 450 targets above all 450 decoys, which the final list's
+// postMergeStep rejects as "too good separation" and which ended the run
+// after the second chance had kept the SVMs. countMergedTargets now counts
+// such a list as unusable (-1): second-chance resets and gives the scores,
+// weights and final random state of bins, also for separate searches, and
+// pooled resets as well. trainAndMerge completes, so the final merge of
+// each check accepts its list.
+TEST_F(CrossValidationTest, TooGoodSeparationIsNotKeptByTheMergedCount)
+{
+    typedef SanityCheck::DirectionCheck Check;
+    for (bool separate : {false, true}) {
+        SCOPED_TRACE(::testing::Message() << "separate " << separate);
+        DirectionCheckOptions options;
+        options.perfect = true;
+        options.testFdr = 0.005;
+        options.separate = separate;
+        std::map<unsigned int, double> scoreBins, scoreSc, scorePooled;
+        std::vector<std::vector<double> > wBins, wSc, wPooled;
+        std::vector<double> features;
+        DirectionCheckResult bins, sc, pooled;
+        options.check = Check::BINS;
+        trainAndMerge(3u, MergeNormalization::TEST, scoreBins, wBins,
+                      features, options, &bins);
+        options.check = Check::SECOND_CHANCE;
+        trainAndMerge(3u, MergeNormalization::TEST, scoreSc, wSc, features,
+                      options, &sc);
+        options.check = Check::POOLED;
+        trainAndMerge(3u, MergeNormalization::TRAIN_DECOYS, scorePooled,
+                      wPooled, features, options, &pooled);
+        EXPECT_TRUE(allSingleFeature(wBins));
+        EXPECT_FALSE(sc.secondChanceKept);
+        EXPECT_EQ(MergeNormalization::TEST, sc.usedScheme);
+        EXPECT_EQ(wBins, wSc);
+        expectSameScores(scoreBins, scoreSc);
+        EXPECT_EQ(bins.randomStateAfterMerge, sc.randomStateAfterMerge);
+        // the same default vectors, rescaled by another merge scheme
+        EXPECT_TRUE(allSingleFeature(wPooled));
+        ASSERT_EQ(wBins.size(), wPooled.size());
+        for (std::size_t fold = 0; fold < wBins.size(); ++fold) {
+            for (std::size_t i = 0; i < 2u; ++i) {
+                EXPECT_EQ(wBins[fold][i] > 0.0, wPooled[fold][i] > 0.0);
+                EXPECT_EQ(wBins[fold][i] < 0.0, wPooled[fold][i] < 0.0);
+            }
+        }
+        for (const DirectionCheckResult* r : {&bins, &sc, &pooled}) {
+            EXPECT_TRUE(r->checkKeptRandomState);
+        }
+    }
+    // the trained SVMs do separate perfectly: with --override they are kept
+    // by the bins check, and their merged list is too well separated
+    {
+        DirectionCheckOptions options;
+        options.perfect = true;
+        options.testFdr = 0.005;
+        options.overrule = true;
+        options.check = Check::BINS;
+        std::map<unsigned int, double> scoreOf;
+        std::vector<std::vector<double> > w;
+        std::vector<double> features;
+        EXPECT_THROW(trainAndMerge(3u, MergeNormalization::TEST, scoreOf, w,
+                                   features, options),
+                     MyException);
     }
 }
 
