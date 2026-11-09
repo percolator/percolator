@@ -732,16 +732,6 @@ void CrossValidation::postIterationProcessing(Scores& fullset,
   // With --override the folds keep their trained vectors when the check
   // fails; otherwise it resets them.
   const bool trainedVectorsKept = directionValid || check.getOverrule();
-  if (!directionValid) {
-    // Each test bin is scored with its own fold's vector: after a reset the
-    // vector given with --init-weights, the same in all folds, or else the
-    // default vector chosen on that fold's training set; with --override the
-    // trained vector, since the other folds' vectors were trained on the
-    // bin. The weights written with -w then describe the scores.
-    for (std::size_t set = 0; set < numFolds_; ++set) {
-      testScores_[set].calcScoresAndQvals(weights_[set], selectionFdr_);
-    }
-  }
   // When the second chance of the direction check kept the trained SVMs,
   // whose test bins were too small for the per-bin count, the bins are
   // merged as it counted them, with the training-set decoys, unless the
@@ -756,6 +746,31 @@ void CrossValidation::postIterationProcessing(Scores& fullset,
     usedMergeNormalization_ = check.secondChanceKept()
                                   ? check.secondChanceMergeScheme()
                                   : mergeNormalization_;
+  }
+  if (!directionValid) {
+    // Each test bin is scored with its own fold's vector: after a reset the
+    // vector given with --init-weights, the same in all folds, or else the
+    // default vector chosen on that fold's training set; with --override the
+    // trained vector, since the other folds' vectors were trained on the
+    // bin. The weights written with -w then describe the scores.
+    //
+    // Except with -N after a reset under test: -N then scores all PSMs with
+    // the averaged weights (see below), so the merged scores of the bins are
+    // not reported, and the merge rescales each fold's vector by the anchors
+    // of a bin before they are averaged. A bin with no target at q < fdr is
+    // anchored at its best score, so with its own fold's vector a real score
+    // with a long tail got a smaller factor than another fold's noise
+    // feature, which then dominated the average. All bins are scored with
+    // the first fold's vector instead, as before the folds kept their own
+    // default vectors, so that the folds' vectors get nearly the same factor
+    // and count alike in the average.
+    const bool averagedUnderTest =
+        recordTestFolds_ && !trainedVectorsKept &&
+        usedMergeNormalization_ == MergeNormalization::TEST;
+    for (std::size_t set = 0; set < numFolds_; ++set) {
+      testScores_[set].calcScoresAndQvals(
+          averagedUnderTest ? weights_[0] : weights_[set], selectionFdr_);
+    }
   }
 
   // With the TRAIN and TRAIN_DECOYS schemes, each test bin is rescaled by

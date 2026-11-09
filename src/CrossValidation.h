@@ -101,7 +101,9 @@ class CrossValidation {
   // before preIterationSetup
   void inline setSvmRowsInPlace(bool on) { svmRowsInPlace_ = on; }
   // let postIterationProcessing list the input line and fold of every test
-  // PSM for getTestFolds, before the merge empties the test sets (-N)
+  // PSM for getTestFolds, before the merge empties the test sets (-N); after
+  // a reset under test it then scores every test bin with the first fold's
+  // vector, since -N scores all PSMs with the averaged weights
   void inline setRecordTestFolds(bool on) { recordTestFolds_ = on; }
   // how the scores of the test bins are put on a common scale before they
   // are merged, see Caller's --merge-normalization

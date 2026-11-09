@@ -227,6 +227,9 @@ struct DirectionCheckOptions {
     // --init-weights: a weights file whose raw weights are the initial
     // direction of every fold
     std::string initWeightFN;
+    // -N: list the test fold of every PSM; after a reset under test the
+    // bins are then scored with the first fold's vector
+    bool minusN = false;
 };
 
 // What trainAndMerge observed besides the scores and weights
@@ -244,6 +247,9 @@ struct DirectionCheckResult {
     // the (input line, fold) list of -N: the test PSMs that keep their
     // test fold's score
     std::size_t numTestFolds = 0u;
+    // -N after a reset under test: all bins scored with the first fold's
+    // vector
+    bool scoredWithFirstVector = false;
 };
 
 // Trains and merges with numFolds folds and the given merge scheme on 450
@@ -253,7 +259,11 @@ struct DirectionCheckResult {
 // with u in [-4, 4), and the decoys features in [-1, 1).
 // Returns the merged score of each scan and the final weights, and checks
 // that the final weights of each fold give the merged scores of its test
-// bin: each PSM was scored by the fold of its own test bin.
+// bin: each PSM was scored by the fold of its own test bin. With -N after a
+// reset under test, every bin was scored with the first fold's vector, and
+// the merge rescaled the bins and the folds' vectors by the anchors of each
+// bin: the merged scores of a bin are then an increasing linear function
+// of the first fold's final weights, with an offset.
 static void trainAndMerge(unsigned int numFolds, MergeNormalization scheme,
                           std::map<unsigned int, double>& scoreOf,
                           std::vector<std::vector<double> >& weights,
@@ -312,7 +322,7 @@ static void trainAndMerge(unsigned int numFolds, MergeNormalization scheme,
     if (!checkOptions.initWeightFN.empty()) {
         check.setInitWeightFN(checkOptions.initWeightFN);
     }
-    crossValidation.setRecordTestFolds(true);
+    crossValidation.setRecordTestFolds(checkOptions.minusN);
     crossValidation.preIterationSetup(scores, check, norm.get());
     crossValidation.train(norm.get());
     // the bin of each PSM, before the merge empties the bins: the weights
@@ -334,13 +344,18 @@ static void trainAndMerge(unsigned int numFolds, MergeNormalization scheme,
         result->checkKeptRandomState = PseudoRandom::getSeed() == before;
     }
     crossValidation.postIterationProcessing(scores, check);
+    std::vector<std::pair<unsigned int, unsigned int> > testFolds;
+    crossValidation.getTestFolds(testFolds);
+    // the list is empty after a reset, and only then under -N
+    const bool scoredWithFirstVector =
+        checkOptions.minusN && testFolds.empty() &&
+        crossValidation.usedMergeNormalization() == MergeNormalization::TEST;
     if (result) {
         result->secondChanceKept = check.secondChanceKept();
         result->usedScheme = crossValidation.usedMergeNormalization();
         result->randomStateAfterMerge = PseudoRandom::getSeed();
-        std::vector<std::pair<unsigned int, unsigned int> > testFolds;
-        crossValidation.getTestFolds(testFolds);
         result->numTestFolds = testFolds.size();
+        result->scoredWithFirstVector = scoredWithFirstVector;
     }
 
     scoreOf.clear();
@@ -350,12 +365,36 @@ static void trainAndMerge(unsigned int numFolds, MergeNormalization scheme,
     weights = crossValidation.weights();
     ASSERT_EQ(static_cast<std::size_t>(numPsms), binOf.size());
     ASSERT_EQ(static_cast<unsigned int>(numPsms), scores.size());
-    for (const ScoreHolder& sh : scores) {
-        const double expected =
-            scores.calcScore(sh.pPSM->features, weights[binOf[sh.pPSM]]);
-        EXPECT_NEAR(expected, sh.score,
-                    1e-12 * std::max(1.0, std::fabs(sh.score)))
-            << "bin " << binOf[sh.pPSM];
+    if (scoredWithFirstVector) {
+        // per bin, (score of the first fold's final weights, merged score)
+        std::vector<std::vector<std::pair<double, double> > > pairs(numFolds);
+        for (const ScoreHolder& sh : scores) {
+            pairs[binOf[sh.pPSM]].emplace_back(
+                scores.calcScore(sh.pPSM->features, weights[0]), sh.score);
+        }
+        for (std::size_t bin = 0; bin < numFolds; ++bin) {
+            ASSERT_LE(2u, pairs[bin].size());
+            std::sort(pairs[bin].begin(), pairs[bin].end());
+            const std::pair<double, double> lo = pairs[bin].front();
+            const std::pair<double, double> hi = pairs[bin].back();
+            ASSERT_LT(lo.first, hi.first);
+            const double slope =
+                (hi.second - lo.second) / (hi.first - lo.first);
+            EXPECT_GT(slope, 0.0) << "bin " << bin;
+            for (const std::pair<double, double>& p : pairs[bin]) {
+                EXPECT_NEAR(lo.second + slope * (p.first - lo.first), p.second,
+                            1e-9 * std::max(1.0, std::fabs(p.second)))
+                    << "bin " << bin;
+            }
+        }
+    } else {
+        for (const ScoreHolder& sh : scores) {
+            const double expected =
+                scores.calcScore(sh.pPSM->features, weights[binOf[sh.pPSM]]);
+            EXPECT_NEAR(expected, sh.score,
+                        1e-12 * std::max(1.0, std::fabs(sh.score)))
+                << "bin " << binOf[sh.pPSM];
+        }
     }
     if (result) {
         const uint64_t before = PseudoRandom::getSeed();
@@ -846,11 +885,13 @@ TEST_F(CrossValidationTest, DefaultMergeNormalizationOfTheFolds)
 // trained vectors: with --init-weights every fold to the weights of the file,
 // otherwise each fold to the default vector chosen on its training set, a
 // single feature here. trainAndMerge finds each bin scored with its own
-// fold's final weights in every case. With -N, the PSMs of the training
-// subset keep the score of their test fold only where the folds keep their
-// trained vectors: when the check passes and with --override; after a
-// reset, also to the weights of the file, all PSMs are scored with the
-// averaged weights, and the list of test folds is empty.
+// fold's final weights in every case but one: after a reset under -N, all
+// bins are scored with the first fold's vector (see the next test). With
+// -N, the PSMs of the training subset keep the score of their test fold
+// only where the folds keep their trained vectors: when the check passes and
+// with --override; after a reset, also to the weights of the file, all PSMs
+// are scored with the averaged weights, and the list of test folds is
+// empty.
 TEST_F(CrossValidationTest, FallbackOfAFailedCheckAndTheTestFoldsOfMinusN)
 {
     const std::string weightFile =
@@ -872,6 +913,7 @@ TEST_F(CrossValidationTest, FallbackOfAFailedCheckAndTheTestFoldsOfMinusN)
                              << numFolds << " folds, weights file "
                              << withWeightFile << ", check passes");
                 DirectionCheckOptions passing;
+                passing.minusN = true;
                 if (withWeightFile) passing.initWeightFN = weightFile;
                 DirectionCheckResult result;
                 std::map<unsigned int, double> scoreOf;
@@ -889,6 +931,7 @@ TEST_F(CrossValidationTest, FallbackOfAFailedCheckAndTheTestFoldsOfMinusN)
                 DirectionCheckOptions failing;
                 failing.overrule = overrule;
                 failing.testFdr = 1e-6;
+                failing.minusN = true;
                 if (withWeightFile) failing.initWeightFN = weightFile;
                 DirectionCheckResult result;
                 std::map<unsigned int, double> scoreOf;
@@ -920,6 +963,56 @@ TEST_F(CrossValidationTest, FallbackOfAFailedCheckAndTheTestFoldsOfMinusN)
         }
     }
     std::remove(weightFile.c_str());
+}
+
+// After a reset, -N scores all PSMs with the averaged weights of the folds,
+// which the merge has rescaled by the anchors of each bin, and the merged
+// scores of the bins are not reported. Under test, -N then scores every bin
+// with the first fold's vector, so that the folds' vectors are rescaled by
+// the anchors of one vector and count alike in the average; trainAndMerge
+// checks each bin's scores against that vector. Without -N, and with the
+// other schemes, each bin is scored with its own fold's vector. With five
+// folds the folds choose different features here, so that the two cases
+// differ; the three folds choose the same one.
+TEST_F(CrossValidationTest, ResetUnderMinusNScoresTheBinsWithTheFirstVector)
+{
+    auto chosenFeature = [](const std::vector<double>& w) {
+        // the single feature of a default vector, signed, counted from 1
+        EXPECT_NE(w[0] == 0.0, w[1] == 0.0);
+        return w[0] != 0.0 ? (w[0] > 0.0 ? 1 : -1) : (w[1] > 0.0 ? 2 : -2);
+    };
+    for (unsigned int numFolds : {3u, 5u}) {
+        for (MergeNormalization scheme :
+             {MergeNormalization::TEST, MergeNormalization::TRAIN,
+              MergeNormalization::TRAIN_DECOYS, MergeNormalization::NONE}) {
+            for (bool minusN : {false, true}) {
+                SCOPED_TRACE(::testing::Message()
+                             << numFolds << " folds, scheme "
+                             << static_cast<int>(scheme) << ", -N " << minusN);
+                DirectionCheckOptions failing;
+                failing.testFdr = 1e-6;
+                failing.minusN = minusN;
+                DirectionCheckResult result;
+                std::map<unsigned int, double> scoreOf;
+                std::vector<std::vector<double> > w;
+                std::vector<double> features;
+                trainAndMerge(numFolds, scheme, scoreOf, w, features, failing,
+                              &result);
+                ASSERT_EQ(numFolds, w.size());
+                EXPECT_EQ(0u, result.numTestFolds);
+                EXPECT_EQ(minusN && scheme == MergeNormalization::TEST,
+                          result.scoredWithFirstVector);
+                if (numFolds == 5u) {
+                    int otherChoices = 0;
+                    for (const std::vector<double>& wFold : w) {
+                        otherChoices +=
+                            chosenFeature(wFold) != chosenFeature(w[0]);
+                    }
+                    EXPECT_LT(0, otherChoices);
+                }
+            }
+        }
+    }
 }
 
 // More folds than spectra leave a fold without PSMs, which
