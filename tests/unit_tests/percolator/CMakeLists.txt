@@ -95,9 +95,9 @@ target_link_libraries(gtest_unit
     perclibrary
     picked_protein
 )
-if(NOT WIN32)
-  target_link_libraries(gtest_unit PRIVATE pthread)
-endif()
+# GoogleTest needs the threads library; percolator itself uses OpenMP only
+find_package(Threads REQUIRED)
+target_link_libraries(gtest_unit PRIVATE Threads::Threads)
 
 # (Optional: if you want coverage)
 if(COVERAGE)

@@ -62,9 +62,6 @@ if(MSVC)
   add_definitions (/MP /D _CRT_SECURE_NO_WARNINGS /D _CRT_NONSTDC_NO_DEPRECATE)
 endif(MSVC)
 
-find_package(Threads REQUIRED)
-list(APPEND COMMON_LIBRARIES Threads::Threads)
-
 
 if (MSVC)
   add_compile_definitions(
