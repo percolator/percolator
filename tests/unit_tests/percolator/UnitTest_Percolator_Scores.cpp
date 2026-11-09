@@ -1568,6 +1568,239 @@ TEST_F(ScoresTest, SecondChanceComparesWithTheReportedReset)
     FeatureNames::resetNumFeatures();
 }
 
+// Two test bins, each of 150 targets with x in [10, 11.5) above 150 decoys
+// with x in (-1.5, 0], and one decoy-like target with x = -5 below them all;
+// every PSM has its own peptide and spectrum, except that each decoy-like
+// target shares
+//   SPECTRUM: the spectrum of its bin's first decoy (x = 0), which wins the
+//             target-decoy competition of -Y, or
+//   PEPTIDE:  the peptide of its bin's first target (x = 10), whose PSM is
+//             the peptide's best.
+// Scored with x, the merged list holds 300 targets with q < 0.01, and the
+// p values of the two decoy-like targets keep it from separating too well.
+// The list of -Y (SPECTRUM) or of the peptide level (PEPTIDE) loses them,
+// and its 300 targets above 300 decoys separate too well, which ends the
+// run (see CountMergedTargetsOfATooGoodSeparationIsUnusable).
+class ReportedListsExample {
+  public:
+    enum class Sharing { SPECTRUM, PEPTIDE };
+    static constexpr std::size_t numBins = 2, numTargets = 150,
+                                 numDecoys = 150;
+    explicit ReportedListsExample(Sharing sharing) {
+        for (std::size_t bin = 0; bin < numBins; ++bin) {
+            for (std::size_t j = 0; j < numTargets; ++j) {
+                add(bin, 10.0 + 0.01 * static_cast<double>(j), true);
+            }
+            for (std::size_t j = 0; j < numDecoys; ++j) {
+                add(bin, -0.01 * static_cast<double>(j), false);
+            }
+            Psm& decoyLike = add(bin, -5.0, true);
+            if (sharing == Sharing::SPECTRUM) {
+                decoyLike.psm.scan = psms_[bin][numTargets]->psm.scan;
+            } else {
+                store_.storeStrings(decoyLike.psm, "", psms_[bin][0]->peptide,
+                                    {});
+            }
+        }
+    }
+    std::vector<Scores> bins(bool usePi0) const {
+        std::vector<Scores> result(numBins, Scores(usePi0));
+        for (std::size_t bin = 0; bin < numBins; ++bin) {
+            for (const std::unique_ptr<Psm>& p : psms_[bin]) {
+                result[bin].addScoreHolder(ScoreHolder(
+                    0.0, p->isTarget ? LabelType::TARGET : LabelType::DECOY,
+                    &p->psm));
+            }
+            result[bin].recalculateSizes();
+        }
+        return result;
+    }
+    const std::vector<std::vector<double> > w = {{1.0, 0.0}, {1.0, 0.0}};
+
+  private:
+    struct Psm {
+        double x;
+        std::string peptide;
+        PSMDescription psm;
+        bool isTarget;
+    };
+    Psm& add(std::size_t bin, double x, bool isTarget) {
+        psms_[bin].emplace_back(new Psm());
+        Psm& p = *psms_[bin].back();
+        p.x = x;
+        p.psm.features = &p.x;
+        p.psm.scan = static_cast<unsigned int>(++numPsms_);
+        p.peptide = std::string(isTarget ? "K.T" : "K.D") +
+                    std::to_string(numPsms_) + ".A";
+        store_.storeStrings(p.psm, "", p.peptide, {});
+        p.isTarget = isTarget;
+        return p;
+    }
+    std::vector<std::unique_ptr<Psm> > psms_[numBins];
+    std::size_t numPsms_ = 0;
+    PsmStore store_;  // the peptides of the PSMs
+};
+
+// countMergedTargets finds a list unusable (-1) where the run would end with
+// "too good separation": also where the merged list does not separate too
+// well but a list the run makes from it does, the best PSM per spectrum of
+// -Y or the best PSM per peptide of the peptide level. Elsewhere the lists
+// do not change the count, which is that of the merged PSMs. Before, the
+// second chance kept trained SVMs whose run then ended in weedOutRedundant
+// or weedOutRedundantTDC, which the run's own lists confirm here.
+TEST_F(ScoresTest, CountMergedTargetsChecksTheReportedLists)
+{
+    typedef ReportedListsExample Example;
+    FeatureNames::resetNumFeatures();
+    FeatureNames::setNumFeatures(1);
+    const double fdr = 0.01;
+    for (Example::Sharing sharing :
+         {Example::Sharing::SPECTRUM, Example::Sharing::PEPTIDE}) {
+        Example example(sharing);
+        for (bool usePi0 : {false, true}) {
+            // With the pi0 of separate searches, near 0 here, every PSM of a
+            // bin has q < fdr, so the anchors of test and train do not exist.
+            std::vector<MergeNormalization> schemes = {
+                MergeNormalization::TRAIN_DECOYS, MergeNormalization::NONE};
+            if (!usePi0) {
+                schemes.push_back(MergeNormalization::TEST);
+                schemes.push_back(MergeNormalization::TRAIN);
+            }
+            for (MergeNormalization scheme : schemes) {
+                SCOPED_TRACE(::testing::Message()
+                             << "spectrum " << (sharing ==
+                                                Example::Sharing::SPECTRUM)
+                             << ", pi0 " << usePi0 << ", scheme "
+                             << static_cast<int>(scheme));
+                const std::vector<Scores> bins = example.bins(usePi0);
+                // the bins serve as their own training sets
+                const int plain = Scores::countMergedTargets(
+                    bins, bins, example.w, scheme, fdr, false, fdr);
+                if (!usePi0) {
+                    EXPECT_EQ(300, plain);
+                }
+                EXPECT_GT(plain, 0);
+                for (bool spectrum : {false, true}) {
+                    for (bool peptide : {false, true}) {
+                        SCOPED_TRACE(::testing::Message()
+                                     << "lists " << spectrum << peptide);
+                        ReportedLists lists;
+                        lists.bestPsmPerSpectrum = spectrum;
+                        lists.bestPsmPerPeptide = peptide;
+                        const bool unusable =
+                            sharing == Example::Sharing::SPECTRUM ? spectrum
+                                                                  : peptide;
+                        PseudoRandom::setSeed(5u);
+                        EXPECT_EQ(unusable ? -1 : plain,
+                                  Scores::countMergedTargets(
+                                      bins, bins, example.w, scheme, fdr,
+                                      false, fdr, lists));
+                        EXPECT_EQ(5u, PseudoRandom::getSeed());
+                    }
+                }
+            }
+        }
+        // the run's lists of the same scores: the merge accepts its list,
+        // and -Y and the peptide level end the run where the count said so
+        for (bool spectrum : {false, true}) {
+            for (bool peptide : {false, true}) {
+                SCOPED_TRACE(::testing::Message()
+                             << "spectrum "
+                             << (sharing == Example::Sharing::SPECTRUM)
+                             << ", lists " << spectrum << peptide);
+                std::vector<Scores> scored = example.bins(false);
+                std::vector<std::vector<double> > w(example.w);
+                for (std::size_t bin = 0; bin < Example::numBins; ++bin) {
+                    scored[bin].calcScores(w[bin]);
+                }
+                Scores merged(false);
+                ASSERT_NO_THROW(merged.merge(scored, fdr, false, w,
+                                             MergeNormalization::NONE));
+                bool ended = false;
+                try {
+                    if (spectrum) {
+                        merged.weedOutRedundantTDC();
+                    }
+                    if (peptide) {
+                        merged.weedOutRedundant();
+                    }
+                } catch (const MyException&) {
+                    ended = true;
+                }
+                EXPECT_EQ(sharing == Example::Sharing::SPECTRUM ? spectrum
+                                                                : peptide,
+                          ended);
+            }
+        }
+    }
+    FeatureNames::resetNumFeatures();
+}
+
+// The second chance and the pooled check on the bins of
+// ReportedListsExample at --testFDR 0.005: no bin of 150 targets reaches
+// it (q = 1/150 at best), the merged list does (q = 1/300). The default
+// direction, lower x, puts the decoy-like targets first and counts none.
+// Without the lists of -Y and the peptide level both checks keep the
+// trained weights; with the list that loses the decoy-like targets the
+// trained weights would end the run, so both reset to the default
+// direction, as the bins check does, and leave the random state alone.
+TEST_F(ScoresTest, SecondChanceChecksTheReportedLists)
+{
+    typedef ReportedListsExample Example;
+    typedef SanityCheck::DirectionCheck Check;
+    FeatureNames::resetNumFeatures();
+    FeatureNames::setNumFeatures(1);
+    const double testFdr = 0.005;
+    const std::vector<double> defaultWeights = {-1.0, 0.0};
+    for (Example::Sharing sharing :
+         {Example::Sharing::SPECTRUM, Example::Sharing::PEPTIDE}) {
+        Example example(sharing);
+        for (Check checkType : {Check::SECOND_CHANCE, Check::POOLED}) {
+            for (bool spectrum : {false, true}) {
+                for (bool peptide : {false, true}) {
+                    SCOPED_TRACE(::testing::Message()
+                                 << "spectrum "
+                                 << (sharing == Example::Sharing::SPECTRUM)
+                                 << ", pooled " << (checkType == Check::POOLED)
+                                 << ", lists " << spectrum << peptide);
+                    SanityCheck check;
+                    check.addDefaultWeights(defaultWeights);
+                    check.setDirectionCheck(checkType);
+                    check.setMergeScheme(checkType == Check::POOLED
+                                             ? MergeNormalization::TRAIN_DECOYS
+                                             : MergeNormalization::TEST,
+                                         0.01, false);
+                    ReportedLists lists;
+                    lists.bestPsmPerSpectrum = spectrum;
+                    lists.bestPsmPerPeptide = peptide;
+                    check.setReportedLists(lists);
+                    std::vector<Scores> bins = example.bins(false);
+                    std::vector<Scores> trainBins = example.bins(false);
+                    std::vector<std::vector<double> > w(
+                        Example::numBins, std::vector<double>(2));
+                    EXPECT_EQ(0, check.getInitDirection(bins, trainBins, NULL,
+                                                        w, testFdr, testFdr));
+                    w = example.w;
+                    PseudoRandom::setSeed(9u);
+                    const bool keep = !(sharing == Example::Sharing::SPECTRUM
+                                            ? spectrum
+                                            : peptide);
+                    EXPECT_EQ(keep,
+                              check.validateDirection(bins, trainBins, w));
+                    EXPECT_EQ(9u, PseudoRandom::getSeed());
+                    EXPECT_EQ(keep && checkType == Check::SECOND_CHANCE,
+                              check.secondChanceKept());
+                    EXPECT_EQ(keep ? example.w
+                                   : std::vector<std::vector<double> >(
+                                         Example::numBins, defaultWeights),
+                              w);
+                }
+            }
+        }
+    }
+    FeatureNames::resetNumFeatures();
+}
+
 // countTargetsBelowFdr must report the same number of targets below the FDR
 // threshold as calcScoresAndQvals, also with many tied scores, with and
 // without the mix-max correction.

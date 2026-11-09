@@ -436,14 +436,16 @@ bool Caller::parseOptions(int argc, char** argv) {
       "are counted in the merged out-of-fold list. If there are none, or "
       "fewer than for the initial direction counted in the same way, or the "
       "list cannot be used (a bin cannot be rescaled, or targets and decoys "
-      "separate too well for the final list), each fold falls back to the "
-      "default direction chosen on its training set, unless --override is "
-      "given. 'second-chance': 'bins', and only where "
+      "separate too well in it, in its best PSM per spectrum with -Y or in "
+      "its best PSM per peptide, which would end the run), each fold falls "
+      "back to the default direction chosen on its training set, unless "
+      "--override is given. 'second-chance': 'bins', and only where "
       "that would fall back, the trained SVMs are counted as 'pooled' counts "
-      "them, with train-decoys, and kept if they give targets and no fewer "
-      "than the fallback would report: the folds' default directions, or "
-      "the weights of --init-weights, which a fallback restores, merged as "
-      "the run merges (test up to 3 folds). Small test bins alone "
+      "them, with train-decoys, and kept if their list can be used and "
+      "gives targets and no fewer than the fallback would report: the "
+      "folds' default directions, or the weights of --init-weights, which "
+      "a fallback restores, merged as the run merges (test up to 3 folds). "
+      "Small test bins alone "
       "then do not discard the trained SVMs; a run that keeps them is "
       "merged with train-decoys unless --merge-normalization is given. "
       "Runs that pass 'bins' are not changed. With one fold, as with "
@@ -1493,6 +1495,14 @@ int Caller::run() {
     crossValidation.setRecordTestFolds(setHandler.getMaxPSMs() > 0u &&
                                        numFolds > 1u);
     crossValidation.setMergeNormalization(mergeNormalization);
+    // The merged counts of the direction check find a list unusable where
+    // the run would end with "too good separation": also where the lists
+    // that calculatePSMProb makes from the merged one separate too well.
+    ReportedLists reportedLists;
+    reportedLists.bestPsmPerSpectrum = targetDecoyCompetition_;
+    reportedLists.bestPsmPerPeptide =
+        reportUniquePeptides_ || ProteinProbEstimator::getCalcProteinLevelProb();
+    check_.setReportedLists(reportedLists);
 
     int firstNumberOfPositives =
         crossValidation.preIterationSetup(allScores, check_, pNorm_.get());

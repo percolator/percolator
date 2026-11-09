@@ -69,6 +69,19 @@ struct ScoreScale {
 };
 
 /*
+ * The lists that the run makes from the merged list, in this order, before
+ * it reports them: the best-scoring PSM of each spectrum (-Y,
+ * Scores::weedOutRedundantTDC) and, from the PSMs left, the best-scoring PSM
+ * of each peptide (the peptide level, Scores::weedOutRedundant). Each of
+ * them ends the run, as the merged list does, when its targets and decoys
+ * separate too well (postMergeStep).
+ */
+struct ReportedLists {
+  bool bestPsmPerSpectrum = false;
+  bool bestPsmPerPeptide = false;
+};
+
+/*
  * Scores is a container of ScoreHolders that allows you to do a sorted merge
  * of vectors of ScoreHolder.
  *
@@ -112,20 +125,23 @@ class Scores {
   // rescaled as the scheme says, with the anchors of TRAIN and TRAIN_DECOYS
   // taken from trainBins[bin] scored with w[bin] (see calcScoreScale), and
   // the merged list gets its pi0 and q values as the final list does
-  // (postMergeStep, calcQvals); the best PSM per spectrum of -Y is not
-  // selected. Works on copies, so neither the bins nor the weights change,
-  // and leaves the global random number generator in the state it found.
+  // (postMergeStep, calcQvals). The count is that of the merged PSMs; the
+  // lists made from them are not counted. Works on copies, so neither the
+  // bins nor the weights change, and leaves the global random number
+  // generator in the state it found.
   // Returns -1, a list that cannot be used, when the scores of one of
-  // several bins cannot be rescaled, which would end the merge, or when the
-  // merged list separates targets and decoys too well, which would end the
-  // run at the final list's postMergeStep.
+  // several bins cannot be rescaled, which would end the merge, or when
+  // targets and decoys separate too well in the merged list or in one of
+  // the lists the run makes from it (lists), which would end the run at
+  // their postMergeStep.
   static int countMergedTargets(const std::vector<Scores>& testBins,
                                 const std::vector<Scores>& trainBins,
                                 const std::vector<std::vector<double> >& w,
                                 MergeNormalization scheme,
                                 double fdr,
                                 bool skipNormalizeScores,
-                                double testFdr);
+                                double testFdr,
+                                ReportedLists lists = ReportedLists());
 
   iterator begin() { return scores_.begin(); }
   iterator end() { return scores_.end(); }
@@ -286,7 +302,19 @@ class Scores {
   std::vector<ScoreHolder> scores_;
 
   void getScoreLabelPairs(std::vector<std::pair<double, bool> >& combined);
+  // the p value of each target, in ascending order, from the decoys that
+  // score at least as high; the scores have to be sorted
   void getTargetPValues(std::vector<double>& pvals) const;
+  // the selections of weedOutRedundant and weedOutRedundantTDC, which then
+  // call postMergeStep
+  void keepBestPsmPerPeptide(
+      std::map<std::string, unsigned int>& peptideSpecCounts,
+      double specCountQvalThreshold);
+  void keepBestPsmPerSpectrum();
+  // Sorts the scores and returns whether their targets and decoys separate
+  // too well, which postMergeStep reports as an error; estimates no pi0, so
+  // it draws no random numbers.
+  bool separatesTooWell();
   int countTargetsBelowFdr(
       const std::vector<std::pair<double, bool> >& combined,
       double fdr,

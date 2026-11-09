@@ -82,7 +82,7 @@ int SanityCheck::getInitDirection(vector<Scores>& testset,
     initPositives_ = std::max(
         0, Scores::countMergedTargets(testset, trainset, w, mergeScheme_,
                                       mergeFdr_, skipNormalizeScores_,
-                                      test_fdr));
+                                      test_fdr, reportedLists_));
   }
   // The second chance counts the vectors of a reset only when it runs. They
   // are the initial ones: the vector of --init-weights, which a reset
@@ -149,7 +149,7 @@ bool SanityCheck::secondChance(const vector<Scores>& testset,
   // the anchors of the training sets exist for test bins of any size
   trainedCount = Scores::countMergedTargets(
       testset, trainset, w, MergeNormalization::TRAIN_DECOYS, mergeFdr_,
-      skipNormalizeScores_, test_fdr_);
+      skipNormalizeScores_, test_fdr_, reportedLists_);
   // The fallback that the second chance replaces, counted as the run would
   // report it: the vectors of a reset (each fold's default vector, or the
   // vector of --init-weights in all folds), merged with the run's scheme
@@ -161,7 +161,8 @@ bool SanityCheck::secondChance(const vector<Scores>& testset,
     resetCount = std::max(
         0, Scores::countMergedTargets(testset, trainset, resetWeights,
                                       mergeScheme_, mergeFdr_,
-                                      skipNormalizeScores_, test_fdr_));
+                                      skipNormalizeScores_, test_fdr_,
+                                      reportedLists_));
   }
   const bool countsKeep = trainedCount > 0 && trainedCount >= resetCount;
   // the sign check of --default-direction applies as after a passed count
@@ -172,7 +173,9 @@ bool SanityCheck::secondChance(const vector<Scores>& testset,
        << ": ";
   if (trainedCount < 0) {
     cerr << "the trained SVMs give no usable list (the scores of a test bin "
-         << "cannot be rescaled, or targets and decoys separate too well)";
+         << "cannot be rescaled, or targets and decoys separate too well in "
+         << "the merged list or in its best PSM per spectrum (-Y) or per "
+         << "peptide)";
   } else {
     cerr << trainedCount << " targets with q<" << test_fdr_
          << " for the trained SVMs, " << resetCount << " for the "
@@ -211,11 +214,12 @@ bool SanityCheck::validateDirection(vector<Scores>& testset,
     // on copies: the test bins are only scored once the direction is decided
     overFDR = Scores::countMergedTargets(testset, trainset, w, mergeScheme_,
                                          mergeFdr_, skipNormalizeScores_,
-                                         test_fdr_);
+                                         test_fdr_, reportedLists_);
     if (overFDR < 0) {
       cerr << "The trained weights give no usable merged out-of-fold list: "
            << "the scores of a test bin cannot be rescaled, or targets and "
-           << "decoys separate too well" << endl;
+           << "decoys separate too well in it or in its best PSM per "
+           << "spectrum (-Y) or per peptide" << endl;
       resetDirection(trainset, w);
       return false;
     }

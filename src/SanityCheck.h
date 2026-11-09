@@ -42,7 +42,8 @@ class SanityCheck {
     BINS,           // within each test bin, with the bin's own q values
     SECOND_CHANCE,  // as BINS; where that count would reset, the trained
                     // SVMs are kept if the merged out-of-fold list,
-                    // rescaled by the training decoys, holds targets with
+                    // rescaled by the training decoys, can be used (see
+                    // setReportedLists) and holds targets with
                     // q < test FDR and no fewer than the reset would
                     // report: the folds' default vectors, or the vector of
                     // --init-weights, merged with the scheme of
@@ -93,6 +94,9 @@ class SanityCheck {
     mergeFdr_ = fdr;
     skipNormalizeScores_ = skipNormalizeScores;
   }
+  // the lists the run makes from the merged one (-Y, the peptide level),
+  // which the merged counts also find unusable when they separate too well
+  void setReportedLists(ReportedLists lists) { reportedLists_ = lists; }
   void addDefaultWeights(const std::vector<double>& defaultWeights) {
     defaultWeights_ = defaultWeights;
   }
@@ -128,9 +132,10 @@ class SanityCheck {
   // out-of-fold list with train-decoys for the trained weights w, against
   // those of the fallback as the run would report it (resetVectors, merged
   // with the scheme of setMergeScheme), and whether they keep w, which also
-  // needs the right sign of the --default-direction feature. Leaves the
-  // bins, the weights and the random number generator as they are. Prints
-  // its decision.
+  // needs the right sign of the --default-direction feature. A list that
+  // cannot be used, also by the lists of setReportedLists, counts -1 for w
+  // and 0 for the fallback. Leaves the bins, the weights and the random
+  // number generator as they are. Prints its decision.
   bool secondChance(const std::vector<Scores>& testset,
                     const std::vector<Scores>& trainset,
                     const std::vector<std::vector<double> >& w,
@@ -155,6 +160,7 @@ class SanityCheck {
   MergeNormalization mergeScheme_ = MergeNormalization::TEST;
   double mergeFdr_ = 0.01;
   bool skipNormalizeScores_ = false;
+  ReportedLists reportedLists_;
   // the second chance: the initial direction of each fold, which is also
   // the vector a reset gives it, its decision in the last validateDirection
   // and the scheme of the merge it implies
