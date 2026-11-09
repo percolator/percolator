@@ -46,6 +46,15 @@ against ground truth. They need only the Python standard library.
   1% and 5% for the best possible ranking (by true PEP) and for the ranking
   of each result file.
 
+Caveat: `make_synthetic_pin.py` draws each feature of a correct and an
+incorrect match from Gaussians of equal variance (variance 1, shifted means).
+The log likelihood ratio of a PSM is then linear in its features, and its true
+PEP is a logistic function of that linear score. A PEP estimator whose tail
+has the wrong shape for real data, for example one that assumes a logistic
+tail, fits these sets by construction, so they cannot detect a misspecified
+PEP tail. Such changes need data whose score distributions differ in shape,
+such as unequal variances or heavier tails, or real data with a ground truth.
+
 Per-stage wall clock and CPU times are printed to stderr with `-v 3`
 (lines starting with `Stage`).
 
