@@ -416,14 +416,17 @@ bool Caller::parseOptions(int argc, char** argv) {
       "rescaled in this way before they are averaged, and only 'test' "
       "rescales the scores of all PSMs once more. With one fold, as with "
       "--reset-algorithm, the order of the PSMs is the same with every "
-      "scheme: for concatenated searches only the scale of the reported "
-      "scores changes, while for separate searches the pi0 estimate, and "
-      "with it the q values and PEPs, can change too, as only 'test' first "
-      "estimates the bin's own pi0, which draws random numbers. No "
-      "effect with --static. Default = test with up to 3 folds; "
-      "train-decoys with more folds (--num-folds), with --direction-check "
-      "pooled, and in a run whose trained SVMs the second chance of "
-      "--direction-check keeps.",
+      "scheme. With one fold the training set holds the PSMs of the test "
+      "bin, so 'train' takes the anchors of 'test' and, without -N, gives "
+      "its results; 'train-decoys' and 'none' change the scale of the "
+      "reported scores and, for separate searches, can change the pi0 "
+      "estimate, and with it the q values and PEPs, too, as only 'test' and "
+      "'train' estimate the pi0 of the bin's PSMs before the merge, which "
+      "draws random numbers. --reset-algorithm estimates no pi0, so there "
+      "only the scale changes. No effect with --static. Default = test with "
+      "up to 3 folds; train-decoys with more folds (--num-folds), with "
+      "--direction-check pooled, and in a run whose trained SVMs the second "
+      "chance of --direction-check keeps.",
       "scheme");
   cmd.defineOption(
       Option::EXPERIMENTAL_FEATURE, "direction-check",
