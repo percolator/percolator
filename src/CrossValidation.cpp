@@ -723,7 +723,9 @@ void CrossValidation::postIterationProcessing(Scores& fullset,
     fullset.setNullTargetWinProb(testNullTargetWinProb);
   }
 
-  if (!check.validateDirection(testScores_, trainScores_, weights_)) {
+  const bool directionValid =
+      check.validateDirection(testScores_, trainScores_, weights_);
+  if (!directionValid) {
     for (std::size_t set = 0; set < numFolds_; ++set) {
       testScores_[set].calcScoresAndQvals(weights_[0], selectionFdr_);
     }
@@ -731,7 +733,11 @@ void CrossValidation::postIterationProcessing(Scores& fullset,
   // the default direction of validateDirection was the last use of the
   // training sets; merge empties the test sets
   std::vector<Scores>().swap(trainScores_);
-  if (recordTestFolds_) recordTestFolds();
+  // After a reset the weights of each fold are a fallback picked per fold,
+  // e.g. the best single feature of its training set, which can be a noise
+  // feature in one fold and the real score in another; all PSMs are then
+  // scored with the averaged weights, as without the test folds.
+  if (recordTestFolds_ && directionValid) recordTestFolds();
   fullset.merge(testScores_, selectionFdr_, skipNormalizeScores_, weights_);
 }
 

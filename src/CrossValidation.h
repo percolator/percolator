@@ -73,8 +73,8 @@ class CrossValidation {
                          const Normalizer* pNorm);
   // (input line, fold) of every PSM in the test sets, sorted by line, as
   // recorded by postIterationProcessing when setRecordTestFolds(true) was
-  // called; the test sets themselves are emptied by the merge. Moves the
-  // list out.
+  // called; the test sets themselves are emptied by the merge. Empty if
+  // the sanity check rejected the trained weights. Moves the list out.
   void getTestFolds(
       std::vector<std::pair<unsigned int, unsigned int> >& lineFolds);
 
