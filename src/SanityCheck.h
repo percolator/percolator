@@ -160,7 +160,7 @@ class SanityCheck {
   // input from concatenated search, i.e. not separate target and decoy searches
   bool concatenatedSearch_ = true;
   // the direction check and the merge that the pooled count repeats
-  DirectionCheck directionCheck_ = DirectionCheck::SECOND_CHANCE;
+  DirectionCheck directionCheck_ = DirectionCheck::BINS;
   MergeNormalization mergeScheme_ = MergeNormalization::TEST;
   double mergeFdr_ = 0.01;
   bool skipNormalizeScores_ = false;

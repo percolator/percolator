@@ -441,7 +441,8 @@ bool Caller::parseOptions(int argc, char** argv) {
       "list cannot be used (a bin cannot be rescaled, or targets and decoys "
       "separate too well in it, in its best PSM per spectrum with -Y, in its "
       "best PSM per peptide or, with --static, in a test bin, which would end "
-      "the run), each fold falls "
+      "the run; under --no-terminate such a list is treated as unusable as "
+      "well), each fold falls "
       "back to the default direction chosen on its training set, unless "
       "--override is given. 'second-chance': 'bins', and only where "
       "that would fall back, the trained SVMs are counted as 'pooled' counts "
@@ -464,7 +465,7 @@ bool Caller::parseOptions(int argc, char** argv) {
       "--merge-normalization train-decoys unless a scheme is given, also "
       "with one fold (see there for what that changes), and "
       "cannot be combined with 'test', whose anchors are taken from each "
-      "test bin. Default = second-chance.",
+      "test bin. Default = bins.",
       "check");
   cmd.defineOption(
       Option::EXPERIMENTAL_FEATURE, "composition-match",
