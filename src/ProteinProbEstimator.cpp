@@ -17,8 +17,6 @@
 
 #include "ProteinProbEstimator.h"
 
-const double ProteinProbEstimator::target_decoy_ratio = 1.0;
-const double ProteinProbEstimator::psmThresholdMayu = 0.90;
 const double ProteinProbEstimator::prior_protein = 0.5;
 bool ProteinProbEstimator::calcProteinLevelProb = false;
 
@@ -38,40 +36,6 @@ bool ProteinProbEstimator::initialize(Scores& peptideScores, const Enzyme* enzym
   return true;
 }
 
-/** use the Mayu approach to calculating FDRs **/
-void ProteinProbEstimator::computeFDR() {
-  if (VERB > 1)
-    std::cerr << "Estimating Protein FDR ... " << std::endl;
-    
-  ProteinFDRestimator fastReader;
-  fastReader.setDecoyPrefix(decoyPattern_);
-  fastReader.setTargetDecoyRatio(target_decoy_ratio);
-  fastReader.setEqualDeepthBinning(binning_equal_deepth);
-  fastReader.setNumberBins(number_bins);
-  fastReader.correctIdenticalSequences(targetProteins_, decoyProteins_);
-  //These guys are the number of target and decoys proteins but from the subset of PSM with FDR < threshold
-  std::set<std::string> numberTP;
-  std::set<std::string> numberFP;
-  getTPandPFfromPeptides(psmThresholdMayu,numberTP,numberFP);
-    
-  double fptol = fastReader.estimateFDR(numberTP,numberFP);
-    
-  if (fptol == -1) {
-    fdr_ = 1.0;
-    
-    if(VERB > 1)
-      std::cerr << "There was an error estimating the Protein FDR..\n" << std::endl;
-  } else {	
-    fdr_ = (fptol/(double)numberTP.size());
-    if(fdr_ <= 0 || fdr_ >= 1.0) fdr_ = 1.0;      
-    
-    if(VERB > 1) {
-      std::cerr << "Estimated Protein FDR at ( " << psmThresholdMayu << ") PSM FDR is : " 
-      << fdr_ << " with " << fptol << " expected number of false positives proteins\n" << std::endl;
-    }
-  }
-}
-
 void ProteinProbEstimator::computeStatistics() {
   std::sort(proteins_.begin(), proteins_.end(), IntCmpScore());
   
@@ -80,7 +44,7 @@ void ProteinProbEstimator::computeStatistics() {
   /** compute q values from PEPs, does not require pi0 **/
   estimateQValues();
   
-  if (usePi0_ && !mayufdr && outputEmpirQVal_) {
+  if (usePi0_ && outputEmpirQVal_) {
     pi0_ = estimatePi0();
     if (pi0_ <= 0.0 || pi0_ > 1.0) pi0_ = proteins_.rbegin()->getQ();
     if (VERB > 1) {
@@ -153,46 +117,6 @@ void ProteinProbEstimator::estimatePValues() {
   }
 }
 
-void ProteinProbEstimator::getTPandPFfromPeptides(double psm_threshold, 
-						  std::set<std::string> &numberTP, 
-						  std::set<std::string> &numberFP) {
-  /* The original paper of Mayu describes a protein as :
-   * FP = if only if all its peptides with q <= threshold are decoy
-   * TP = at least one of its peptides with q <= threshold is target
-   * However, the way mayu estimates it on the program is like this :
-   * FP = any protein that contains a decoy psm with q <= threshold
-   * TP = any protein that contains a target psm with q <= threshold
-   * They do not consider protein containing both decoy and target psms
-   * Also, mayu estimates q as the empirical (target-decoy) q value.
-   * Percolator estimates q as the empirical (target-decoy) q value and adjusted by pi0
-   * Mayu extracts the list of TP and FP proteins from PSM level whereas percolator
-   * extract the list of TP and FP proteins from peptide level, this avoids redundancy and
-   * gives a better calibration since peptide level q values are re-adjusted in percolator.
-   * This creates sometimes a difference in the number of TP and FP proteins between percolator and Mayus 
-   * which causes a slight difference in the estimated protein FDR
-   */
-  for (std::vector<ProteinScoreHolder>::const_iterator it = proteins_.begin();
-       it != proteins_.end(); it++) {
-    unsigned num_target_confident = 0;
-    unsigned num_decoy_confident = 0;
-    std::string protname = it->getName();
-    const std::vector<ProteinScoreHolder::Peptide> peptides = it->getPeptidesByRef();
-    for(std::vector<ProteinScoreHolder::Peptide>::const_iterator itP = peptides.begin();
-          itP != peptides.end(); ++itP) {
-      if(itP->q <= psm_threshold && itP->isdecoy)
-        ++num_decoy_confident;
-      if(itP->q <= psm_threshold && !itP->isdecoy)
-        ++num_target_confident;
-    }
-    if (num_decoy_confident > 0) {
-      numberFP.insert(protname);
-    }
-    if (num_target_confident > 0) {
-      numberTP.insert(protname);
-    }
-  }
-}
-
 double ProteinProbEstimator::estimatePi0(const unsigned int numBoot) {
   std::vector<double> pvalues;
   std::transform(proteins_.begin(), proteins_.end(), 
@@ -238,23 +162,6 @@ unsigned ProteinProbEstimator::getQvaluesBelowLevel(double level) {
   }
 }
 
-unsigned ProteinProbEstimator::getQvaluesBelowLevelDecoy(double level) { 
-  std::set<int> identifiedGroupIds;
-  unsigned nP = 0;
-  for (std::vector<ProteinScoreHolder>::const_iterator myP = proteins_.begin();
-          myP != proteins_.end(); ++myP) {
-    if (myP->getQ() < level && myP->isDecoy()) {
-      nP++;
-      identifiedGroupIds.insert(myP->getGroupId());
-    }
-  }
-  
-  if (trivialGrouping_) {
-    return static_cast<unsigned>(identifiedGroupIds.size());
-  } else {
-    return nP;
-  }
-}
 
 
 void ProteinProbEstimator::estimateQValues() {
@@ -310,10 +217,11 @@ void ProteinProbEstimator::setTargetandDecoysNames(Scores& peptideScores) {
   std::vector<ScoreHolder>::iterator psm = peptideScores.begin();
   for (; psm!= peptideScores.end(); ++psm) {
     // for each protein
-    std::vector<std::string>::iterator protIt = psm->pPSM->proteinIds.begin();
-    for (; protIt != psm->pPSM->proteinIds.end(); protIt++) {
+    PSMDescription::ProteinList proteinIds = psm->pPSM->proteins();
+    PSMDescription::ProteinList::const_iterator protIt = proteinIds.begin();
+    for (; protIt != proteinIds.end(); ++protIt) {
       ProteinScoreHolder::Peptide peptide(psm->pPSM->getPeptideSequence(), 
-          psm->isDecoy(), psm->p, psm->pep, psm->q, psm->score);
+          psm->isDecoy(), 0.0, psm->pep, psm->q, psm->score);
       if (proteinToIdxMap_.find(*protIt) == proteinToIdxMap_.end()) {
 	      ProteinScoreHolder newProtein(*protIt, psm->isDecoy(), peptide, ++numGroups);
 	      proteinToIdxMap_[*protIt] = proteins_.size();
@@ -352,9 +260,10 @@ void ProteinProbEstimator::addSpectralCounts(Scores& peptideScores) {
   std::vector<ScoreHolder>::iterator psm = peptideScores.begin();
   for (; psm!= peptideScores.end(); ++psm) {
     // for each protein
-    std::vector<std::string>::const_iterator protIt = psm->pPSM->proteinIds.begin();
+    PSMDescription::ProteinList proteinIds = psm->pPSM->proteins();
+    PSMDescription::ProteinList::const_iterator protIt = proteinIds.begin();
     std::set<unsigned int> seenProteinIdxs;
-    for (; protIt != psm->pPSM->proteinIds.end(); protIt++) {
+    for (; protIt != proteinIds.end(); ++protIt) {
       if (proteinToIdxMap_.find(*protIt) != proteinToIdxMap_.end()) {
         unsigned int proteinIdx = static_cast<unsigned int>(proteinToIdxMap_[*protIt]);
         if (seenProteinIdxs.find(proteinIdx) == seenProteinIdxs.end()) {
@@ -370,15 +279,6 @@ void ProteinProbEstimator::addSpectralCounts(Scores& peptideScores) {
       proteins_[*protIdxIt].addSpecCounts(psmCount, isUnique);
     }
   }
-}
-
-/** Used by XMLInterface to read in the proteins with its sequence and store them for the Mayu method **/
-void ProteinProbEstimator::addProteinDb(bool isDecoy, std::string name, 
-                                        std::string sequence, double length) {
-  if (isDecoy)
-    decoyProteins_.insert(std::make_pair(name,std::make_pair(sequence,length)));
-  else
-    targetProteins_.insert(std::make_pair(name,std::make_pair(sequence,length)));
 }
 
 unsigned ProteinProbEstimator::countTargets(
@@ -447,14 +347,14 @@ void ProteinProbEstimator::print(ostream& myout, bool decoy) {
       if (specCountQvalThreshold_ > 0.0) {
         myout << myP->getSpecCountsUnique() << "\t" << myP->getSpecCountsAll() << "\t";
       }
-      const std::vector<ProteinScoreHolder::Peptide> peptides = myP->getPeptidesByRef();
+      const std::vector<ProteinScoreHolder::Peptide>& peptides = myP->getPeptidesByRef();
       std::vector<ProteinScoreHolder::Peptide>::const_iterator peptIt = peptides.begin();
       for(; peptIt != peptides.end(); peptIt++) {
         if (peptIt->name != "") {
           myout << peptIt->name << " ";
         }
       }
-      myout << std::endl;
+      myout << '\n';
     }
   }
 }

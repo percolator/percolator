@@ -1,6 +1,13 @@
 #include "ValidateTabFile.h"
 
-std::string ValidateTabFile::concatenateMultiplePINs(std::vector<std::basic_string<char>> fileNames) {
+/**
+ * Concatenates multiple tab-files into one file in outputDir, using the
+ * header of the file with the most columns. Columns missing in a file (e.g.
+ * charge states) are filled with zeros.
+ * @return name of the concatenated file
+ */
+std::string ValidateTabFile::concatenateMultiplePINs(
+    const std::vector<std::string>& fileNames, const std::string& outputDir) {
   // Validate multiple tab-files, and then concatenate them.
   std::string inputFN;
   std::ifstream pinFileStream;
@@ -41,14 +48,13 @@ std::string ValidateTabFile::concatenateMultiplePINs(std::vector<std::basic_stri
   }
 
   /* Create a temporary tab file to concatenate tab files in to */ 
-  string tcf = "";
-  string tcd = "";
-
-  TmpDir tmpDir;
-  tmpDir.createTempFile(tcf, tcd);
-  inputFN = tcf;
+  inputFN = outputDir + "/converters-tmp.tcb";
   ofstream outFile;
   outFile.open(inputFN);
+  if (!outFile.is_open()) {
+    throw MyException("ERROR: Could not create the temporary file " + inputFN +
+                      " for concatenating the input files.\n");
+  }
 
   /* Only want to print header once */
   bool firstFile = true;
@@ -86,6 +92,11 @@ std::string ValidateTabFile::concatenateMultiplePINs(std::vector<std::basic_stri
         /* Check if there are any adjacent missing charge states */
         while(nextColumn) {
           column_index++;
+          if (column_index >= static_cast<int>(columnMap.size())) {
+            throw MyException("ERROR: The column " + optionalHeader + " of " +
+                text + " is not in the header with the most columns, " +
+                "the input files cannot be concatenated.\n");
+          }
           if (columnMap[column_index] == optionalHeader) {
             /* No missing charge state, continue */
             nextColumn=false;
@@ -122,6 +133,12 @@ std::string ValidateTabFile::concatenateMultiplePINs(std::vector<std::basic_stri
     }
 
     do {
+      if (missingCols.empty()) {
+        // same as splitting at the tabs and writing each field followed by
+        // a tab, as done below
+        outFile << nextRow << "\t\n";
+        continue;
+      }
       TabReader readerRow(nextRow);
 
       /* Keep track on column for missing charge states */
@@ -154,5 +171,9 @@ std::string ValidateTabFile::concatenateMultiplePINs(std::vector<std::basic_stri
     firstFile = false;      
   }
   outFile.close();
+  if (!outFile) {
+    throw MyException("ERROR: Could not write the temporary file " + inputFN +
+                      ".\n");
+  }
   return inputFN;
 }

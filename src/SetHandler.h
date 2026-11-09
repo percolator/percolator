@@ -25,6 +25,8 @@
 #include <algorithm>
 #include <functional>
 #include <map>
+#include <memory>
+#include <unordered_map>
 #include <vector>
 #include <string>
 #include <cctype>
@@ -32,7 +34,6 @@
 #include <queue>
 #include <climits>
 
-#include "ResultHolder.h"
 #include "DataSet.h"
 #include "Normalizer.h"
 #include "Scores.h"
@@ -57,6 +58,14 @@ struct PSMDescriptionPriority {
 */
 typedef std::pair<int, double> ScanId;
 
+struct ScanIdHash {
+  // noexcept lets the hash table skip storing the hash code in every node
+  size_t operator()(const ScanId& scanId) const noexcept {
+    return std::hash<int>()(scanId.first) ^
+           (std::hash<double>()(scanId.second) << 1);
+  }
+};
+
 /*
 * SetHandler is a class that provides functionality to handle training,
 * testing, Xval data sets, reads/writes from/to a file, prints them.
@@ -66,46 +75,51 @@ class SetHandler {
  public:
   SetHandler(unsigned int maxPSMs);
   virtual ~SetHandler();
+  SetHandler(const SetHandler&) = delete;
+  SetHandler& operator=(const SetHandler&) = delete;
 
-  void push_back_dataset(DataSet* ds);
+  void push_back_dataset(std::unique_ptr<DataSet> ds);
 
   void setDecoyPrefix(std::string& decoyPrefix) { decoyPrefix_ = decoyPrefix; }
 
      
   //const double* getFeatures(const int setPos, const int ixPos) const; 
   size_t getMaxPSMs() { return maxPSMs_; }
+  // number of PSM lines in the input, counted by the last full read
+  size_t getNumPsmLines() const { return numPsmLines_; }
   
   // Reads in tab delimited stream and returns a SanityCheck object based on
   // the presence of default weights. Returns 0 on error, 1 on success.
-  int readTab(std::istream& dataStream, SanityCheck*& pCheck);
+  int readTab(std::istream& dataStream, SanityCheck& check);
   int readAndScoreTab(std::istream& dataStream, 
-    std::vector<double>& rawWeights, Scores& allScores, SanityCheck*& pCheck);
+    std::vector<double>& rawWeights, Scores& allScores, SanityCheck& check);
   void addQueueToSets(std::priority_queue<PSMDescriptionPriority>& subsetPSMs,
     DataSet* targetSet, DataSet* decoySet);
   
-  void writeTab(const std::string& dataFN, SanityCheck* pCheck);
+  void writeTab(const std::string& dataFN, const SanityCheck& check);
   void populateScoresWithPSMs(std::vector<ScoreHolder> &scores, LabelType label);
-  void normalizeFeatures(Normalizer*& pNorm);
+  void normalizeFeatures(Normalizer& norm);
   
   LabelType const getLabel(int setPos);
   inline int getSizeFromLabel(LabelType label) {
     return static_cast<int>(subsets_[getSubsetIndexFromLabel(label)]->getSize());
   }
   
-  inline DataSet* getSubset(unsigned int ix) { return (subsets_[ix]); }
+  inline DataSet* getSubset(unsigned int ix) { return subsets_[ix].get(); }
   inline DataSet* getSubsetFromLabel(LabelType label) {
-    return (subsets_[getSubsetIndexFromLabel(label)]);
+    return subsets_[getSubsetIndexFromLabel(label)].get();
   }
-  
-  static void deletePSMPointer(PSMDescription* psm);
   
   FeatureMemoryPool& getFeaturePool() { return featurePool_; }
   
   void reset();
+  void releaseFeatures();
 
  protected:
   size_t maxPSMs_;
-  std::vector<DataSet*> subsets_;
+  size_t numPsmLines_ = 0;
+  PsmStore psmStore_;  // owns the PSMs of subsets_ and of -N pass 2
+  std::vector<std::unique_ptr<DataSet> > subsets_;
   FeatureMemoryPool featurePool_;
   std::string decoyPrefix_; // Used to determine if a psm is a decoy
   

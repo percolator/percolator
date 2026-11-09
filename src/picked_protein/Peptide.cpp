@@ -65,6 +65,7 @@ struct peptide_src_iterator{
  */
 void Peptide::init() {
   length_ = 0;
+  pointer_count_ = 1;  // the creator holds the first reference
   peptide_srcs_.clear();
 }
 

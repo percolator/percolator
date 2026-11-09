@@ -16,6 +16,7 @@
  *******************************************************************************/
 
 #include "SetHandler.h"
+#include <cmath>
 
 SetHandler::SetHandler(unsigned int maxPSMs) : maxPSMs_(maxPSMs) {}
 
@@ -23,14 +24,20 @@ SetHandler::~SetHandler() {
   reset();
 }
 
-void SetHandler::reset() {
-  for (unsigned int ix = 0; ix < subsets_.size(); ix++) {
-    if (subsets_[ix] != NULL) {
-      delete subsets_[ix];
-    }
-    subsets_[ix] = NULL;
+/**
+ * Frees the feature rows of all PSMs, which are only needed for training.
+ */
+void SetHandler::releaseFeatures() {
+  for (const auto& subset : subsets_) {
+    subset->clearFeaturePointers();
   }
+  featurePool_.destroyPool();
+}
+
+void SetHandler::reset() {
   subsets_.clear();
+  psmStore_.clear();
+  featurePool_.destroyPool();
   DataSet::resetFeatureNames();
 }
 /**
@@ -48,29 +55,27 @@ unsigned int SetHandler::getSubsetIndexFromLabel(LabelType label) {
 }
 
 /**
- * Insert DataSet object into this SetHandler
- * @param ds pointer to DataSet to be inserted
+ * Insert DataSet object into this SetHandler, which takes ownership
+ * @param ds DataSet to be inserted
  */
-void SetHandler::push_back_dataset( DataSet * ds ) {
-  subsets_.push_back(ds);
+void SetHandler::push_back_dataset(std::unique_ptr<DataSet> ds) {
+  subsets_.push_back(std::move(ds));
 }
 
 void SetHandler::populateScoresWithPSMs(vector<ScoreHolder> &scores, LabelType label) {
   subsets_[getSubsetIndexFromLabel(label)]->fillScores(scores);
 }
 
-void SetHandler::normalizeFeatures(Normalizer*& pNorm) {
+void SetHandler::normalizeFeatures(Normalizer& norm) {
   std::vector<double*> featuresV, rtFeaturesV;
   for (unsigned int ix = 0; ix < subsets_.size(); ++ix) {
     subsets_[ix]->fillFeatures(featuresV);
   }
-  pNorm = Normalizer::getNormalizer();
-
-  pNorm->setSet(featuresV,
+  norm.setSet(featuresV,
       rtFeaturesV,
       FeatureNames::getNumFeatures(),
       0);
-  pNorm->normalizeSet(featuresV, rtFeaturesV);
+  norm.normalizeSet(featuresV, rtFeaturesV);
 }
 
 LabelType const SetHandler::getLabel(int setPos) {
@@ -78,10 +83,10 @@ LabelType const SetHandler::getLabel(int setPos) {
   return subsets_[static_cast<std::size_t>(setPos)]->getLabel();
 }
 
-int SetHandler::readTab(istream& dataStream, SanityCheck*& pCheck) {
+int SetHandler::readTab(istream& dataStream, SanityCheck& check) {
   std::vector<double> noWeights;
   Scores noScores(true);
-  return readAndScoreTab(dataStream, noWeights, noScores, pCheck);
+  return readAndScoreTab(dataStream, noWeights, noScores, check);
 }
 
 int SetHandler::getOptionalFields(const std::string& headerLine, 
@@ -155,9 +160,14 @@ void SetHandler::getFeatureNames(const std::string& headerLine,
   }
   // Check if we have read the correct number of features
   if (numFeatLeft != 0) {
-      cerr << "Not enough features read" << endl;
-      exit(-1);
-  } 
+    // thrown rather than exit(), so that the caller's destructors still
+    // remove the temporary file of a multi-file input
+    ostringstream temp;
+    temp << "ERROR: Reading tab file, the header line has fewer columns than "
+         << "the first PSM: " << numFeatures - numFeatLeft
+         << " column names for its " << numFeatures << " features." << std::endl;
+    throw MyException(temp.str());
+  }
   featureNames.initFeatures();
   assert(numFeatures == DataSet::getNumFeatures());
 }
@@ -185,7 +195,7 @@ bool SetHandler::getInitValues(const std::string& defaultDirectionLine,
   return hasDefaultValues;
 }
 
-void SetHandler::writeTab(const string& dataFN, SanityCheck * pCheck) {
+void SetHandler::writeTab(const string& dataFN, const SanityCheck& check) {
   ofstream dataStream(dataFN.data(), ios::out);
   dataStream << "SpecId\tLabel\tScanNr\tExpMass\tCalcMass\t";
   if (PSMDescription::hasSpectrumFileName()) {
@@ -193,7 +203,7 @@ void SetHandler::writeTab(const string& dataFN, SanityCheck * pCheck) {
   }
   dataStream << DataSet::getFeatureNames().getFeatureNames()
       << "\tPeptide\tProteins" << std::endl;
-  vector<double> initial_values = pCheck->getDefaultWeights();
+  const vector<double>& initial_values = check.getDefaultWeights();
   if (initial_values.size() > 0) {
     dataStream << "DefaultDirection\t-\t-\t-\t-";
     for (size_t i = 0; i < initial_values.size(); ++i) {
@@ -201,20 +211,18 @@ void SetHandler::writeTab(const string& dataFN, SanityCheck * pCheck) {
     }
     dataStream << std::endl;
   }
-  for (std::vector<DataSet*>::iterator it = subsets_.begin();
-         it != subsets_.end(); ++it) {
-    (*it)->writeTabData(dataStream);
+  for (const auto& subset : subsets_) {
+    subset->writeTabData(dataStream);
   }
 }
 
 void SetHandler::readPSMs(istream& dataStream, std::string& psmLine, 
     bool hasInitialValueRow, bool& concatenatedSearch,
     std::vector<OptionalField>& optionalFields) {
-  DataSet* targetSet = new DataSet();
-  assert(targetSet);
+  // owned here until reading succeeded
+  std::unique_ptr<DataSet> targetSet(new DataSet());
   targetSet->setLabel(LabelType::TARGET);
-  DataSet* decoySet = new DataSet();
-  assert(decoySet);
+  std::unique_ptr<DataSet> decoySet(new DataSet());
   decoySet->setLabel(LabelType::DECOY);
   
   unsigned int lineNr = (hasInitialValueRow ? 3u : 2u);
@@ -231,7 +239,8 @@ void SetHandler::readPSMs(istream& dataStream, std::string& psmLine,
   } else if (maxPSMs_ > 0u) { // reservoir sampling to create subset of size maxPSMs_
     std::priority_queue<PSMDescriptionPriority> subsetPSMs;
     // ScanId -> (priority, isDecoy)
-    std::map<ScanId, std::pair<size_t, bool> > scanIdLookUp;
+    std::unordered_map<ScanId, std::pair<size_t, bool>, ScanIdHash>
+        scanIdLookUp;
     unsigned int upperLimit = UINT_MAX;
     do {
       if (lineNr % 1000000 == 0 && VERB > 1) {
@@ -243,38 +252,43 @@ void SetHandler::readPSMs(istream& dataStream, std::string& psmLine,
       ScanId scanId = getScanId(psmLine, label, optionalFields, lineNr);
       bool isDecoy = (label == -1);
       size_t randIdx;
-      if (scanIdLookUp.find(scanId) != scanIdLookUp.end()) {
-        if (concatenatedSearch && isDecoy != scanIdLookUp[scanId].second) {
+      auto lookUp = scanIdLookUp.find(scanId);
+      if (lookUp != scanIdLookUp.end()) {
+        if (concatenatedSearch && isDecoy != lookUp->second.second) {
           concatenatedSearch = false;
         }
-        randIdx = scanIdLookUp[scanId].first;
+        randIdx = lookUp->second.first;
       } else {
         randIdx = PseudoRandom::lcg_rand();
-        scanIdLookUp[scanId].first = randIdx;
-        scanIdLookUp[scanId].second = isDecoy;
+        scanIdLookUp.emplace(scanId, std::make_pair(randIdx, isDecoy));
       }
       
-      if (subsetPSMs.size() < maxPSMs_ || randIdx < upperLimit) {
+      if (label != 1 && label != -1) {
+        std::cerr << "Warning: the PSM on line " << lineNr
+            << " has a label not in {1,-1} and will be ignored." << std::endl;
+      } else if (subsetPSMs.size() < maxPSMs_ || randIdx < upperLimit) {
         PSMDescriptionPriority psmPriority;
         bool readProteins = false;
         psmPriority.label = DataSet::readPsm(psmLine, lineNr, optionalFields, 
-                                 readProteins, psmPriority.psm, featurePool_, decoyPrefix_);
+                                 readProteins, psmPriority.psm, featurePool_,
+                                 psmStore_, decoyPrefix_);
         psmPriority.priority = randIdx;
         subsetPSMs.push(psmPriority);
         if (subsetPSMs.size() > maxPSMs_) {
           PSMDescriptionPriority del = subsetPSMs.top();
           upperLimit = static_cast<unsigned int>(del.priority);
           featurePool_.deallocate(del.psm->features);
-          PSMDescription::deletePtr(del.psm);
+          psmStore_.release(del.psm);
           subsetPSMs.pop();
         }
       }
       ++lineNr;
     } while (getline(dataStream, psmLine));
     
-    addQueueToSets(subsetPSMs, targetSet, decoySet);
+    addQueueToSets(subsetPSMs, targetSet.get(), decoySet.get());
   } else { // simply read all PSMs
-    std::map<ScanId, bool> scanIdLookUp; // ScanId -> isDecoy
+    // ScanId -> isDecoy, only needed until a separate search is detected
+    std::unordered_map<ScanId, bool, ScanIdHash> scanIdLookUp;
     do {
       if (lineNr % 1000000 == 0 && VERB > 1) {
         std::cerr << "Reading line " << lineNr << std::endl;
@@ -283,17 +297,19 @@ void SetHandler::readPSMs(istream& dataStream, std::string& psmLine,
       int label = 0;
       ScanId scanId = getScanId(psmLine, label, optionalFields, lineNr);
       bool isDecoy = (label == -1);
-      if (scanIdLookUp.find(scanId) != scanIdLookUp.end()) {
-        if (concatenatedSearch && isDecoy != scanIdLookUp[scanId]) {
+      if (concatenatedSearch) {
+        auto inserted = scanIdLookUp.emplace(scanId, isDecoy);
+        if (!inserted.second && isDecoy != inserted.first->second) {
           concatenatedSearch = false;
+          scanIdLookUp.clear();
         }
-      } else {
-        scanIdLookUp[scanId] = isDecoy;
       }
       if (label == 1) {
-        targetSet->readPsm(psmLine, lineNr, optionalFields, featurePool_, decoyPrefix_);
+        targetSet->readPsm(psmLine, lineNr, optionalFields, featurePool_,
+                           psmStore_, decoyPrefix_);
       } else if (label == -1) {
-        decoySet->readPsm(psmLine, lineNr, optionalFields, featurePool_, decoyPrefix_);
+        decoySet->readPsm(psmLine, lineNr, optionalFields, featurePool_,
+                          psmStore_, decoyPrefix_);
       } else {
         std::cerr << "Warning: the PSM on line " << lineNr
             << " has a label not in {1,-1} and will be ignored." << std::endl;
@@ -302,12 +318,13 @@ void SetHandler::readPSMs(istream& dataStream, std::string& psmLine,
     } while (getline(dataStream, psmLine));
   }
   
+  numPsmLines_ = lineNr - (hasInitialValueRow ? 3u : 2u);
   if (VERB > 1) {
-    std::cerr << "Found " << lineNr - (hasInitialValueRow ? 3u : 2u) << " PSMs" << std::endl;
+    std::cerr << "Found " << numPsmLines_ << " PSMs" << std::endl;
   }
   
-  push_back_dataset(targetSet);
-  push_back_dataset(decoySet);
+  push_back_dataset(std::move(targetSet));
+  push_back_dataset(std::move(decoySet));
 }
 
 void SetHandler::addQueueToSets(
@@ -315,15 +332,11 @@ void SetHandler::addQueueToSets(
     DataSet* targetSet, DataSet* decoySet) {
   while (!subsetPSMs.empty()) {
     PSMDescriptionPriority psmPriority = subsetPSMs.top();
+    // DataSet::readPsm only returns TARGET or DECOY
     if (psmPriority.label == LabelType::TARGET) {
       targetSet->registerPsm(psmPriority.psm);
-    } else if (psmPriority.label == LabelType::DECOY) {
-      decoySet->registerPsm(psmPriority.psm);
     } else {
-      std::cerr << "Warning: the PSM " << psmPriority.psm->getId()
-          << " has a label not in {1,-1} and will be ignored." << std::endl;
-      featurePool_.deallocate(psmPriority.psm->features);
-      PSMDescription::deletePtr(psmPriority.psm);
+      decoySet->registerPsm(psmPriority.psm);
     }
     subsetPSMs.pop();
   }
@@ -372,6 +385,20 @@ ScanId SetHandler::getScanId(const std::string& psmLine, int& label,
           temp << "ERROR: Reading tab file, error reading experimental mass on line " 
               << lineNr << ". Check if experimental mass is a floating point number." << std::endl;
           throw MyException(temp.str());
+        }
+        if (!isfinite(scanId.second)) {
+          ostringstream temp;
+          temp << "ERROR: Reading tab file, the experimental mass of PSM "
+              << psmLine.substr(0, psmLine.find('\t')) << " on line " << lineNr
+              << " is " << scanId.second << " instead of a finite number."
+              << std::endl;
+          if (NO_TERMINATE) {
+            cerr << temp.str() << "No-terminate flag set: setting it to 0 "
+                << "and ignoring the error." << std::endl;
+            scanId.second = 0.0;
+          } else {
+            throw MyException(temp.str());
+          }
         }
         break;
       } case CALCMASS: {
@@ -424,7 +451,7 @@ ScanId SetHandler::getScanId(const std::string& psmLine, int& label,
 }
 
 int SetHandler::readAndScoreTab(istream& dataStream, 
-    std::vector<double>& rawWeights, Scores& allScores, SanityCheck*& pCheck) {
+    std::vector<double>& rawWeights, Scores& allScores, SanityCheck& check) {
   if (!dataStream) {
     std::cerr << "ERROR: Cannot open data stream." << std::endl;
     return 0;
@@ -501,10 +528,9 @@ int SetHandler::readAndScoreTab(istream& dataStream,
     
     readPSMs(dataStream, psmLine, hasInitialValueRow, concatenatedSearch, optionalFields);
     
-    pCheck = new SanityCheck();
-    pCheck->checkAndSetDefaultDir();
-    if (hasDefaultValues) pCheck->addDefaultWeights(init_values); 
-    pCheck->setConcatenatedSearch(concatenatedSearch);
+    check.checkAndSetDefaultDir();
+    if (hasDefaultValues) check.addDefaultWeights(init_values); 
+    check.setConcatenatedSearch(concatenatedSearch);
   }
   return 1;
 }
@@ -519,9 +545,17 @@ void SetHandler::readAndScorePSMs(istream& dataStream, std::string& psmLine,
       std::cerr << "Processing line " << lineNr << std::endl;
     }
     psmLine = rtrim(psmLine);
-    ScoreHolder sh;
-    sh.label = DataSet::readPsm(psmLine, lineNr, optionalFields, readProteins, sh.pPSM, featurePool_, decoyPrefix_);
-    allScores.scoreAndAddPSM(sh, rawWeights, featurePool_);
+    // DataSet::readPsm would read any label other than 1 as a decoy, while
+    // the training data ignore such lines
+    TabReader labelReader(psmLine);
+    labelReader.skip(1u);  // id
+    int label = labelReader.readInt();
+    if (label == 1 || label == -1) {
+      ScoreHolder sh;
+      sh.label = DataSet::readPsm(psmLine, lineNr, optionalFields, readProteins,
+                                  sh.pPSM, featurePool_, psmStore_, decoyPrefix_);
+      allScores.scoreAndAddPSM(sh, rawWeights, featurePool_);
+    }
     ++lineNr;
   } while (getline(dataStream, psmLine));
   

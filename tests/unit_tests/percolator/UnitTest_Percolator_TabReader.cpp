@@ -89,6 +89,35 @@ TEST_F(TabReaderTest, CheckReadDouble)
     tryInvalidDouble("15:");
 }
 
+// readDouble must give the same value and error state as strtod for every
+// input, whichever parsing path it takes.
+TEST_F(TabReaderTest, CheckReadDoubleMatchesStrtod)
+{
+    const char* inputs[] = {
+        "0", "-0", "1", "0.1", "-3.14159", "1e10", "1E-10", "2.5e+3",
+        "123456789012345678901234567890", "0.1000000000000000055511151231257827",
+        "4.9406564584124654e-324", "2.2250738585072014e-308", "1e-400",
+        "1.7976931348623157e308", "1e400", "-1e400", "inf", "-inf", "nan",
+        "+2.5", " 2.5", "0x1p3", "1.5x", "1.5 ", ".5", "5.", "-", "e5", ""};
+    for (const char* input : inputs) {
+        std::string line(input);
+        char* next = NULL;
+        errno = 0;
+        double expected = strtod(line.c_str(), &next);
+        bool expectError = next == line.c_str() ||
+            (*next != '\0' && !isspace(*next)) ||
+            ((expected == HUGE_VAL || expected == -HUGE_VAL) && errno == ERANGE);
+        TabReader reader(line);
+        double value = reader.readDouble();
+        EXPECT_EQ(expectError, reader.error() != 0) << "input: " << input;
+        if (std::isnan(expected)) {
+            EXPECT_TRUE(std::isnan(value)) << "input: " << input;
+        } else {
+            EXPECT_EQ(0, memcmp(&expected, &value, sizeof(double))) << "input: " << input;
+        }
+    }
+}
+
 // Tests reading a sequence of fields, including skipping fields.
 TEST_F(TabReaderTest, CheckSequentialReading)
 {

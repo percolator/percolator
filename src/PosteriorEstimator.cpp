@@ -37,6 +37,7 @@ using namespace std;
 #include "PosteriorEstimator.h"
 #include "Transform.h"
 #include "Globals.h"
+#include "IsotonicPEP.h"
 
 static int noIntervals = 500;
 static unsigned int numLambda = 100;
@@ -585,11 +586,91 @@ int PosteriorEstimator::run() {
     }
   }
   
-  // Logistic regression on the data
-  estimatePEP(combined, usePi0_, pi0, peps,includeNegativesInResult);
+  if (irlsPep_) {
+    // Logistic regression on the data
+    estimatePEP(combined, usePi0_, pi0, peps,includeNegativesInResult);
+  } else {
+    estimateMonotonePEP(combined, pvals, pi0, peps);
+  }
   finishStandalone(combined, peps, pvals, pi0);
 
   return true;
+}
+
+void PosteriorEstimator::estimateMonotonePEP(
+    const vector<pair<double, bool> >& combined, const vector<double>& p,
+    double pi0, vector<double>& peps) const {
+  // combined is sorted best first; the regressions expect larger x = better
+  const double sign = reversed ? -1.0 : 1.0;
+  InferPEP reg(!pavaPep_);
+  peps.clear();
+  if (tdcPep_ && !pvalInput) {
+    // decoy rate p(x) and PEP = p/(1-p); with separate target and decoy
+    // searches the odds are scaled by pi0 and the ratio of targets to decoys
+    vector<double> isDecoy, x;
+    double numTargets = 0.0, numDecoys = 0.0;
+    for (const auto& elem : combined) {
+      isDecoy.push_back(elem.second ? 0.0 : 1.0);
+      x.push_back(sign * elem.first);
+      (elem.second ? numTargets : numDecoys) += 1.0;
+    }
+    const double oddsFactor =
+        usePi0_ ? pi0 * numTargets / std::max(1.0, numDecoys) : 1.0;
+    vector<double> all = rankPep_ ? reg.tdc_to_pep(isDecoy, {}, oddsFactor)
+                                  : reg.tdc_to_pep(isDecoy, x, oddsFactor);
+    for (size_t ix = 0; ix < combined.size(); ++ix) {
+      if (combined[ix].second || includeNegativesInResult) {
+        peps.push_back(all[ix]);
+      }
+    }
+    return;
+  }
+  if (tdcPep_ && VERB > 0) {
+    cerr << "Warning: --tdc-pep needs target and null scores, using the "
+         << "q values of the targets instead." << endl;
+  }
+  // raw PEPs from the target q values, n q_n - (n-1) q_{n-1}, regressed on
+  // the score or the rank
+  vector<double> q, targetQ, targetX;
+  if (pvalInput) {
+    getQValuesFromP(pi0, p, q);
+  } else {
+    getQValues(pi0, combined, q);
+  }
+  // q holds one value per target, or per entry with includeNegativesInResult
+  const bool allEntries = !pvalInput && includeNegativesInResult;
+  for (size_t ix = 0, iq = 0; ix < combined.size(); ++ix) {
+    if (!combined[ix].second && !allEntries) continue;
+    if (combined[ix].second && iq < q.size()) {
+      targetQ.push_back(q[iq]);
+      targetX.push_back(sign * combined[ix].first);
+    }
+    ++iq;
+  }
+  vector<double> targetPep = rankPep_ ? reg.q_to_pep(targetQ)
+                                      : reg.qns_to_pep(targetQ, targetX);
+  if (!includeNegativesInResult) {
+    peps = targetPep;
+    return;
+  }
+  // decoys get PEPs interpolated by their q values between the targets
+  // around them, as in Percolator
+  targetPep.push_back(1.0);
+  targetQ.push_back(1.0);
+  size_t it = 0;
+  double lastQ = 0.0, lastPep = 0.0;
+  for (size_t ix = 0; ix < combined.size(); ++ix) {
+    const double qv = (allEntries && ix < q.size()) ? q[ix] : lastQ;
+    if (combined[ix].second) {
+      peps.push_back(targetPep[it]);
+      lastQ = targetQ[it];
+      lastPep = targetPep[it];
+      ++it;
+    } else {
+      peps.push_back(reg.interpolate(qv, lastQ, targetQ[it], lastPep,
+                                     targetPep[it]));
+    }
+  }
 }
 
 string PosteriorEstimator::greeter() {
@@ -621,6 +702,8 @@ bool PosteriorEstimator::parseOptions(int argc, char** argv) {
       << "Alternatively, accuate p-value could be provided in a single file pvalue_file."
       << endl << endl;
   intro << "The method reports score, PEP, and q-value calculated directly from scores" << endl; 
+  intro << "By default the PEPs are estimated by I-spline regression of the target q values" << endl;
+  intro << "on the score." << endl;
   intro << "Convergence of the method can be checked by comparing the average PEP of identifications" << endl;
   intro << "above threshold with the q-value" << endl; 
   CommandLineParser cmd(intro.str());
@@ -660,6 +743,31 @@ bool PosteriorEstimator::parseOptions(int argc, char** argv) {
                    "Include decoy probabilities in the output.",
 		    "",
 		    TRUE_IF_SET);
+  cmd.defineOption("",
+                   "pava-pep",
+                   "Estimate PEPs by PAVA isotonic regression instead of I-spline regression.",
+                   "",
+                   TRUE_IF_SET);
+  cmd.defineOption("",
+                   "tdc-pep",
+                   "Estimate PEPs from the decoy rate p as a monotone function of the score, "
+                   "instead of from the target q values: PEP = p/(1-p), multiplied by "
+                   "pi0 * numTargets / max(1, numDecoys); -Y sets this factor to 1. "
+                   "Requires a null_file.",
+                   "",
+                   TRUE_IF_SET);
+  cmd.defineOption("",
+                   "rank-pep",
+                   "Use the rank instead of the score as independent variable for I-spline and PAVA PEPs.",
+                   "",
+                   TRUE_IF_SET);
+  cmd.defineOption("",
+                   "irls-pep",
+                   "Estimate PEPs with the cubic spline fitted by penalized logistic regression "
+                   "(PMID:18689838), the method of earlier versions. The options -n, -s and -c apply "
+                   "to this method only.",
+                   "",
+                   TRUE_IF_SET);
 
   cmd.parseArgs(argc, argv);
   if (cmd.isOptionSet("verbose")) {
@@ -685,6 +793,14 @@ bool PosteriorEstimator::parseOptions(int argc, char** argv) {
   }
   if (cmd.isOptionSet("include-negative")) {
     PosteriorEstimator::setNegative(true);
+  }
+  irlsPep_ = cmd.isOptionSet("irls-pep");
+  pavaPep_ = cmd.isOptionSet("pava-pep");
+  tdcPep_ = cmd.isOptionSet("tdc-pep");
+  rankPep_ = cmd.isOptionSet("rank-pep");
+  if (irlsPep_ && (pavaPep_ || tdcPep_ || rankPep_)) {
+    cerr << "Warning: --pava-pep, --tdc-pep and --rank-pep have no effect "
+         << "with --irls-pep." << endl;
   }
   if (cmd.arguments.size() > 2) {
     cerr << "Too many arguments given" << endl;

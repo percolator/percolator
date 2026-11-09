@@ -20,25 +20,26 @@
 #include "PosteriorEstimator.h"
 
 int main(int argc, char** argv) {
-    PosteriorEstimator* pCaller = new PosteriorEstimator();
     int retVal = EXIT_FAILURE;
-    try
     {
-     if (pCaller->parseOptions(argc, argv)) {
-     	if (pCaller->run()) retVal=EXIT_SUCCESS;
-     }
-    } 
-    catch (const std::exception& e) 
-    {
-      std::cerr << e.what() << endl;
-      retVal = EXIT_FAILURE;
+      PosteriorEstimator estimator;
+      try
+      {
+       if (estimator.parseOptions(argc, argv)) {
+       	if (estimator.run()) retVal=EXIT_SUCCESS;
+       }
+      } 
+      catch (const std::exception& e) 
+      {
+        std::cerr << e.what() << endl;
+        retVal = EXIT_FAILURE;
+      }
+      catch(...)
+      {
+        std::cerr << "Unknown exception, contact the developer.." << std::endl;
+        retVal = EXIT_FAILURE;
+      }
     }
-    catch(...)
-    {
-      std::cerr << "Unknown exception, contact the developer.." << std::endl;
-      retVal = EXIT_FAILURE;
-    }
-    delete pCaller;
     Globals::clean();
     return retVal;
 }

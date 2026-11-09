@@ -18,7 +18,7 @@ TEST_F(IsplineRegressionTest, IsplineDesignMatrixMonotonicity) {
 
     // Build a clamped knot vector: degree+1 boundary copies + internal knots
     std::vector<double> knots = {0, 0, 0, 0, 0.25, 0.5, 0.75, 1, 1, 1, 1};
-    Eigen::MatrixXd X = build_ispline_design(scores, 3, knots, true);
+    DenseMatrix X = build_ispline_design(scores, 3, knots, true);
 
     // Column 0 is intercept (all 1s); remaining columns are I-splines
     for (int col = 1; col < X.cols(); ++col) {

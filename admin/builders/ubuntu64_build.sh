@@ -58,8 +58,6 @@ if [ -z "$TRAVIS" ] && [ -z "$CI" ]; then
     sudo apt-get upgrade;
     sudo apt-get -y install g++ make cmake rpm fakeroot;
 fi
-echo "Install boost libraries...";
-sudo apt-get install -y libboost-dev libboost-filesystem-dev libboost-system-dev
 
 
 # cd ${src_dir}

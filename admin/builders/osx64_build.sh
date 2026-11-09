@@ -32,20 +32,17 @@ if [[ -d /opt/local/var/macports ]]
   then
     echo "[ Package manager ] : MacPorts "
     package_manager="sudo port"
-    boost_install_options="boost -no_static"
     other_packages="cmake bzip2 libiconv zlib"
 elif [[ -f ${HOME}/bin/brew ]]
   then
     echo "[ Package manager ] : Homebrew "
     package_manager=$HOME/bin/brew
-    boost_install_options="boost"
     other_packages="pbzip2 lzlib llvm libomp"
 elif [[ -f /usr/local/bin/brew || -f /opt/homebrew/bin/brew ]]
   then
     echo "[ Package manager ] : Homebrew "
     package_manager="brew"
     ${package_manager} update || true # brew.rb raises an error on the vagrant box, just ignore it
-    boost_install_options="boost"
     other_packages="pbzip2 lzlib llvm libomp"
 else
     package_manager_installed=false
@@ -89,7 +86,6 @@ fi
 echo "The Builder $0 is building the Percolator packages with src=${src_dir} an\
 d build=${build_dir} for user" `whoami`
 $package_manager install $other_packages
-$package_manager install $boost_install_options
 
 if [[ -f /usr/local/bin/brew || -f /opt/homebrew/bin/brew ]]
   then

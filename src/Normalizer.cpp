@@ -27,9 +27,6 @@ using namespace std;
 #include "FeatureNames.h"
 #include "Globals.h"
 
-int Normalizer::subclass_type = STDV;
-Normalizer* Normalizer::theNormalizer = NULL;
-
 Normalizer::Normalizer() {
 }
 
@@ -59,25 +56,15 @@ void Normalizer::normalize(const double* in, double* out, size_t offset,
   }
 }
 
-Normalizer* Normalizer::getNormalizer() {
-  if (theNormalizer == NULL) {
-    if (subclass_type == UNI) {
-      theNormalizer = new UniNormalizer();
-    } else if (subclass_type == STDV) {
-      theNormalizer = new StdvNormalizer();
-    } else {
-     theNormalizer = new NoNormalizer();
-    }
-  } else {
-    assert(false);
-    cerr << "Multiple instantiations of Normalizer" << endl;
-  }
-  return theNormalizer;
-}
-
-void Normalizer::setType(int type) {
+std::unique_ptr<Normalizer> Normalizer::create(int type) {
   assert(type == UNI || type == STDV || type == NONORM);
-  subclass_type = type;
+  if (type == UNI) {
+    return std::unique_ptr<Normalizer>(new UniNormalizer());
+  } else if (type == STDV) {
+    return std::unique_ptr<Normalizer>(new StdvNormalizer());
+  } else {
+    return std::unique_ptr<Normalizer>(new NoNormalizer());
+  }
 }
 
 // Before merging cross validation bins, the scores are renormalized to an uniform range.

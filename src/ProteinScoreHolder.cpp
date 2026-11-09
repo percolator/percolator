@@ -24,5 +24,4 @@ ProteinScoreHolder::ProteinScoreHolder(std::string name, bool isDecoy, ProteinSc
   if (!peptide.name.empty()) addPeptide(peptide);
 }
 
-ProteinScoreHolder::~ProteinScoreHolder() {}
 

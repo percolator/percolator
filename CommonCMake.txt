@@ -1,7 +1,9 @@
+# Sets a cache variable unless the user gave it a value. project() defines
+# some variables (e.g. CMAKE_BUILD_TYPE) as empty, so empty counts as unset.
 macro(my_set variable default options)
-  if(NOT DEFINED ${variable})
+  if(NOT DEFINED ${variable} OR "${${variable}}" STREQUAL "")
     set(${variable} ${default} CACHE STRING ${options} FORCE)
-  endif(NOT DEFINED ${variable})
+  endif()
 endmacro(my_set)
 
 # STORE NEWLY SET VARIABLES IN *.h.cmake FILES
@@ -118,7 +120,6 @@ set (CMAKE_CXX_EXTENSIONS OFF)
 
 IF(APPLE)
   add_definitions(-Dxdr_uint16_t=xdr_u_int16_t -Dxdr_uint32_t=xdr_u_int32_t -Dxdr_uint64_t=xdr_u_int64_t)
-  set(Boost_USE_MULTITHREADED ON) # macports can currently not install single threaded boost libraries
 ENDIF(APPLE)
 
 if(UNIX OR APPLE OR MINGW)

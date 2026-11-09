@@ -16,6 +16,7 @@
  *******************************************************************************/
 #ifndef NORMALIZER_H_
 #define NORMALIZER_H_
+#include <memory>
 #include <set>
 #include <vector>
 #include <iostream>
@@ -47,11 +48,8 @@ class Normalizer {
   static void endScoreNormalizeWeights(const std::vector<double>& in, 
     std::vector<double>& out, double subScore, double scale);
 
-  static Normalizer* getNormalizer();
-  static void resetNormalizer() {
-    theNormalizer = NULL;
-  }
-  static void setType(int type);
+  // creates a normalizer of the given type (UNI, STDV or NONORM)
+  static std::unique_ptr<Normalizer> create(int type);
   const static int UNI = 0;
   const static int STDV = 1;
   const static int NONORM = 2;
@@ -67,10 +65,10 @@ class Normalizer {
     numFeatures = nf;
   }
   double* getSub() {
-    return &sub[0];
+    return sub.data();
   }
   double* getDiv() {
-    return &div[0];
+    return div.data();
   }
   size_t* getNumRetFeatures() {
     return &numRetentionFeatures;
@@ -100,9 +98,7 @@ class Normalizer {
   vector<double> GetVDiv() const { return div; }
  protected:
   Normalizer();
-  static Normalizer* theNormalizer;
-  static int subclass_type;
-  size_t numFeatures, numRetentionFeatures;
+  size_t numFeatures = 0, numRetentionFeatures = 0;
   vector<double> sub;
   vector<double> div;
 };

@@ -107,12 +107,13 @@ TEST_F(CrossValidationTest, doStepTest)
     // but with the targets' values slightly less than the decoys'
     // values.
 
+    PsmStore psmStore;
     DataSet *targets = new DataSet();
     DataSet *decoys = new DataSet();
     targets->setLabel(LabelType::TARGET);
     decoys->setLabel(LabelType::DECOY);
     for (int i = 0 ; i < 2 * N ; ++i) {
-        PSMDescription *psm = new PSMDescription();
+        PSMDescription *psm = psmStore.add(PSMDescription());
         psm->features = new double[2];
         psm->features[0] = static_cast<double>(i) / N - 1E-6;
         psm->features[1] = static_cast<double>(i % 2);
@@ -120,18 +121,19 @@ TEST_F(CrossValidationTest, doStepTest)
         targets->registerPsm(psm);
     }
     for (int i = 0 ; i < N ; ++i) {
-        PSMDescription *psm = new PSMDescription();
+        PSMDescription *psm = psmStore.add(PSMDescription());
         psm->features = new double[2];
         psm->features[0] = static_cast<double>(i) / N;
         psm->features[1] = static_cast<double>(i % 2);
         psm->scan = scanNumber++;
         decoys->registerPsm(psm);
     }
-    setHandler.push_back_dataset(targets);
-    setHandler.push_back_dataset(decoys);
+    setHandler.push_back_dataset(std::unique_ptr<DataSet>(targets));
+    setHandler.push_back_dataset(std::unique_ptr<DataSet>(decoys));
 
-    Normalizer *pNorm = NULL;
-    setHandler.normalizeFeatures(pNorm);
+    std::unique_ptr<Normalizer> norm = Normalizer::create(Normalizer::STDV);
+    setHandler.normalizeFeatures(*norm);
+    Normalizer* pNorm = norm.get();
 
     Scores scores(true);
     scores.populateWithPSMs(setHandler);
@@ -139,9 +141,8 @@ TEST_F(CrossValidationTest, doStepTest)
     // The pre-iteration setup should select the first feature to
     // be weighted.
 
-    SanityCheck *pCheck = new SanityCheck();
-    int numInit = crossValidation->preIterationSetup(scores, pCheck, pNorm,
-                                                setHandler.getFeaturePool());
+    SanityCheck check;
+    int numInit = crossValidation->preIterationSetup(scores, check, pNorm);
     std::vector< std::vector<double> > const& w = crossValidation->weights();
     for (int i = 0 ; i < 3 ; ++i) {
         EXPECT_EQ(1.0, w[i][0]);

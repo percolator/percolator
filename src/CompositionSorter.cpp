@@ -21,8 +21,9 @@ bool compareByScanThenScore(const ScoreHolder* lhs, const ScoreHolder* rhs) {
   if (lhs->pPSM->expMass != rhs->pPSM->expMass) {
     return lhs->pPSM->expMass < rhs->pPSM->expMass;
   }
-  // Then sort by score in descending order
-  return lhs->score > rhs->score;
+  // Then sort by score in descending order, ties in the total order of
+  // ScoreHolder so that the result does not depend on the sort algorithm
+  return *lhs > *rhs;
 }
 
 void targetDecoyCompetition(std::vector<ScoreHolder*>& scoreHolders) {
@@ -110,7 +111,7 @@ int CompositionSorter::addPSMs(const Scores& scores, bool useTDC) {
 int CompositionSorter::sortScorePerPeptide() {
   // Comparator for sorting ScoreHolder references
   auto compareScoreHolder = [](const ScoreHolder* lhs, const ScoreHolder* rhs) {
-    return lhs->score > rhs->score;  // For descending order
+    return *lhs > *rhs;  // descending score, ties in a total order
   };
 
   // Iterating and sorting
@@ -220,8 +221,7 @@ int CompositionSorter::inCompositionCompetition(Scores& bestScoreHolders,
         continue;
       std::sort(group.begin(), group.end(),
                 [](const ScoreHolder* a, const ScoreHolder* b) -> bool {
-                  return a->score >
-                         b->score;  // Sort in descending order of score
+                  return *a > *b;  // descending score, ties in a total order
                 });
       bestScoreHolders.addScoreHolder(
           *(group.front()));  // Add the highest-scoring ScoreHolder

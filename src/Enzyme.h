@@ -22,6 +22,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <cstring> // needed for stricmp()
+#include <memory>
 #include <string>
 #include <assert.h>
 
@@ -36,8 +37,8 @@ class Enzyme {
     Enzyme() {}
     virtual ~Enzyme() {}
     
-    static Enzyme* createEnzyme(EnzymeType enz);
-    static Enzyme* createEnzyme(std::string enzyme);
+    static std::unique_ptr<Enzyme> createEnzyme(EnzymeType enz);
+    static std::unique_ptr<Enzyme> createEnzyme(std::string enzyme);
     
     EnzymeType getEnzymeType() const {
       return getET();

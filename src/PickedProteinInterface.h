@@ -21,7 +21,6 @@
 #include <cmath>
 #include <functional>
 #include <cfloat>
-//#include <boost/math/special_functions/gamma.hpp>
 
 #include "MyException.h"
 #include "ProteinProbEstimator.h"

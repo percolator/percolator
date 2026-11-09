@@ -31,9 +31,9 @@
 #include <random>
 
 #include "Scores.h"
-#include "ResultHolder.h"
 #include "Globals.h"
 #include "PSMDescription.h"
+#include "PsmStore.h"
 #include "FeatureNames.h"
 #include "FeatureMemoryPool.h"
 #include "ProteinProbEstimator.h"
@@ -49,8 +49,8 @@ class DataSet {
  public:
   DataSet();
   virtual ~DataSet();
-  
-  void initFeatureTables(const unsigned int numFeatures);
+  DataSet(const DataSet&) = delete;
+  DataSet& operator=(const DataSet&) = delete;
   
   void inline setLabel(LabelType l) { label_ = l; }
   LabelType inline getLabel() const { return label_; }
@@ -66,25 +66,26 @@ class DataSet {
   
   bool writeTabData(std::ofstream& out);
   
-  void print_10features();
-  void print_features();
 
   void fillScores(std::vector<ScoreHolder>& scores);
   void fillFeatures(std::vector<double*>& features);
+  void clearFeaturePointers();
   
   void readPsm(const std::string& line, const unsigned int lineNr,
                const std::vector<OptionalField>& optionalFields, 
-               FeatureMemoryPool& featurePool, std::string decoyPrefix);
+               FeatureMemoryPool& featurePool, PsmStore& psmStore,
+               const std::string& decoyPrefix);
   static LabelType readPsm(const std::string& line, const unsigned int lineNr,
     const std::vector<OptionalField>& optionalFields, bool readProteins,
-    PSMDescription*& myPsm, FeatureMemoryPool& featurePool, std::string decoyPrefix);
+    PSMDescription*& myPsm, FeatureMemoryPool& featurePool,
+    PsmStore& psmStore, const std::string& decoyPrefix);
   
   void registerPsm(PSMDescription* myPsm);
   
  protected:   
   
-  std::vector<PSMDescription*> psms_;
-  LabelType label_;
+  std::vector<PSMDescription*> psms_;  // in input order, owned by a PsmStore
+  LabelType label_ = LabelType::UNDEFINED;
   
   static FeatureNames featureNames_;
   static bool decoyWarningTripped_;

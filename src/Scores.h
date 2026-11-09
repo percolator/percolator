@@ -36,8 +36,6 @@
 #include "PseudoRandom.h"
 #include "ScoreHolder.h"
 
-#include <boost/unordered/unordered_map.hpp>
-
 class SetHandler;
 class AlgIn;
 
@@ -84,7 +82,20 @@ class Scores {
                          bool skipDecoysPlusOne = false);
   int calcScores(vector<double>& w);
   int calcQvals(double fdr, bool skipDecoysPlusOne = false);
-  void calcPep(const bool spline = false, const bool interpol = true, const bool from_q = false);
+  // feature rows and labels of the PSMs, see getFeatureRows
+  typedef std::vector<std::pair<const double*, bool> > FeatureRows;
+  void getFeatureRows(FeatureRows& rows) const;
+  int countTargetsBelowFdr(
+      const FeatureRows& rows,
+      const std::vector<double>& w,
+      double fdr,
+      bool skipDecoysPlusOne,
+      std::vector<std::pair<double, bool> >& combined) const;
+  // PEPs by P-IRLS (spline), or by I-spline/PAVA (pava) regression of either
+  // target q values (default) or target-decoy labels (tdc) on the score
+  // (interpol) or the rank
+  void calcPep(const bool spline = false, const bool interpol = true,
+               const bool pava = false, const bool tdc = false);
  
   void populateWithPSMs(SetHandler& setHandler);
 
@@ -93,14 +104,13 @@ class Scores {
   void createXvalSetsBySpectrum(std::vector<Scores>& train,
                                 std::vector<Scores>& test,
                                 unsigned int xval_fold,
-                                FeatureMemoryPool& featurePool,
                                 double decoyFractionTraining = 1.0,
                                 unsigned int decoysPerTarget = 1u);
 
   void generatePositiveTrainingSet(AlgIn& data,
                                    const double fdr,
                                    const double cpos,
-                                   const bool trainBestPositive);
+                                   const bool trainBestPositive) const;
   void generateNegativeTrainingSet(AlgIn& data, const double cneg);
 
   void recalculateSizes();
@@ -110,7 +120,6 @@ class Scores {
   void weedOutRedundant(std::map<std::string, unsigned int>& peptideSpecCounts,
                         double specCountQvalThreshold);
   void weedOutRedundantTDC();
-  void weedOutRedundantMixMax();
 
   void printRetentionTime(ostream& outs, double fdr);
   unsigned getQvaluesBelowLevel(double level);
@@ -134,12 +143,9 @@ class Scores {
     nullTargetWinProb_ = nullTargetWinProb;
   }
 
-  std::vector<PSMDescription*>& getPsms(PSMDescription* pPSM) {
-    return peptidePsmMap_[pPSM];
-  }
-
+  // removes all PSMs and releases their memory
   void reset() {
-    scores_.clear();
+    std::vector<ScoreHolder>().swap(scores_);
     totalNumberOfTargets_ = 0;
     totalNumberOfDecoys_ = 0;
   }
@@ -156,16 +162,14 @@ class Scores {
   unsigned int totalNumberOfDecoys_, totalNumberOfTargets_;
 
   std::vector<ScoreHolder> scores_;
-  std::map<PSMDescription*, std::vector<PSMDescription*> > peptidePsmMap_;
 
-  void reorderFeatureRows(
-      FeatureMemoryPool& featurePool,
-      bool isTarget,
-      boost::unordered_map<double*, double*>& movedAddresses,
-      size_t& idx);
   void getScoreLabelPairs(std::vector<std::pair<double, bool> >& combined);
   int calcQvals(double fdr, bool skipDecoysPlusOne,
                 std::vector<std::pair<double, bool> >& combined);
+  int countTargetsBelowFdr(
+      const std::vector<std::pair<double, bool> >& combined,
+      double fdr,
+      bool skipDecoysPlusOne) const;
   void checkSeparationAndSetPi0();
   bool is_output_rt_ = false;
 };

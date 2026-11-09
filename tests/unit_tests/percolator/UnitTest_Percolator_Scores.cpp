@@ -20,9 +20,11 @@
  */
 
 #include <gtest/gtest.h>
+#include <cmath>
 #include <cstdarg>
 #include "SetHandler.h"
 #include "DataSet.h"
+#include "PosteriorEstimator.h"
 #include "Scores.h"
 
 // Some strings in alphabetical order.
@@ -181,21 +183,22 @@ TEST_F(ScoresTest, CheckPopulating)
 {
     Scores scores(true);
     SetHandler setHandler(0);
+    PsmStore psmStore;
     DataSet *set1 = new DataSet();
     DataSet *set2 = new DataSet();
     set1->setLabel(LabelType::TARGET);
     set2->setLabel(LabelType::DECOY);
     for (int i = 0 ; i < 5 ; ++i) {
         PSMDescription *psm;
-        psm = new PSMDescription(psmNames[i]);
+        psm = psmStore.add(PSMDescription(psmNames[i]));
         psm->scan = 100 + i;
         set1->registerPsm(psm);
-        psm = new PSMDescription(psmNames[i]);
+        psm = psmStore.add(PSMDescription(psmNames[i]));
         psm->scan = 105 + i;
         set2->registerPsm(psm);
     }
-    setHandler.push_back_dataset(set1);
-    setHandler.push_back_dataset(set2);
+    setHandler.push_back_dataset(std::unique_ptr<DataSet>(set1));
+    setHandler.push_back_dataset(std::unique_ptr<DataSet>(set2));
 
     scores.populateWithPSMs(setHandler);
     ASSERT_EQ(10, scores.size());
@@ -218,7 +221,119 @@ TEST_F(ScoresTest, CheckPopulatingEmpty)
     DataSet *set2 = new DataSet();
     set1->setLabel(LabelType::TARGET);
     set2->setLabel(LabelType::DECOY);
-    setHandler.push_back_dataset(set1);
-    setHandler.push_back_dataset(set2);
+    setHandler.push_back_dataset(std::unique_ptr<DataSet>(set1));
+    setHandler.push_back_dataset(std::unique_ptr<DataSet>(set2));
     EXPECT_THROW(scores.populateWithPSMs(setHandler), MyException);
+}
+
+// countTargetsBelowFdr must report the same number of targets below the FDR
+// threshold as calcScoresAndQvals, also with many tied scores, with and
+// without the mix-max correction.
+TEST(ScoresCountTest, CountTargetsBelowFdrMatchesCalcScoresAndQvals)
+{
+    const size_t numFeatures = 2;
+    FeatureNames::resetNumFeatures();
+    FeatureNames::setNumFeatures(numFeatures);
+    const int numPsms = 2000;
+    std::vector<double> features(numPsms * numFeatures);
+    std::vector<PSMDescription*> psms;
+    for (bool usePi0 : {false, true}) {
+        Scores scores(usePi0);
+        unsigned int seed = 12345u;
+        for (int i = 0; i < numPsms; ++i) {
+            seed = seed * 1103515245u + 12345u;
+            bool isTarget = (seed >> 16) % 2 == 0;
+            double* row = &features[i * numFeatures];
+            // coarse values, so that many PSMs get exactly the same score
+            row[0] = static_cast<double>((seed >> 8) % 7) + (isTarget ? 3 : 0);
+            row[1] = static_cast<double>((seed >> 4) % 3);
+            PSMDescription* psm = new PSMDescription();
+            psm->features = row;
+            psm->scan = i / 2;
+            psms.push_back(psm);
+            scores.addScoreHolder(ScoreHolder(0.0,
+                isTarget ? LabelType::TARGET : LabelType::DECOY, psm));
+        }
+        scores.recalculateSizes();
+        std::vector<double> w = {1.0, -0.5, 0.25};
+        scores.calcScores(w);
+        scores.postMergeStep();  // sets pi0 when usePi0 is true
+        if (usePi0) {
+            ASSERT_LT(scores.getPi0(), 1.0);
+        }
+        Scores::FeatureRows rows;
+        scores.getFeatureRows(rows);
+        std::vector<std::pair<double, bool> > combined;
+        // countTargetsBelowFdr needs the q values of the decoys as well;
+        // calcScoresAndQvals sets this only after the first call below
+        PosteriorEstimator::setNegative(true);
+        for (double fdr : {0.01, 0.05, 0.2}) {
+            for (bool skipDecoysPlusOne : {false, true}) {
+                int count = scores.countTargetsBelowFdr(
+                    rows, w, fdr, skipDecoysPlusOne, combined);
+                EXPECT_EQ(scores.calcScoresAndQvals(w, fdr, skipDecoysPlusOne),
+                          count);
+                if (fdr > 0.1) {
+                    EXPECT_GT(count, 0);  // the test needs accepted targets
+                }
+            }
+        }
+    }
+    for (PSMDescription* psm : psms) {
+        delete psm;
+    }
+    FeatureNames::resetNumFeatures();
+}
+
+// Both PEP pathways of calcPep, from target q values (default) and from the
+// target-decoy labels (tdc), with I-spline and PAVA regression, give PEPs in
+// [0, 1] that do not decrease down the list, and whose mean over the targets
+// above a q value threshold is close to that threshold.
+TEST(ScoresPepTest, BothPathwaysGiveMonotoneCalibratedPeps)
+{
+    const int numPsms = 6000;
+    std::vector<PSMDescription> psms(numPsms);
+    unsigned int seed = 777u;
+    auto uniform = [&seed]() {
+        seed = seed * 1103515245u + 12345u;
+        return ((seed >> 8) + 0.5) / 16777216.0;
+    };
+    auto normal = [&uniform]() {
+        return std::sqrt(-2.0 * std::log(uniform())) *
+               std::cos(6.283185307179586 * uniform());
+    };
+    for (bool tdc : {false, true}) {
+        for (bool pava : {false, true}) {
+            Scores scores(false);
+            seed = 777u;
+            for (int i = 0; i < numPsms; ++i) {
+                psms[i].scan = static_cast<unsigned int>(i);
+                const bool isTarget = uniform() < 0.5;
+                const bool correct = isTarget && uniform() < 0.4;
+                scores.addScoreHolder(ScoreHolder(normal() + (correct ? 3.0 : 0.0),
+                    isTarget ? LabelType::TARGET : LabelType::DECOY, &psms[i]));
+            }
+            scores.recalculateSizes();
+            // calcQvals and calcPep expect the PSMs sorted by score
+            std::sort(scores.begin(), scores.end(), std::greater<ScoreHolder>());
+            scores.calcQvals(0.01);
+            scores.calcPep(false, true, pava, tdc);
+            double lastTargetPep = 0.0, sum = 0.0;
+            int n = 0;
+            for (const ScoreHolder& sh : scores) {
+                ASSERT_GE(sh.pep, 0.0);
+                ASSERT_LE(sh.pep, 1.0);
+                if (!sh.isTarget()) continue;
+                EXPECT_GE(sh.pep, lastTargetPep - 1e-12);
+                lastTargetPep = sh.pep;
+                if (sh.q <= 0.05) {
+                    sum += sh.pep;
+                    ++n;
+                }
+            }
+            ASSERT_GT(n, 100);
+            EXPECT_GT(sum / n, 0.05 / 2.0) << "tdc=" << tdc << " pava=" << pava;
+            EXPECT_LT(sum / n, 0.05 * 2.0) << "tdc=" << tdc << " pava=" << pava;
+        }
+    }
 }

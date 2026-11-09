@@ -23,50 +23,18 @@ using namespace std;
 #include "Normalizer.h"
 #include "SanityCheck.h"
 #include "Globals.h"
-#include "SqtSanityCheck.h"
-
-// Class doing the sanity check for non SQT file condition
-// In most sence a place holder as very little logic is build-in in this case
-
-SanityCheck::SanityCheck() :
-  initPositives_(0), pTestset_(NULL), pTrainset_(NULL), concatenatedSearch_(true),
-  test_fdr_(0.01), initial_train_fdr_(0.01) {
-}
-
-SanityCheck::~SanityCheck() {
-}
-
-bool SanityCheck::overRule = false;
-string SanityCheck::initWeightFN = "";
-int SanityCheck::initDefaultDir = 0;
-string SanityCheck::initDefaultDirName = "";
-vector<double> SanityCheck::default_weights = vector<double>();
-
-/**
- * Returns an instance of the appropriate sanity check based on information
- * contained in otherCall.
- */
-SanityCheck* SanityCheck::initialize(string otherCall){
-  if(initWeightFN != "" || initDefaultDirName.size() > 0) {
-    return new SanityCheck();
-  } else if (otherCall.find(SqtSanityCheck::fingerPrint)!= string::npos){
-    return new SqtSanityCheck();
-  } else {
-    return new SanityCheck();
-  }
-}
 
 void SanityCheck::checkAndSetDefaultDir() {
-  if (!initDefaultDir && initDefaultDirName.size() > 0) {
+  if (!initDefaultDir_ && initDefaultDirName_.size() > 0) {
     int sign = 1;
-    if (initDefaultDirName[0] == '-') {
-      initDefaultDirName.erase(0,1);
+    if (initDefaultDirName_[0] == '-') {
+      initDefaultDirName_.erase(0,1);
       sign = -1;
     }
-    initDefaultDir = sign * DataSet::getFeatureNames().getFeatureNumber(initDefaultDirName);
-    if (initDefaultDir == 0) {
+    initDefaultDir_ = sign * DataSet::getFeatureNames().getFeatureNumber(initDefaultDirName_);
+    if (initDefaultDir_ == 0) {
       ostringstream temp;
-      temp << "ERROR: Initial direction feature name \"" << initDefaultDirName << "\" not found" << std::endl;
+      temp << "ERROR: Initial direction feature name \"" << initDefaultDirName_ << "\" not found" << std::endl;
       throw MyException(temp.str());
     }
   }
@@ -78,13 +46,11 @@ int SanityCheck::getInitDirection(vector<Scores>& testset,
                                   vector<vector<double> > & w,
                                   double test_fdr,
                                   double initial_train_fdr) {
-  pTestset_ = &testset;
-  pTrainset_ = &trainset;
   test_fdr_= test_fdr;
   initial_train_fdr_ = initial_train_fdr;
-  if (initWeightFN.size() > 0) {
+  if (initWeightFN_.size() > 0) {
     vector<double> ww(FeatureNames::getNumFeatures() + 1);
-    ifstream weightStream(initWeightFN.data(), ios::in);
+    ifstream weightStream(initWeightFN_.data(), ios::in);
     if (weightStream.is_open()) {
       readWeights(weightStream, ww);
       weightStream.close();
@@ -94,38 +60,39 @@ int SanityCheck::getInitDirection(vector<Scores>& testset,
         copy(w[0].begin(), w[0].end(), w[set].begin());
       }
     } else {
-      std::cerr << "WARNING: Could not find weights input file " << initWeightFN
+      std::cerr << "WARNING: Could not find weights input file " << initWeightFN_
                 << ". Using default weights instead." << std::endl;
-      getDefaultDirection(w);
+      getDefaultDirection(trainset, w);
     }
   } else {
-    getDefaultDirection(w);
+    getDefaultDirection(trainset, w);
   }
   initPositives_ = 0;
   for (size_t set = 0; set < w.size(); ++set) {
-    initPositives_ += (*pTestset_)[set].calcScoresAndQvals(w[set], test_fdr);
+    initPositives_ += testset[set].calcScoresAndQvals(w[set], test_fdr);
   }
   return initPositives_;
 }
 
-void SanityCheck::getDefaultDirection(vector<vector<double> >& w) {
+void SanityCheck::getDefaultDirection(vector<Scores>& trainset,
+                                      vector<vector<double> >& w) {
     
   //If I have not been given a initial direction
-  if (!initDefaultDir) {
-    //if the default_weights from pin.xml are not present
-    if (default_weights.size() == 0) {
+  if (!initDefaultDir_) {
+    //if the default weights from the input file are not present
+    if (defaultWeights_.size() == 0) {
       // Set init direction to be the most discriminative direction
       for (size_t set = 0; set < w.size(); ++set) {
         if (VERB > 1) std::cerr << "Split " << set + 1 << ":\t";
-        calcInitDirection(w[set], set);
+        trainset[set].getInitDirection(initial_train_fdr_, w[set]);
       }
     } else {
       // I want to assign the default vector that is present in the input file
       for (size_t set = 0; set < w.size(); ++set) {
         for (size_t ix = 0; ix < w[set].size(); ix++) {
           w[set][ix] = 0;
-          if (ix < default_weights.size()){
-              w[set][ix] = default_weights[ix];
+          if (ix < defaultWeights_.size()){
+              w[set][ix] = defaultWeights_[ix];
           }          
         }
       }
@@ -135,44 +102,38 @@ void SanityCheck::getDefaultDirection(vector<vector<double> >& w) {
       for (size_t ix = 0; ix < w[set].size(); ix++) {
         w[set][ix] = 0;
       }
-      w[set][static_cast<std::size_t>(abs(initDefaultDir) - 1)] = (initDefaultDir < 0 ? -1 : 1);
+      w[set][static_cast<std::size_t>(abs(initDefaultDir_) - 1)] = (initDefaultDir_ < 0 ? -1 : 1);
     }
   }
 }
 
-void SanityCheck::calcInitDirection(vector<double>& wSet, size_t set) {
-  (*pTrainset_)[set].getInitDirection(initial_train_fdr_, wSet);
-}
-
-bool SanityCheck::validateDirection(vector<vector<double> >& w) {
-  if (!pTestset_) {
-    cerr << "SanityCheck wrongly configured" << endl;
-    return false;
-  }
+bool SanityCheck::validateDirection(vector<Scores>& testset,
+                                    vector<Scores>& trainset,
+                                    vector<vector<double> >& w) {
   int overFDR = 0;
   for (size_t set = 0; set < w.size(); ++set) {
-    overFDR += (*pTestset_)[set].calcScoresAndQvals(w[set], test_fdr_);
+    overFDR += testset[set].calcScoresAndQvals(w[set], test_fdr_);
   }
   if (overFDR <= 0) {
     cerr << "No targets found with q<" << test_fdr_ << endl;
-    resetDirection(w);
+    resetDirection(trainset, w);
     return false;
   }
   if (initPositives_ > overFDR) {
     cerr << "Less identifications (" << overFDR << " vs " << initPositives_
         << ") after percolator processing than before processing" << endl;
-    resetDirection(w);
+    resetDirection(trainset, w);
     return false;
   }
-  if (initDefaultDir) {
+  if (initDefaultDir_) {
     for (size_t set = 0; set < w.size(); ++set) {
-      if (w[set][static_cast<std::size_t>(abs(initDefaultDir) - 1)] * initDefaultDir <= 0) {
+      if (w[set][static_cast<std::size_t>(abs(initDefaultDir_) - 1)] * initDefaultDir_ <= 0) {
         if (VERB > 1) {
           cerr
             << "Warning, wrong sign of the weight for main scoring direction"
             << endl;
         }
-        resetDirection(w);
+        resetDirection(trainset, w);
         return false;
       }
     }
@@ -196,10 +157,11 @@ void SanityCheck::readWeights(istream& weightStream, vector<double>& w) {
   cerr << endl;
 }
 
-void SanityCheck::resetDirection(vector<vector<double> >& w) {
-  if (!overRule) {
+void SanityCheck::resetDirection(vector<Scores>& trainset,
+                                 vector<vector<double> >& w) {
+  if (!overRule_) {
     cerr << "Resetting score vector, using default vector. Use --override flag to prevent this." << endl;
-    getDefaultDirection(w);
+    getDefaultDirection(trainset, w);
   }
 }
 

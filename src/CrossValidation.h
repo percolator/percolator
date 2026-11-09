@@ -57,16 +57,13 @@ class CrossValidation {
                   double decoyFractionTraining,
                   unsigned int numFolds);
 
-  ~CrossValidation();
-
   int preIterationSetup(Scores& fullset,
-                        SanityCheck* pCheck,
-                        const Normalizer* pNorm,
-                        FeatureMemoryPool& featurePool);
+                        SanityCheck& check,
+                        const Normalizer* pNorm);
 
   void train(const Normalizer* pNorm);
 
-  void postIterationProcessing(Scores& fullset, SanityCheck* pCheck);
+  void postIterationProcessing(Scores& fullset, SanityCheck& check);
 
   void printAllWeights(ostream& weightStream, const Normalizer* pNorm);
 
@@ -87,15 +84,18 @@ class CrossValidation {
   void inline setReportPerformanceEachIteration(bool on) {
     reportPerformanceEachIteration_ = on;
   }
+  // train as Percolator 3.09 did, see Caller's --classic-training
+  void inline setClassicTraining(bool on) { classicTraining_ = on; }
 
  protected:
-  std::vector<AlgIn*> svmInputs_;
+  std::vector<AlgIn> svmInputs_;
   std::vector<std::vector<double> > weights_;  // svm weights for each fold
   std::vector<CandidateCposCfrac>
       classWeightsPerFold_;  // cpos, cneg pairs to train for each nested CV
                              // fold
 
   bool quickValidation_;
+  bool classicTraining_ = false;
   bool usePi0_;
   bool reportPerformanceEachIteration_;
 
@@ -117,18 +117,32 @@ class CrossValidation {
   double decoyFractionTraining_;
 
   const static double requiredIncreaseOver2Iterations_;
+  const static double requiredIncreaseOver2IterationsDefault_;
+  const static unsigned int gridSearchIterations_;
+
+  // after gridSearchIterations_ only each fold's selected (cpos, cfrac)
+  // pair is trained
+  unsigned int iteration_ = 0;
+  bool gridFixed_ = false;
+  std::vector<std::pair<double, double> > selectedPairs_;
+  bool isSelectedPair(const CandidateCposCfrac& pair) const {
+    return !gridFixed_ || (pair.cpos == selectedPairs_[pair.set].first &&
+                           pair.cfrac == selectedPairs_[pair.set].second);
+  }
 
   unsigned int numFolds_;  // number of folds for cross validation
   std::vector<Scores> trainScores_, testScores_;
+  // whether trainScores_ are scored and sorted with the current weights_
+  bool trainScoresCurrent_ = false;
   std::vector<double> candidatesCpos_, candidatesCfrac_;
 
   void initializeGridSearch(double targetDecoySizeRatio);
   void trainCpCnPair(CandidateCposCfrac& cpCnFold,
-                     options& pOptions,
-                     AlgIn* svmInput);
+                     const options& pOptions,
+                     const AlgIn& svmInput);
 
   int mergeCpCnPairs(double selectionFdr,
-                     options& pOptions,
+                     const options& pOptions,
                      std::vector<std::vector<Scores> >& nestedTestScoresVec,
                      const vector<double>& cpos_vec,
                      const vector<double>& cfrac_vec);

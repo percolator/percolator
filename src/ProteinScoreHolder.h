@@ -37,7 +37,6 @@ class ProteinScoreHolder {
   ProteinScoreHolder() : name_(""), q_(0.0), qemp_(0.0), pep_(0.0), p_(0.0), score_(0.0),
               groupId_(-1), specCountsUnique_(0u), specCountsAll_(0u), isDecoy_(false) {}
   ProteinScoreHolder(std::string name, bool isdecoy, Peptide peptide, int groupId);
-  ~ProteinScoreHolder();
   
   inline void setName(std::string name) { name_ = name; }
   inline std::string getName() const { return name_; }

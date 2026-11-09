@@ -39,7 +39,7 @@ PackedMatrix PackedMatrix::packedMultiply(double scale)
 
 PackedMatrix PackedMatrix::packedMultiply(const PackedMatrix & rhs){
   PackedMatrix res = PackedMatrix(numRows(),rhs.numCols());
-  PackedMatrix trhs = trhs.packedTranspose(rhs);
+  PackedMatrix trhs = packedTranspose(rhs);
   int row, col;
   for (row = 0; row < numRows(); row++) {
     for (col = 0; col < trhs.numRows(); col++) {

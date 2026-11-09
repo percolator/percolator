@@ -65,28 +65,6 @@ if not exist "%INSTALL_DIR%\%CMAKE_BASE%" (
 )
 set CMAKE_EXE="%INSTALL_DIR%\%CMAKE_BASE%\bin\cmake.exe"
 
-:: The windows binary release takes up 3GB, therefore we build only the libraries we need from source.
-set BOOST_ROOT=%INSTALL_DIR%\%BOOST_BASE%
-if not exist "%BOOST_ROOT%" (
-  echo Downloading and installing Boost, this can take a few minutes...
-  call :downloadfile %BOOST_URL% %INSTALL_DIR%\boost.7z
-  %ZIP_EXE% x "%INSTALL_DIR%\boost.7z" -o"%INSTALL_DIR%" -aoa -xr!doc >NUL 2>&1
-  cd /D "%BOOST_ROOT%"
-  call bootstrap msvc
-  if not exist b2.exe (
-      echo ERROR: b2.exe not found after Boost bootstrap. Printing bootstrap.log:
-      if exist bootstrap.log type bootstrap.log
-      exit /b 1
-  )
-  b2 toolset=msvc address-model=64 threading=multi -j4 --with-system --with-filesystem --with-serialization -d0
-  if errorlevel 1 (
-      echo ERROR: b2 build failed.
-      exit /b 1
-  )
-)
-set BOOST_LIB=%BOOST_ROOT%\stage\lib
-set BOOST_INCLUDEDIR=%BOOST_ROOT%
-set BOOST_LIBRARYDIR=%BOOST_ROOT%\stage\lib
 
 
 
@@ -151,10 +129,6 @@ if not exist "%BUILD_DIR%\percolator" (md "%BUILD_DIR%\percolator")
 cd /D "%BUILD_DIR%\percolator"
 echo cmake percolator.....
 %CMAKE_EXE% -G "Visual Studio %MSVC_VER%" -A x64 -DCMAKE_BUILD_TYPE=%BUILD_TYPE% -DGOOGLE_TEST=1 ^
-  -DBoost_NO_BOOST_CMAKE=ON ^
-  -DBOOST_ROOT="%BOOST_ROOT%" ^
-  -DBOOST_INCLUDEDIR="%BOOST_INCLUDEDIR%" ^
-  -DBOOST_LIBRARYDIR="%BOOST_LIBRARYDIR%" ^
   "%SRC_DIR%\percolator"
 echo build percolator (this will take a few minutes).....
 msbuild PACKAGE.vcxproj /p:Configuration=%BUILD_TYPE% /m

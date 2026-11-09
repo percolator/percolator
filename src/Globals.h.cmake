@@ -108,29 +108,20 @@ limitations under the License.
 
 #define VERB (Globals::getInstance()->getVerbose())
 #define NO_TERMINATE (Globals::getInstance()->getNoTerminate())
-#define STD_CERR (*(Globals::getInstance()->getLogger())) 
-
 #include <time.h>
+#include <fstream>
+#include <iostream>
+#include <sstream>
 #include <string>
-#include "Logger.h"
 #include "MyException.h"
 
-
-
-
+/* Process-wide settings: verbosity and the no-terminate flag. */
 class Globals {
-
-  
   public:
-    
-    virtual ~Globals();
     static Globals* getInstance();
+    // restores the default settings
     static void clean();
-    Logger* getLogger();
     
-    const std::string& getLogFile(){
-      return fileLog;
-    }
     int getVerbose() {
       return verbose;
     }
@@ -149,20 +140,10 @@ class Globals {
     bool getNoTerminate() {
       return noTerminate_;
     }
-    void setLogFile(const std::string& filename);
-    void initLogger();
-    int redirectBuffer();
-    void unredirectBuffer();
   private:
-    Globals();
-    int verbose;
-    bool noTerminate_;
-    static Globals* glob;
-    Logger *log;
-    std::string fileLog;
-    bool buffer_redirected;
-    streambuf* save_sbuf_cerr;
-    ofstream ferr;
+    Globals() = default;
+    int verbose = 2;
+    bool noTerminate_ = false;
 };
 
 #endif /*GLOBALS_H_*/

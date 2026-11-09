@@ -32,7 +32,6 @@
 #include "CompositionSorter.h"
 #include "CrossValidation.h"
 #include "DataSet.h"
-#include "Analytics.h"
 #include "MyException.h"
 #include "Option.h"
 #include "PickedProteinInterface.h"
@@ -40,17 +39,12 @@
 using namespace std;
 
 Caller::Caller()
-    : pNorm_(NULL),
-      pCheck_(NULL),
-      protEstimator_(NULL),
-      enzyme_(NULL),
-      tabInput_(true),
+    : tabInput_(true),
       readStdIn_(false),
       inputFN_(""),
       inputFNs_(),
       protEstimatorDecoyPrefix_("auto"),
       tabOutputFN_(""),
-      pepXMLOutputFN_(""),
       weightOutputFN_(""),
       psmResultFN_(""),
       peptideResultFN_(""),
@@ -62,7 +56,6 @@ Caller::Caller()
       useResetAlgorithm_(false),
       useCompositionMatch_(false),
       reportUniquePeptides_(true),
-      reportPepXML_(false),
       targetDecoyCompetition_(false),
       useMixMax_(false),
       inputSearchType_("auto"),
@@ -80,26 +73,10 @@ Caller::Caller()
       numThreads_(3u), 
       useIrlsPep_(false),
       useInterpolatingPep_(true),
-      usePavaPep_(false) {}
+      usePavaPep_(false),
+      useTdcPep_(false) {}
 
-Caller::~Caller() {
-  if (pNorm_) {
-    delete pNorm_;
-  }
-  pNorm_ = NULL;
-  if (pCheck_) {
-    delete pCheck_;
-  }
-  pCheck_ = NULL;
-  if (protEstimator_) {
-    delete protEstimator_;
-  }
-  protEstimator_ = NULL;
-  if (enzyme_) {
-    delete enzyme_;
-  }
-  enzyme_ = NULL;
-}
+Caller::~Caller() {}
 
 string Caller::extendedGreeter() {
   ostringstream oss;
@@ -151,8 +128,8 @@ bool Caller::parseOptions(int argc, char** argv) {
   // available lower case letters:
   // available upper case letters:
   cmd.defineOption("Q", "pepxml-output",
-                   "Write a rudimentary pepXML file with PSM-level statistics "
-                   "to the specified file.",
+                   "No longer supported and ignored, kept for compatibility. "
+                   "Use the tab-delimited result files instead.",
                    "filename");
   cmd.defineOption(
       "", "stdinput-tab",
@@ -186,6 +163,13 @@ bool Caller::parseOptions(int argc, char** argv) {
       "number");
   cmd.defineOption("x", "quick-validation",
                    "Quicker execution by reduced internal cross-validation.",
+                   "", TRUE_IF_SET);
+  cmd.defineOption("", "classic-training",
+                   "Train the SVMs as Percolator 3.09 did: every SVM is "
+                   "solved from zero weights with conjugate gradients, Cpos "
+                   "and Cneg are selected in every iteration and all "
+                   "iterations are run, which takes longer but reproduces "
+                   "earlier results.",
                    "", TRUE_IF_SET);
   cmd.defineOption("J", "tab-out",
                    "Output computed features to the specified file in "
@@ -338,8 +322,10 @@ bool Caller::parseOptions(int argc, char** argv) {
       "inside protein IDs will be replaced by semicolons. Not available for "
       "Fido.",
       "", TRUE_IF_SET);
-  cmd.defineOption("", "no-analytics", "Switch off analytics reporting.", "",
-                   TRUE_IF_SET);
+  cmd.defineOption("", "no-analytics",
+                   "No effect, kept for compatibility. Percolator does not "
+                   "report analytics.",
+                   "", TRUE_IF_SET);
   /* EXPERIMENTAL FLAGS: no long term support, flag names might be subject to
    * change and behavior */
   cmd.defineOption(Option::EXPERIMENTAL_FEATURE, "num-threads",
@@ -400,6 +386,14 @@ bool Caller::parseOptions(int argc, char** argv) {
         "pava-pep",
         "Calculate PEPs using PAVA isotonic regression.",
         "", TRUE_IF_SET);
+  cmd.defineOption("",
+      "tdc-pep",
+      "Calculate PEPs from target and decoy labels: fit the decoy rate p as "
+      "a monotone function of the score and report p/(1-p). Applies to the "
+      "I-spline and --pava-pep regressions. With separate target and decoy "
+      "searches the odds are multiplied by pi0 and the ratio of targets to "
+      "decoys. By default PEPs are derived from the q values of the targets.",
+      "", TRUE_IF_SET);
 
   // finally parse and handle return codes (display help etc...)
   cmd.parseArgs(argc, argv);
@@ -420,11 +414,10 @@ bool Caller::parseOptions(int argc, char** argv) {
     Globals::getInstance()->setNoTerminate(true);
   }
 
-  // pepXML
+  // pepXML output was removed together with the XML input
   if (cmd.isOptionSet("pepxml-output")) {
-    pepXMLOutputFN_ = cmd.options["pepxml-output"];
-    checkIsWritable(pepXMLOutputFN_);
-    reportPepXML_ = true;
+    std::cerr << "Warning: pepXML output (-Q/--pepxml-output) is no longer "
+              << "supported, no pepXML file is written." << std::endl;
   }
 
   // filenames for outputting results to file
@@ -515,6 +508,13 @@ bool Caller::parseOptions(int argc, char** argv) {
   if (cmd.isOptionSet("pava-pep")) {
     usePavaPep_ = true;
   }
+  if (cmd.isOptionSet("tdc-pep")) {
+    useTdcPep_ = true;
+    if (useIrlsPep_) {
+      std::cerr << "Warning: --tdc-pep has no effect with --irls-pep."
+                << std::endl;
+    }
+  }
 
   if (cmd.isOptionSet("tab-in")) {
     tabInput_ = true;
@@ -549,22 +549,25 @@ bool Caller::parseOptions(int argc, char** argv) {
     checkIsWritable(weightOutputFN_);
   }
   if (cmd.isOptionSet("init-weights")) {
-    SanityCheck::setInitWeightFN(cmd.options["init-weights"]);
+    check_.setInitWeightFN(cmd.options["init-weights"]);
   }
   if (cmd.isOptionSet("default-direction")) {
-    SanityCheck::setInitDefaultDirName(cmd.options["default-direction"]);
+    check_.setInitDefaultDirName(cmd.options["default-direction"]);
   }
   if (cmd.isOptionSet("unitnorm")) {
-    Normalizer::setType(Normalizer::UNI);
+    normalizerType_ = Normalizer::UNI;
   }
   if (cmd.isOptionSet("override")) {
-    SanityCheck::setOverrule(true);
+    check_.setOverrule(true);
   }
   if (cmd.isOptionSet("test-each-iteration")) {
     reportEachIteration_ = true;
   }
   if (cmd.isOptionSet("quick-validation")) {
     quickValidation_ = true;
+  }
+  if (cmd.isOptionSet("classic-training")) {
+    classicTraining_ = true;
   }
   if (cmd.isOptionSet("train-best-positive")) {
     trainBestPositive_ = true;
@@ -639,7 +642,7 @@ bool Caller::parseOptions(int argc, char** argv) {
     selectedCpos_ = 0.5;
     selectedCneg_ = 0.5;
     skipNormalizeScores_ = true;
-    Normalizer::setType(Normalizer::NONORM);
+    normalizerType_ = Normalizer::NONORM;
     if (!cmd.isOptionSet("init-weights")) {
       std::cerr << "Error: the --static option requires the --init-weights "
                 << "option to be specified." << std::endl;
@@ -719,12 +722,12 @@ bool Caller::parseOptions(int argc, char** argv) {
       if (cmd.isOptionSet("protein-report-duplicates"))
         pickedProteinReportDuplicateProteins = true;
 
-      protEstimator_ = new PickedProteinInterface(
+      protEstimator_.reset(new PickedProteinInterface(
           fastaDatabase, pickedProteinPvalueCutoff,
           pickedProteinReportFragmentProteins,
           pickedProteinReportDuplicateProteins, protEstimatorTrivialGrouping,
           protEstimatorAbsenceRatio, protEstimatorOutputEmpirQVal,
-          protEstimatorDecoyPrefix_, protEstimatorPeptideQvalThreshold);
+          protEstimatorDecoyPrefix_, protEstimatorPeptideQvalThreshold));
     }
   }
 
@@ -747,6 +750,8 @@ void Caller::calculatePSMProb(Scores& allScores, bool isUniquePeptideRun) {
          << endl;
   }
 
+  StageTimer stageTimer(isUniquePeptideRun ? "peptide-level statistics"
+                                            : "PSM-level statistics");
   if (isUniquePeptideRun) {
     if (ProteinProbEstimator::getCalcProteinLevelProb()) {
       allScores.weedOutRedundant(protEstimator_->getPeptideSpecCounts(),
@@ -785,7 +790,14 @@ void Caller::calculatePSMProb(Scores& allScores, bool isUniquePeptideRun) {
     std::cerr << "Calculating posterior error probabilities (PEPs)."
               << std::endl;
   }
-  allScores.calcPep(useIrlsPep_, useInterpolatingPep_, usePavaPep_);
+  // PSM-level PEPs are only needed if they are written; the unique peptide run
+  // computes its own PEPs, which are also used for protein inference.
+  bool pepNeeded = isUniquePeptideRun || writeOutput || !psmResultFN_.empty() ||
+                   !decoyPsmResultFN_.empty();
+  if (pepNeeded) {
+    allScores.calcPep(useIrlsPep_, useInterpolatingPep_, usePavaPep_,
+                      useTdcPep_);
+  }
   writeResults(allScores, isUniquePeptideRun, writeOutput);
 }
 
@@ -825,13 +837,14 @@ void Caller::writeResults(Scores& allScores,
  */
 void Caller::calculateProteinProbabilities(Scores& allScores) {
   Timer localTimer;
+  StageTimer stageTimer("protein inference");
 
   if (VERB > 0) {
     cerr << "\nCalculating protein level probabilities.\n";
     cerr << protEstimator_->printCopyright();
   }
 
-  protEstimator_->initialize(allScores, enzyme_, protEstimatorDecoyPrefix_);
+  protEstimator_->initialize(allScores, enzyme_.get(), protEstimatorDecoyPrefix_);
 
   if (VERB > 1) {
     std::cerr << "Initialized protein inference engine." << std::endl;
@@ -901,7 +914,10 @@ bool Caller::loadAndNormalizeData(std::istream& dataStream,
     std::cerr << "Reading tab-delimited input from datafile " << inputFN_
                 << std::endl;
   }
-  success = setHandler.readTab(dataStream, pCheck_);
+  {
+    StageTimer stageTimer("read input");
+    success = setHandler.readTab(dataStream, check_);
+  }
 
   // Reading input files (pin or temporary file)
   if (!success) {
@@ -920,7 +936,11 @@ bool Caller::loadAndNormalizeData(std::istream& dataStream,
               << FeatureNames::getNumFeatures() << endl;
   }
 
-  setHandler.normalizeFeatures(pNorm_);
+  {
+    StageTimer stageTimer("normalize features");
+    pNorm_ = Normalizer::create(normalizerType_);
+    setHandler.normalizeFeatures(*pNorm_);
+  }
 
   /*
   auto search-input detection cases:
@@ -931,7 +951,7 @@ bool Caller::loadAndNormalizeData(std::istream& dataStream,
   -Y allowed) concatenated  separate         no       yes  NA -Y (force)
   */
   if (inputSearchType_ == "auto") {
-    if (pCheck_->concatenatedSearch()) {
+    if (check_.concatenatedSearch()) {
       if (useMixMax_) {
         if (VERB > 0) {
           std::cerr << "Warning: concatenated search input detected, "
@@ -967,13 +987,13 @@ bool Caller::loadAndNormalizeData(std::istream& dataStream,
         }
       }
     }
-  } else if (pCheck_->concatenatedSearch() && inputSearchType_ == "separate") {
+  } else if (check_.concatenatedSearch() && inputSearchType_ == "separate") {
     if (VERB > 0) {
       std::cerr << "Warning: concatenated search input detected, but "
                 << "overridden by -I flag specifying separate searches."
                 << std::endl;
     }
-  } else if (!pCheck_->concatenatedSearch() &&
+  } else if (!check_.concatenatedSearch() &&
              inputSearchType_ == "concatenated") {
     if (VERB > 0) {
       std::cerr << "Warning: separate searches input detected, but "
@@ -984,7 +1004,10 @@ bool Caller::loadAndNormalizeData(std::istream& dataStream,
   assert(!(useMixMax_ && targetDecoyCompetition_));
 
   allScores.setUsePi0(useMixMax_);
-  allScores.populateWithPSMs(setHandler);
+  {
+    StageTimer stageTimer("populate scores");
+    allScores.populateWithPSMs(setHandler);
+  }
 
   if (VERB > 0 && useMixMax_ &&
       abs(1.0 - allScores.getTargetDecoySizeRatio()) > 0.1) {
@@ -1007,31 +1030,40 @@ bool Caller::loadAndNormalizeData(std::istream& dataStream,
  */
 int Caller::run() {
   timer.reset();
+  PSMDescription::resetSpectrumFileNames();
 
   if (VERB > 0) {
     std::cerr << extendedGreeter();
   }
-// skip for now
-//  if (analytics_)
-//    postToPostHog("percolator_startup");
 #ifdef _OPENMP
   omp_set_num_threads(static_cast<int>(
       std::min((unsigned int)omp_get_max_threads(), numThreads_)));
 #endif
 
+  // The protein decoy prefix is only used for protein inference, and
+  // detecting it costs an extra pass over the input.
+  if (!ProteinProbEstimator::getCalcProteinLevelProb() &&
+      protEstimatorDecoyPrefix_ == "auto") {
+    protEstimatorDecoyPrefix_ = "";
+  }
+
   /* Validate tab file and get decoy prefix */
   TabFileValidator tabFileValidator;
-  if (!tabFileValidator.validateTabFiles(inputFNs_,
-                                         protEstimatorDecoyPrefix_)) {
-    return 0;
+  {
+    StageTimer stageTimer("validate input");
+    if (!tabFileValidator.validateTabFiles(inputFNs_,
+                                           protEstimatorDecoyPrefix_)) {
+      return 0;
+    }
   }
 
   if (inputFNs_.size() == 1) {
     inputFN_ = inputFNs_.at(0);
   } else if (inputFNs_.size() > 1) {
     tabInput_ = true;
+    tmpDir_ = std::make_unique<TmpDir>();
     ValidateTabFile validateTab;
-    inputFN_ = validateTab.concatenateMultiplePINs(inputFNs_);
+    inputFN_ = validateTab.concatenateMultiplePINs(inputFNs_, tmpDir_->getPath());
   }
 
   int success = 0;
@@ -1041,9 +1073,11 @@ int Caller::run() {
   Scores allScores(useMixMax_);
   allScores.setOutputRT(outputRT_);
 
+  // returning instead of exiting lets the destructor remove tmpDir_
   if (!loadAndNormalizeData(getDataInStream(fileStream),
-                            setHandler, allScores))
-    exit(EXIT_FAILURE);
+                            setHandler, allScores)) {
+    return 0;
+  }
 
   double decoyFractionTraining = 1.0;
   unsigned int numFolds = 3u;
@@ -1056,11 +1090,12 @@ int Caller::run() {
     if (VERB > 1) {
       std::cerr << "Selecting best separating single variable." << std::endl;
     }
-    SanityCheck sc;
+    SanityCheck sc(check_);
     std::vector<std::vector<double>> ww(
         1, std::vector<double>(DataSet::getNumFeatures() + 1, 0.0));
-    std::vector<Scores> tmpScoreVector(1, std::move(allScores));
-    sc.getInitDirection(tmpScoreVector, tmpScoreVector, pNorm_, ww,
+    std::vector<Scores> tmpScoreVector;
+    tmpScoreVector.push_back(std::move(allScores));
+    sc.getInitDirection(tmpScoreVector, tmpScoreVector, pNorm_.get(), ww,
                         selectionFdr_, initialSelectionFdr_);
     allScores = std::move(tmpScoreVector.at(0));
 
@@ -1077,12 +1112,15 @@ int Caller::run() {
       // From Algorithm S3 of the percolator-RESET supplementary material
       // decoyFractionTraining - the probability of assigning a decoy to the
       // training set
-      std::for_each(allScores.begin(), allScores.end(), [&](ScoreHolder& sh) {
+      // A plain loop: GCC's parallel mode would run std::for_each on
+      // several threads, which then draw from the random number generator
+      // concurrently and make the result differ between runs.
+      for (ScoreHolder& sh : allScores) {
         if (sh.isDecoy() &&
             PseudoRandom::lcg_uniform_rand() > decoyFractionTraining) {
           sh.label = LabelType::PSEUDO_TARGET;
         }
-      });
+      }
 
       // we do not necessarily need multiple folds with RESET because the pseudo
       // targets take care of the overfitting.
@@ -1094,56 +1132,73 @@ int Caller::run() {
     // - apply decoy factor in PosteriorEstimator::estimatePEP
   }
 
-  CrossValidation crossValidation(
-      quickValidation_, reportEachIteration_, testFdr_, selectionFdr_,
-      initialSelectionFdr_, selectedCpos_, selectedCneg_, numIterations_,
-      useMixMax_, nestedXvalBins_, trainBestPositive_, numThreads_,
-      skipNormalizeScores_, decoyFractionTraining, numFolds);
+  // The cross-validation sets and SVM inputs are only needed for training,
+  // the scope releases them before the post-processing steps.
+  std::vector<double> rawWeights;
+  {
+    CrossValidation crossValidation(
+        quickValidation_, reportEachIteration_, testFdr_, selectionFdr_,
+        initialSelectionFdr_, selectedCpos_, selectedCneg_, numIterations_,
+        useMixMax_, nestedXvalBins_, trainBestPositive_, numThreads_,
+        skipNormalizeScores_, decoyFractionTraining, numFolds);
+    crossValidation.setClassicTraining(classicTraining_);
 
-  int firstNumberOfPositives = crossValidation.preIterationSetup(
-      allScores, pCheck_, pNorm_, setHandler.getFeaturePool());
+    int firstNumberOfPositives =
+        crossValidation.preIterationSetup(allScores, check_, pNorm_.get());
 
-  if (VERB > 0) {
-    cerr << "Found " << firstNumberOfPositives << " test set positives with q<"
-         << testFdr_ << " in initial direction" << endl;
+    if (VERB > 0) {
+      cerr << "Found " << firstNumberOfPositives
+           << " test set positives with q<" << testFdr_
+           << " in initial direction" << endl;
+    }
+
+    timer.stop();
+    if (VERB > 1)
+      cerr << "Reading in data and feature calculation took "
+           << timer.getCPUTimeStr() << " cpu seconds or "
+           << timer.getWallTimeStr() << " seconds wall clock time." << endl;
+    timer.reset();
+
+    if (tabOutputFN_.length() > 0) {
+      setHandler.writeTab(tabOutputFN_, check_);
+    }
+
+    // Do the SVM training
+    {
+      StageTimer stageTimer("training");
+      crossValidation.train(pNorm_.get());
+    }
+
+    // Calculate the final SVM scores and clean up structures
+    {
+      StageTimer stageTimer("post-iteration processing");
+      crossValidation.postIterationProcessing(allScores, check_);
+    }
+
+    if (weightOutputFN_.size() > 0) {
+      ofstream weightStream(weightOutputFN_.c_str(), ios::out);
+      crossValidation.printAllWeights(weightStream, pNorm_.get());
+      weightStream.close();
+    }
+
+    if (setHandler.getMaxPSMs() > 0u) {
+      crossValidation.getAvgWeights(rawWeights, pNorm_.get());
+    }
   }
-
-  timer.stop();
-  if (VERB > 1)
-    cerr << "Reading in data and feature calculation took "
-         << timer.getCPUTimeStr() << " cpu seconds or "
-         << timer.getWallTimeStr() << " seconds wall clock time." << endl;
-  timer.reset();
-
-  if (tabOutputFN_.length() > 0) {
-    setHandler.writeTab(tabOutputFN_, pCheck_);
-  }
-
-  // Do the SVM training
-  crossValidation.train(pNorm_);
-
-  // Calculate the final SVM scores and clean up structures
-  crossValidation.postIterationProcessing(allScores, pCheck_);
-
-  if (weightOutputFN_.size() > 0) {
-    ofstream weightStream(weightOutputFN_.c_str(), ios::out);
-    crossValidation.printAllWeights(weightStream, pNorm_);
-    weightStream.close();
-  }
+  setHandler.releaseFeatures();
 
   if (setHandler.getMaxPSMs() > 0u) {
     if (VERB > 0) {
       cerr << "Scoring full list of PSMs with trained SVMs." << endl;
     }
-    std::vector<double> rawWeights;
-    crossValidation.getAvgWeights(rawWeights, pNorm_);
-    setHandler.reset();
     allScores.reset();
+    allScores.reserve(setHandler.getNumPsmLines());
+    setHandler.reset();
 
     fileStream.clear();
     fileStream.seekg(0, ios::beg);
     success = setHandler.readAndScoreTab(fileStream, rawWeights, allScores,
-                                           pCheck_);
+                                         check_);
     // Reading input files (pin or temporary file)
     if (!success) {
       ostringstream temp;

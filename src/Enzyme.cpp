@@ -17,7 +17,7 @@
 
 #include "Enzyme.h"
 
-Enzyme* Enzyme::createEnzyme(EnzymeType enz) {
+std::unique_ptr<Enzyme> Enzyme::createEnzyme(EnzymeType enz) {
   Enzyme* theEnzyme;
   switch (enz) {
     case TRYPSINP:
@@ -61,10 +61,10 @@ Enzyme* Enzyme::createEnzyme(EnzymeType enz) {
       theEnzyme = new Trypsin();
       break;
   }
-  return theEnzyme;
+  return std::unique_ptr<Enzyme>(theEnzyme);
 }
 
-Enzyme* Enzyme::createEnzyme(std::string enzyme) {
+std::unique_ptr<Enzyme> Enzyme::createEnzyme(std::string enzyme) {
   Enzyme* theEnzyme;
   
   std::transform(enzyme.begin(), enzyme.end(), enzyme.begin(), ::tolower);
@@ -101,7 +101,7 @@ Enzyme* Enzyme::createEnzyme(std::string enzyme) {
     throw MyException(temp.str());
   }
   
-  return theEnzyme;
+  return std::unique_ptr<Enzyme>(theEnzyme);
 }
 
 size_t Enzyme::countEnzymatic(std::string& peptide) const {

@@ -68,6 +68,11 @@ class PosteriorEstimator {
 
   static void estimate(std::vector<std::pair<double, bool> >& combined,
                        LogisticRegression& lr, bool usePi0, double pi0);
+  // PEPs by I-spline or PAVA regression, from the target q values or, with
+  // tdcPep_, from the decoy rate; same entries as finishStandalone reports
+  void estimateMonotonePEP(const std::vector<std::pair<double, bool> >& combined,
+                           const std::vector<double>& p, double pi0,
+                           std::vector<double>& peps) const;
   static void binData(const std::vector<std::pair<double, bool> >& combined,
                       double pi0, std::vector<double>& medians,
                       std::vector<double>& negatives,
@@ -77,6 +82,9 @@ class PosteriorEstimator {
   std::string targetFile, decoyFile;
   static bool reversed, pvalInput, includeNegativesInResult, competition, usePi0_;
   std::string resultFileName;
+  // PEP method: I-spline by default, PAVA, or P-IRLS; regression on the
+  // target q values by default or on the target-decoy labels (tdcPep_)
+  bool irlsPep_ = false, pavaPep_ = false, tdcPep_ = false, rankPep_ = false;
 };
 
 #endif /*POSTERIORESTIMATOR_H_*/

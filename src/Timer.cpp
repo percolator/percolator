@@ -5,6 +5,8 @@
 #include <iostream>
 #include <sstream>
 
+#include "Globals.h"
+
 Timer::Timer(){
     reset();
 }
@@ -40,7 +42,18 @@ std::string Timer::getTimeStr(double time, int numDecimals)
     return timeStr.str();
 }
 
-char* Timer::getStartTimeStr(){
+std::string Timer::getStartTimeStr(){
     return ctime(&wallStartTime);
 }
 
+StageTimer::StageTimer(const char* name)
+    : name_(name), wallStart_(std::chrono::steady_clock::now()), cpuStart_(clock()) {}
+
+StageTimer::~StageTimer()
+{
+    if (VERB > 2) {
+        double wall = std::chrono::duration<double>(std::chrono::steady_clock::now() - wallStart_).count();
+        double cpu = ((double)(clock() - cpuStart_)) / (double)CLOCKS_PER_SEC;
+        std::cerr << "Stage " << name_ << ": " << wall << " s wall, " << cpu << " s cpu" << std::endl;
+    }
+}

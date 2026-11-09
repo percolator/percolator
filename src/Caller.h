@@ -39,11 +39,9 @@ limitations under the License.
 #include "SanityCheck.h"
 #include "Scores.h"
 #include "SetHandler.h"
+#include "TmpDir.h"
 
-#define NO_BOOST_DATE_TIME_INLINE
 #include <algorithm>
-#include <boost/asio.hpp>
-#include <boost/functional/hash_fwd.hpp>
 
 /*
  * Main class that starts and controls the calculations.
@@ -64,10 +62,13 @@ class Caller {
   int run();
 
  protected:
-  Normalizer* pNorm_;
-  SanityCheck* pCheck_;
-  ProteinProbEstimator* protEstimator_;
-  Enzyme* enzyme_;
+  std::unique_ptr<Normalizer> pNorm_;
+  int normalizerType_ = Normalizer::STDV;
+  SanityCheck check_;
+  std::unique_ptr<ProteinProbEstimator> protEstimator_;
+  std::unique_ptr<Enzyme> enzyme_;
+  // holds the concatenation of multiple input files, removed at the end
+  std::unique_ptr<TmpDir> tmpDir_;
 
   // file input parameters
   bool tabInput_;
@@ -77,7 +78,7 @@ class Caller {
   std::string protEstimatorDecoyPrefix_;
 
   // file output parameters
-  std::string tabOutputFN_, pepXMLOutputFN_;
+  std::string tabOutputFN_;
   std::string weightOutputFN_;
   std::string psmResultFN_, peptideResultFN_, proteinResultFN_;
   std::string decoyPsmResultFN_, decoyPeptideResultFN_, decoyProteinResultFN_;
@@ -85,7 +86,6 @@ class Caller {
 
   // report level parameters
   bool reportUniquePeptides_;
-  bool reportPepXML_;
   bool targetDecoyCompetition_;
   bool useMixMax_;
   std::string inputSearchType_;
@@ -94,9 +94,11 @@ class Caller {
   double selectionFdr_, initialSelectionFdr_, testFdr_;
   unsigned int numIterations_, maxPSMs_, nestedXvalBins_, numThreads_;
   double selectedCpos_, selectedCneg_;
+  bool classicTraining_ = false;
   bool reportEachIteration_, quickValidation_, trainBestPositive_,
       skipNormalizeScores_, analytics_, useResetAlgorithm_,
-      useCompositionMatch_, useIrlsPep_, useInterpolatingPep_, usePavaPep_;
+      useCompositionMatch_, useIrlsPep_, useInterpolatingPep_, usePavaPep_,
+      useTdcPep_;
 
   // reporting parameters
   std::string call_;

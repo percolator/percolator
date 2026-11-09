@@ -33,7 +33,7 @@ d build=${build_dir} for the user"
 
 
 sudo yum install -y cmake wget mingw-w64-tools mingw32-gcc-c++ mingw32-filesystem mingw-binutils-generic mingw32-nsis
-sudo yum install -y mingw32-boost-static mingw32-sqlite mingw32-zlib mingw32-curl mingw32-pthreads
+sudo yum install -y mingw32-sqlite mingw32-zlib mingw32-curl mingw32-pthreads
 
 cd ${src_dir}
 

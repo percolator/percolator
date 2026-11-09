@@ -17,74 +17,63 @@
 #ifndef SANITYCHECK_H_
 #define SANITYCHECK_H_
 
+#include <iostream>
+#include <string>
+#include <vector>
+
 class Scores;
 class Normalizer;
 
+/*
+ * SanityCheck sets the initial direction of the SVM, either from an input
+ * weight file, a default direction given by the user or in the input file,
+ * or the single most discriminative feature, and checks that the trained
+ * direction is not worse than the initial one.
+ */
 class SanityCheck {
  public:
-  SanityCheck();
-  virtual ~SanityCheck();
-  static SanityCheck* initialize(string otherCall);
-  void readWeights(istream& weightStream, vector<double>& w);
+  void readWeights(std::istream& weightStream, std::vector<double>& w);
   void checkAndSetDefaultDir();
-  int getInitDirection(vector<Scores>& testset,
-                       vector<Scores> &trainset, const Normalizer* pNorm,
-                       vector<vector<double> >& w, double test_fdr,
+  int getInitDirection(std::vector<Scores>& testset,
+                       std::vector<Scores>& trainset, const Normalizer* pNorm,
+                       std::vector<std::vector<double> >& w, double test_fdr,
                        double initial_train_fdr);
-  
-  virtual bool validateDirection(vector<vector<double> >& w);
-  void resetDirection(vector<vector<double> >& w);
+  bool validateDirection(std::vector<Scores>& testset,
+                         std::vector<Scores>& trainset,
+                         std::vector<std::vector<double> >& w);
+  void resetDirection(std::vector<Scores>& trainset,
+                      std::vector<std::vector<double> >& w);
 
-  static void setInitWeightFN(string fn) {
-    initWeightFN = fn;
+  void setInitWeightFN(const std::string& fn) { initWeightFN_ = fn; }
+  void setInitDefaultDirName(const std::string& dirName) {
+    initDefaultDirName_ = dirName;
   }
-  static void setInitDefaultDir(int dir) {
-    initDefaultDir = dir;
+  void setOverrule(bool orl) { overRule_ = orl; }
+  void addDefaultWeights(const std::vector<double>& defaultWeights) {
+    defaultWeights_ = defaultWeights;
   }
-  static void setInitDefaultDirName(const string & dirName) {
-    initDefaultDirName = dirName;
+  const std::vector<double>& getDefaultWeights() const {
+    return defaultWeights_;
   }
-  static void setOverrule(bool orl) {
-    overRule = orl;
-  }
-  
-  static void addDefaultWeights(vector<double> __default_weights) {
-      default_weights = __default_weights;
-  }
-  
-  static vector<double>& getDefaultWeights() {
-      return default_weights;
-  }
-  
-  bool concatenatedSearch() const {
-    return concatenatedSearch_;
-  }
-  
-  void setConcatenatedSearch(const bool s) {
-    concatenatedSearch_ = s;
-  }
-  
+  bool concatenatedSearch() const { return concatenatedSearch_; }
+  void setConcatenatedSearch(const bool s) { concatenatedSearch_ = s; }
+
  protected:
-  virtual void getDefaultDirection(vector<vector<double> >& w);
-  virtual void calcInitDirection(vector<double>& wSet, size_t set);
-  
-  int initPositives_;
-  double test_fdr_, initial_train_fdr_;
-  
-  static bool overRule;
-  static string initWeightFN;
-  static string initDefaultDirName;
-  static int initDefaultDir; // Default Direction, 0=do not use,
-  // positive integer = feature number,
+  void getDefaultDirection(std::vector<Scores>& trainset,
+                           std::vector<std::vector<double> >& w);
+
+  int initPositives_ = 0;
+  double test_fdr_ = 0.01, initial_train_fdr_ = 0.01;
+  bool overRule_ = false;
+  std::string initWeightFN_;
+  std::string initDefaultDirName_;
+  // Default Direction, 0=do not use, positive integer = feature number,
   // negative integer = lower score better
-  
-  vector<Scores> *pTestset_, *pTrainset_;
-  
-  //this vector is meant to have the initial directions givn in the pin.xml
-  static vector<double> default_weights;
-  
+  int initDefaultDir_ = 0;
+  // initial direction given in the input file
+  std::vector<double> defaultWeights_;
   // input from concatenated search, i.e. not separate target and decoy searches
-  bool concatenatedSearch_;
+  bool concatenatedSearch_ = true;
 };
 
 #endif /*SANITYCHECK_H_*/

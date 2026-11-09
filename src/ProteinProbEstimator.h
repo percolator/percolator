@@ -28,7 +28,6 @@
 #include <fstream>
 
 #include "Globals.h"
-#include "ProteinFDRestimator.h"
 #include "ProteinScoreHolder.h"
 #include "PosteriorEstimator.h"
 #include "Scores.h"
@@ -85,28 +84,8 @@ struct RetrieveValue {
 */
 class ProteinProbEstimator { 
  public:  
-  /** PROTEIN FDR ESTIMATOR PARAMETERS **/
-  
-  /* Default configuration (changeable by functions)
-   * decoy prefix = random
-   * number of bins = 10
-   * target decoy ratio = 1.0
-   * binning mode = equal deepth
-   * correct identical sequences = true
-   */
-  
-  const static bool correct_identical_sequences = true;
-  const static bool binning_equal_deepth = true;
-  const static double target_decoy_ratio;
-  const static unsigned number_bins = 10;
-  
-  
   /** GENERAL PARAMETERS **/
   
-  /** compute global protein FDR using MAYU based implementation **/
-  const static bool mayufdr = false;
-  /** threshold used to estimate the protein FDR(pi0) **/
-  const static double psmThresholdMayu;
   /** whether to use the decoy prefix(faster) to check if a protein is decoy or not **/
   const static bool useDecoyPrefix = true;
   /** whether to count decoy proteins when estimated q values or not **/
@@ -143,18 +122,11 @@ class ProteinProbEstimator {
   /** initialize the estimation of the q values and p values **/
   void computeStatistics();
   
-  /** MAYUS method for estimation of Protein FDR **/
-  void computeFDR();
-  
   /** Return the number of proteins whose q value is less or equal than the threshold given**/
   unsigned getQvaluesBelowLevel(double level);
-  unsigned getQvaluesBelowLevelDecoy(double level);
  
   /** populate the list of proteins**/
   void setTargetandDecoysNames(Scores& peptideScores);
-  
-  /** add proteins read from the database **/
-  void addProteinDb(bool isDecoy, std::string name, std::string sequence, double length);
   
   /** print copyright of the author**/
   virtual string printCopyright() = 0;
@@ -179,7 +151,7 @@ class ProteinProbEstimator {
   
   inline bool lastProteinInGroup(
       std::vector<ProteinScoreHolder>::const_iterator it) {
-    return !trivialGrouping_ || it+1 != proteins_.end() 
+    return !trivialGrouping_ || it+1 == proteins_.end() 
                              || it->getGroupId() != (it+1)->getGroupId();
   }
   /** functions to count number of target and decoy proteins **/
@@ -190,11 +162,6 @@ class ProteinProbEstimator {
   
   /** print a tab delimited list of proteins probabilities in a file or stdout**/
   void print(ostream& myout, bool decoy=false);
-  
-  /** function that extracts a list of proteins from the peptides that have a qvalue lower than psmThresholdMayu
-   * this function is used to estimate the protein FDR**/
-  void getTPandPFfromPeptides(double threshold, std::set<std::string> &numberTP, 
-        std::set<std::string> &numberFP);
   
   /** this function generates a vector of pair protein pep and label **/
   void getCombinedList(std::vector<std::pair<double , bool> >& combined);
@@ -216,10 +183,6 @@ class ProteinProbEstimator {
   
   /** contains all the protein names for target and decoy set respectively **/
   std::set<string> truePosSet_, falsePosSet_;
-  
-  /** map from protein name to its sequence and its sequence length, used for Mayu method **/
-  std::map<std::string,std::pair<std::string,double> > targetProteins_;
-  std::map<std::string,std::pair<std::string,double> > decoyProteins_;
   
   /** vector of protein scores **/
   std::vector<ProteinScoreHolder> proteins_;

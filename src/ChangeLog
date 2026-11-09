@@ -1,3 +1,42 @@
+Unreleased
+Changes of results:
+* Each Cpos/Cneg solve starts from its weights of the previous iteration, and the least squares steps of L2_SVM_MFN are solved exactly (Cholesky on the normal equations) instead of by CGLS.
+* The Cpos/Cneg pair of each fold is fixed after three iterations, and training stops when the estimated positives grow by less than 0.1% over two iterations. --maxiter remains the upper limit.
+* The I-spline PEP fit is solved exactly by an active-set method. The trust-region solver stopped at its iteration limit. PEPs change by up to about 0.06; calibration on synthetic data is unchanged.
+* Results no longer depend on the number of threads: all sort comparators are total orders, with the input line as the last tie-break. Only ties are affected.
+* New option --classic-training restores the previous training: fixed number of iterations, full grid in every iteration, CGLS solves from zero weights.
+* qvality estimates PEPs by I-spline regression of the target q values, as Percolator does; --pava-pep, --tdc-pep and --rank-pep select the other monotone regressions, and --irls-pep the previous P-IRLS method.
+* New option --tdc-pep (Percolator and qvality): PEPs from a monotone fit of the decoy rate p on the score, PEP = p/(1-p), scaled by pi0 and the target/decoy ratio for separate searches. The default remains the regression of the target q values.
+Fixes:
+* --train-best-positive corrupted the training folds with nested cross-validation, which RESET also uses.
+* RESET: the pseudo-target labels differed between runs, and a single fold led to a division by zero in the stopping rule.
+* --quick-validation with --nested-xval-bins > 1 retrained with a Cpos/Cneg pair that had not been evaluated.
+* -N read PSMs with labels other than 1 and -1 as decoys. They are ignored, as without -N.
+* -Q/--pepxml-output has written nothing since the XML output was removed; it now prints a warning.
+* A non-finite experimental mass (nan, inf) is rejected with an error that names the PSM; it broke the ordering of PSMs.
+* A failed load of several input files (unreadable input, a header with fewer columns than the PSMs) left the temporary concatenated file behind.
+* Multiple input files: infinite loop when a column was missing from the widest header; the temporary directory is now removed.
+* Out-of-bounds read in ProteinProbEstimator::lastProteinInGroup; uninitialised Peptide reference count (leak in protein digestion); leaked PSMs in the second pass of -N; 32-bit overflow of SVM buffer sizes above about 70 million active rows.
+* A plain cmake configure built without optimisation. Release is now the default.
+Speed and memory (output unchanged unless listed above):
+* Input parsing with std::from_chars and buffered output.
+* SVM: solver buffers reused, training rows stored contiguously and shared by the grid, row-grouped kernels, count-only grid evaluation in parallel over all pairs, parallel search for the initial direction.
+* PSMs in a block store with a string arena and interned protein names; ScoreHolder 56 to 40 bytes; PSMDescription without vtable; feature rows and cross-validation data freed after training; PSM-level PEPs only computed when written; I-spline normal equations accumulated without an N x 200 design matrix.
+* 1M synthetic PSMs, 3 threads: 155 s and 1.75 GB before, about 24 s and 1.0 GB now.
+* Stage timing at -v 3; benchmark and calibration scripts in tests/benchmark (Python standard library only).
+Dependencies and removed code:
+* Boost and Eigen are no longer needed.
+* Removed: libsvm, the Mayu protein FDR estimator, ResultHolder, SqtSanityCheck, Logger, Analytics (--no-analytics is still accepted), unused dblas routines, src/converters/CMakeLists.txt.
+Interface changes (Crux and other library users):
+* PSMDescription: proteinIds replaced by proteins(); getId, getFullPeptide and getFullPeptideSequence return std::string_view; setId and setPeptide do not copy, the strings live in SetHandler's PsmStore; deletePtr and the virtual functions removed; new setLineNr/getLineNr.
+* DataSet::readPsm takes a PsmStore, and a DataSet no longer deletes its PSMs. SetHandler owns its DataSets through std::unique_ptr (push_back_dataset).
+* SetHandler::readTab, readAndScoreTab, writeTab and normalizeFeatures and CrossValidation::preIterationSetup and postIterationProcessing take references.
+* SanityCheck's static setters are member functions; SqtSanityCheck removed.
+* Normalizer::getNormalizer, resetNormalizer and setType replaced by Normalizer::create; Enzyme::createEnzyme returns std::unique_ptr.
+* CGLS and L2_SVM_MFN take std::vector arguments; vector_double and vector_int removed; AlgIn is a value type.
+* Scores::calcPep takes a fourth argument (tdc); InferPEP::tdc_to_pep takes an optional odds factor; PosteriorEstimator has an estimateMonotonePEP member.
+* Globals: logger and stream redirection functions removed. Timer::getStartTimeStr returns std::string. ScoreHolder has no virtual destructor and no p field.
+
 v3.09
 * Replaced I-spline rank-based PEP calibration with score-based I-spline calibration as the new default; use --rank-pep to opt back to the previous rank-based behaviour. (#403)
 * Added I-spline PEP calibration using a trust-region reflective constrained ridge regressor (ISplineTRRRegressor), replacing PAVA post-processing as the default smoother; use --pava-pep to revert to PAVA. (#399)

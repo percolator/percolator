@@ -48,17 +48,6 @@ set ZIP_EXE="%INSTALL_DIR%\7zip\7z.exe"
 :: )
 :: set CMAKE_EXE="%INSTALL_DIR%\%CMAKE_BASE%\bin\cmake.exe"
 
-:: The windows binary release takes up 3GB, therefore we build only the libraries we need from source.
-set BOOST_ROOT=%INSTALL_DIR%\%BOOST_BASE%
-if not exist "%BOOST_ROOT%" (
-  echo Downloading and installing Boost, this can take a few minutes...
-  call :downloadfile %BOOST_URL% %INSTALL_DIR%\boost.7z
-  %ZIP_EXE% x "%INSTALL_DIR%\boost.7z" -o"%INSTALL_DIR%" -aoa -xr!doc > NUL
-  cd /D "%BOOST_ROOT%"
-  call bootstrap
-  b2 address-model=64 threading=multi -j4 --with-system --with-filesystem --with-serialization -d0
-)
-set BOOST_LIB=%BOOST_ROOT%\stage\lib
 
 ::: Needed for CPack :::
 set NSIS_DIR=%INSTALL_DIR%\nsis

@@ -15,7 +15,10 @@
 
  *******************************************************************************/
 
-#include <boost/assign.hpp>
+#ifdef _OPENMP
+#include <omp.h>
+#endif
+#include <algorithm>
 #include <cassert>
 #include <cmath>
 #include <fstream>
@@ -43,6 +46,11 @@ void Scores::merge(std::vector<Scores>& sv,
                    bool skipNormalizeScores,
                    std::vector<std::vector<double> >& all_w) {
   scores_.clear();
+  size_t numScores = 0;
+  for (const Scores& binScores : sv) {
+    numScores += binScores.scores_.size();
+  }
+  scores_.reserve(numScores);
   std::vector<Scores>::iterator cvBinScores = sv.begin();
   std::vector<std::vector<double> >::iterator weights = all_w.begin();
   for (; cvBinScores != sv.end(); cvBinScores++, weights++) {
@@ -90,21 +98,15 @@ void Scores::scoreAndAddPSM(ScoreHolder& sh,
   sh.score += rawWeights[numFeatures];
 
   featurePool.deallocate(sh.pPSM->features);
-  sh.pPSM->deleteRetentionFeatures();
+  sh.pPSM->features = NULL;
 
+  // DataSet::readPsm only returns TARGET or DECOY
   if (sh.isTarget()) {
     ++totalNumberOfTargets_;
-  } else if (sh.isDecoy()) {
+  } else {
     ++totalNumberOfDecoys_;
   }
-
-  if (!sh.isTarget() && !sh.isDecoy()) {
-    std::cerr << "Warning: the PSM " << sh.pPSM->getId()
-              << " has a label not in {1,-1} and will be ignored." << std::endl;
-    PSMDescription::deletePtr(sh.pPSM);
-  } else {
-    scores_.push_back(sh);
-  }
+  scores_.push_back(sh);
 }
 
 void Scores::print(LabelType label, std::ostream& os) {
@@ -122,25 +124,27 @@ void Scores::print(LabelType label, std::ostream& os) {
 
   for (; scoreIt != scores_.end(); ++scoreIt) {
     if (scoreIt->label == label) {
-      std::ostringstream out;
-      scoreIt->pPSM->printProteins(out);
-      ResultHolder rh(scoreIt->score, scoreIt->q, scoreIt->pep,
-                      scoreIt->pPSM->getId(), scoreIt->pPSM->getFullPeptide(),
-                      out.str(), scoreIt->pPSM->getSpectrumFileName());
-      if (is_output_rt_) {
-        rh.retentionTime = scoreIt->pPSM->getRetentionTime();
-        rh.outputRT =
-            true;  // Ideally this should be set once outside this loop, but
-                   // ResultHolder needs to be initialized before.
+      PSMDescription* psm = scoreIt->pPSM;
+      os << psm->getId() << '\t';
+      const std::string& fileName = psm->getSpectrumFileName();
+      if (!fileName.empty()) {
+        os << fileName << '\t';
       }
-
-      os << rh << std::endl;
+      os << scoreIt->score << '\t' << scoreIt->q << '\t' << scoreIt->pep << '\t'
+         << psm->getFullPeptide() << '\t';
+      psm->printProteins(os);
+      if (is_output_rt_) {
+        os << '\t' << psm->getRetentionTime();
+      }
+      os << '\n';
     }
   }
 }
 
 void Scores::populateWithPSMs(SetHandler& setHandler) {
   scores_.clear();
+  scores_.reserve(setHandler.getSizeFromLabel(LabelType::TARGET) +
+                  setHandler.getSizeFromLabel(LabelType::DECOY));
   setHandler.populateScoresWithPSMs(scores_, LabelType::TARGET);
   setHandler.populateScoresWithPSMs(scores_, LabelType::DECOY);
   totalNumberOfTargets_ =
@@ -197,14 +201,12 @@ void Scores::populateWithPSMs(SetHandler& setHandler) {
  * @param train vector containing the training sets of PSMs
  * @param test vector containing the test sets of PSMs
  * @param xval_fold number of folds in train and test
- * @param featurePool pool for storing features to optimize memory access in SVM
  * @param decoyFractionTraining fraction of decoys to use for training, will
  * be 1 unless RESET algorithm is used
  */
 void Scores::createXvalSetsBySpectrum(std::vector<Scores>& train,
                                       std::vector<Scores>& test,
                                       unsigned int xval_fold,
-                                      FeatureMemoryPool& featurePool,
                                       double decoyFractionTraining,
                                       unsigned int decoysPerTarget) {
   // set the number of cross validation folds for train and test to xval_fold
@@ -305,17 +307,6 @@ void Scores::createXvalSetsBySpectrum(std::vector<Scores>& train,
     train[i].setNullTargetWinProb(trainNullTargetWinProb);
     test[i].setNullTargetWinProb(trainNullTargetWinProb);
   }
-
-  if (featurePool.isInitialized()) {
-    boost::unordered_map<double*, double*> movedAddresses;
-    size_t idx = 0;
-    for (unsigned int i = 0; i < xval_fold; ++i) {
-      bool isTarget = true;
-      test[i].reorderFeatureRows(featurePool, isTarget, movedAddresses, idx);
-      isTarget = false;
-      test[i].reorderFeatureRows(featurePool, isTarget, movedAddresses, idx);
-    }
-  }
 }
 
 void Scores::recalculateSizes() {
@@ -330,30 +321,6 @@ void Scores::recalculateSizes() {
     }
   }
   targetDecoySizeRatio_ = totalNumberOfTargets_ / (double)totalNumberOfDecoys_;
-}
-
-void Scores::reorderFeatureRows(
-    FeatureMemoryPool& featurePool,
-    bool isTarget,
-    boost::unordered_map<double*, double*>& movedAddresses,
-    size_t& idx) {
-  size_t numFeatures = FeatureNames::getNumFeatures();
-  std::vector<ScoreHolder>::const_iterator scoreIt = scores_.begin();
-  for (; scoreIt != scores_.end(); ++scoreIt) {
-    if (scoreIt->isTarget() == isTarget) {
-      double* newAddress =
-          featurePool.addressFromIdx(static_cast<unsigned int>(idx++));
-      double* oldAddress = scoreIt->pPSM->features;
-      while (movedAddresses.find(oldAddress) != movedAddresses.end()) {
-        oldAddress = movedAddresses[oldAddress];
-      }
-      std::swap_ranges(oldAddress, oldAddress + numFeatures, newAddress);
-      scoreIt->pPSM->features = newAddress;
-      if (oldAddress != newAddress) {
-        movedAddresses[newAddress] = oldAddress;
-      }
-    }
-  }
 }
 
 /**
@@ -439,9 +406,11 @@ int Scores::calcScoresAndQvals(std::vector<double>& w,
  */
 int Scores::calcScores(std::vector<double>& w) {
   std::size_t ix;
-  std::vector<ScoreHolder>::iterator scoreIt = scores_.begin();
-  for (; scoreIt != scores_.end(); ++scoreIt) {
-    scoreIt->score = calcScore(scoreIt->pPSM->features, w);
+  const long numScores = static_cast<long>(scores_.size());
+#pragma omp parallel for schedule(static) \
+    if (numScores > 100000 && !omp_in_parallel())
+  for (long i = 0; i < numScores; ++i) {
+    scores_[i].score = calcScore(scores_[i].pPSM->features, w);
   }
   sort(scores_.begin(), scores_.end(), greater<ScoreHolder>());
   if (VERB > 3) {
@@ -491,6 +460,7 @@ int Scores::calcQvals(double fdr, bool skipDecoysPlusOne,
                                  nullTargetWinProb_);
 
   // set q-values and count number of positives
+  // (countTargetsBelowFdr below has to give the same count)
   std::vector<double>::const_iterator qIt = qvals.begin();
   std::vector<ScoreHolder>::iterator scoreIt = scores_.begin();
 
@@ -504,49 +474,146 @@ int Scores::calcQvals(double fdr, bool skipDecoysPlusOne,
   return numPos;
 }
 
+/**
+ * Counts the targets with q-value below fdr, as calcQvals does, for scores
+ * listed in combined from best to worst. Within a group of tied scores all
+ * PSMs get the same q-value, so the count does not depend on the order of
+ * the PSMs within ties.
+ * PosteriorEstimator::setNegative(true) must have been called.
+ */
+int Scores::countTargetsBelowFdr(
+    const std::vector<pair<double, bool> >& combined,
+    double fdr,
+    bool skipDecoysPlusOne) const {
+  std::vector<double> qvals;
+  PosteriorEstimator::getQValues(pi0_, combined, qvals, skipDecoysPlusOne,
+                                 nullTargetWinProb_);
+  int numPos = 0;
+  for (std::size_t ix = 0; ix < qvals.size(); ++ix) {
+    if (qvals[ix] < fdr && combined[ix].second) {
+      ++numPos;
+    }
+  }
+  return numPos;
+}
+
+/**
+ * Lists the feature rows and labels of the PSMs ordered by memory address,
+ * so that scoring them streams through the feature storage instead of
+ * following a pointer per PSM to scattered memory.
+ */
+void Scores::getFeatureRows(FeatureRows& rows) const {
+  rows.resize(scores_.size());
+  for (std::size_t ix = 0; ix < scores_.size(); ++ix) {
+    rows[ix] = FeatureRows::value_type(scores_[ix].pPSM->features,
+                                       scores_[ix].isTarget());
+  }
+  std::sort(rows.begin(), rows.end(),
+            [](const FeatureRows::value_type& a,
+               const FeatureRows::value_type& b) {
+              return std::less<const double*>()(a.first, b.first);
+            });
+}
+
+/**
+ * Returns the number of targets that calcScoresAndQvals(w, fdr,
+ * skipDecoysPlusOne) would report, without changing this object, so that it
+ * can be used concurrently. Only scores and labels are sorted, which is much
+ * cheaper than sorting the ScoreHolders.
+ * @param rows the PSMs of this set, from getFeatureRows
+ * @param combined buffer for the (score, isTarget) pairs
+ */
+int Scores::countTargetsBelowFdr(
+    const FeatureRows& rows,
+    const std::vector<double>& w,
+    double fdr,
+    bool skipDecoysPlusOne,
+    std::vector<pair<double, bool> >& combined) const {
+  // same summation order as calcScore, four rows at a time so that their
+  // additions overlap
+  const std::size_t numFeatures = FeatureNames::getNumFeatures();
+  const std::size_t numRows = rows.size();
+  combined.resize(numRows);
+  std::size_t i = 0;
+  for (; i + 4 <= numRows; i += 4) {
+    const double* f0 = rows[i].first;
+    const double* f1 = rows[i + 1].first;
+    const double* f2 = rows[i + 2].first;
+    const double* f3 = rows[i + 3].first;
+    double s0 = w[numFeatures], s1 = w[numFeatures], s2 = w[numFeatures],
+           s3 = w[numFeatures];
+    for (std::size_t ix = numFeatures; ix--;) {
+      s0 += f0[ix] * w[ix];
+      s1 += f1[ix] * w[ix];
+      s2 += f2[ix] * w[ix];
+      s3 += f3[ix] * w[ix];
+    }
+    combined[i] = pair<double, bool>(s0, rows[i].second);
+    combined[i + 1] = pair<double, bool>(s1, rows[i + 1].second);
+    combined[i + 2] = pair<double, bool>(s2, rows[i + 2].second);
+    combined[i + 3] = pair<double, bool>(s3, rows[i + 3].second);
+  }
+  for (; i < numRows; ++i) {
+    combined[i] =
+        pair<double, bool>(calcScore(rows[i].first, w), rows[i].second);
+  }
+  std::sort(combined.begin(), combined.end(),
+            [](const pair<double, bool>& a, const pair<double, bool>& b) {
+              return a.first > b.first;
+            });
+  return countTargetsBelowFdr(combined, fdr, skipDecoysPlusOne);
+}
+
+/**
+ * Starts a new training set in data with the decoys, in the order of this
+ * set. generatePositiveTrainingSet then appends the positives.
+ */
 void Scores::generateNegativeTrainingSet(AlgIn& data, const double cneg) {
-  std::size_t ix2 = 0;
+  data.clear();
+  // room for the largest possible training set; only touched when used
+  data.rows.reserve(scores_.size() * static_cast<size_t>(data.n));
+  data.Y.reserve(scores_.size());
   std::vector<ScoreHolder>::const_iterator scoreIt = scores_.begin();
   for (; scoreIt != scores_.end(); ++scoreIt) {
     if (scoreIt->isDecoy()) {
-      data.vals[ix2] = scoreIt->pPSM->features;
-      data.Y[ix2] = -1;
-      // data.C[ix2] = cneg;
-      ix2++;
+      data.add(scoreIt->pPSM->features, -1);
     }
   }
-  data.negatives = static_cast<int>(ix2);
+  data.negatives = data.m;
 }
 
+/**
+ * Appends the targets with q-value at most fdr to the training set, in the
+ * order of this set, or with trainBestPositive only the best-scoring one of
+ * each spectrum, by decreasing score. Does not change this set.
+ */
 void Scores::generatePositiveTrainingSet(AlgIn& data,
                                          const double fdr,
                                          const double cpos,
-                                         const bool trainBestPositive) {
-  std::size_t ix2 = static_cast<std::size_t>(data.negatives);
+                                         const bool trainBestPositive) const {
   int p = 0;
-
-  std::vector<ScoreHolder>::iterator lastUniqueIt = scores_.end();
   if (trainBestPositive) {
-    std::sort(scores_.begin(), scores_.end(), OrderScanLabel());
-    lastUniqueIt =
-        std::unique(scores_.begin(), scores_.end(), UniqueScanLabel());
-    std::sort(scores_.begin(), lastUniqueIt, greater<ScoreHolder>());
-  }
-
-  std::vector<ScoreHolder>::const_iterator scoreIt = scores_.begin();
-  for (; scoreIt != lastUniqueIt; ++scoreIt) {
-    if (scoreIt->isTarget()) {
-      if (scoreIt->q <= fdr) {
-        data.vals[ix2] = scoreIt->pPSM->features;
-        data.Y[ix2] = 1;
-        // data.C[ix2] = cpos;
-        ix2++;
+    std::vector<ScoreHolder> best;
+    for (const ScoreHolder& sh : scores_) {
+      if (sh.isTarget() && sh.q <= fdr) best.push_back(sh);
+    }
+    std::sort(best.begin(), best.end(), OrderScanLabel());
+    best.erase(std::unique(best.begin(), best.end(), UniqueScanLabel()),
+               best.end());
+    std::sort(best.begin(), best.end(), greater<ScoreHolder>());
+    for (const ScoreHolder& sh : best) {
+      data.add(sh.pPSM->features, 1);
+      ++p;
+    }
+  } else {
+    for (const ScoreHolder& sh : scores_) {
+      if (sh.isTarget() && sh.q <= fdr) {
+        data.add(sh.pPSM->features, 1);
         ++p;
       }
     }
   }
   data.positives = p;
-  data.m = static_cast<int>(ix2);
 }
 
 void Scores::weedOutRedundant() {
@@ -566,17 +633,13 @@ void Scores::weedOutRedundant(
   // scores)
   std::sort(scores_.begin(), scores_.end(), lexicOrderProb());
 
-  /*
-   * much simpler version but it does not fill up the peptide-PSM map:
-   * scores_.erase(std::unique(scores_.begin(), scores_.end(), mycmp),
-   * scores_.end());
-   */
-
-  std::string previousPeptide = "";
+  // the views point into the PSMs, which stay in place
+  std::string_view previousPeptide = "";
   LabelType previousLabel = LabelType::UNDEFINED;
   size_t lastWrittenIdx = 0u;
   for (size_t idx = 0u; idx < scores_.size(); ++idx) {
-    std::string currentPeptide = scores_[idx].pPSM->getPeptideSequence();
+    std::string_view currentPeptide =
+        scores_[idx].pPSM->getPeptideSequenceView();
     LabelType currentLabel = scores_[idx].label;
     if (currentPeptide != previousPeptide || currentLabel != previousLabel) {
       // insert as a new score
@@ -584,12 +647,9 @@ void Scores::weedOutRedundant(
       previousPeptide = currentPeptide;
       previousLabel = currentLabel;
     }
-    // append the psm
-    peptidePsmMap_[scores_[lastWrittenIdx - 1].pPSM].push_back(
-        scores_[idx].pPSM);
     if (specCountQvalThreshold > 0.0 &&
         scores_[idx].q < specCountQvalThreshold) {
-      ++peptideSpecCounts[currentPeptide];
+      ++peptideSpecCounts[std::string(currentPeptide)];
     }
   }
   scores_.resize(lastWrittenIdx);
@@ -627,20 +687,6 @@ void Scores::weedOutRedundantTDC() {
   postMergeStep();
 }
 
-/**
- * Routine that sees to that only 1 target and 1 decoy spectra are kept for
- * mix-max when using multiple hits per spectrum and separate searches
- */
-void Scores::weedOutRedundantMixMax() {
-  // order the scores (based on spectra id and score)
-  std::sort(scores_.begin(), scores_.end(), OrderScanMassLabelCharge());
-  scores_.erase(
-      std::unique(scores_.begin(), scores_.end(), UniqueScanMassLabelCharge()),
-      scores_.end());
-
-  postMergeStep();
-}
-
 int Scores::getInitDirection(const double initialSelectionFdr,
                              std::vector<double>& direction) {
   int bestPositives = -1;
@@ -651,27 +697,37 @@ int Scores::getInitDirection(const double initialSelectionFdr,
   // is too restrictive for small datasets
   bool skipDecoysPlusOne = true;
 
-  // pre-allocate once and reuse across all 2*numFeatures calcQvals calls
-  std::vector<pair<double, bool> > combined;
-  combined.reserve(scores_.size());
-
-  for (unsigned int featNo = 0; featNo < FeatureNames::getNumFeatures();
-       featNo++) {
-    for (std::vector<ScoreHolder>::iterator scoreIt = scores_.begin();
-         scoreIt != scores_.end(); ++scoreIt) {
-      scoreIt->score = scoreIt->pPSM->features[featNo];
+  // Number of positives when ordering by each feature, with low values
+  // first (i = 0) or high values first (i = 1). They only depend on the
+  // feature values and labels, so the features are evaluated in parallel
+  // on (value, isTarget) pairs.
+  const int numFeatures = static_cast<int>(FeatureNames::getNumFeatures());
+  std::vector<int> positivesPerDirection(2 * static_cast<size_t>(numFeatures));
+  PosteriorEstimator::setNegative(true);  // also get q-values for decoys
+#pragma omp parallel for schedule(dynamic, 1)
+  for (int featNo = 0; featNo < numFeatures; featNo++) {
+    std::vector<pair<double, bool> > combined(scores_.size());
+    for (std::size_t ix = 0; ix < scores_.size(); ++ix) {
+      combined[ix] = pair<double, bool>(scores_[ix].pPSM->features[featNo],
+                                        scores_[ix].isTarget());
     }
-    sort(scores_.begin(), scores_.end());
-    // check once in forward direction (i = 0, higher scores are better) and
-    // once in backward direction (i = 1, lower scores are better)
+    std::sort(combined.begin(), combined.end(),
+              [](const pair<double, bool>& a, const pair<double, bool>& b) {
+                return a.first < b.first;
+              });
+    positivesPerDirection[2 * featNo] = countTargetsBelowFdr(
+        combined, initialSelectionFdr, skipDecoysPlusOne);
+    std::reverse(combined.begin(), combined.end());
+    positivesPerDirection[2 * featNo + 1] = countTargetsBelowFdr(
+        combined, initialSelectionFdr, skipDecoysPlusOne);
+  }
+
+  for (int featNo = 0; featNo < numFeatures; featNo++) {
     for (int i = 0; i < 2; i++) {
-      if (i == 1) {
-        reverse(scores_.begin(), scores_.end());
-      }
-      int positives = calcQvals(initialSelectionFdr, skipDecoysPlusOne, combined);
+      int positives = positivesPerDirection[2 * featNo + i];
       if (positives > bestPositives) {
         bestPositives = positives;
-        bestFeature = static_cast<int>(featNo);
+        bestFeature = featNo;
         lowBest = (i == 0);
       }
     }
@@ -740,8 +796,34 @@ void Scores::checkSeparationAndSetPi0() {
   }
 }
 
-void Scores::calcPep(const bool spline, const bool interp, const bool pava) {
-    if (!spline) {
+void Scores::calcPep(const bool spline, const bool interp, const bool pava,
+                     const bool tdc) {
+    if (!spline && tdc) {
+        // Fit the decoy rate p as a monotone function of the score and
+        // report the odds p / (1 - p) as PEP, for targets and decoys alike.
+        std::vector<double> is_decoy, sc;
+        is_decoy.reserve(scores_.size());
+        sc.reserve(scores_.size());
+        for (const auto& sh : scores_) {
+            is_decoy.push_back(sh.isTarget() ? 0.0 : 1.0);
+            sc.push_back(sh.score);
+        }
+        // With separate target and decoy searches (mix-max) the decoys
+        // sample the null of all targets, so the odds are scaled by pi0 and
+        // by the ratio of targets to decoys.
+        double oddsFactor = 1.0;
+        if (usePi0_) {
+            double numTargets = 0.0, numDecoys = 0.0;
+            for (double d : is_decoy) (d > 0.5 ? numDecoys : numTargets) += 1.0;
+            oddsFactor = pi0_ * numTargets / std::max(1.0, numDecoys);
+        }
+        InferPEP reg(!pava);
+        auto peps = interp ? reg.tdc_to_pep(is_decoy, sc, oddsFactor)
+                           : reg.tdc_to_pep(is_decoy, {}, oddsFactor);
+        for (size_t ix = 0; ix < scores_.size(); ++ix) {
+            scores_[ix].pep = peps[ix];
+        }
+    } else if (!spline) {
         // Derive PEPs from q-values so that average PEP ≈ q at every
         // threshold.  Use PAVA when --pava-pep is set, otherwise I-spline
         // for smooth output.

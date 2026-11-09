@@ -21,28 +21,26 @@ using namespace std;
 
 
 int main(int argc, char** argv) {
-  
-  Caller* pCaller = new Caller();
   int retVal = EXIT_FAILURE; 
-  
-  try
   {
-    if (pCaller->parseOptions(argc, argv)) {
-    	if (pCaller->run()) retVal = EXIT_SUCCESS;
-	  }
+    Caller caller;
+    try
+    {
+      if (caller.parseOptions(argc, argv)) {
+        if (caller.run()) retVal = EXIT_SUCCESS;
+      }
+    }
+    catch (const std::exception& e) 
+    {
+      std::cerr << "Exception caught: " << e.what() << endl;
+      retVal = EXIT_FAILURE;
+    }
+    catch(...)
+    {
+      std::cerr << "Unknown exception, contact the developer.." << std::endl;
+      retVal = EXIT_FAILURE;
+    }
   }
-  catch (const std::exception& e) 
-  {
-    std::cerr << "Exception caught: " << e.what() << endl;
-    retVal = EXIT_FAILURE;
-  }
-  catch(...)
-  {
-    std::cerr << "Unknown exception, contact the developer.." << std::endl;
-    retVal = EXIT_FAILURE;
-  }
-  
-  delete pCaller;
   Globals::clean();
   return retVal;
 }

@@ -24,22 +24,19 @@ void FeatureMemoryPool::createPool(size_t numFeatures) {
 }
 
 void FeatureMemoryPool::createNewBlock() {
-  double* memStart = new double[numFeatures_ * numRowsPerBlock_]();
-  memStarts_.push_back(memStart);
+  // every row is completely written by its user, so no zero-initialization
+  memStarts_.emplace_back(new double[numFeatures_ * numRowsPerBlock_]);
 }
 
 void FeatureMemoryPool::destroyPool() {
-  for (size_t i = 0; i < memStarts_.size(); ++i) {
-    if (memStarts_.at(i) != NULL) {
-      delete[] memStarts_.at(i);
-      memStarts_.at(i) = NULL;
-    }
-  }
+  memStarts_.clear();
+  freeRows_.clear();
+  initializedRows_ = 0;
   isInitialized_ = false;
 }
 
 double* FeatureMemoryPool::addressFromIdx(unsigned int i) const {
-  return memStarts_.at(i / numRowsPerBlock_) + (i % numRowsPerBlock_) * numFeatures_;
+  return memStarts_.at(i / numRowsPerBlock_).get() + (i % numRowsPerBlock_) * numFeatures_;
 }
 
 double* FeatureMemoryPool::allocate() {
