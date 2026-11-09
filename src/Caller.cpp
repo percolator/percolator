@@ -415,7 +415,11 @@ bool Caller::parseOptions(int argc, char** argv) {
       "with -w describe the rescaled scores. With -N the folds' weights are "
       "rescaled in this way before they are averaged, and only 'test' "
       "rescales the scores of all PSMs once more. With one fold, as with "
-      "--reset-algorithm, only the scale of the reported scores changes. No "
+      "--reset-algorithm, the order of the PSMs is the same with every "
+      "scheme: for concatenated searches only the scale of the reported "
+      "scores changes, while for separate searches the pi0 estimate, and "
+      "with it the q values and PEPs, can change too, as only 'test' first "
+      "estimates the bin's own pi0, which draws random numbers. No "
       "effect with --static. Default = test with up to 3 folds; "
       "train-decoys with more folds (--num-folds), with --direction-check "
       "pooled, and in a run whose trained SVMs the second chance of "
@@ -443,7 +447,7 @@ bool Caller::parseOptions(int argc, char** argv) {
       "same. With -N the check uses the PSMs trained on, and with --static "
       "the merged raw scores of the given weights. 'pooled' merges with "
       "--merge-normalization train-decoys unless a scheme is given, also "
-      "with one fold, where only the scale of the scores changes, and "
+      "with one fold (see there for what that changes), and "
       "cannot be combined with 'test', whose anchors are taken from each "
       "test bin. Default = second-chance.",
       "check");
