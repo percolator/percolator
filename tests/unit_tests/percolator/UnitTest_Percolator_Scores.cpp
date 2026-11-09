@@ -36,6 +36,7 @@
 #include "SetHandler.h"
 #include "DataSet.h"
 #include "PosteriorEstimator.h"
+#include "ProteinProbEstimator.h"
 #include "Scores.h"
 
 namespace {
@@ -1126,4 +1127,28 @@ TEST(ScoresPepTest, ResetDecoyFactorScalesPeps)
             }
         }
     }
+}
+
+// Protein scores sort the decoy first among equal scores, whatever the
+// group ids, so that a decoy wins a tie in the picked-protein competition
+// as a decoy PSM does in target-decoy competition; other ties keep the
+// group id and name order.
+TEST(ProteinOrderTest, DecoyWinsScoreTies)
+{
+    ProteinScoreHolder::Peptide pep("PEPTIDE", false, 0.0, 0.0, 0.0, 1.0);
+    ProteinScoreHolder target("prot_1", false, pep, 1);
+    ProteinScoreHolder decoy("decoy_prot_1", true, pep, 2);
+    ProteinScoreHolder other("prot_2", false, pep, 3);
+    ProteinScoreHolder better("prot_3", false, pep, 4);
+    target.setScore(-2.0);
+    decoy.setScore(-2.0);
+    other.setScore(-2.0);
+    better.setScore(-3.0);  // lower scores are better
+    std::vector<ProteinScoreHolder> proteins = {other, target, decoy, better};
+    std::sort(proteins.begin(), proteins.end(), IntCmpScore());
+    ASSERT_EQ(proteins.size(), 4u);
+    EXPECT_EQ(proteins[0].getName(), "prot_3");
+    EXPECT_EQ(proteins[1].getName(), "decoy_prot_1");
+    EXPECT_EQ(proteins[2].getName(), "prot_1");
+    EXPECT_EQ(proteins[3].getName(), "prot_2");
 }

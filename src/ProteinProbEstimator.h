@@ -48,11 +48,13 @@ struct IntCmpProb {
 
 struct IntCmpScore {
   bool operator()(const ProteinScoreHolder& lhs, const ProteinScoreHolder& rhs) {
-    return ( lhs.getScore() < rhs.getScore()
-         || (lhs.getScore() == rhs.getScore() && lhs.getGroupId() < rhs.getGroupId())
-         || (lhs.getScore() == rhs.getScore() && lhs.getGroupId() == rhs.getGroupId()
-            && lhs.getName() < rhs.getName())
-    );
+    if (lhs.getScore() != rhs.getScore()) return lhs.getScore() < rhs.getScore();
+    // a decoy comes first among equal scores, so that it wins a tie in the
+    // picked-protein competition, as a decoy PSM does in target-decoy
+    // competition
+    if (lhs.isDecoy() != rhs.isDecoy()) return lhs.isDecoy();
+    if (lhs.getGroupId() != rhs.getGroupId()) return lhs.getGroupId() < rhs.getGroupId();
+    return lhs.getName() < rhs.getName();
   }
 };
   
