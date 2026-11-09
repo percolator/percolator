@@ -66,6 +66,17 @@ load_config_files("${CMAKE_CURRENT_SOURCE_DIR}")
 ###############################################################################
 # COMPILING
 ###############################################################################
+
+# MSVC: link the C and C++ runtime statically (/MT), so that percolator.exe
+# and qvality.exe run without the Visual C++ Redistributable. This has to be
+# set before the targets (including GoogleTest's) are defined. OpenMP's
+# vcomp140.dll has no static version; it is installed next to the
+# executables (see INSTALLING below).
+option(USE_MSVC_STATIC_RUNTIME "Link the MSVC runtime statically (/MT)" ON)
+if(MSVC AND USE_MSVC_STATIC_RUNTIME AND NOT DEFINED CMAKE_MSVC_RUNTIME_LIBRARY)
+  set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+endif()
+
 add_subdirectory(src)
 
 ###############################################################################
@@ -89,6 +100,8 @@ endif()
 ###############################################################################
 
 
+# MSVC: install the redistributable DLLs, among them vcomp140.dll (OpenMP),
+# next to the executables, which makes the installed bin directory portable.
 if( MSVC )
   set( CMAKE_INSTALL_OPENMP_LIBRARIES TRUE )
   include( InstallRequiredSystemLibraries )

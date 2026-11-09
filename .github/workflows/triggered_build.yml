@@ -90,7 +90,14 @@ jobs:
     - name: zip raw binary
       shell: pwsh
       run: |
-         Compress-Archive -Path "$env:GITHUB_WORKSPACE\build\percolator\src\Release\*.exe" -DestinationPath "$env:GITHUB_WORKSPACE\rel\percolator-windows-portable.zip"
+         # the installed bin directory holds percolator.exe, qvality.exe and
+         # the redistributable DLLs, among them vcomp140.dll (OpenMP)
+         $build = "$env:GITHUB_WORKSPACE\build\percolator"
+         $cmake = (Select-String -Path "$build\CMakeCache.txt" -Pattern '^CMAKE_COMMAND:INTERNAL=(.*)$').Matches[0].Groups[1].Value
+         & $cmake --install $build --config Release --prefix "$env:GITHUB_WORKSPACE\portable"
+         if ($LASTEXITCODE -ne 0) { exit 1 }
+         Get-ChildItem "$env:GITHUB_WORKSPACE\portable\bin"
+         Compress-Archive -Path "$env:GITHUB_WORKSPACE\portable\bin\*" -DestinationPath "$env:GITHUB_WORKSPACE\rel\percolator-windows-portable.zip"
     - name: Upload packages
       uses: actions/upload-artifact@v4
       with:

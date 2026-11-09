@@ -25,6 +25,8 @@ else()
   include(FetchContent)
 
   if(WIN32)
+    # GoogleTest then follows CMAKE_MSVC_RUNTIME_LIBRARY (set in the top
+    # CMakeLists.txt) instead of rewriting the compiler flags itself
     set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
   endif()
 

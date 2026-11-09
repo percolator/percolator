@@ -79,39 +79,6 @@ if not exist "%NSIS_DIR%" (
 setlocal
 set PATH=%PATH%;%INSTALL_DIR%\nsis
 
-::: Needed for system tests :::
-set PYTHON_DIR=%INSTALL_DIR%\python
-CALL :getabspath PYTHON_DIR "%PYTHON_DIR%"
-if not exist "%PYTHON_DIR%" (
-  echo Downloading and installing Python
-  call :downloadfile %PYTHON_URL% %INSTALL_DIR%\python.msi
-  cd /D "%INSTALL_DIR%"
-  msiexec /i python.msi /quiet TARGETDIR="%PYTHON_DIR%" /Li python_install.log
-)
-setlocal
-set PATH=%PATH%;%PYTHON_DIR%
-
-::: Needed for converters package and for system tests :::
-set ZLIB_DIR=%INSTALL_DIR%\zlib_x64
-if not exist "%ZLIB_DIR%" (
-  echo Downloading and installing ZLIB
-  call :downloadfile %ZLIB_64_URL% %INSTALL_DIR%\zlib.zip
-  %ZIP_EXE% x "%INSTALL_DIR%\zlib.zip" -o"%ZLIB_DIR%" > NUL
-  mkdir "%ZLIB_DIR%\bin" > NUL
-  move "%ZLIB_DIR%\zlib1.dll" "%ZLIB_DIR%\bin\zlib.dll" > NUL
-)
-set ZLIB_DIR=%ZLIB_DIR%\lib;%ZLIB_DIR%\include;%ZLIB_DIR%\bin
-set PATH=%PATH%;%ZLIB_DIR%
-
-::: needed for Elude :::
-set DIRENT_H_PATH=%VCToolsInstallDir%\include\dirent.h
-if not exist "%DIRENT_H_PATH%" (
-  echo Downloading and installing dirent.h
-  call :downloadfile %DIRENT_H_URL% %INSTALL_DIR%\dirent.zip
-  %ZIP_EXE% x -aoa "%INSTALL_DIR%\dirent.zip" -o"%INSTALL_DIR%" > NUL
-  copy "%INSTALL_DIR%\dirent-%DIRENT_H_VERSION%\include\dirent.h" "%DIRENT_H_PATH%" > NUL
-)
-
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::
 :::::::::::: END INSTALL DEPENDENCIES ::::::::::::::::
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::
