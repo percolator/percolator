@@ -184,6 +184,8 @@ class SetHandler {
   void readPSMs(std::istream& dataStream, std::string& psmLine,
     bool hasInitialValueRow, bool& separateSearches,
     std::vector<OptionalField>& optionalFields);
+  static void rescaleFoldScores(Scores& allScores,
+    const std::vector<std::pair<size_t, unsigned int> >& rows, size_t numFolds);
   void readAndScorePSMs(std::istream& dataStream, std::string& psmLine,
     bool hasInitialValueRow, std::vector<OptionalField>& optionalFields,
     std::vector<double>& rawWeights, Scores& allScores,

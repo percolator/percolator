@@ -715,6 +715,9 @@ void SetHandler::readAndScorePSMs(istream& dataStream, std::string& psmLine,
   unsigned int lineNr = (hasInitialValueRow ? 3u : 2u);
   bool readProteins = true;
   size_t nextFold = 0;  // first entry of lineFolds not before lineNr
+  // (index in allScores, fold) of the PSMs scored with a fold's weights
+  std::vector<std::pair<size_t, unsigned int> > foldRows;
+  foldRows.reserve(lineFolds.size());
   try {  // not indented: rethrowWithSource adds the file of the line
   do {
     if (lineNr % 1000000 == 0 && VERB > 1) {
@@ -746,6 +749,11 @@ void SetHandler::readAndScorePSMs(istream& dataStream, std::string& psmLine,
       }
       const bool inFold = nextFold < lineFolds.size() &&
                           lineFolds[nextFold].first == lineNr;
+      if (inFold) {
+        foldRows.emplace_back(
+            static_cast<size_t>(allScores.end() - allScores.begin()),
+            lineFolds[nextFold].second);
+      }
       allScores.scoreAndAddPSM(
           sh, inFold ? foldWeights.at(lineFolds[nextFold].second) : rawWeights,
           featurePool_);
@@ -755,9 +763,63 @@ void SetHandler::readAndScorePSMs(istream& dataStream, std::string& psmLine,
   } catch (const MyException& e) {
     rethrowWithSource(e, lineNr);
   }
-  
+  rescaleFoldScores(allScores, foldRows, foldWeights.size());
+
   if (VERB > 1) {
     std::cerr << "Found " << lineNr - (hasInitialValueRow ? 3u : 2u) << " PSMs" << std::endl;
+  }
+}
+
+/**
+ * Puts the scores of the PSMs scored with a fold's weights on the scale of
+ * the other PSMs, which the averaged weights scored: for each fold, an
+ * affine map gives its PSMs the mean and standard deviation of the scores
+ * of all other PSMs. Both groups are random samples of the PSMs, and the
+ * map uses no labels. The weights of each fold were rescaled by merge()
+ * with its test set's labels (score 0 at q = fdr), which on a small test set
+ * favours a fold whose decoys happen to score low; the map undoes that.
+ * Nothing changes if there are no other PSMs.
+ * @param rows (index in allScores, fold) of the PSMs scored by a fold
+ */
+void SetHandler::rescaleFoldScores(
+    Scores& allScores, const std::vector<std::pair<size_t, unsigned int> >& rows,
+    size_t numFolds) {
+  const size_t numScores = static_cast<size_t>(allScores.end() - allScores.begin());
+  if (rows.empty() || rows.size() >= numScores || numFolds == 0) return;
+  std::vector<double> n(numFolds, 0.0), sum(numFolds, 0.0), sumSq(numFolds, 0.0);
+  double restN = 0.0, restSum = 0.0, restSumSq = 0.0;
+  size_t next = 0;
+  Scores::iterator it = allScores.begin();
+  for (size_t ix = 0; ix < numScores; ++ix, ++it) {
+    const double s = it->score;
+    if (next < rows.size() && rows[next].first == ix) {
+      const unsigned int fold = rows[next++].second;
+      n[fold] += 1.0;
+      sum[fold] += s;
+      sumSq[fold] += s * s;
+    } else {
+      restN += 1.0;
+      restSum += s;
+      restSumSq += s * s;
+    }
+  }
+  if (restN < 2.0) return;
+  const double restMean = restSum / restN;
+  const double restSd = std::sqrt(std::max(0.0,
+      (restSumSq - restN * restMean * restMean) / (restN - 1.0)));
+  std::vector<double> scale(numFolds, 1.0), offset(numFolds, 0.0);
+  for (size_t fold = 0; fold < numFolds; ++fold) {
+    if (n[fold] < 2.0) continue;
+    const double mean = sum[fold] / n[fold];
+    const double sd = std::sqrt(std::max(0.0,
+        (sumSq[fold] - n[fold] * mean * mean) / (n[fold] - 1.0)));
+    if (!(sd > 0.0) || !(restSd > 0.0)) continue;
+    scale[fold] = restSd / sd;
+    offset[fold] = restMean - mean * scale[fold];
+  }
+  for (const auto& row : rows) {
+    ScoreHolder& sh = *(allScores.begin() + static_cast<std::ptrdiff_t>(row.first));
+    sh.score = sh.score * scale[row.second] + offset[row.second];
   }
 }
 

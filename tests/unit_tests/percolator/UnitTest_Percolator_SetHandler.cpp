@@ -16,6 +16,7 @@
  */
 
 #include <gtest/gtest.h>
+#include <cmath>
 #include <cstring>
 #include <filesystem>
 #include <fstream>
@@ -43,9 +44,15 @@ class SetHandlerEx : public SetHandler {
   public:
     SetHandlerEx(int maxPSMs) : SetHandler(maxPSMs) { }
     virtual ~SetHandlerEx() { }
-    int getOptionalFieldsEx(const std::string& headerLine, 
+    int getOptionalFieldsEx(const std::string& headerLine,
                             std::vector<OptionalField>& optionalFields) {
         return this->getOptionalFields(headerLine, optionalFields);
+    }
+    static void rescaleFoldScoresEx(
+        Scores& scores,
+        const std::vector<std::pair<size_t, unsigned int> >& rows,
+        size_t numFolds) {
+        rescaleFoldScores(scores, rows, numFolds);
     }
 };
 
@@ -191,6 +198,52 @@ TEST_F(SetHandlerTest, TestScoreWithFoldWeights)
         }
         sh.reset();
     }
+}
+
+// The scores of the PSMs scored by a fold get the mean and standard
+// deviation of the other PSMs' scores, per fold; the others are unchanged.
+TEST_F(SetHandlerTest, TestRescaleFoldScores)
+{
+    std::vector<PSMDescription> psms(16);
+    Scores scores(false);
+    const double rest[] = {-2.0, -1.0, 0.0, 1.0, 2.0, 3.0, -3.0, 0.5};
+    std::vector<std::pair<size_t, unsigned int> > rows;
+    for (int i = 0; i < 16; ++i) {
+        double s;
+        if (i < 8) {
+            s = rest[i];
+        } else if (i < 12) {
+            s = 10.0 + 2.0 * (i - 8);  // fold 0: 10, 12, 14, 16
+            rows.emplace_back(static_cast<size_t>(i), 0u);
+        } else {
+            s = -5.0 + 0.5 * (i - 12);  // fold 1: -5, -4.5, -4, -3.5
+            rows.emplace_back(static_cast<size_t>(i), 1u);
+        }
+        scores.addScoreHolder(ScoreHolder(s, LabelType::TARGET, &psms[i]));
+    }
+    SetHandlerEx::rescaleFoldScoresEx(scores, rows, 2);
+    auto moments = [&](int from, int to, double& mean, double& sd) {
+        double sum = 0.0, sumSq = 0.0;
+        for (int i = from; i < to; ++i) {
+            const double s = (scores.begin() + i)->score;
+            sum += s;
+            sumSq += s * s;
+        }
+        const double n = to - from;
+        mean = sum / n;
+        sd = std::sqrt((sumSq - n * mean * mean) / (n - 1.0));
+    };
+    double restMean, restSd, mean, sd;
+    moments(0, 8, restMean, restSd);
+    EXPECT_DOUBLE_EQ((scores.begin() + 2)->score, 0.0);  // others unchanged
+    EXPECT_NEAR(restMean, 0.0625, 1e-12);
+    for (int fold = 0; fold < 2; ++fold) {
+        moments(8 + 4 * fold, 12 + 4 * fold, mean, sd);
+        EXPECT_NEAR(mean, restMean, 1e-12) << fold;
+        EXPECT_NEAR(sd, restSd, 1e-12) << fold;
+    }
+    // the order within a fold is kept
+    EXPECT_LT((scores.begin() + 8)->score, (scores.begin() + 11)->score);
 }
 
 // Validate an input file with a mix of feature columns.
