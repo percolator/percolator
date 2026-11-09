@@ -8,15 +8,24 @@ jobs:
     steps:
     - uses: actions/checkout@v6
     - name: preinstall
-      run: sudo apt-get update 
+      run: sudo apt-get update
     - name: create_dirs
       run: mkdir -p ${{ github.workspace }}/release ${{ github.workspace }}/build
     - name: configure_and_make
       run: ./admin/builders/ubuntu64_build.sh -s ${{ github.workspace }}/.. -r ${{ github.workspace }}/release -b ${{ github.workspace }}/build
-    - name: unit_tests
-      run: cd ${{ github.workspace }}/build/percolator && make test
-    - name: system_test  
-      run: cd ${{ github.workspace }}/build/percolator && sudo make install && make test-install
+    - name: tests
+      # unit tests and system tests, on the binaries of the build tree
+      run: cd ${{ github.workspace }}/build/percolator && ctest --output-on-failure
+    - name: check_package
+      # the .deb must declare its library dependencies and hold no test binary
+      run: |
+        deb=$(ls ${{ github.workspace }}/release/*.deb)
+        dpkg-deb -f "$deb"
+        contents=$(dpkg-deb -c "$deb")
+        echo "$contents"
+        depends=$(dpkg-deb -f "$deb" Depends)
+        grep -q libgomp1 <<< "$depends"
+        if grep -q gtest_unit <<< "$contents"; then exit 1; fi
 
   build-almalinux:
     runs-on: ubuntu-latest
@@ -27,8 +36,8 @@ jobs:
       run: mkdir -p ../my_rel ../my_build
     - name: configure_and_make
       run: ./admin/builders/centos64_build.sh -s `pwd`/.. -r `pwd`/../my_rel -b `pwd`/../my_build
-    - name: unit_tests
-      run: cd ../my_build/percolator && make test
+    - name: tests
+      run: cd ../my_build/percolator && ctest --output-on-failure
 
   build-osx:
     runs-on: macos-15
@@ -38,10 +47,18 @@ jobs:
       run: mkdir -p ${{ github.workspace }}/release ${{ github.workspace }}/build
     - name: configure_and_make
       run: admin/builders/osx64_build.sh  -s ${{ github.workspace }}/.. -r ${{ github.workspace }}/release -b ${{ github.workspace }}/build
-    - name: unit_tests
-      run: cd ${{ github.workspace }}/build/percolator && make test
-    - name: system_test  
-      run: cd ${{ github.workspace }}/build/percolator && sudo make install && make test-install
+    - name: tests
+      run: cd ${{ github.workspace }}/build/percolator && ctest --output-on-failure
+    - name: check_binary
+      # minos must be 12.0 (CMAKE_OSX_DEPLOYMENT_TARGET); libomp should be
+      # linked statically, so that the binary runs without Homebrew
+      run: |
+        bin=${{ github.workspace }}/build/percolator/src/percolator
+        lipo -info "$bin"
+        otool -l "$bin" | grep -A4 LC_BUILD_VERSION
+        otool -L "$bin"
+        minos=$(otool -l "$bin" | awk '/LC_BUILD_VERSION/ {f = 1} f && $1 == "minos" && !done {print $2; done = 1}')
+        test "$minos" = "12.0"
 
   build-windows:
     runs-on: windows-2022
@@ -57,7 +74,82 @@ jobs:
       run: |
         echo %GITHUB_WORKSPACE%
         call "%GITHUB_WORKSPACE%\admin\builders\nativew64_build.bat" -s "%GITHUB_WORKSPACE%\.." -r "%GITHUB_WORKSPACE%\rel" -b "%GITHUB_WORKSPACE%\build"
-#    - name: unit_tests
-#      run: |
-#        CD my_build\percolator
-#        make test
+    - name: unit_tests
+      run: |
+        cd /D "%GITHUB_WORKSPACE%\build\percolator"
+        for /f "tokens=2 delims==" %%i in ('findstr /b "CMAKE_CTEST_COMMAND:INTERNAL=" CMakeCache.txt') do set "CTEST=%%i"
+        "%CTEST%" -C Release --output-on-failure -R UnitTest
+    - name: check_runtime_dlls
+      # with the static C++ runtime, percolator.exe must not need the
+      # Visual C++ Redistributable (only vcomp140.dll and system DLLs)
+      run: |
+        for /f "usebackq tokens=*" %%i in (`"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath`) do set "VSDIR=%%i"
+        call "%VSDIR%\VC\Auxiliary\Build\vcvars64.bat" > nul || exit /b 1
+        dumpbin /dependents "%GITHUB_WORKSPACE%\build\percolator\src\Release\percolator.exe" > deps.txt || exit /b 1
+        type deps.txt
+        findstr /i "msvcp140 vcruntime140" deps.txt > nul && (echo percolator.exe needs the Visual C++ runtime DLLs& exit /b 1)
+        exit /b 0
+
+  # ASan and UBSan over the unit tests, the system tests and a matrix of
+  # option combinations (tests/ci/option_matrix.sh); any report fails the job
+  sanitizers:
+    runs-on: ubuntu-latest
+    env:
+      ASAN_OPTIONS: detect_leaks=1
+      UBSAN_OPTIONS: print_stacktrace=1
+    steps:
+    - uses: actions/checkout@v6
+    - name: preinstall
+      # GCC 13's ASan fails at startup with the runners' high ASLR entropy
+      run: sudo sysctl -w vm.mmap_rnd_bits=28
+    - name: configure
+      run: >
+        cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo
+        -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-sanitize-recover=all -fno-omit-frame-pointer"
+        -DCMAKE_C_FLAGS="-fsanitize=address,undefined -fno-sanitize-recover=all -fno-omit-frame-pointer"
+        -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined"
+    - name: build
+      run: cmake --build build -j 4
+    - name: tests
+      run: cd build && ctest --output-on-failure
+    - name: option_matrix
+      run: bash tests/ci/option_matrix.sh build build/option_matrix
+
+  # Results must not depend on the number of threads: the option matrix
+  # with 1 and 4 threads must give byte-identical outputs. The job also
+  # checks that configuring works without network access when GoogleTest
+  # is installed.
+  determinism:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v6
+    - name: preinstall
+      run: sudo apt-get update && sudo apt-get install -y libgtest-dev
+    - name: configure_offline
+      run: >
+        HTTPS_PROXY=http://127.0.0.1:9 HTTP_PROXY=http://127.0.0.1:9
+        https_proxy=http://127.0.0.1:9 http_proxy=http://127.0.0.1:9
+        cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+        -DFETCHCONTENT_FULLY_DISCONNECTED=ON
+    - name: build
+      run: cmake --build build -j 4
+    - name: tests
+      run: cd build && ctest --output-on-failure
+    - name: thread_independence
+      run: bash tests/ci/check_determinism.sh build build/determinism
+
+  # Non-blocking: the number of distinct -Wall -Wextra warnings may only go
+  # down. Lower WARNING_BUDGET when warnings are fixed.
+  warnings:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    env:
+      WARNING_BUDGET: 51
+    steps:
+    - uses: actions/checkout@v6
+    - name: build
+      run: |
+        cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DNO_TESTS=ON -DCMAKE_CXX_FLAGS="-Wall -Wextra"
+        cmake --build build -j 4 2>&1 | tee build.log
+    - name: count
+      run: bash tests/ci/count_warnings.sh build.log "$WARNING_BUDGET"
