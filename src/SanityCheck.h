@@ -47,7 +47,8 @@ class SanityCheck {
                     // q < test FDR and no fewer than the reset would
                     // report: the folds' default vectors, or the vector of
                     // --init-weights, merged with the scheme of
-                    // setMergeScheme
+                    // setMergeScheme; their list merged with the scheme of
+                    // setSecondChanceMergeScheme has to be usable too
     POOLED          // in the merged out-of-fold list only, merged with the
                     // scheme of setMergeScheme
   };
@@ -77,7 +78,8 @@ class SanityCheck {
   // chance, after the per-bin count would have reset them
   bool secondChanceKept() const { return secondChanceKept_; }
   // the scheme of the final merge when the second chance keeps the trained
-  // SVMs; train-decoys, as counted, unless the caller sets another
+  // SVMs; train-decoys, as counted, unless the caller sets another, whose
+  // list the second chance then also checks
   void setSecondChanceMergeScheme(MergeNormalization scheme) {
     secondChanceMergeScheme_ = scheme;
   }
@@ -134,8 +136,10 @@ class SanityCheck {
   // with the scheme of setMergeScheme), and whether they keep w, which also
   // needs the right sign of the --default-direction feature. A list that
   // cannot be used, also by the lists of setReportedLists, counts -1 for w
-  // and 0 for the fallback. Leaves the bins, the weights and the random
-  // number generator as they are. Prints its decision.
+  // and 0 for the fallback. w is not kept either where its list merged with
+  // the scheme of setSecondChanceMergeScheme, which the run then uses,
+  // cannot be used. Leaves the bins, the weights and the random number
+  // generator as they are. Prints its decision.
   bool secondChance(const std::vector<Scores>& testset,
                     const std::vector<Scores>& trainset,
                     const std::vector<std::vector<double> >& w,

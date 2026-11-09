@@ -1950,6 +1950,132 @@ TEST_F(ScoresTest, CountMergedTargetsChecksEachBinOfTest)
     FeatureNames::resetNumFeatures();
 }
 
+// Two test bins of 150 targets with x in [10, 11.5) above 150 decoys with
+// x in (-1.5, 0], and training sets that hold the same scores, shifted by
+// -10.505 in the second fold. The bins are alike, so merged with none, or
+// with test, which takes the anchors from each bin's own scores, their 300
+// targets precede all 300 decoys: too good a separation, which ends the
+// run. Rescaled by their training sets (train-decoys, train), the second
+// bin moves up by 10.505 in x, its decoys reach the first bin's targets
+// below x = 10.51, and the list is usable, with 249 targets above the first
+// decoy (q = 1/249).
+class ShiftedTrainingSetsExample : public OneFeatureSets {
+  public:
+    ShiftedTrainingSetsExample() {
+        for (std::size_t bin = 0; bin < numBins; ++bin) {
+            const double shift = bin == 1u ? -10.505 : 0.0;
+            for (std::size_t j = 0; j < 150; ++j) {
+                const double x = 10.0 + 0.01 * static_cast<double>(j);
+                addTest(bin, x, true);
+                addTrain(bin, x + shift, true);
+            }
+            for (std::size_t j = 0; j < 150; ++j) {
+                const double x = -0.01 * static_cast<double>(j);
+                addTest(bin, x, false);
+                addTrain(bin, x + shift, false);
+            }
+        }
+    }
+};
+
+// The second chance counts the trained SVMs on the list merged with
+// train-decoys, but a run that keeps them is merged with the scheme given by
+// --merge-normalization (setSecondChanceMergeScheme), whose list has to be
+// usable as well. At --testFDR 0.005 no bin of the two examples reaches the
+// test FDR on its own (q = 1/150 at best), the lists of train-decoys do
+// (q = 1/249 and 1/250), and the default direction, lower x, counts none.
+// The second chance keeps the trained SVMs exactly where the run's merge
+// with the kept scheme completes: with train-decoys and train for the
+// shifted training sets, with every scheme but test for the bin that
+// separates too well, and never under --static, whose raw scores are merged
+// as with test. Before, it kept them with every scheme, and the run then
+// ended with "too good separation". The pooled check, which counts with the
+// run's scheme, keeps them where that merge completes too. With the pi0 of
+// separate searches, near 0 here, the anchors of train do not exist for the
+// bin that separates too well, and both checks again keep the trained SVMs
+// exactly where the merge completes. The checks leave the random state
+// alone.
+TEST_F(ScoresTest, SecondChanceChecksTheSchemeOfTheKeptRun)
+{
+    typedef MergeNormalization Scheme;
+    typedef SanityCheck::DirectionCheck Check;
+    FeatureNames::resetNumFeatures();
+    FeatureNames::setNumFeatures(1);
+    const ShiftedTrainingSetsExample shifted;
+    const TooGoodBinExample tooGoodBin;
+    const double fdr = 0.01, testFdr = 0.005;
+    const std::vector<double> defaultWeights = {-1.0, 0.0};
+    for (const OneFeatureSets* example :
+         {static_cast<const OneFeatureSets*>(&shifted),
+          static_cast<const OneFeatureSets*>(&tooGoodBin)}) {
+        const bool isShifted = example == &shifted;
+        EXPECT_EQ(isShifted ? 249 : 250,
+                  Scores::countMergedTargets(
+                      example->testBins(false), example->trainBins(false),
+                      example->w, Scheme::TRAIN_DECOYS, fdr, false, testFdr));
+        for (bool usePi0 : {false, true}) {
+            for (Check checkType : {Check::SECOND_CHANCE, Check::POOLED}) {
+                for (Scheme scheme : {Scheme::TEST, Scheme::TRAIN,
+                                      Scheme::TRAIN_DECOYS, Scheme::NONE}) {
+                    for (bool skipNormalizeScores : {false, true}) {
+                        SCOPED_TRACE(::testing::Message()
+                                     << "shifted " << isShifted << ", pi0 "
+                                     << usePi0 << ", pooled "
+                                     << (checkType == Check::POOLED)
+                                     << ", scheme " << static_cast<int>(scheme)
+                                     << ", --static " << skipNormalizeScores);
+                        SanityCheck check;
+                        check.addDefaultWeights(defaultWeights);
+                        check.setDirectionCheck(checkType);
+                        // as Caller sets an explicit scheme
+                        check.setMergeScheme(scheme, fdr, skipNormalizeScores);
+                        check.setSecondChanceMergeScheme(scheme);
+                        std::vector<Scores> bins = example->testBins(usePi0);
+                        std::vector<Scores> trainBins =
+                            example->trainBins(usePi0);
+                        std::vector<std::vector<double> > w(
+                            OneFeatureSets::numBins, std::vector<double>(2));
+                        check.getInitDirection(bins, trainBins, NULL, w,
+                                               testFdr, testFdr);
+                        ASSERT_EQ(std::vector<std::vector<double> >(
+                                      OneFeatureSets::numBins, defaultWeights),
+                                  w);
+                        w = example->w;
+                        PseudoRandom::setSeed(17u);
+                        const bool valid =
+                            check.validateDirection(bins, trainBins, w);
+                        EXPECT_EQ(17u, PseudoRandom::getSeed());
+                        const bool completes =
+                            mergeCompletes(*example, usePi0, scheme,
+                                           skipNormalizeScores, fdr);
+                        // the per-bin count fails in every case, and the
+                        // count of train-decoys keeps where the list of the
+                        // kept scheme can be used
+                        EXPECT_EQ(completes, valid);
+                        EXPECT_EQ(checkType == Check::SECOND_CHANCE &&
+                                      completes,
+                                  check.secondChanceKept());
+                        if (checkType == Check::SECOND_CHANCE && !usePi0) {
+                            const bool usable =
+                                !skipNormalizeScores &&
+                                (isShifted ? scheme == Scheme::TRAIN ||
+                                                 scheme == Scheme::TRAIN_DECOYS
+                                           : scheme != Scheme::TEST);
+                            EXPECT_EQ(usable, completes);
+                        }
+                        EXPECT_EQ(valid ? example->w
+                                        : std::vector<std::vector<double> >(
+                                              OneFeatureSets::numBins,
+                                              defaultWeights),
+                                  w);
+                    }
+                }
+            }
+        }
+    }
+    FeatureNames::resetNumFeatures();
+}
+
 // countTargetsBelowFdr must report the same number of targets below the FDR
 // threshold as calcScoresAndQvals, also with many tied scores, with and
 // without the mix-max correction.

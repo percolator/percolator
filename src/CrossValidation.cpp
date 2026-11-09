@@ -745,7 +745,8 @@ void CrossValidation::postIterationProcessing(Scores& fullset,
   // When the second chance of the direction check kept the trained SVMs,
   // whose test bins were too small for the per-bin count, the bins are
   // merged as it counted them, with the training-set decoys, unless the
-  // caller chose another scheme for this case. --static (skipNormalizeScores_)
+  // caller chose another scheme for this case, whose list the second chance
+  // has then checked as well. --static (skipNormalizeScores_)
   // rescales nothing and ignores the scheme, after a second chance too: the
   // bins are merged as with test, which also makes -N rescale the scores of
   // all PSMs as before the schemes existed.

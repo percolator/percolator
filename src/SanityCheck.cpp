@@ -173,9 +173,26 @@ bool SanityCheck::secondChance(const vector<Scores>& testset,
                                       reportedLists_));
   }
   const bool countsKeep = trainedCount > 0 && trainedCount >= resetCount;
+  // A run that keeps the trained SVMs is merged with the scheme of
+  // setSecondChanceMergeScheme. Another scheme than train-decoys, given by
+  // --merge-normalization, can end that run where train-decoys does not:
+  // test checks the separation of each bin, and the scores of test, train
+  // and none are merged on another scale. Its list therefore has to be
+  // usable as well; the count of train-decoys still decides. --static
+  // merges the raw scores, which the count above has already checked.
+  const bool otherKeptScheme =
+      !skipNormalizeScores_ &&
+      secondChanceMergeScheme_ != MergeNormalization::TRAIN_DECOYS;
+  const bool unusableAsKept =
+      countsKeep && otherKeptScheme &&
+      Scores::countMergedTargets(testset, trainset, w,
+                                 secondChanceMergeScheme_, mergeFdr_,
+                                 skipNormalizeScores_, test_fdr_,
+                                 reportedLists_) < 0;
   // the sign check of --default-direction applies as after a passed count
-  const bool wrongSign = countsKeep && wrongSignOfDefaultDirection(w);
-  const bool keep = countsKeep && !wrongSign;
+  const bool wrongSign =
+      countsKeep && !unusableAsKept && wrongSignOfDefaultDirection(w);
+  const bool keep = countsKeep && !unusableAsKept && !wrongSign;
   cerr << "Second chance on the merged out-of-fold list"
        << (skipNormalizeScores_ ? "" : ", rescaled by the training decoys")
        << ": ";
@@ -189,6 +206,12 @@ bool SanityCheck::secondChance(const vector<Scores>& testset,
          << " of a reset";
     if (!skipNormalizeScores_) {
       cerr << " merged with " << mergeNormalizationName(mergeScheme_);
+    }
+    if (unusableAsKept) {
+      cerr << "; merged with "
+           << mergeNormalizationName(secondChanceMergeScheme_)
+           << ", as a run that keeps them would be, the trained SVMs give no "
+           << "usable list (" << kUnusableListReasons << ")";
     }
   }
   if (overRule_) {
