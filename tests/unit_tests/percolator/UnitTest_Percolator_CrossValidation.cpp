@@ -19,6 +19,7 @@
 #include "SetHandler.h"
 #include "CrossValidation.h"
 #include "Globals.h"
+#include "PseudoRandom.h"
 
 /* A subclass of CrossValidation that gives us access to some
  * protected fields.
@@ -81,6 +82,10 @@ void CrossValidationTest::TearDown()
 // (N) for any number of folds.
 TEST_F(CrossValidationTest, doStepTest)
 {
+  // The folds are drawn with the process-wide generator, which other tests
+  // also draw from; start from the default seed so that the folds, and the
+  // estimates checked below, do not depend on which tests ran before.
+  PseudoRandom::setSeed(1u);
   // the default 3 folds first, then other numbers of folds; with 2 folds the
   // training sets hold only about N/2 targets above the first decoy, too few
   // to reach q < testFdr in some of them, and the estimate is about N/2
