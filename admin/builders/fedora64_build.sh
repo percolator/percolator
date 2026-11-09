@@ -31,7 +31,6 @@ echo "The Builder $0 is building the Percolator packages with src=${src_dir} and
 whoami;
 
 sudo dnf install -y gcc gcc-c++ make cmake wget rpm-build
-sudo dnf install -y zlib-devel bzip2-devel
 
 cd ${src_dir}
 
