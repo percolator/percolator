@@ -32,6 +32,7 @@
 
 #include "CompositionSorter.h"
 #include "Globals.h"
+#include "PsmStore.h"
 #include "Scores.h"
 
 namespace {
@@ -63,7 +64,7 @@ class RandomPsms {
         for (int i = 0; i < numPsms; ++i) {
             peptides_.push_back("K." + sequences[next() % sequences.size()] +
                                 ".R");
-            psms_[i] = PSMDescription(peptides_.back());
+            store_.storeStrings(psms_[i], "", peptides_.back(), {});
             psms_[i].scan = static_cast<unsigned int>(next() % (numPsms + 1));
             const bool isTarget = next() % 2 == 0;
             scores_.addScoreHolder(ScoreHolder(
@@ -81,6 +82,7 @@ class RandomPsms {
     }
     unsigned int seed_;
     std::deque<std::string> peptides_;
+    PsmStore store_;  // holds the peptides of psms_
     std::vector<PSMDescription> psms_;
     Scores scores_{false};
 };

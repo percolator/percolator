@@ -33,6 +33,7 @@
 #endif
 
 #include "ParallelSort.h"
+#include "PsmStore.h"
 #include "ScoreHolder.h"
 
 namespace {
@@ -76,8 +77,7 @@ class PsmSet {
     }
     for (int i = 0; i < n; ++i) {
       PSMDescription& psm = psms_[i];
-      psm.setId(ids_[i]);
-      psm.setPeptide(peptides_[i]);
+      store_.storeStrings(psm, ids_[i], peptides_[i], {});
       psm.setLineNr(static_cast<unsigned int>(i));
       psm.scan = nextRandom(seed) % (n / 3 + 1);
       psm.specFileNr = nextRandom(seed) % 2;
@@ -92,6 +92,7 @@ class PsmSet {
 
  private:
   std::vector<std::string> ids_, peptides_;
+  PsmStore store_;  // holds the ids and peptides of psms_
   std::vector<PSMDescription> psms_;
   std::vector<ScoreHolder> scores_;
 };

@@ -21,6 +21,7 @@
 
 #include <gtest/gtest.h>
 #include "PSMDescription.h"
+#include "PsmStore.h"
 
 TEST(PSMDescriptionTest, CheckRemovePTMs)
 {
@@ -52,15 +53,18 @@ TEST(PSMDescriptionTest, CheckPeptideSequenceView)
 {
     const char* flanked[][2] = {{"K.PEPTIDE.R", "PEPTIDE"}, {"-.A.-", "A"},
                                 {"K.M[16]DEK.-", "M[16]DEK"}};
+    PsmStore store;  // holds the peptides of the PSMs
     for (auto& pair : flanked) {
-        PSMDescription psm{std::string_view(pair[0])};
+        PSMDescription psm;
+        store.storeStrings(psm, "", pair[0], {});
         EXPECT_TRUE(PSMDescription::hasFlanks(pair[0])) << pair[0];
         EXPECT_EQ(pair[1], psm.getPeptideSequenceView()) << pair[0];
         EXPECT_EQ(pair[1], psm.getPeptideSequence()) << pair[0];
     }
     for (const char* other : {"", "A", "AB", "K.R", "K..R", "PEPTIDE",
                               "K.PEPTIDE", "PEPTIDE.R", ".PEPTIDE."}) {
-        PSMDescription psm{std::string_view(other)};
+        PSMDescription psm;
+        store.storeStrings(psm, "", other, {});
         EXPECT_FALSE(PSMDescription::hasFlanks(other)) << other;
         EXPECT_EQ(other, psm.getPeptideSequenceView()) << other;
     }
