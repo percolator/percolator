@@ -71,9 +71,12 @@ class CrossValidation {
   // the weights of each fold for unnormalized features, as getAvgWeights
   void getRawFoldWeights(std::vector<std::vector<double> >& weights,
                          const Normalizer* pNorm);
-  // (input line, fold) of every PSM in the test sets, sorted by line
+  // (input line, fold) of every PSM in the test sets, sorted by line, as
+  // recorded by postIterationProcessing when setRecordTestFolds(true) was
+  // called; the test sets themselves are emptied by the merge. Moves the
+  // list out.
   void getTestFolds(
-      std::vector<std::pair<unsigned int, unsigned int> >& lineFolds) const;
+      std::vector<std::pair<unsigned int, unsigned int> >& lineFolds);
 
   void inline setSelectedCpos(double cpos) { selectedCpos_ = cpos; }
   double inline getSelectedCpos() { return selectedCpos_; }
@@ -97,6 +100,9 @@ class CrossValidation {
   // FeatureMemoryPool for which canTrainInPlace(numFeatures) holds; set
   // before preIterationSetup
   void inline setSvmRowsInPlace(bool on) { svmRowsInPlace_ = on; }
+  // let postIterationProcessing list the input line and fold of every test
+  // PSM for getTestFolds, before the merge empties the test sets (-N)
+  void inline setRecordTestFolds(bool on) { recordTestFolds_ = on; }
 
  protected:
   std::vector<AlgIn> svmInputs_;
@@ -108,6 +114,8 @@ class CrossValidation {
   bool quickValidation_;
   bool classicTraining_ = false;
   bool svmRowsInPlace_ = false;
+  bool recordTestFolds_ = false;
+  std::vector<std::pair<unsigned int, unsigned int> > testFolds_;
   bool usePi0_;
   bool reportPerformanceEachIteration_;
 
@@ -168,6 +176,8 @@ class CrossValidation {
   int doStep(const Normalizer* pNorm, double selectionFdr);
   // throws, or warns with --no-terminate, if a weight of a fold is not finite
   void checkWeightsFinite() const;
+  // lists the input line and fold of every test PSM in testFolds_
+  void recordTestFolds();
 
   void printSetWeights(ostream& weightStream, unsigned int set);
   void printRawSetWeights(ostream& weightStream,

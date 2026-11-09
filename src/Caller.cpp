@@ -1352,6 +1352,9 @@ int Caller::run() {
     crossValidation.setSvmRowsInPlace(
         inPlaceTraining_ && setHandler.getFeaturePool().canTrainInPlace(
                                 DataSet::getNumFeatures()));
+    // with -N, the test fold of each subset PSM, for getTestFolds below
+    crossValidation.setRecordTestFolds(setHandler.getMaxPSMs() > 0u &&
+                                       numFolds > 1u);
 
     int firstNumberOfPositives =
         crossValidation.preIterationSetup(allScores, check_, pNorm_.get());

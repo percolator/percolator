@@ -709,6 +709,7 @@ void CrossValidation::postIterationProcessing(Scores& fullset,
   // the default direction of validateDirection was the last use of the
   // training sets; merge empties the test sets
   std::vector<Scores>().swap(trainScores_);
+  if (recordTestFolds_) recordTestFolds();
   fullset.merge(testScores_, selectionFdr_, skipNormalizeScores_, weights_);
 }
 
@@ -785,19 +786,24 @@ void CrossValidation::getRawFoldWeights(
 }
 
 void CrossValidation::getTestFolds(
-    std::vector<std::pair<unsigned int, unsigned int> >& lineFolds) const {
+    std::vector<std::pair<unsigned int, unsigned int> >& lineFolds) {
   lineFolds.clear();
+  lineFolds.swap(testFolds_);
+}
+
+void CrossValidation::recordTestFolds() {
+  testFolds_.clear();
   size_t numPsms = 0;
   for (const Scores& testSet : testScores_) {
     numPsms += testSet.size();
   }
-  lineFolds.reserve(numPsms);
+  testFolds_.reserve(numPsms);
   for (unsigned int set = 0; set < testScores_.size(); ++set) {
     for (const ScoreHolder& sh : testScores_[set]) {
-      lineFolds.emplace_back(sh.pPSM->getLineNr(), set);
+      testFolds_.emplace_back(sh.pPSM->getLineNr(), set);
     }
   }
-  std::sort(lineFolds.begin(), lineFolds.end());
+  std::sort(testFolds_.begin(), testFolds_.end());
 }
 
 void CrossValidation::printAllWeightsColumns(
