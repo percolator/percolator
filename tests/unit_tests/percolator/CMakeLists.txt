@@ -109,3 +109,9 @@ endif()
 # Enable test
 # =============================
 add_test(NAME UnitTest_Percolator_RunAllTests COMMAND gtest_unit)
+# Idle OpenMP threads sleep instead of spinning (the default of libgomp is to
+# spin for a while). Alone this makes no difference; when the machine is busy,
+# e.g. two test runs at once, the spinning threads take the cores from the
+# working ones and the tests take several times longer.
+set_tests_properties(UnitTest_Percolator_RunAllTests PROPERTIES
+                     ENVIRONMENT "OMP_WAIT_POLICY=passive")

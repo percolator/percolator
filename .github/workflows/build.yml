@@ -2,6 +2,12 @@ name: Build
 
 on: [push, pull_request]
 
+# Idle OpenMP threads sleep instead of spinning: the runners have few cores,
+# and spinning threads slow the tests down several times when the cores are
+# shared. The results do not depend on it.
+env:
+  OMP_WAIT_POLICY: passive
+
 jobs:
   build-ubuntu:
     runs-on: ubuntu-latest

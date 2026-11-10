@@ -49,6 +49,7 @@ foreach(current_system_test ${tests})
     add_test(NAME ${current_system_test}
              COMMAND ${CMAKE_COMMAND} -E env
                      "SYSTEM_TEST_BIN_DIR=$<TARGET_FILE_DIR:${binary}>"
+                     "OMP_WAIT_POLICY=passive"
                      ${Python3_EXECUTABLE}
                      ${system_tests_dir}/${current_system_test}.py)
   endif()

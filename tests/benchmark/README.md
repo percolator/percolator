@@ -70,6 +70,14 @@ writing (`write PSM results`, `write peptide results`). The stages of
 cross-validation (`build SVM input`, `SVM training`, `grid evaluation`
 and others) are parts of `training`.
 
+On a machine that is shared with other jobs, set `OMP_WAIT_POLICY=passive`
+for timings and tests. By default the idle threads of GCC's OpenMP runtime
+spin for a while before they sleep, which costs nothing on idle cores but
+takes them from other work when all cores are busy: two unit test runs
+started together took 73 s each by default and 14 s with passive waiting
+(13 s alone, either way). ctest and the CI workflow set it. The results do
+not depend on it.
+
 Example:
 
     python3 make_synthetic_pin.py -n 1000000 --mode concatenated -o 1M.pin
