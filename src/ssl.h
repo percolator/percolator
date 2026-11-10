@@ -99,6 +99,11 @@ class AlgIn {
       rowPointers_.clear();
       Y.clear();
     }
+    /* the number of examples there is room for */
+    size_t capacity() const {
+      return rowsInPlace_ ? rowPointers_.capacity()
+                          : rowsCapacity_ / static_cast<size_t>(n);
+    }
     /* room for numExamples examples, allocated but only touched when used */
     void reserve(size_t numExamples) {
       if (rowsInPlace_) {

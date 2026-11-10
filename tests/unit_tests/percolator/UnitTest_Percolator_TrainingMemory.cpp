@@ -359,6 +359,57 @@ TEST(TrainingMemoryTest, largeTrainingSetEqualsRowByRowAppend) {
   FeatureNames::resetNumFeatures();
 }
 
+// reserveTrainingSet makes room for the decoys and the accepted targets
+// and an eighth more, not for all PSMs, and keeps a buffer that is large
+// enough.
+TEST(TrainingMemoryTest, reservesRoomForTheTrainingSetOnly) {
+  const unsigned int numFeatures = 3;
+  FeatureNames::resetNumFeatures();
+  FeatureNames::setNumFeatures(numFeatures);
+  for (bool inPlace : {false, true}) {
+    const unsigned int numPsms = 4000;
+    std::vector<double> features(numPsms * (numFeatures + 1), 1.0);
+    std::vector<PSMDescription> psms(numPsms);
+    Scores scores(false);
+    for (unsigned int i = 0; i < numPsms; ++i) {
+      psms[i].features = &features[i * (numFeatures + 1)];
+      psms[i].scan = i;
+      // 1000 decoys; 3000 targets, of which 600 with q <= 0.01
+      ScoreHolder sh(1.0 * (numPsms - i),
+                     i % 4 == 3 ? LabelType::DECOY : LabelType::TARGET,
+                     &psms[i]);
+      sh.q = i < 800 ? 0.01 : 0.5;
+      scores.addScoreHolder(sh);
+    }
+    AlgIn data(static_cast<int>(numFeatures) + 1, inPlace);
+    scores.reserveTrainingSet(data, 0.01);
+    EXPECT_EQ(0, data.m);
+    EXPECT_GE(data.capacity(), 1600u + 200u);
+    EXPECT_LT(data.capacity(), 2000u);
+    const std::size_t capacity = data.capacity();
+    scores.generateNegativeTrainingSet(data, 1.0);
+    scores.generatePositiveTrainingSet(data, 0.01, 1.0, false);
+    EXPECT_EQ(1000, data.negatives);
+    EXPECT_EQ(600, data.positives);
+    const double* firstRow = data.row(0);
+    // the next, smaller, training set uses the same buffer
+    scores.reserveTrainingSet(data, 0.001);
+    EXPECT_EQ(0, data.m);
+    EXPECT_EQ(capacity, data.capacity());
+    scores.generateNegativeTrainingSet(data, 1.0);
+    scores.generatePositiveTrainingSet(data, 0.001, 1.0, false);
+    EXPECT_EQ(1000, data.m);
+    EXPECT_EQ(firstRow, data.row(0));
+    // a larger one gets a new buffer
+    scores.reserveTrainingSet(data, 0.5);
+    EXPECT_GE(data.capacity(), 4000u + 500u);
+    scores.generateNegativeTrainingSet(data, 1.0);
+    scores.generatePositiveTrainingSet(data, 0.5, 1.0, false);
+    EXPECT_EQ(4000, data.m);
+  }
+  FeatureNames::resetNumFeatures();
+}
+
 // resizeExamples and set give the examples of add, clear keeps the matrix,
 // and examples written before a resize survive it.
 TEST(TrainingMemoryTest, examplesSetInPlaceEqualAppendedOnes) {

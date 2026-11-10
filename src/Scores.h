@@ -238,6 +238,7 @@ class Scores {
                                    const double cpos,
                                    const bool trainBestPositive) const;
   void generateNegativeTrainingSet(AlgIn& data, const double cneg);
+  void reserveTrainingSet(AlgIn& data, const double fdr) const;
 
   void recalculateSizes();
   // singleBin: the scores are the only cross-validation bin, so they need

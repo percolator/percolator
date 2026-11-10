@@ -1286,13 +1286,32 @@ int appendTrainingRows(const std::vector<ScoreHolder>& scores, AlgIn& data,
 }  // namespace
 
 /**
+ * Empties data and makes room for the training set that
+ * generateNegativeTrainingSet and generatePositiveTrainingSet with fdr
+ * build: the decoys and the targets with q-value at most fdr. A buffer
+ * that is too small is replaced by one with an eighth more room than
+ * needed, so that it is not replaced again, and its used part written to
+ * new memory, each time the next training set is a little larger, as it is
+ * from one iteration to the next.
+ */
+void Scores::reserveTrainingSet(AlgIn& data, const double fdr) const {
+  data.clear();
+  std::size_t numExamples = 0;
+  for (const ScoreHolder& sh : scores_) {
+    if (sh.isDecoy() || (sh.isTarget() && sh.q <= fdr)) ++numExamples;
+  }
+  if (data.capacity() < numExamples) {
+    data.reserve(numExamples + numExamples / 8u);
+  }
+}
+
+/**
  * Starts a new training set in data with the decoys, in the order of this
- * set. generatePositiveTrainingSet then appends the positives.
+ * set. generatePositiveTrainingSet then appends the positives. The buffer
+ * of data grows as needed; reserveTrainingSet sizes it beforehand.
  */
 void Scores::generateNegativeTrainingSet(AlgIn& data, const double /*cneg*/) {
   data.clear();
-  // room for the largest possible training set; only touched when used
-  data.reserve(scores_.size());
   data.negatives = appendTrainingRows(
       scores_, data, -1, [](const ScoreHolder& sh) { return sh.isDecoy(); });
 }

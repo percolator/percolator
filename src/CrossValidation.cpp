@@ -475,6 +475,7 @@ int CrossValidation::doStep(const Normalizer* pNorm, double selectionFdr) {
             Scores& nestedTrainSet = nestedTrainScores.empty()
                                          ? trainScores_[set]
                                          : nestedTrainScores[nestedFold];
+            nestedTrainSet.reserveTrainingSet(svmInput, selectionFdr);
             nestedTrainSet.generateNegativeTrainingSet(svmInput, 1.0);
             nestedTrainSet.generatePositiveTrainingSet(
                 svmInput, selectionFdr, 1.0, trainBestPositive_);
@@ -693,6 +694,7 @@ int CrossValidation::mergeCpCnPairs(
            set < static_cast<int>(endSet); ++set) {
         AlgIn& svmInput = svmInputs[
             (static_cast<unsigned int>(set) - firstSet) * nestedXvalBins_];
+        trainScores_[set].reserveTrainingSet(svmInput, selectionFdr);
         trainScores_[set].generateNegativeTrainingSet(svmInput, 1.0);
         trainScores_[set].generatePositiveTrainingSet(
             svmInput, selectionFdr, 1.0, trainBestPositive_);
