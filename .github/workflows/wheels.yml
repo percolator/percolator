@@ -1,0 +1,86 @@
+name: Wheels
+
+# Builds the binaries-only Python wheels (pyproject.toml) with cibuildwheel
+# and the source distribution, tests each wheel (admin/wheels/check_wheel.py)
+# and uploads them as artifacts. Nothing is published: the name on PyPI is
+# still to be decided (see pyproject.toml).
+#
+# The Linux wheel was built and compared with the CMake build when this was
+# written, without cibuildwheel's container. The macOS and Windows jobs have
+# not run yet.
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - pyproject.toml
+      - python/**
+      - admin/wheels/**
+      - .github/workflows/wheels.yml
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  wheel:
+    name: wheel-${{ matrix.platform }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux-x86_64
+            os: ubuntu-latest
+          - platform: linux-aarch64
+            os: ubuntu-24.04-arm
+          - platform: macos-arm64
+            os: macos-15
+          - platform: macos-x86_64
+            os: macos-15-intel
+          - platform: windows-amd64
+            os: windows-2022
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@v6
+    - name: build_and_test
+      # one py3-none-<platform> wheel; the test command runs the installed
+      # percolator and qvality commands
+      uses: pypa/cibuildwheel@v3.2.1
+      with:
+        output-dir: wheelhouse
+    - name: check_contents
+      shell: bash
+      run: |
+        python=$(command -v python || command -v python3)
+        "$python" admin/wheels/check_wheel.py --wheel wheelhouse/*.whl
+    - name: check_macos_binaries
+      # minos 12.0, and no Homebrew library (libomp is linked statically)
+      if: runner.os == 'macOS'
+      run: |
+        unzip -q wheelhouse/*.whl -d unpacked
+        for bin in unpacked/percolator_launcher/bin/percolator unpacked/percolator_launcher/bin/qvality; do
+          lipo -info "$bin"
+          libs=$(otool -L "$bin")
+          echo "$libs"
+          minos=$(otool -l "$bin" | awk '/LC_BUILD_VERSION/ {f = 1} f && $1 == "minos" && !done {print $2; done = 1}')
+          echo "minos $minos"
+          test "$minos" = "12.0"
+          if grep -q -e libomp -e /opt/homebrew -e /usr/local <<< "$libs"; then
+            echo "$bin needs a library that the wheel does not hold"
+            exit 1
+          fi
+        done
+    - uses: actions/upload-artifact@v4
+      with:
+        name: wheel-${{ matrix.platform }}
+        path: wheelhouse/*.whl
+
+  sdist:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v6
+    - name: build
+      run: pipx run build --sdist
+    - uses: actions/upload-artifact@v4
+      with:
+        name: sdist
+        path: dist/*.tar.gz

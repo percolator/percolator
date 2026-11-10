@@ -24,3 +24,11 @@ job with GCC 9 does not block yet.
 Results can differ in a printed digit between platforms, since compilers and
 math libraries round differently; the Build workflow lists the differences
 (job platform-differences).
+
+A Python wheel that holds only the percolator and qvality executables is
+built with `python -m build --wheel` (pyproject.toml), and for all
+platforms by the Wheels workflow. Its name on PyPI is not decided yet, and
+nothing is uploaded there.
+
+The cleanest way to build is to use the vagrant virtual machine
+system, which can be setup using the script: admin/vagrant/manager.sh
