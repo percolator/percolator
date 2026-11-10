@@ -984,9 +984,10 @@ void Caller::calculatePSMProb(Scores& allScores, bool isUniquePeptideRun) {
          << endl;
   }
 
-  StageTimer stageTimer(isUniquePeptideRun ? "peptide-level statistics"
-                                            : "PSM-level statistics");
+  // The weed-out, the statistics and the writing of the results are timed
+  // apart: the stages do not overlap, so their times add up.
   if (isUniquePeptideRun) {
+    StageTimer stageTimer("peptide weed-out");
     if (ProteinProbEstimator::getCalcProteinLevelProb()) {
       allScores.weedOutRedundant(protEstimator_->getPeptideSpecCounts(),
                                  protEstimator_->getSpecCountQvalThreshold());
@@ -994,6 +995,7 @@ void Caller::calculatePSMProb(Scores& allScores, bool isUniquePeptideRun) {
       allScores.weedOutRedundant();
     }
   } else if (targetDecoyCompetition_) {
+    StageTimer stageTimer("PSM weed-out (target-decoy competition)");
     allScores.weedOutRedundantTDC();
     if (VERB > 0) {
       std::cerr << "Selected best-scoring PSM per file+scan+expMass"
@@ -1010,6 +1012,8 @@ void Caller::calculatePSMProb(Scores& allScores, bool isUniquePeptideRun) {
     std::cerr << "Calculating q values." << std::endl;
   }
 
+  auto stageTimer = std::make_unique<StageTimer>(
+      isUniquePeptideRun ? "peptide-level statistics" : "PSM-level statistics");
   int foundPSMs = allScores.calcQvals(testFdr_);
 
   if (VERB > 0 && writeOutput) {
@@ -1032,6 +1036,9 @@ void Caller::calculatePSMProb(Scores& allScores, bool isUniquePeptideRun) {
     allScores.calcPep(useIrlsPep_, useInterpolatingPep_, usePavaPep_,
                       useTdcPep_);
   }
+  stageTimer.reset();
+  StageTimer writeTimer(isUniquePeptideRun ? "write peptide results"
+                                           : "write PSM results");
   writeResults(allScores, isUniquePeptideRun, writeOutput);
 }
 
@@ -1387,6 +1394,7 @@ int Caller::run() {
   if (inputFNs_.size() == 1) {
     inputFN_ = inputFNs_.at(0);
   } else if (inputFNs_.size() > 1) {
+    StageTimer stageTimer("concatenate input files");
     tmpDir_ = std::make_unique<TmpDir>();
     ValidateTabFile validateTab;
     inputFN_ = validateTab.concatenateMultiplePINs(inputFNs_, tmpDir_->getPath(),

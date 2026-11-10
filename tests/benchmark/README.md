@@ -59,7 +59,16 @@ PEP tail. Such changes need data whose score distributions differ in shape,
 such as unequal variances or heavier tails, or real data with a ground truth.
 
 Per-stage wall clock and CPU times are printed to stderr with `-v 3`
-(lines starting with `Stage`).
+(lines starting with `Stage`). The stages at the top level do not
+overlap: `validate input`, `concatenate input files` (several input
+files), `read input`, `normalize features`, `populate scores`,
+`training`, `post-iteration processing`, then for the PSMs and for the
+peptides the weed-out (`peptide weed-out`, or `PSM weed-out
+(target-decoy competition)` with -Y), the statistics (`PSM-level
+statistics`, `peptide-level statistics`: q-values and PEPs) and the
+writing (`write PSM results`, `write peptide results`). The stages of
+cross-validation (`build SVM input`, `SVM training`, `grid evaluation`
+and others) are parts of `training`.
 
 Example:
 
