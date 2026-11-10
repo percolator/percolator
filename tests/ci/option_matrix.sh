@@ -11,10 +11,17 @@
 #   The percolator options (e.g. --num-threads 4) are added to every
 #   percolator run. MATRIX_PSMS sets the number of PSMs of the synthetic
 #   inputs (default 20000). PYTHON names the Python 3 interpreter.
+#   The binaries are those of a single-configuration build tree
+#   (<build-dir>/src/percolator) or of the Release configuration of a Visual
+#   Studio one (<build-dir>/src/Release/percolator.exe; run the script with
+#   Git Bash there). MATRIX_PERCOLATOR and MATRIX_QVALITY name other
+#   programs to run, e.g. the commands of an installed wheel.
+#   tests/ci/matrix_hashes.py lists the hashes of the outputs, for comparing
+#   platforms.
 # Exits with status 1 if any run fails.
 set -u
 if [ $# -lt 2 ]; then
-  sed -n '2,15p' "$0" >&2
+  sed -n '2,22p' "$0" >&2
   exit 2
 fi
 BUILD=$1
@@ -24,13 +31,19 @@ EXTRA=("$@")
 SRC=$(cd "$(dirname "$0")/../.." && pwd)
 PERC=$BUILD/src/percolator
 QVAL=$BUILD/src/qvality/qvality
+if [ ! -e "$PERC" ] && [ -e "$BUILD/src/Release/percolator.exe" ]; then
+  PERC=$BUILD/src/Release/percolator.exe
+  QVAL=$BUILD/src/qvality/Release/qvality.exe
+fi
+PERC=${MATRIX_PERCOLATOR:-$PERC}
+QVAL=${MATRIX_QVALITY:-$QVAL}
 EX=$SRC/data/percolator/tab/percolatorTab
 QD=$SRC/data/qvality
 NPSMS=${MATRIX_PSMS:-20000}
 PY=${PYTHON:-python3}
 
 for exe in "$PERC" "$QVAL"; do
-  if [ ! -x "$exe" ]; then
+  if ! command -v "$exe" > /dev/null; then
     echo "error: $exe not found" >&2
     exit 2
   fi
