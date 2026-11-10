@@ -323,7 +323,7 @@ bool SanityCheck::validateDirection(vector<Scores>& testset,
  * line of normalized weights and a line of raw weights. The weights are
  * used by position, so the names, if present, must be the feature names of
  * the input, and the raw weights line must hold one finite number per
- * feature plus m0.
+ * feature plus m0, with at least one feature weight that is not 0.
  */
 void SanityCheck::readWeights(istream& weightStream, vector<double>& w) {
   const size_t numWeights = FeatureNames::getNumFeatures() + 1;
@@ -402,6 +402,17 @@ void SanityCheck::readWeights(istream& weightStream, vector<double>& w) {
       oss << "holds " << raw.size();
     }
     oss << "." << std::endl;
+    throw MyException(oss.str());
+  }
+  // Feature weights that are all 0 score every PSM alike, whatever m0 is:
+  // they cannot order the PSMs, and the run would end later, where the
+  // scores of the cross-validation bins cannot be rescaled.
+  if (numWeights > 1u && std::all_of(raw.begin(), raw.end() - 1,
+                                     [](double x) { return x == 0.0; })) {
+    ostringstream oss;
+    oss << "ERROR: Line " << lineNr + 1 << " of the weights file "
+        << initWeightFN_ << " gives every feature the weight 0, so these "
+        << "weights cannot order the PSMs." << std::endl;
     throw MyException(oss.str());
   }
   std::copy(raw.begin(), raw.end(), w.begin());

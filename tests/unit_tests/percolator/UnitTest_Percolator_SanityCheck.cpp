@@ -79,3 +79,22 @@ TEST_F(ReadWeightsTest, RejectsMissingOrNonFiniteWeights) {
   EXPECT_THROW(read("xcorr\tdeltCn\tm0\n0.1\t0.2\t0.3\n1\tx\t3\n"),
                MyException);
 }
+
+// Feature weights that are all 0, whatever m0 is, score every PSM alike;
+// before, such a run ended where the bins could not be rescaled. The error
+// names the file. A single feature weight that is not 0 is enough.
+TEST_F(ReadWeightsTest, RejectsWeightsThatAreAllZero) {
+  for (const char* raw : {"0\t0\t0\n", "0\t-0\t0.25\n", "-0\t0\t-3\n"}) {
+    SCOPED_TRACE(raw);
+    try {
+      read(std::string("xcorr\tdeltCn\tm0\n0.1\t0.2\t0.3\n") + raw);
+      ADD_FAILURE() << "no exception";
+    } catch (const MyException& e) {
+      const std::string message = e.what();
+      EXPECT_NE(std::string::npos, message.find("weights file w.txt"));
+      EXPECT_NE(std::string::npos, message.find("weight 0"));
+    }
+  }
+  EXPECT_EQ((std::vector<double>{0.0, 1e-300, 0.0}),
+            read("xcorr\tdeltCn\tm0\n0\t0\t0\n0\t1e-300\t0\n"));
+}
