@@ -28,6 +28,9 @@ jobs:
       # changes results on purpose writes the manifest again with
       # tests/ci/check_golden.sh --update (see tests/ci/README.md)
       run: bash tests/ci/check_golden.sh --strict ${{ github.workspace }}/build/percolator ${{ github.workspace }}/build/golden
+    - name: exit_status
+      # exit status 1 and a message on bad input and on write errors
+      run: bash tests/ci/exit_status.sh ${{ github.workspace }}/build/percolator ${{ github.workspace }}/build/exit_status
     - name: check_package
       # the .deb must declare its library dependencies and hold no test binary
       run: |
@@ -59,6 +62,8 @@ jobs:
       with:
         name: golden-hashes-almalinux
         path: golden/hashes.sha256
+    - name: exit_status
+      run: bash tests/ci/exit_status.sh ../my_build/percolator exit_status
 
   build-osx:
     runs-on: macos-15
@@ -79,6 +84,8 @@ jobs:
       with:
         name: golden-hashes-osx
         path: ${{ github.workspace }}/build/golden/hashes.sha256
+    - name: exit_status
+      run: bash tests/ci/exit_status.sh ${{ github.workspace }}/build/percolator ${{ github.workspace }}/build/exit_status
     - name: check_binary
       # minos must be 12.0 (CMAKE_OSX_DEPLOYMENT_TARGET); libomp should be
       # linked statically, so that the binary runs without Homebrew
@@ -144,6 +151,9 @@ jobs:
       run: cd build && ctest --output-on-failure
     - name: option_matrix
       run: bash tests/ci/option_matrix.sh build build/option_matrix
+    - name: exit_status
+      # the error paths: bad input and write errors, without a report
+      run: bash tests/ci/exit_status.sh build build/exit_status
 
   # Results must not depend on the number of threads: the option matrix
   # with 1 and 4 threads must give byte-identical outputs. The job also
