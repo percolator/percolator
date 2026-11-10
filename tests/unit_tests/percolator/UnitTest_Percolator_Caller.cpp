@@ -28,6 +28,7 @@
 #include <vector>
 
 #include "Caller.h"
+#include "TmpDir.h"
 
 namespace {
 
@@ -80,8 +81,8 @@ std::string readFile(const std::string& fileName) {
 // split, estimated its PEPs on a list taken as reversed, and then crashed
 // on the missing protein estimator.
 TEST(CallerTest, RunsGiveTheSameResultsAfterOtherRuns) {
-  fs::path dir = fs::temp_directory_path() / "percolator-unittest-tworuns";
-  fs::create_directories(dir);
+  TmpDir tmpDir;  // removed with its content at the end
+  fs::path dir = tmpDir.getPath();
   const std::string pin = (dir / "input.pin").string();
   writeInput(pin);
   auto file = [&](const std::string& name) { return (dir / name).string(); };
@@ -111,7 +112,6 @@ TEST(CallerTest, RunsGiveTheSameResultsAfterOtherRuns) {
     EXPECT_EQ(first, readFile(file(std::string("protein2") + suffix)))
         << suffix;
   }
-  fs::remove_all(dir);
 }
 
 namespace {
@@ -129,8 +129,8 @@ bool parseOnly(std::vector<std::string> args) {
 
 // "-m x.pin x.pin" used to empty the input while the options were parsed.
 TEST(CallerTest, RejectsOutputsThatOverwriteInputsOrEachOther) {
-  fs::path dir = fs::temp_directory_path() / "percolator-unittest-outputs";
-  fs::create_directories(dir);
+  TmpDir tmpDir;
+  fs::path dir = tmpDir.getPath();
   const std::string pin = (dir / "input.pin").string();
   writeInput(pin);
   const std::string content = readFile(pin);
@@ -149,5 +149,4 @@ TEST(CallerTest, RejectsOutputsThatOverwriteInputsOrEachOther) {
   // devices may be shared
   EXPECT_TRUE(parseOnly({"-m", "/dev/null", "-r", "/dev/null", pin}));
 #endif
-  fs::remove_all(dir);
 }

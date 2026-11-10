@@ -43,6 +43,7 @@
 #include "ProteinProbEstimator.h"
 #include "SanityCheck.h"
 #include "Scores.h"
+#include "TmpDir.h"
 
 namespace {
 
@@ -1527,8 +1528,8 @@ TEST_F(ScoresTest, SecondChanceComparesWithTheReportedReset)
     // --init-weights is read through the normalizer, the identity here
     std::unique_ptr<Normalizer> norm = Normalizer::create(Normalizer::NONORM);
     norm->setNumFeatures(2);
-    const std::string weightFile =
-        ::testing::TempDir() + "SecondChanceComparesWithTheReportedReset.txt";
+    TmpDir tmpDir;
+    const std::string weightFile = tmpDir.getPath() + "/weights.txt";
     // the weights files, and the vectors that a reset then gives each fold
     const std::vector<double> f0f1 = {1, 0.1, 0};
     const std::vector<std::pair<std::string, std::vector<double> > > files = {
@@ -1647,8 +1648,8 @@ TEST_F(ScoresTest, ResetChoosesTheWeightsFileOrTheDefaultVectorPerFold)
     EXPECT_EQ((std::vector<double>{1, 0, 0}), direction);
     EXPECT_EQ(6, trainBins[1].getInitDirection(fdr, direction));
     EXPECT_EQ((std::vector<double>{0, 1, 0}), direction);
-    const std::string weightFile =
-        ::testing::TempDir() + "ResetChoosesTheWeightsFileOrTheDefault.txt";
+    TmpDir tmpDir;
+    const std::string weightFile = tmpDir.getPath() + "/weights.txt";
     {
         std::ofstream out(weightFile.c_str());
         out << "f0\tf1\tm0\n2\t0\t0.5\n2\t0\t0.5\n";

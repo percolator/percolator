@@ -25,6 +25,7 @@
 
 #include "MyException.h"
 #include "PosteriorEstimator.h"
+#include "TmpDir.h"
 
 namespace {
 
@@ -33,8 +34,9 @@ class ScoreReader : public PosteriorEstimator {
   using PosteriorEstimator::readScores;
 };
 
-std::string writeFile(const std::string& name, const std::string& text) {
-  std::filesystem::path path = std::filesystem::temp_directory_path() / name;
+std::string writeFile(const TmpDir& dir, const std::string& text) {
+  std::filesystem::path path =
+      std::filesystem::path(dir.getPath()) / "scores.txt";
   std::ofstream(path.string()) << text;
   return path.string();
 }
@@ -43,14 +45,14 @@ std::string writeFile(const std::string& name, const std::string& text) {
 
 TEST(PosteriorEstimatorTest, ReadScores) {
   std::vector<double> scores;
-  std::string fn = writeFile("percolator-unittest-scores.txt",
-                             "1.5 -2\n3e2\t0.25\n\n");
+  TmpDir tmpDir;
+  std::string fn = writeFile(tmpDir, "1.5 -2\n3e2\t0.25\n\n");
   ScoreReader::readScores(fn, "target score", scores);
   EXPECT_EQ((std::vector<double>{1.5, -2.0, 300.0, 0.25}), scores);
 
   // no newline at the end
   scores.clear();
-  fn = writeFile("percolator-unittest-scores.txt", "1\n2");
+  fn = writeFile(tmpDir, "1\n2");
   ScoreReader::readScores(fn, "target score", scores);
   EXPECT_EQ((std::vector<double>{1.0, 2.0}), scores);
 
@@ -58,7 +60,7 @@ TEST(PosteriorEstimatorTest, ReadScores) {
   for (const char* text : {"1\n2\nnan\n3\n", "1\nabc\n", "1\n2.5x\n",
                            "inf\n", "1e999\n", "", " \n\n"}) {
     scores.clear();
-    fn = writeFile("percolator-unittest-scores.txt", text);
+    fn = writeFile(tmpDir, text);
     EXPECT_THROW(ScoreReader::readScores(fn, "target score", scores),
                  MyException) << text;
   }

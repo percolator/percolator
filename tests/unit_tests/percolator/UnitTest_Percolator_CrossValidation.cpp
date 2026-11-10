@@ -29,6 +29,7 @@
 #include "Globals.h"
 #include "PseudoRandom.h"
 #include "NoNormalizer.h"
+#include "TmpDir.h"
 #include <cstdio>
 #include <fstream>
 
@@ -898,8 +899,10 @@ TEST_F(CrossValidationTest, DefaultMergeNormalizationOfTheFolds)
 // test folds is empty.
 TEST_F(CrossValidationTest, FallbackOfAFailedCheckAndTheTestFoldsOfMinusN)
 {
-    const std::string weightFile =
-        ::testing::TempDir() + "perc_fallback_w.txt";
+    // a directory of its own, so that test runs at the same time do not
+    // share the file
+    TmpDir tmpDir;
+    const std::string weightFile = tmpDir.getPath() + "/perc_fallback_w.txt";
     {
         // normalized weights (skipped), then the raw weights that are read;
         // without a line of feature names, which is then not checked
@@ -1276,7 +1279,8 @@ TEST_F(CrossValidationTest, ResetRestoresWeightFileVectorUnlessDefaultIsBetter)
     DataSet::getFeatureNames().insertFeature("f1");
     DataSet::getFeatureNames().insertFeature("f2");
     FeatureNames::setNumFeatures(2);
-    const std::string weightFile = ::testing::TempDir() + "perc_reset_w.txt";
+    TmpDir tmpDir;
+    const std::string weightFile = tmpDir.getPath() + "/perc_reset_w.txt";
     // the second feature separates the targets, the first does not
     std::vector<double> features;
     std::vector<PSMDescription> psms(40);

@@ -25,6 +25,7 @@
 #include <sstream>
 #include <unordered_map>
 #include "SetHandler.h"
+#include "TmpDir.h"
 #include "ValidateTabFile.h"
 
 /* A simple class that tracks global deletions.
@@ -341,8 +342,8 @@ TEST_F(SetHandlerTest, TestDescribeLine)
 TEST_F(SetHandlerTest, TestConcatenateSkipsFilesWithoutPsms)
 {
     namespace fs = std::filesystem;
-    fs::path dir = fs::temp_directory_path() / "percolator-unittest-concat";
-    fs::create_directories(dir);
+    TmpDir tmpDir;  // removed with its content at the end
+    fs::path dir = tmpDir.getPath();
     const std::string header = "id\tLabel\tF1\tPeptide\tProteins\n";
     std::vector<std::string> names;
     auto write = [&](const char* name, const std::string& text) {
@@ -368,8 +369,7 @@ TEST_F(SetHandlerTest, TestConcatenateSkipsFilesWithoutPsms)
     EXPECT_EQ(4u, segments[1].firstLine);
     EXPECT_EQ(3u, segments[1].firstFileLine);
     EXPECT_EQ(names[2], segments[1].fileName);
-    in.close();
-    fs::remove_all(dir);
+    in.close();  // before the directory is removed
 }
 
 // The search type is detected from scan ids (scan number and experimental
