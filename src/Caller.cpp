@@ -266,7 +266,9 @@ bool Caller::parseOptions(int argc, char** argv) {
                    "Override error check and do not fall back on default score "
                    "vector (or the weights of --init-weights) in case of "
                    "suspect score vector from SVM. Each test bin is then "
-                   "scored with its own fold's SVM.",
+                   "scored with its own fold's SVM. With -N all PSMs are then "
+                   "scored with the averaged weights of the folds, as after "
+                   "a fallback.",
                    "", TRUE_IF_SET);
   cmd.defineOption("S", "seed",
                    "Set seed of the random number generator. Default = 1.",
@@ -1579,10 +1581,13 @@ int Caller::run() {
       // in-sample: training decoys would score too low and training
       // positives too high, and the decoys would no longer model the
       // incorrect targets. These PSMs keep the score of their test fold,
-      // as without -N. Unless score normalization is switched off, merge()
-      // has rescaled the weights of each fold to the common scale of the
-      // merge scheme (with test: q = fdr at 0, median decoy at -1), which
-      // their average shares.
+      // as without -N, where the direction check passed or its second
+      // chance kept the trained SVMs. After a failed check, a reset or
+      // --override, the list of test folds is empty and all PSMs are scored
+      // with the averaged weights. Unless score normalization is switched
+      // off, merge() has rescaled the weights of each fold to the common
+      // scale of the merge scheme (with test: q = fdr at 0, median decoy at
+      // -1), which their average shares.
       if (numFolds > 1u) {
         crossValidation.getRawFoldWeights(rawFoldWeights, pNorm_.get());
         crossValidation.getTestFolds(subsetFolds);

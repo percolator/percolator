@@ -227,8 +227,9 @@ struct DirectionCheckOptions {
     // --init-weights: a weights file whose raw weights are the initial
     // direction of every fold
     std::string initWeightFN;
-    // -N: list the test fold of every PSM; after a reset under test the
-    // bins are then scored with the first fold's vector
+    // -N: list the test fold of every PSM; after a failed check under test,
+    // a reset or --override, the bins are then scored with the first fold's
+    // vector
     bool minusN = false;
 };
 
@@ -247,8 +248,8 @@ struct DirectionCheckResult {
     // the (input line, fold) list of -N: the test PSMs that keep their
     // test fold's score
     std::size_t numTestFolds = 0u;
-    // -N after a reset under test: all bins scored with the first fold's
-    // vector
+    // -N after a failed check under test, a reset or --override: all bins
+    // scored with the first fold's vector
     bool scoredWithFirstVector = false;
 };
 
@@ -260,7 +261,8 @@ struct DirectionCheckResult {
 // Returns the merged score of each scan and the final weights, and checks
 // that the final weights of each fold give the merged scores of its test
 // bin: each PSM was scored by the fold of its own test bin. With -N after a
-// reset under test, every bin was scored with the first fold's vector, and
+// failed check under test, a reset or --override, every bin was scored with
+// the first fold's vector, and
 // the merge rescaled the bins and the folds' vectors by the anchors of each
 // bin: the merged scores of a bin are then an increasing linear function
 // of the first fold's final weights, with an offset.
@@ -346,7 +348,7 @@ static void trainAndMerge(unsigned int numFolds, MergeNormalization scheme,
     crossValidation.postIterationProcessing(scores, check);
     std::vector<std::pair<unsigned int, unsigned int> > testFolds;
     crossValidation.getTestFolds(testFolds);
-    // the list is empty after a reset, and only then under -N
+    // the list is empty after a failed check, and only then under -N
     const bool scoredWithFirstVector =
         checkOptions.minusN && testFolds.empty() &&
         crossValidation.usedMergeNormalization() == MergeNormalization::TEST;
@@ -885,13 +887,13 @@ TEST_F(CrossValidationTest, DefaultMergeNormalizationOfTheFolds)
 // trained vectors: with --init-weights every fold to the weights of the file,
 // otherwise each fold to the default vector chosen on its training set, a
 // single feature here. trainAndMerge finds each bin scored with its own
-// fold's final weights in every case but one: after a reset under -N, all
-// bins are scored with the first fold's vector (see the next test). With
-// -N, the PSMs of the training subset keep the score of their test fold
-// only where the folds keep their trained vectors: when the check passes and
-// with --override; after a reset, also to the weights of the file, all PSMs
-// are scored with the averaged weights, and the list of test folds is
-// empty.
+// fold's final weights in every case but one: after a failed check under
+// -N, all bins are scored with the first fold's vector (see the next tests).
+// With -N, the PSMs of the training subset keep the score of their test
+// fold only where the check passes; after a failed check, a reset, also to
+// the weights of the file, or --override, which keeps the folds' trained
+// vectors, all PSMs are scored with the averaged weights, and the list of
+// test folds is empty.
 TEST_F(CrossValidationTest, FallbackOfAFailedCheckAndTheTestFoldsOfMinusN)
 {
     const std::string weightFile =
@@ -940,7 +942,8 @@ TEST_F(CrossValidationTest, FallbackOfAFailedCheckAndTheTestFoldsOfMinusN)
                 trainAndMerge(numFolds, MergeNormalization::TEST, scoreOf, w,
                               features, failing, &result);
                 ASSERT_EQ(numFolds, w.size());
-                EXPECT_EQ(overrule ? 900u : 0u, result.numTestFolds);
+                EXPECT_EQ(0u, result.numTestFolds);
+                EXPECT_TRUE(result.scoredWithFirstVector);
                 if (overrule) {
                     for (unsigned int fold = 1; fold < numFolds; ++fold) {
                         EXPECT_NE(w[0], w[fold]);
@@ -1009,6 +1012,51 @@ TEST_F(CrossValidationTest, ResetUnderMinusNScoresTheBinsWithTheFirstVector)
                             chosenFeature(wFold) != chosenFeature(w[0]);
                     }
                     EXPECT_LT(0, otherChoices);
+                }
+            }
+        }
+    }
+}
+
+// With --override a failed check keeps the folds' trained vectors, but -N
+// does not keep the test folds' scores of its training subset: all PSMs are
+// scored with the averaged weights, as after a reset and as on r2/integration
+// (329d347). Under test the bins are then scored with the first fold's
+// vector, which trainAndMerge checks, so that the folds' vectors are
+// rescaled alike before they are averaged; without -N, and with the other
+// schemes, each bin is scored with its own fold's trained vector.
+TEST_F(CrossValidationTest, OverrideUnderMinusNScoresAllPsmsWithTheAveragedWeights)
+{
+    auto isSingleFeature = [](const std::vector<double>& w) {
+        return (w[0] == 0.0) != (w[1] == 0.0);
+    };
+    for (unsigned int numFolds : {3u, 5u}) {
+        for (MergeNormalization scheme :
+             {MergeNormalization::TEST, MergeNormalization::TRAIN,
+              MergeNormalization::TRAIN_DECOYS, MergeNormalization::NONE}) {
+            for (bool minusN : {false, true}) {
+                SCOPED_TRACE(::testing::Message()
+                             << numFolds << " folds, scheme "
+                             << static_cast<int>(scheme) << ", -N " << minusN);
+                DirectionCheckOptions failing;
+                failing.overrule = true;
+                failing.testFdr = 1e-6;
+                failing.minusN = minusN;
+                DirectionCheckResult result;
+                std::map<unsigned int, double> scoreOf;
+                std::vector<std::vector<double> > w;
+                std::vector<double> features;
+                trainAndMerge(numFolds, scheme, scoreOf, w, features, failing,
+                              &result);
+                ASSERT_EQ(numFolds, w.size());
+                EXPECT_EQ(0u, result.numTestFolds);
+                EXPECT_EQ(minusN && scheme == MergeNormalization::TEST,
+                          result.scoredWithFirstVector);
+                for (unsigned int fold = 0; fold < numFolds; ++fold) {
+                    EXPECT_FALSE(isSingleFeature(w[fold]));  // trained
+                    if (fold > 0u) {
+                        EXPECT_NE(w[0], w[fold]);
+                    }
                 }
             }
         }

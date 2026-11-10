@@ -74,7 +74,8 @@ class CrossValidation {
   // (input line, fold) of every PSM in the test sets, sorted by line, as
   // recorded by postIterationProcessing when setRecordTestFolds(true) was
   // called; the test sets themselves are emptied by the merge. Empty if
-  // the sanity check rejected the trained weights. Moves the list out.
+  // the direction check failed, after a reset and with --override, since
+  // all PSMs are then scored with the averaged weights. Moves the list out.
   void getTestFolds(
       std::vector<std::pair<unsigned int, unsigned int> >& lineFolds);
 
@@ -102,8 +103,9 @@ class CrossValidation {
   void inline setSvmRowsInPlace(bool on) { svmRowsInPlace_ = on; }
   // let postIterationProcessing list the input line and fold of every test
   // PSM for getTestFolds, before the merge empties the test sets (-N); after
-  // a reset under test it then scores every test bin with the first fold's
-  // vector, since -N scores all PSMs with the averaged weights
+  // a failed direction check under test, a reset or --override, it then
+  // scores every test bin with the first fold's vector, since -N scores all
+  // PSMs with the averaged weights
   void inline setRecordTestFolds(bool on) { recordTestFolds_ = on; }
   // how the scores of the test bins are put on a common scale before they
   // are merged, see Caller's --merge-normalization

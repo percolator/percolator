@@ -729,9 +729,6 @@ void CrossValidation::postIterationProcessing(Scores& fullset,
 
   const bool directionValid =
       check.validateDirection(testScores_, trainScores_, weights_);
-  // With --override the folds keep their trained vectors when the check
-  // fails; otherwise it resets them.
-  const bool trainedVectorsKept = directionValid || check.getOverrule();
   // When the second chance of the direction check kept the trained SVMs,
   // whose test bins were too small for the per-bin count, the bins are
   // merged as it counted them, with the training-set decoys, unless the
@@ -754,18 +751,18 @@ void CrossValidation::postIterationProcessing(Scores& fullset,
     // trained vector, since the other folds' vectors were trained on the
     // bin. The weights written with -w then describe the scores.
     //
-    // Except with -N after a reset under test: -N then scores all PSMs with
-    // the averaged weights (see below), so the merged scores of the bins are
-    // not reported, and the merge rescales each fold's vector by the anchors
-    // of a bin before they are averaged. A bin with no target at q < fdr is
-    // anchored at its best score, so with its own fold's vector a real score
-    // with a long tail got a smaller factor than another fold's noise
-    // feature, which then dominated the average. All bins are scored with
-    // the first fold's vector instead, as before the folds kept their own
-    // default vectors, so that the folds' vectors get nearly the same factor
-    // and count alike in the average.
+    // Except with -N under test, after a reset and with --override: -N then
+    // scores all PSMs with the averaged weights (see below), so the merged
+    // scores of the bins are not reported, and the merge rescales each
+    // fold's vector by the anchors of a bin before they are averaged. A bin
+    // with no target at q < fdr is anchored at its best score, so with its
+    // own fold's vector a real score with a long tail got a smaller factor
+    // than another fold's noise feature, which then dominated the average.
+    // All bins are scored with the first fold's vector instead, as before
+    // the folds kept their own vectors, so that the folds' vectors get
+    // nearly the same factor and count alike in the average.
     const bool averagedUnderTest =
-        recordTestFolds_ && !trainedVectorsKept &&
+        recordTestFolds_ &&
         usedMergeNormalization_ == MergeNormalization::TEST;
     for (std::size_t set = 0; set < numFolds_; ++set) {
       testScores_[set].calcScoresAndQvals(
@@ -799,10 +796,10 @@ void CrossValidation::postIterationProcessing(Scores& fullset,
   // After a reset the weights of each fold are a fallback picked per fold,
   // e.g. the best single feature of its training set, which can be a noise
   // feature in one fold and the real score in another; all PSMs are then
-  // scored with the averaged weights, as without the test folds. With
-  // --override the folds keep their trained vectors, which score their test
-  // PSMs as when the check passes.
-  if (recordTestFolds_ && trainedVectorsKept) recordTestFolds();
+  // scored with the averaged weights, as without the test folds. So they
+  // are after a failed check with --override, whose trained vectors the
+  // check did not accept.
+  if (recordTestFolds_ && directionValid) recordTestFolds();
   fullset.merge(testScores_, selectionFdr_, skipNormalizeScores_, weights_,
                 usedMergeNormalization_, binScales);
 }

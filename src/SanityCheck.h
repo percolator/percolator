@@ -73,8 +73,6 @@ class SanityCheck {
     initDefaultDirName_ = dirName;
   }
   void setOverrule(bool orl) { overRule_ = orl; }
-  // with --override a failed check keeps the trained direction
-  bool getOverrule() const { return overRule_; }
   void setDirectionCheck(DirectionCheck check) { directionCheck_ = check; }
   DirectionCheck directionCheck() const { return directionCheck_; }
   // whether the last validateDirection kept the trained SVMs by the second
