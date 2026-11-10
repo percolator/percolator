@@ -69,6 +69,18 @@ void SetHandler::rethrowWithSource(const MyException& e,
   throw MyException(oss.str());
 }
 
+void SetHandler::incrementLineNr(unsigned int& lineNr) {
+  if (lineNr >= static_cast<unsigned int>(INT_MAX)) {
+    std::ostringstream oss;
+    oss << "ERROR: The input has more than " << INT_MAX << " lines. "
+        << "Percolator counts lines and PSMs with 32-bit integers and "
+        << "cannot process more than " << INT_MAX << " PSMs in one run."
+        << std::endl;
+    throw MyException(oss.str());
+  }
+  ++lineNr;
+}
+
 void SetHandler::warnIgnoredLabel(unsigned int lineNr,
                                   unsigned int& numIgnored) const {
   if (++numIgnored <= kMaxLabelWarnings) {
@@ -386,7 +398,7 @@ void SetHandler::readPSMs(istream& dataStream, std::string& psmLine,
           subsetPSMs.pop();
         }
       }
-      ++lineNr;
+      incrementLineNr(lineNr);
     } while (getline(dataStream, psmLine));
     } catch (const MyException& e) {
       rethrowWithSource(e, lineNr);
@@ -447,7 +459,7 @@ void SetHandler::readPSMs(istream& dataStream, std::string& psmLine,
       } else {
         warnIgnoredLabel(lineNr, numIgnoredLabels);
       }
-      ++lineNr;
+      incrementLineNr(lineNr);
     } while (getline(dataStream, psmLine));
     } catch (const MyException& e) {
       rethrowWithSource(e, lineNr);
@@ -759,7 +771,7 @@ void SetHandler::readAndScorePSMs(istream& dataStream, std::string& psmLine,
           sh, inFold ? foldWeights.at(lineFolds[nextFold].second) : rawWeights,
           featurePool_);
     }
-    ++lineNr;
+    incrementLineNr(lineNr);
   } while (getline(dataStream, psmLine));
   } catch (const MyException& e) {
     rethrowWithSource(e, lineNr);

@@ -534,6 +534,9 @@ class SetHandlerHeaderEx : public SetHandler {
                        std::vector<OptionalField>& fields, unsigned int lineNr) {
         return getScanId(line, label, fields, lineNr);
     }
+    static void incrementLineNrEx(unsigned int& lineNr) {
+        incrementLineNr(lineNr);
+    }
     bool readScanIdAndLabelEx(const std::string& line, unsigned int lineNr,
                               std::vector<OptionalField>& fields, TabReader& reader,
                               PsmHeader& header, ScanId& scanId, int& label) {
@@ -694,4 +697,25 @@ TEST(PsmHeaderTest, ScanNumberErrorNamesTheRange)
         EXPECT_EQ(std::string(scan), std::to_string(scanId.first));
     }
     FeatureNames::resetNumFeatures();
+}
+
+// Line numbers and PSM counts are 32-bit integers, also signed ones: line
+// 2^31 used to become scan number -2147483648, and counts wrapped.
+TEST(PsmHeaderTest, MoreThanIntMaxLinesIsAnError)
+{
+    unsigned int lineNr = 2u;
+    SetHandlerHeaderEx::incrementLineNrEx(lineNr);
+    EXPECT_EQ(3u, lineNr);
+
+    lineNr = 2147483646u;
+    EXPECT_NO_THROW(SetHandlerHeaderEx::incrementLineNrEx(lineNr));
+    EXPECT_EQ(2147483647u, lineNr);  // the last line that can be read
+    try {
+        SetHandlerHeaderEx::incrementLineNrEx(lineNr);
+        FAIL() << "no exception";
+    } catch (const MyException& e) {
+        EXPECT_NE(std::string::npos, std::string(e.what()).find(
+            "cannot process more than 2147483647 PSMs in one run")) << e.what();
+    }
+    EXPECT_EQ(2147483647u, lineNr);
 }

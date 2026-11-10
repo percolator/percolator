@@ -159,6 +159,10 @@ class SetHandler {
   // rethrows e, with the file and line of a PSM line of a concatenated input
   [[noreturn]] void rethrowWithSource(const MyException& e,
                                       unsigned int lineNr) const;
+  // Moves on to the next input line. Line numbers, and with them the
+  // default scan numbers and the PSM counts, are kept in 32-bit integers,
+  // also signed ones, so an input with more than INT_MAX lines is an error.
+  static void incrementLineNr(unsigned int& lineNr);
   void warnIgnoredLabel(unsigned int lineNr, unsigned int& numIgnored) const;
   void warnIgnoredLabelTotal(unsigned int numIgnored) const;
   
