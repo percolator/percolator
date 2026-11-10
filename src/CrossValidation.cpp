@@ -746,8 +746,10 @@ void CrossValidation::postIterationProcessing(Scores& fullset,
   }
   if (!directionValid) {
     // Each test bin is scored with its own fold's vector: after a reset the
-    // vector given with --init-weights, the same in all folds, or else the
-    // default vector chosen on that fold's training set; with --override the
+    // vector the fallback chose for that fold (under --init-weights the given
+    // vector or the fold's default direction, whichever gives more targets
+    // on the fold's training set; otherwise the fold's default vector, and
+    // with --static the given vector in every fold); with --override the
     // trained vector, since the other folds' vectors were trained on the
     // bin. The weights written with -w then describe the scores, but for
     // the exception that follows.
