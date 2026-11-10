@@ -18,6 +18,7 @@
 
 #include <gtest/gtest.h>
 
+#include <cmath>
 #include <iostream>
 #include <memory>
 #include <string>
@@ -52,6 +53,39 @@ TEST(NormalizerTest, StdvNormalizerOfOrdinaryValues) {
   setSet(*norm, rows);
   EXPECT_DOUBLE_EQ(2.0, norm->GetVSub()[1]);
   EXPECT_DOUBLE_EQ(1.0, norm->GetVDiv()[1]);
+}
+
+// Ten copies of 0.1 add up to 0.9999999999999999, so their mean is not 0.1.
+// The deviations from it gave a standard deviation of 1.4e-17, and the
+// column became a constant -1 or 1, a second bias, instead of zeros.
+TEST(NormalizerTest, StdvNormalizerOfAConstantColumn) {
+  for (double value : {0.1, 0.7, -1e-5, 1.0 / 3.0, 3.0, 0.0}) {
+    std::unique_ptr<Normalizer> norm = Normalizer::create(Normalizer::STDV);
+    auto rows = makeRows(std::vector<double>(10, value));
+    setSet(*norm, rows);
+    EXPECT_EQ(value, norm->GetVSub()[1]) << value;
+    EXPECT_EQ(1.0, norm->GetVDiv()[1]) << value;
+    EXPECT_EQ(0.0, norm->normalize(value, 1)) << value;
+    // the other column is not affected
+    EXPECT_DOUBLE_EQ(4.5, norm->GetVSub()[0]);
+    EXPECT_DOUBLE_EQ(std::sqrt(8.25), norm->GetVDiv()[0]);
+  }
+}
+
+// the same for a constant retention feature
+TEST(NormalizerTest, StdvNormalizerOfAConstantRetentionColumn) {
+  std::unique_ptr<Normalizer> norm = Normalizer::create(Normalizer::STDV);
+  auto rows = makeRows(std::vector<double>(10, 2.0));
+  std::vector<std::vector<double> > rtRows;
+  for (int i = 0; i < 10; ++i) rtRows.push_back({0.1, i % 2 ? 1.0 : 3.0});
+  std::vector<double*> features, rtFeatures;
+  for (auto& row : rows) features.push_back(row.data());
+  for (auto& row : rtRows) rtFeatures.push_back(row.data());
+  norm->setSet(features, rtFeatures, 2, 2);
+  EXPECT_EQ(0.1, norm->GetVSub()[2]);
+  EXPECT_EQ(1.0, norm->GetVDiv()[2]);
+  EXPECT_DOUBLE_EQ(2.0, norm->GetVSub()[3]);
+  EXPECT_DOUBLE_EQ(1.0, norm->GetVDiv()[3]);
 }
 
 // two values of 1e308 make the sum, and so the mean, infinite

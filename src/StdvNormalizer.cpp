@@ -20,6 +20,7 @@
 #define isfinite _finite
 #endif
 #include <cmath>
+#include <limits>
 #include <vector>
 #include <string>
 
@@ -29,6 +30,23 @@ using namespace std;
 #include "StdvNormalizer.h"
 #include "Globals.h"
 
+namespace {
+
+// The smallest and the largest value of each column. A column is constant
+// exactly if the two are equal.
+struct ColumnRanges {
+  explicit ColumnRanges(size_t numColumns)
+      : minV(numColumns, std::numeric_limits<double>::infinity()),
+        maxV(numColumns, -std::numeric_limits<double>::infinity()) {}
+  void add(size_t ix, double value) {
+    if (value < minV[ix]) minV[ix] = value;
+    if (value > maxV[ix]) maxV[ix] = value;
+  }
+  bool isConstant(size_t ix) const { return minV[ix] == maxV[ix]; }
+  std::vector<double> minV, maxV;
+};
+
+}  // namespace
 
 StdvNormalizer::StdvNormalizer() {
 }
@@ -69,17 +87,20 @@ void StdvNormalizer::setSet(std::vector<double*>& featuresV,
   double* features;
   size_t ix;
   vector<double*>::iterator it = featuresV.begin();
+  ColumnRanges ranges(nf + nrf);
   for (; it != featuresV.end(); ++it) {
     features = *it;
     n++;
     for (ix = 0; ix < numFeatures; ++ix) {
       sub[ix] += features[ix];
+      ranges.add(ix, features[ix]);
     }
   }
   for (it = rtFeaturesV.begin(); it != rtFeaturesV.end(); ++it) {
     features = *it;
     for (ix = numFeatures; ix < numFeatures + numRetentionFeatures; ++ix) {
       sub[ix] += features[ix - numFeatures];
+      ranges.add(ix, features[ix - numFeatures]);
     }
   }
   // the factors are printed with two digits; the precision of cerr is put
@@ -92,6 +113,14 @@ void StdvNormalizer::setSet(std::vector<double*>& featuresV,
   for (ix = 0; ix < numFeatures + numRetentionFeatures; ++ix) {
     if (n > 0.0) {
       sub[ix] /= n;
+    }
+    // The sum of n copies of a value such as 0.1 is rounded, so the mean of
+    // a constant column can differ from its value in the last bits. Every
+    // row then has the same tiny deviation, which the standard
+    // deviation scales to 1 or -1: a second bias column instead of a
+    // column of zeros. The mean of a constant column is its value.
+    if (ranges.isConstant(ix)) {
+      sub[ix] = ranges.minV[ix];
     }
     if (VERB > 2) {
       cerr << "\t" << sub[ix];
@@ -147,11 +176,13 @@ void StdvNormalizer::updateSet(vector<double*> & featuresV, size_t offset,
   double* features;
   size_t ix;
   vector<double*>::iterator it = featuresV.begin();
+  ColumnRanges ranges(numFeatures);
   for (; it != featuresV.end(); ++it) {
     features = *it;
     n++;
     for (ix = 0; ix < numFeatures; ++ix) {
       sub[offset + ix] += features[ix];
+      ranges.add(ix, features[ix]);
     }
   }
   // the factors are printed with two digits; the precision of cerr is put
@@ -164,6 +195,9 @@ void StdvNormalizer::updateSet(vector<double*> & featuresV, size_t offset,
   for (ix = 0; ix < numFeatures; ++ix) {
     if (n > 0.0) {
       sub[offset + ix] /= n;
+    }
+    if (ranges.isConstant(ix)) {  // see setSet
+      sub[offset + ix] = ranges.minV[ix];
     }
     if (VERB > 2) {
       cerr << "\t" << sub[offset + ix];
