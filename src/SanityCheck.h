@@ -19,6 +19,7 @@
 
 #include <iostream>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "Scores.h"
@@ -33,9 +34,10 @@ class Normalizer;
  * FDR summed over the test bins, each with its own q values, or by those of
  * the merged out-of-fold list, see DirectionCheck and Caller's
  * --direction-check. Where the trained direction is worse, the folds fall
- * back (resetDirection) to the weights of the weights file in every fold,
- * or else to the default direction chosen on each fold's training set,
- * unless --override keeps the trained vectors.
+ * back (resetDirection) to the default direction chosen on each fold's
+ * training set or, with a weights file, per fold to its weights or that
+ * default direction, whichever separates more targets of the training set
+ * (see chooseResetVectors), unless --override keeps the trained vectors.
  */
 class SanityCheck {
  public:
@@ -48,10 +50,11 @@ class SanityCheck {
                     // rescaled by the training decoys, can be used (see
                     // setReportedLists) and holds targets with
                     // q < test FDR and no fewer than the reset would
-                    // report: the folds' default vectors, or the vector of
-                    // --init-weights, merged with the scheme of
-                    // setMergeScheme; their list merged with the scheme of
-                    // setSecondChanceMergeScheme has to be usable too
+                    // report: the folds' default vectors, or under
+                    // --init-weights the vectors of chooseResetVectors,
+                    // merged with the scheme of setMergeScheme; their list
+                    // merged with the scheme of setSecondChanceMergeScheme
+                    // has to be usable too
     POOLED          // in the merged out-of-fold list only, merged with the
                     // scheme of setMergeScheme
   };
@@ -112,12 +115,36 @@ class SanityCheck {
  protected:
   void getDefaultDirection(const std::vector<Scores>& trainset,
                            std::vector<std::vector<double> >& w) const;
-  // The vectors that resetDirection gives the folds: the initial ones,
-  // which getInitDirection keeps for the second chance. A reset restores
-  // the vector of --init-weights in every fold, or else chooses each fold's
-  // default vector again on the same training set.
+  // The default direction of one fold, as getDefaultDirection chooses it:
+  // the feature of --default-direction, the default weights of the input or
+  // the single feature that separates most targets of the fold's training
+  // set. quiet leaves out the messages of the latter and its error where no
+  // feature gives a target; w is then all 0 and the result false.
+  bool getDefaultDirection(const Scores& trainset, std::size_t set,
+                           std::vector<double>& w, bool quiet) const;
+  // Whether a reset chooses per fold between the vector of --init-weights
+  // and the fold's default direction. Not with --static
+  // (skipNormalizeScores_), whose given weights are the model: a reset
+  // restores them.
+  bool choosesResetVectors() const {
+    return !fileWeights_.empty() && !skipNormalizeScores_;
+  }
+  // The vectors of a reset under --init-weights (choosesResetVectors): per
+  // fold, the vector of the weights file or the fold's default direction,
+  // whichever gives more targets with q < the initial training FDR in the
+  // fold's training set, counted as getInitDirection counts a feature; the
+  // weights file on ties, and where no default direction gives a target.
+  // Sets resetWeights_ and resetCounts_; leaves the bins and the random
+  // number generator as they are.
+  void chooseResetVectors(const std::vector<Scores>& trainset);
+  // The vectors that resetDirection gives the folds: under --init-weights
+  // those of chooseResetVectors, which validateDirection calls before the
+  // second chance; otherwise the initial ones, which getInitDirection keeps
+  // for the second chance: each fold's default vector, which a reset
+  // chooses again on the same training set, or with --static the given
+  // weights in every fold.
   const std::vector<std::vector<double> >& resetVectors() const {
-    return initWeights_;
+    return choosesResetVectors() ? resetWeights_ : initWeights_;
   }
   // whether the targets are counted in the merged list of these bins
   bool usePooledCount(std::size_t numBins) const {
@@ -167,9 +194,13 @@ class SanityCheck {
   bool skipNormalizeScores_ = false;
   ReportedLists reportedLists_;
   // the second chance: the initial direction of each fold, which is also
-  // the vector a reset gives it, its decision in the last validateDirection
-  // and the scheme of the merge it implies
+  // the vector a reset gives it without --init-weights, its decision in the
+  // last validateDirection and the scheme of the merge it implies
   std::vector<std::vector<double> > initWeights_;
+  // the vectors of a reset under --init-weights and, per fold, the targets
+  // of the weights file and of the default direction (chooseResetVectors)
+  std::vector<std::vector<double> > resetWeights_;
+  std::vector<std::pair<int, int> > resetCounts_;
   bool secondChanceKept_ = false;
   MergeNormalization secondChanceMergeScheme_ =
       MergeNormalization::TRAIN_DECOYS;

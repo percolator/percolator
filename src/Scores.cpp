@@ -1296,11 +1296,11 @@ void Scores::keepBestPsmPerSpectrum() {
   */
 }
 
-int Scores::getInitDirection(const double initialSelectionFdr,
-                             std::vector<double>& direction) const {
+int Scores::bestInitDirection(double initialSelectionFdr, int& bestFeature,
+                              bool& lowBest) const {
   int bestPositives = -1;
-  int bestFeature = -1;
-  bool lowBest = false;
+  bestFeature = -1;
+  lowBest = false;
 
   // for determining the initial direction, the decoys+1 in the FDR estimates
   // is too restrictive for small datasets
@@ -1364,6 +1364,28 @@ int Scores::getInitDirection(const double initialSelectionFdr,
       }
     }
   }
+  return bestPositives;
+}
+
+int Scores::findInitDirection(const double initialSelectionFdr,
+                              std::vector<double>& direction) const {
+  int bestFeature = -1;
+  bool lowBest = false;
+  const int bestPositives =
+      bestInitDirection(initialSelectionFdr, bestFeature, lowBest);
+  std::fill(direction.begin(), direction.end(), 0.0);
+  if (bestPositives > 0) {
+    direction[static_cast<std::size_t>(bestFeature)] = (lowBest ? -1 : 1);
+  }
+  return bestPositives;
+}
+
+int Scores::getInitDirection(const double initialSelectionFdr,
+                             std::vector<double>& direction) const {
+  int bestFeature = -1;
+  bool lowBest = false;
+  const int bestPositives =
+      bestInitDirection(initialSelectionFdr, bestFeature, lowBest);
   // the bias too: after a direction reset, direction holds the trained
   // weights of the fold
   std::fill(direction.begin(), direction.end(), 0.0);

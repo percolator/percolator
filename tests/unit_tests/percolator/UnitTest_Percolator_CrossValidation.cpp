@@ -1264,9 +1264,11 @@ TEST(LineSearchTest, ChunkedSortGivesTheSameStepAsAFullSort)
 
 /* When the trained direction fails the sanity check, the initial vector
  * read with -W is restored, not the default direction (the best single
- * feature), which -W had replaced.
+ * feature), which -W had replaced, unless the default direction separates
+ * more targets of the training set: the weights file with the wrong sign
+ * of the separating feature gives way to the default direction.
  */
-TEST_F(CrossValidationTest, ResetRestoresWeightFileVector)
+TEST_F(CrossValidationTest, ResetRestoresWeightFileVectorUnlessDefaultIsBetter)
 {
     FeatureNames::resetNumFeatures();
     // the weights file must name the features of the input
@@ -1275,12 +1277,6 @@ TEST_F(CrossValidationTest, ResetRestoresWeightFileVector)
     DataSet::getFeatureNames().insertFeature("f2");
     FeatureNames::setNumFeatures(2);
     const std::string weightFile = ::testing::TempDir() + "perc_reset_w.txt";
-    {
-        std::ofstream out(weightFile);
-        out << "# weights\nf1\tf2\tm0\n"
-            << "9\t9\t9\n"           // normalized weights, skipped
-            << "0.5\t-2\t0.25\n";    // raw weights, which are read
-    }
     // the second feature separates the targets, the first does not
     std::vector<double> features;
     std::vector<PSMDescription> psms(40);
@@ -1300,20 +1296,32 @@ TEST_F(CrossValidationTest, ResetRestoresWeightFileVector)
     NoNormalizer norm;
     std::vector<double*> none, noneRt;
     norm.setSet(none, noneRt, 2, 0);
-    for (bool withWeightFile : {true, false}) {
+    const std::vector<double> defaultVector = {0.0, 1.0, 0.0};
+    // no file, the right sign of f2 (20 targets each, a tie, which keeps the
+    // file's weights) and the wrong one (0 against 20)
+    for (const char* raw : {"", "0.5\t2\t0.25", "0.5\t-2\t0.25"}) {
+        const bool withWeightFile = raw[0] != '\0';
+        SCOPED_TRACE(raw);
+        if (withWeightFile) {
+            std::ofstream out(weightFile);
+            out << "# weights\nf1\tf2\tm0\n"
+                << "9\t9\t9\n"            // normalized weights, skipped
+                << raw << "\n";             // raw weights, which are read
+        }
         SanityCheck check;
         if (withWeightFile) check.setInitWeightFN(weightFile);
         std::vector<std::vector<double> > w(1, std::vector<double>(3, 0.0));
         check.getInitDirection(sets, sets, &norm, w, 0.01, 0.01);
         const std::vector<double> initial = w[0];
-        if (withWeightFile) {
-            EXPECT_EQ(initial, std::vector<double>({0.5, -2.0, 0.25}));
+        if (!withWeightFile) {
+            EXPECT_EQ(defaultVector, initial);
         }
         // both fallbacks replace the trained bias as well: the default
         // direction sets it to 0, as the initial one
         std::vector<std::vector<double> > trained(1, {7.0, 7.0, 7.0});
         check.resetDirection(sets, trained);
-        EXPECT_EQ(trained[0], initial) << "weight file " << withWeightFile;
+        const bool wrongSign = withWeightFile && initial[1] < 0.0;
+        EXPECT_EQ(trained[0], wrongSign ? defaultVector : initial);
     }
     std::remove(weightFile.c_str());
     DataSet::resetFeatureNames();

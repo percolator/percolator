@@ -26,6 +26,7 @@ using namespace std;
 #include "Normalizer.h"
 #include "SanityCheck.h"
 #include "Globals.h"
+#include "PosteriorEstimator.h"
 
 namespace {
 // why a merged count finds no usable list, see Scores::countMergedTargets
@@ -92,10 +93,12 @@ int SanityCheck::getInitDirection(vector<Scores>& testset,
                                       mergeFdr_, skipNormalizeScores_,
                                       test_fdr, reportedLists_));
   }
-  // The second chance counts the vectors of a reset only when it runs. They
-  // are the initial ones: the vector of --init-weights, which a reset
-  // restores, or the default vectors, which it chooses again on the same
-  // training sets. Training changes w, so they are kept for it.
+  // The second chance counts the vectors of a reset only when it runs.
+  // Without --init-weights, they are the initial ones, the default vectors,
+  // which a reset chooses again on the same training sets; with --static,
+  // the vector of --init-weights, which a reset restores. Training changes
+  // w, so they are kept for it. Otherwise, under --init-weights, the reset
+  // chooses per fold when the check fails (chooseResetVectors).
   initWeights_.clear();
   if (useSecondChance(w.size())) {
     initWeights_ = w;
@@ -105,33 +108,66 @@ int SanityCheck::getInitDirection(vector<Scores>& testset,
 
 void SanityCheck::getDefaultDirection(const vector<Scores>& trainset,
                                       vector<vector<double> >& w) const {
-    
+  for (size_t set = 0; set < w.size(); ++set) {
+    getDefaultDirection(trainset[set], set, w[set], false);
+  }
+}
+
+bool SanityCheck::getDefaultDirection(const Scores& trainset, size_t set,
+                                      vector<double>& w, bool quiet) const {
   //If I have not been given a initial direction
   if (!initDefaultDir_) {
     //if the default weights from the input file are not present
     if (defaultWeights_.size() == 0) {
       // Set init direction to be the most discriminative direction
-      for (size_t set = 0; set < w.size(); ++set) {
-        if (VERB > 1) std::cerr << "Split " << set + 1 << ":\t";
-        trainset[set].getInitDirection(initial_train_fdr_, w[set]);
+      if (quiet) {
+        return trainset.findInitDirection(initial_train_fdr_, w) > 0;
       }
-    } else {
-      // I want to assign the default vector that is present in the input file
-      for (size_t set = 0; set < w.size(); ++set) {
-        for (size_t ix = 0; ix < w[set].size(); ix++) {
-          w[set][ix] = 0;
-          if (ix < defaultWeights_.size()){
-              w[set][ix] = defaultWeights_[ix];
-          }          
-        }
+      if (VERB > 1) std::cerr << "Split " << set + 1 << ":\t";
+      return trainset.getInitDirection(initial_train_fdr_, w) > 0;
+    }
+    // I want to assign the default vector that is present in the input file
+    for (size_t ix = 0; ix < w.size(); ix++) {
+      w[ix] = 0;
+      if (ix < defaultWeights_.size()) {
+        w[ix] = defaultWeights_[ix];
       }
     }
-  } else {
-    for (size_t set = 0; set < w.size(); ++set) {
-      for (size_t ix = 0; ix < w[set].size(); ix++) {
-        w[set][ix] = 0;
-      }
-      w[set][static_cast<std::size_t>(abs(initDefaultDir_) - 1)] = (initDefaultDir_ < 0 ? -1 : 1);
+    return true;
+  }
+  for (size_t ix = 0; ix < w.size(); ix++) {
+    w[ix] = 0;
+  }
+  w[static_cast<std::size_t>(abs(initDefaultDir_) - 1)] =
+      (initDefaultDir_ < 0 ? -1 : 1);
+  return true;
+}
+
+void SanityCheck::chooseResetVectors(const vector<Scores>& trainset) {
+  resetWeights_.assign(trainset.size(), fileWeights_);
+  resetCounts_.assign(trainset.size(), std::make_pair(0, 0));
+  PosteriorEstimator::setNegative(true);  // as getInitDirection
+  for (size_t set = 0; set < trainset.size(); ++set) {
+    Scores::FeatureRows rows;
+    trainset[set].getFeatureRows(rows);
+    Scores::CountBuffers buffers;
+    // Both vectors are counted as getInitDirection counts the features:
+    // the targets with q < the initial training FDR in the training set,
+    // without the decoy + 1 of the FDR estimate. For the single feature of
+    // the default direction this is the count that chose it.
+    const bool skipDecoysPlusOne = true;
+    const int fileCount = trainset[set].countTargetsBelowFdr(
+        rows, fileWeights_, initial_train_fdr_, skipDecoysPlusOne, buffers);
+    vector<double> defaultWeights(fileWeights_.size(), 0.0);
+    int defaultCount = 0;
+    if (getDefaultDirection(trainset[set], set, defaultWeights, true)) {
+      defaultCount = trainset[set].countTargetsBelowFdr(
+          rows, defaultWeights, initial_train_fdr_, skipDecoysPlusOne,
+          buffers);
+    }
+    resetCounts_[set] = std::make_pair(fileCount, defaultCount);
+    if (defaultCount > fileCount) {
+      resetWeights_[set] = defaultWeights;
     }
   }
 }
@@ -159,8 +195,9 @@ bool SanityCheck::secondChance(const vector<Scores>& testset,
       testset, trainset, w, MergeNormalization::TRAIN_DECOYS, mergeFdr_,
       skipNormalizeScores_, test_fdr_, reportedLists_);
   // The fallback that the second chance replaces, counted as the run would
-  // report it: the vectors of a reset (each fold's default vector, or the
-  // vector of --init-weights in all folds), merged with the run's scheme
+  // report it: the vectors of a reset (each fold's default vector, or under
+  // --init-weights per fold its vector or the default vector, whichever
+  // separates more of the training set), merged with the run's scheme
   // (test up to three folds) and counted at the test FDR. A fallback whose
   // list cannot be used would end the run and counts 0.
   int resetCount = 0;
@@ -202,7 +239,10 @@ bool SanityCheck::secondChance(const vector<Scores>& testset,
   } else {
     cerr << trainedCount << " targets with q<" << test_fdr_
          << " for the trained SVMs, " << resetCount << " for the "
-         << (fileWeights_.empty() ? "default vectors" : "--init-weights vector")
+         << (fileWeights_.empty()
+                 ? "default vectors"
+                 : (choosesResetVectors() ? "--init-weights or default vectors"
+                                          : "--init-weights vector"))
          << " of a reset";
     if (!skipNormalizeScores_) {
       cerr << " merged with " << mergeNormalizationName(mergeScheme_);
@@ -237,6 +277,8 @@ bool SanityCheck::validateDirection(vector<Scores>& testset,
                                     vector<Scores>& trainset,
                                     vector<vector<double> >& w) {
   secondChanceKept_ = false;
+  resetWeights_.clear();
+  resetCounts_.clear();
   const bool pooled = usePooledCount(w.size());
   int overFDR = 0;
   if (pooled) {
@@ -272,6 +314,11 @@ bool SanityCheck::validateDirection(vector<Scores>& testset,
     // trained SVMs on the merged out-of-fold list, which small test bins
     // do not limit. It decides nothing under --override.
     const bool secondChanceTried = useSecondChance(w.size());
+    // under --init-weights the second chance compares with the vectors that
+    // a reset would choose
+    if (choosesResetVectors() && (secondChanceTried || !overRule_)) {
+      chooseResetVectors(trainset);
+    }
     int pooledCount = 0;
     keptBySecondChance = secondChanceTried &&
                          secondChance(testset, trainset, w, pooledCount) &&
@@ -425,8 +472,30 @@ void SanityCheck::readWeights(istream& weightStream, vector<double>& w) {
 
 void SanityCheck::resetDirection(vector<Scores>& trainset,
                                  vector<vector<double> >& w) {
-  if (!overRule_ && !fileWeights_.empty()) {
-    // the vector given with -W, not the default that it replaced
+  if (!overRule_ && choosesResetVectors()) {
+    // per fold the vector given with -W or the default that it replaced,
+    // chosen on the fold's training set
+    if (resetWeights_.size() != w.size()) {
+      chooseResetVectors(trainset);
+    }
+    cerr << "Resetting score vector, in each fold to the weights file or to "
+         << "the default vector, whichever gives more targets with q<"
+         << initial_train_fdr_ << " in the fold's training set (the weights "
+         << "file on ties; targets of the weights file vs the default "
+         << "vector):";
+    for (size_t set = 0; set < w.size(); ++set) {
+      const std::pair<int, int>& counts = resetCounts_[set];
+      cerr << (set > 0u ? "," : "") << " fold " << set + 1 << " "
+           << (counts.second > counts.first ? "default vector"
+                                            : "weights file")
+           << " (" << counts.first << " vs " << counts.second << ")";
+      w[set] = resetWeights_[set];
+    }
+    cerr << ". Use --override flag to prevent this." << endl;
+    resetWeights_.clear();
+    resetCounts_.clear();
+  } else if (!overRule_ && !fileWeights_.empty()) {
+    // --static: the vector given with -W is the model
     cerr << "Resetting score vector, using the initial weights from the "
          << "weights file. Use --override flag to prevent this." << endl;
     for (size_t set = 0; set < w.size(); ++set) {

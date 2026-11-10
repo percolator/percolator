@@ -217,6 +217,12 @@ class Scores {
 
   int getInitDirection(const double initialSelectionFdr,
                        std::vector<double>& direction) const;
+  // The direction of getInitDirection, the single feature that gives the
+  // most targets with q < initialSelectionFdr, without its message and
+  // without its error where no feature gives a target: direction is then
+  // all 0. Returns the number of those targets.
+  int findInitDirection(const double initialSelectionFdr,
+                        std::vector<double>& direction) const;
   void createXvalSetsBySpectrum(std::vector<Scores>& train,
                                 std::vector<Scores>& test,
                                 unsigned int xval_fold,
@@ -327,6 +333,10 @@ class Scores {
   // tooGoodSeparationIsError = false sets pi0 = 1 without a message when the
   // separation is too good; returns whether it is
   bool checkSeparationAndSetPi0(bool tooGoodSeparationIsError = true);
+  // The feature and direction of getInitDirection and its number of targets
+  // (-1 without features, with bestFeature -1)
+  int bestInitDirection(double initialSelectionFdr, int& bestFeature,
+                        bool& lowBest) const;
   bool is_output_rt_ = false;
 };
 

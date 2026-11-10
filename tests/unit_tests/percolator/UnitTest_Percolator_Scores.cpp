@@ -1432,9 +1432,13 @@ TEST_F(ScoresTest, SecondChanceOnHandMadeBins)
 // The reset, which merges with the run's test scheme, would report 12
 // targets, so the second chance must not keep the trained vector, as a
 // comparison with the initial direction counted with train-decoys (6) did.
-// With --init-weights f1 the initial direction is f1, and a reset restores
-// f1, which counts 6 with either scheme, so the second chance keeps the
-// trained vector there; against the default vectors f0 it would not.
+// With --init-weights the second chance compares with the vectors that a
+// reset chooses per fold, the weights of the file or the default vector f0,
+// whichever separates more of the 4 targets of the fold's training set:
+// f1 separates 2, so a reset gives f0 as without --init-weights, while
+// before it restored f1, which counts 6 with either scheme, and the second
+// chance kept the trained vector under test; f0 + 0.1 f1 separates all 4,
+// as f0 does, and a tie keeps the weights of the file.
 class ResetCountExample {
   public:
     static constexpr std::size_t numBins = 2;
@@ -1525,17 +1529,26 @@ TEST_F(ScoresTest, SecondChanceComparesWithTheReportedReset)
     norm->setNumFeatures(2);
     const std::string weightFile =
         ::testing::TempDir() + "SecondChanceComparesWithTheReportedReset.txt";
-    {
-        std::ofstream out(weightFile.c_str());
-        out << "f0\tf1\tm0\n0\t1\t0\n0\t1\t0\n";
-    }
-    for (bool initWeights : {false, true}) {
+    // the weights files, and the vectors that a reset then gives each fold
+    const std::vector<double> f0f1 = {1, 0.1, 0};
+    const std::vector<std::pair<std::string, std::vector<double> > > files = {
+        {"", {}}, {"0\t1\t0\n", example.f1[0]}, {"1\t0.1\t0\n", f0f1}};
+    for (const std::pair<std::string, std::vector<double> >& file : files) {
+        const bool initWeights = !file.first.empty();
+        if (initWeights) {
+            std::ofstream out(weightFile.c_str());
+            out << "f0\tf1\tm0\n" << file.first << file.first;
+        }
+        const std::vector<std::vector<double> > resetVectors =
+            file.second == f0f1
+                ? std::vector<std::vector<double> >(ResetCountExample::numBins,
+                                                    f0f1)
+                : example.f0;
         // with train-decoys as the run's scheme, as with more than three
-        // folds, the reset reports 6 targets and the trained vector is kept;
-        // with --init-weights f1 the reset reports 6 with both schemes
+        // folds, the reset reports 6 targets and the trained vector is kept
         for (Scheme scheme : {Scheme::TEST, Scheme::TRAIN_DECOYS}) {
             SCOPED_TRACE(::testing::Message() << "--init-weights "
-                                              << initWeights << ", scheme "
+                                              << file.first << ", scheme "
                                               << static_cast<int>(scheme));
             SanityCheck check;
             check.setDirectionCheck(SanityCheck::DirectionCheck::SECOND_CHANCE);
@@ -1547,20 +1560,165 @@ TEST_F(ScoresTest, SecondChanceComparesWithTheReportedReset)
             std::vector<Scores> trainBins = example.trainBins();
             std::vector<std::vector<double> > w(
                 ResetCountExample::numBins, std::vector<double>(3));
-            // f0 per bin: 6 targets above 3 decoys, q = 1/6; f1: none
-            EXPECT_EQ(initWeights ? 0 : 12,
+            // f0 and f0 + 0.1 f1 per bin: 6 targets above 3 decoys, q = 1/6;
+            // f1: none
+            EXPECT_EQ(file.second == example.f1[0] ? 0 : 12,
                       check.getInitDirection(bins, trainBins, norm.get(), w,
                                              testFdr, testFdr));
-            EXPECT_EQ(initWeights ? example.f1 : example.f0, w);
+            const int resetCount = Scores::countMergedTargets(
+                example.testBins(), example.trainBins(), resetVectors, scheme,
+                fdr, false, testFdr);
+            EXPECT_EQ(scheme == Scheme::TEST ? 12 : 6, resetCount);
             w = example.f1;
             PseudoRandom::setSeed(11u);
-            const bool keep = initWeights || scheme == Scheme::TRAIN_DECOYS;
+            // the trained f1 counts 6 with train-decoys
+            const bool keep = 6 >= resetCount;
+            EXPECT_EQ(keep, scheme == Scheme::TRAIN_DECOYS);
             EXPECT_EQ(keep, check.validateDirection(bins, trainBins, w));
             EXPECT_EQ(11u, PseudoRandom::getSeed());
             EXPECT_EQ(keep, check.secondChanceKept());
-            // kept, or reset to the default vectors f0; --init-weights f1
-            // would also be restored by a reset
-            EXPECT_EQ(keep ? example.f1 : example.f0, w);
+            EXPECT_EQ(keep ? example.f1 : resetVectors, w);
+        }
+    }
+    std::remove(weightFile.c_str());
+    DataSet::resetFeatureNames();
+    FeatureNames::resetNumFeatures();
+}
+
+// Under --init-weights a reset gives each fold the vector of the weights
+// file or the fold's default direction, whichever gives more targets with
+// q < the initial training FDR in the fold's training set, counted as
+// getInitDirection counts a feature; the weights file on ties. Two folds of
+// 6 targets and 6 decoys per training set: in the first, f0 puts every
+// target above every decoy and f1 does not separate; in the second, the
+// other way round. The weights file 2 f0 + 0.5 orders the first training
+// set as f0 does (6 targets each, a tie) and none of the second (0 against
+// the 6 of f1). One line on stderr names the choice and the counts of each
+// fold. The choice draws no random numbers. --static, whose given weights
+// are the model, restores them in every fold, --override keeps the trained
+// vectors, and without --init-weights each fold gets its default vector.
+// Before, a reset under --init-weights restored the file's weights in every
+// fold.
+TEST_F(ScoresTest, ResetChoosesTheWeightsFileOrTheDefaultVectorPerFold)
+{
+    FeatureNames::resetNumFeatures();
+    DataSet::resetFeatureNames();
+    DataSet::getFeatureNames().insertFeature("f0");
+    DataSet::getFeatureNames().insertFeature("f1");
+    FeatureNames::setNumFeatures(2);
+    const std::size_t numFolds = 2;
+    const double strong[6] = {10, 11, 12, 13, 14, 15};
+    const double weakTargets[6] = {1, 5, 2, 0, 3, 4};
+    const double weakDecoys[6] = {2, 3, 1, 4, 0, 5};
+    std::vector<double> features;
+    features.reserve(2 * 2 * 12 * numFolds);
+    std::vector<PSMDescription> psms(2 * 12 * numFolds);
+    std::vector<Scores> testBins(numFolds, Scores(false)),
+        trainBins(numFolds, Scores(false));
+    std::size_t next = 0;
+    auto add = [&](Scores& set, double x0, double x1, bool isTarget) {
+        features.push_back(x0);
+        features.push_back(x1);
+        PSMDescription& psm = psms[next];
+        psm.features = &features[2 * next];
+        psm.scan = static_cast<unsigned int>(++next);
+        set.addScoreHolder(ScoreHolder(
+            0.0, isTarget ? LabelType::TARGET : LabelType::DECOY, &psm));
+    };
+    for (std::size_t fold = 0; fold < numFolds; ++fold) {
+        for (std::size_t i = 0; i < 6; ++i) {
+            // fold 0: f0 separates; fold 1: f1 separates
+            const double t0 = fold == 0u ? strong[i] : weakTargets[i];
+            const double t1 = fold == 0u ? weakTargets[i] : strong[i];
+            const double d0 = fold == 0u ? strong[i] - 10.0 : weakDecoys[i];
+            const double d1 = fold == 0u ? weakDecoys[i] : strong[i] - 10.0;
+            add(trainBins[fold], t0, t1, true);
+            add(trainBins[fold], d0, d1, false);
+            // the test bins: no target reaches the test FDR of 1e-6
+            add(testBins[fold], t0, t1, true);
+            add(testBins[fold], d0, d1, false);
+        }
+        trainBins[fold].recalculateSizes();
+        testBins[fold].recalculateSizes();
+    }
+    const double fdr = 0.01;
+    std::vector<double> direction(3);
+    EXPECT_EQ(6, trainBins[0].getInitDirection(fdr, direction));
+    EXPECT_EQ((std::vector<double>{1, 0, 0}), direction);
+    EXPECT_EQ(6, trainBins[1].getInitDirection(fdr, direction));
+    EXPECT_EQ((std::vector<double>{0, 1, 0}), direction);
+    const std::string weightFile =
+        ::testing::TempDir() + "ResetChoosesTheWeightsFileOrTheDefault.txt";
+    {
+        std::ofstream out(weightFile.c_str());
+        out << "f0\tf1\tm0\n2\t0\t0.5\n2\t0\t0.5\n";
+    }
+    std::unique_ptr<Normalizer> norm = Normalizer::create(Normalizer::NONORM);
+    norm->setNumFeatures(2);
+    const std::vector<double> fileVector = {2, 0, 0.5};
+    const std::vector<std::vector<double> > trained = {{0.5, 0.5, 1.0},
+                                                       {0.25, 0.75, -1.0}};
+    enum class Case { FILE, STATIC, OVERRIDE, NO_FILE };
+    for (Case c : {Case::FILE, Case::STATIC, Case::OVERRIDE, Case::NO_FILE}) {
+        for (SanityCheck::DirectionCheck dc :
+             {SanityCheck::DirectionCheck::BINS,
+              SanityCheck::DirectionCheck::SECOND_CHANCE}) {
+            SCOPED_TRACE(::testing::Message() << "case " << static_cast<int>(c)
+                                              << ", check "
+                                              << static_cast<int>(dc));
+            SanityCheck check;
+            check.setDirectionCheck(dc);
+            check.setMergeScheme(MergeNormalization::TEST, fdr,
+                                 c == Case::STATIC);
+            check.setOverrule(c == Case::OVERRIDE);
+            if (c != Case::NO_FILE) {
+                check.setInitWeightFN(weightFile);
+            }
+            std::vector<std::vector<double> > w(numFolds,
+                                                std::vector<double>(3));
+            check.getInitDirection(testBins, trainBins, norm.get(), w, 1e-6,
+                                   fdr);
+            w = trained;
+            PseudoRandom::setSeed(7u);
+            ::testing::internal::CaptureStderr();
+            EXPECT_FALSE(check.validateDirection(testBins, trainBins, w));
+            const std::string err = ::testing::internal::GetCapturedStderr();
+            EXPECT_EQ(7u, PseudoRandom::getSeed());
+            std::vector<std::vector<double> > expected;
+            switch (c) {
+                case Case::FILE:
+                    expected = {fileVector, {0, 1, 0}};
+                    EXPECT_NE(std::string::npos,
+                              err.find(": fold 1 weights file (6 vs 6), fold 2 "
+                                       "default vector (0 vs 6). Use"));
+                    break;
+                case Case::STATIC:
+                    expected = {fileVector, fileVector};
+                    EXPECT_NE(std::string::npos,
+                              err.find("using the initial weights from the "
+                                       "weights file"));
+                    break;
+                case Case::OVERRIDE:
+                    expected = trained;
+                    EXPECT_EQ(std::string::npos, err.find("Resetting"));
+                    break;
+                case Case::NO_FILE:
+                    expected = {{1, 0, 0}, {0, 1, 0}};
+                    EXPECT_NE(std::string::npos,
+                              err.find("using default vector"));
+                    break;
+            }
+            EXPECT_EQ(expected, w);
+            if (dc == SanityCheck::DirectionCheck::SECOND_CHANCE) {
+                // it names what it compares with
+                EXPECT_NE(std::string::npos,
+                          err.find(c == Case::NO_FILE
+                                       ? "for the default vectors"
+                                       : c == Case::STATIC
+                                             ? "for the --init-weights vector"
+                                             : "for the --init-weights or "
+                                               "default vectors"));
+            }
         }
     }
     std::remove(weightFile.c_str());
