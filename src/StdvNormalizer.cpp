@@ -28,6 +28,8 @@ using namespace std;
 
 #include "Normalizer.h"
 #include "StdvNormalizer.h"
+#include "DataSet.h"
+#include "FeatureNames.h"
 #include "Globals.h"
 
 namespace {
@@ -43,8 +45,25 @@ struct ColumnRanges {
     if (value > maxV[ix]) maxV[ix] = value;
   }
   bool isConstant(size_t ix) const { return minV[ix] == maxV[ix]; }
+  bool hasSpread(size_t ix) const { return maxV[ix] > minV[ix]; }
   std::vector<double> minV, maxV;
 };
+
+// The squared deviations of values below about 1e-162 in magnitude
+// underflow to 0. The column then keeps its values, which are too small to
+// change a score.
+void warnVarianceUnderflow(size_t featureIndex, const ColumnRanges& ranges,
+                           size_t ix) {
+  const std::streamsize precision = std::cerr.precision(6);
+  std::cerr << "Warning: the variance of feature "
+            << DataSet::getFeatureNames().describeFeature(featureIndex)
+            << " underflows to 0, as its values, between " << ranges.minV[ix]
+            << " and " << ranges.maxV[ix] << ", are too small in magnitude. "
+            << "The feature is not scaled and has practically no effect on "
+            << "the scores. Rescale it in the input, e.g. multiply it by a "
+            << "constant." << std::endl;
+  std::cerr.precision(precision);
+}
 
 }  // namespace
 
@@ -153,6 +172,9 @@ void StdvNormalizer::setSet(std::vector<double*>& featuresV,
   }
   for (ix = 0; ix < numFeatures + numRetentionFeatures; ++ix) {
     if (div[ix] <= 0 || n == 0) {
+      if (ranges.hasSpread(ix)) {
+        warnVarianceUnderflow(ix, ranges, ix);
+      }
       div[ix] = 1.0;
     } else {
       div[ix] = sqrt(div[ix] / n);
@@ -220,6 +242,9 @@ void StdvNormalizer::updateSet(vector<double*> & featuresV, size_t offset,
   }
   for (ix = 0; ix < numFeatures; ++ix) {
     if (div[offset + ix] <= 0 || n == 0) {
+      if (ranges.hasSpread(ix)) {
+        warnVarianceUnderflow(offset + ix, ranges, ix);
+      }
       div[offset + ix] = 1.0;
     } else {
       div[offset + ix] = sqrt(div[offset + ix] / n);

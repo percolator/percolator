@@ -88,6 +88,31 @@ TEST(NormalizerTest, StdvNormalizerOfAConstantRetentionColumn) {
   EXPECT_DOUBLE_EQ(1.0, norm->GetVDiv()[3]);
 }
 
+// The squared deviations of values around 1e-170 underflow to 0, so the
+// column is not scaled and drops out of the scores. This used to be silent.
+TEST(NormalizerTest, StdvNormalizerWarnsWhenTheVarianceUnderflows) {
+  std::unique_ptr<Normalizer> norm = Normalizer::create(Normalizer::STDV);
+  auto rows = makeRows({1e-170, 3e-170, 2e-170, 4e-170});
+  testing::internal::CaptureStderr();
+  setSet(*norm, rows);
+  const std::string warning = testing::internal::GetCapturedStderr();
+  EXPECT_NE(std::string::npos, warning.find("Warning: the variance of feature "
+                                            "number 2 underflows to 0"))
+      << warning;
+  EXPECT_NE(std::string::npos, warning.find("between 1e-170 and 4e-170"))
+      << warning;
+  EXPECT_EQ(1.0, norm->GetVDiv()[1]);
+
+  // no warning for a constant column or for ordinary values
+  std::unique_ptr<Normalizer> quiet = Normalizer::create(Normalizer::STDV);
+  auto constantRows = makeRows({1e-170, 1e-170, 1e-170, 1e-170});
+  auto ordinaryRows = makeRows({1e-150, 3e-150, 2.0, 0.0});
+  testing::internal::CaptureStderr();
+  setSet(*quiet, constantRows);
+  setSet(*quiet, ordinaryRows);
+  EXPECT_EQ("", testing::internal::GetCapturedStderr());
+}
+
 // two values of 1e308 make the sum, and so the mean, infinite
 TEST(NormalizerTest, StdvNormalizerRejectsAnInfiniteMean) {
   std::unique_ptr<Normalizer> norm = Normalizer::create(Normalizer::STDV);
