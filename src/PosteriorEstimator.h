@@ -96,7 +96,7 @@ class PosteriorEstimator {
   // PEP method: I-spline by default, PAVA, or P-IRLS; regression on the
   // target q values by default or on the target-decoy labels (tdcPep_)
   bool irlsPep_ = false, pavaPep_ = false, tdcPep_ = false, rankPep_ = false;
-  bool versionRequested_ = false;  // --version: run does nothing
+  bool nothingToRun_ = false;  // --version, --help: run does nothing
 };
 
 #endif /*POSTERIORESTIMATOR_H_*/

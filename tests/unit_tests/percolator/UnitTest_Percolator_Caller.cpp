@@ -140,6 +140,32 @@ TEST(CallerTest, VerbosityAndNoTerminateDoNotCarryOver) {
   Globals::clean();
 }
 
+// --help used to end the process inside the option parser. parseOptions now
+// returns true and run does nothing, as for --version, so that main ends
+// with status 0 as before and a library user keeps its process.
+TEST(CallerTest, HelpReturnsWithoutEndingTheProcess) {
+  for (const char* flag : {"--help", "-h", "--html"}) {
+    // the options after the help are not read, not even invalid ones
+    std::vector<std::string> args = {"percolator", flag, "--no-such-option",
+                                     "missing.pin"};
+    std::vector<char*> argv;
+    for (std::string& arg : args) argv.push_back(&arg[0]);
+    Caller caller;
+    testing::internal::CaptureStderr();
+    bool parsed = false;
+    EXPECT_NO_THROW(parsed = caller.parseOptions(static_cast<int>(args.size()),
+                                                 argv.data()));
+    int ran = 0;
+    EXPECT_NO_THROW(ran = caller.run());
+    const std::string help = testing::internal::GetCapturedStderr();
+    EXPECT_TRUE(parsed) << flag;
+    EXPECT_EQ(1, ran) << flag;
+    EXPECT_NE(std::string::npos, help.find("Options:")) << flag;
+    EXPECT_NE(std::string::npos, help.find("--no-terminate")) << flag;
+  }
+  Globals::clean();
+}
+
 namespace {
 
 bool parseOnly(std::vector<std::string> args) {

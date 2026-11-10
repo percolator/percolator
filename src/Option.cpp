@@ -130,7 +130,8 @@ void CommandLineParser::parseArgs(int argc, char** argv) {
   if (argc > 0 && argv[0] != NULL && argv[0][0] != '\0') {
     programName = argv[0];
   }
-  for (int i = 1; i < argc; i++) {
+  // the help ends the parsing, as when it ended the process
+  for (int i = 1; i < argc && !helpRequested_; i++) {
     // a lone "-" is an argument, as in other command line tools
     if (argv[i][0] == '-' && argv[i][1] != '\0') {
       findOption(argv, i, argc);
@@ -220,7 +221,7 @@ void CommandLineParser::help() {
     }
   }
   std::cerr << endl << endnote << endl;
-  exit(0);
+  helpRequested_ = true;
 }
 
 void CommandLineParser::htmlHelp() {
@@ -256,15 +257,17 @@ void CommandLineParser::htmlHelp() {
   searchandreplace(htmlEnd, "\n", "<br>");
   std::cerr << "<br/>" << endl << htmlEnd << "<br/>" << endl;
   std::cerr << "</blockquote></body></html>" << endl;
-  exit(0);
+  helpRequested_ = true;
 }
 
 void CommandLineParser::findOption(char** argv, int& index, int argc) {
   if ((std::string)argv[index] == "-html" || (std::string)argv[index] == "--html") {
     htmlHelp();
+    return;
   }
   if ((std::string)argv[index] == "-h" || (std::string)argv[index] == "--help") {
     help();
+    return;
   }
   std::string optstr = (std::string)argv[index];
   std::string valstr("");

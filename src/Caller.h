@@ -70,8 +70,9 @@ class Caller {
   // holds the concatenation of multiple input files, removed at the end
   std::unique_ptr<TmpDir> tmpDir_;
 
-  // --version was given: parseOptions printed it and run does nothing
-  bool versionRequested_ = false;
+  // --version or --help was given: parseOptions printed it and run does
+  // nothing
+  bool nothingToRun_ = false;
 
   // file input parameters
   bool readStdIn_;

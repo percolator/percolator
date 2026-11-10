@@ -539,9 +539,13 @@ bool Caller::parseOptions(int argc, char** argv) {
   // finally parse and handle return codes (display help etc...)
   cmd.parseArgs(argc, argv);
 
+  if (cmd.helpRequested()) {
+    nothingToRun_ = true;  // the parser printed the help
+    return true;
+  }
   if (cmd.isOptionSet("version")) {
     std::cout << "Percolator version " << VERSION << std::endl;
-    versionRequested_ = true;
+    nothingToRun_ = true;
     return true;
   }
 
@@ -551,6 +555,10 @@ bool Caller::parseOptions(int argc, char** argv) {
 
   if (cmd.isOptionSet("parameter-file")) {
     cmd.parseArgsParamFile(cmd.options["parameter-file"]);
+    if (cmd.helpRequested()) {
+      nothingToRun_ = true;
+      return true;
+    }
   }
 
   if (cmd.isOptionSet("verbose")) {
@@ -1362,8 +1370,8 @@ bool Caller::loadAndNormalizeData(std::istream& dataStream,
  * 5. (optional) calculate protein probabilities
  */
 int Caller::run() {
-  if (versionRequested_) {
-    return 1;  // parseOptions printed the version, there is nothing to run
+  if (nothingToRun_) {
+    return 1;  // parseOptions printed the version or the help
   }
   timer.reset();
   PSMDescription::resetSpectrumFileNames();

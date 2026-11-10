@@ -152,3 +152,34 @@ TEST_F(OptionTest, CheckSeparationOfOptionsAndArguments)
     EXPECT_EQ("a3", parser.arguments[2]);
     EXPECT_EQ("a4", parser.arguments[3]);
 }
+
+// -h, --help and --html used to call exit(0) inside the parser, which ended
+// the process of a program that uses Percolator as a library.
+TEST_F(OptionTest, CheckHelpReturnsToTheCaller)
+{
+    EXPECT_FALSE(parser.helpRequested());
+    // what follows the help is not read, as when the help ended the process
+    char const *argv[] = {
+        "prog", "-a", "a1", "--help", "--unknownOption", "a2", NULL
+    };
+    testing::internal::CaptureStderr();
+    EXPECT_NO_THROW(parseArgv(argv));
+    const std::string help = testing::internal::GetCapturedStderr();
+
+    EXPECT_TRUE(parser.helpRequested());
+    EXPECT_NE(std::string::npos, help.find("Options:"));
+    EXPECT_NE(std::string::npos, help.find("This takes a real number."));
+    EXPECT_TRUE(parser.isOptionSet("aShortOption"));
+    ASSERT_EQ(1u, parser.arguments.size());
+    EXPECT_EQ("a1", parser.arguments[0]);
+
+    for (const char* flag : {"-h", "--html", "-html"}) {
+        CommandLineParser other;
+        char const *otherArgv[] = {"prog", flag, "--unknownOption", NULL};
+        testing::internal::CaptureStderr();
+        EXPECT_NO_THROW(other.parseArgs(3, const_cast<char**>(otherArgv)));
+        const std::string text = testing::internal::GetCapturedStderr();
+        EXPECT_TRUE(other.helpRequested()) << flag;
+        EXPECT_NE(std::string::npos, text.find("Options:")) << flag;
+    }
+}

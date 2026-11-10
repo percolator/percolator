@@ -571,8 +571,8 @@ void PosteriorEstimator::readScores(const std::string& fileName,
 }
 
 int PosteriorEstimator::run() {
-  if (versionRequested_) {
-    return true;  // parseOptions printed the version
+  if (nothingToRun_) {
+    return true;  // parseOptions printed the version or the help
   }
   // Merge a labeled version of the two lists into a combined list
   vector<pair<double, bool> > combined;
@@ -832,9 +832,13 @@ bool PosteriorEstimator::parseOptions(int argc, char** argv) {
                    TRUE_IF_SET);
 
   cmd.parseArgs(argc, argv);
+  if (cmd.helpRequested()) {
+    nothingToRun_ = true;  // the parser printed the help
+    return true;
+  }
   if (cmd.isOptionSet("version")) {
     std::cout << "qvality version " << VERSION << std::endl;
-    versionRequested_ = true;
+    nothingToRun_ = true;
     return true;
   }
   if (cmd.isOptionSet("verbose")) {
@@ -870,12 +874,17 @@ bool PosteriorEstimator::parseOptions(int argc, char** argv) {
          << "with --irls-pep." << endl;
   }
   if (cmd.arguments.size() > 2) {
+    // ends with the help and exit status 0, as when help() ended the process
     cerr << "Too many arguments given" << endl;
     cmd.help();
+    nothingToRun_ = true;
+    return true;
   }
   if (cmd.arguments.size() == 0) {
     cerr << "No arguments given" << endl;
     cmd.help();
+    nothingToRun_ = true;
+    return true;
   }
   targetFile = cmd.arguments[0];
   if (cmd.arguments.size() == 2) {

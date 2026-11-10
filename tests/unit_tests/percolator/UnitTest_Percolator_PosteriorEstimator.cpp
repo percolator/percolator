@@ -68,3 +68,28 @@ TEST(PosteriorEstimatorTest, ReadScores) {
   scores.clear();
   EXPECT_THROW(ScoreReader::readScores(fn, "null score", scores), MyException);
 }
+
+// The help, also the one printed for a wrong number of arguments, used to
+// end the process inside the option parser. parseOptions returns true and
+// run does nothing, so qvality ends with status 0 as before.
+TEST(PosteriorEstimatorTest, HelpReturnsWithoutEndingTheProcess) {
+  const std::vector<std::vector<std::string> > commands = {
+      {"qvality", "--help", "--no-such-option"},
+      {"qvality"},
+      {"qvality", "a.txt", "b.txt", "c.txt"}};
+  for (std::vector<std::string> args : commands) {
+    std::vector<char*> argv;
+    for (std::string& arg : args) argv.push_back(&arg[0]);
+    PosteriorEstimator estimator;
+    testing::internal::CaptureStderr();
+    bool parsed = false;
+    EXPECT_NO_THROW(parsed = estimator.parseOptions(
+                        static_cast<int>(args.size()), argv.data()));
+    int ran = 0;
+    EXPECT_NO_THROW(ran = estimator.run());
+    const std::string help = testing::internal::GetCapturedStderr();
+    EXPECT_TRUE(parsed) << args.size();
+    EXPECT_TRUE(ran) << args.size();
+    EXPECT_NE(std::string::npos, help.find("Options:")) << args.size();
+  }
+}
