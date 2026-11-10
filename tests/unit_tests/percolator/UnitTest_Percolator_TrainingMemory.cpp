@@ -348,3 +348,63 @@ TEST(TrainingMemoryTest, inPlaceRowsGiveTheSameSolution) {
     }
   }
 }
+
+// The normal equations of the direct solve, which are built from four rows
+// per pass, equal bit for bit those built from one row per pass, in which
+// every element receives the terms of the rows in the same order: for
+// numbers of active rows with every remainder of four, on copied rows and
+// on rows in place.
+TEST(TrainingMemoryTest, normalEquationsOfFourRowsPerPassAreBitwiseEqual) {
+  const int numFeatures = 9;
+  const int n = numFeatures + 1;
+  const int m = 61;
+  std::vector<double> storage;
+  AlgIn inPlace(n, true);
+  makeTrainingSet(m, numFeatures, 4242u, storage, inPlace);
+  // values with full mantissas, so that the order of the additions shows
+  for (int i = 0; i < m; ++i) {
+    for (int k = 0; k < numFeatures; ++k) {
+      double& value = storage[static_cast<std::size_t>(i) * n + k];
+      value = value / 3.0 + 1e-9 * (i * 31 + k);
+    }
+  }
+  AlgIn copied(n);
+  for (int i = 0; i < m; ++i) {
+    copied.add(inPlace.row(i), inPlace.Y[i]);
+  }
+  const double cpos = 0.7, cneg = 2.1;
+  for (const AlgIn* data : {&copied, &inPlace}) {
+    for (int active = 0; active <= 23; ++active) {
+      // active rows that skip through the set, in an order of their own
+      std::vector<int> J(static_cast<std::size_t>(active));
+      for (int i = 0; i < active; ++i) J[i] = (i * 37 + 5) % m;
+      std::vector<double> expectedG(static_cast<std::size_t>(n) * n, 0.0);
+      std::vector<double> expectedB(static_cast<std::size_t>(n), 0.0);
+      for (int i = 0; i < active; ++i) {
+        const double* x = data->row(J[i]);
+        const double y = data->Y[J[i]];
+        const double c = y == 1 ? cpos : cneg;
+        for (int j = 0; j < n; ++j) {
+          const double cx = c * x[j];
+          expectedB[j] += cx * y;
+          for (int k = j; k < n; ++k) {
+            expectedG[static_cast<std::size_t>(j) * n + k] += cx * x[k];
+          }
+        }
+      }
+      // G and b are overwritten
+      std::vector<double> G(static_cast<std::size_t>(n) * n, -7.0);
+      std::vector<double> b(static_cast<std::size_t>(n), -7.0);
+      accumulateNormalEquations(*data, J.data(), active, cpos, cneg, G.data(),
+                                b.data());
+      for (int j = 0; j < n; ++j) {
+        ASSERT_EQ(expectedB[j], b[j]) << active << " rows, b " << j;
+        for (int k = j; k < n; ++k) {
+          ASSERT_EQ(expectedG[static_cast<std::size_t>(j) * n + k],
+                    G[static_cast<std::size_t>(j) * n + k])
+              << active << " rows, G " << j << " " << k;
+        }
+      }
+    }
+  }
+}

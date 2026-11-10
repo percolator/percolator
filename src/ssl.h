@@ -158,6 +158,14 @@ int CGLS(const AlgIn& set, const double lambda, const int cgitermax,
          double* beta, double* o,
          double cpos, double cneg, SolverWorkspace& workspace);
 
+/* The normal equations of the direct solve: fills the upper triangle of the
+   n x n matrix G (row-major) with sum_i C_i x_i x_i' and b with
+   sum_i C_i Y_i x_i over the active examples x_i, i in J[0..active), where
+   C_i is cpos for a label of 1 and cneg otherwise. */
+void accumulateNormalEquations(const AlgIn& set, const int* J, int active,
+                               double cpos, double cneg, double* G,
+                               double* b);
+
 /* Linear Modified Finite Newton L2-SVM*/
 /* Solves: min_w 0.5*Options->lamda*w'*w + 0.5*sum_i Data->C[i] max(0,1 - Y[i] w' x_i)^2 */
 /* Starts from Weights and their Outputs (the first set.m values are used),

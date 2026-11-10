@@ -225,24 +225,68 @@ static void scoreRows(const int* rows, int numRows, const AlgIn& data, int n0,
 }
 #undef DDOT_BLOCK
 
-/* Solves the same least squares problem as CGLS exactly, by Cholesky
-   factorisation of the normal equations
-     (lambda I + sum_i C_i x_i x_i') beta = sum_i C_i Y_i x_i
-   over the active examples. The n x n system (n = number of features plus
-   one) is built in a single pass over the active rows, whereas CGLS needs
-   two passes per iteration. Updates the outputs of the active examples. */
-int directLeastSquares(const AlgIn& data, const double lambda, const int* J,
-                       int active, double* beta, double* o, double cpos,
-                       double cneg, SolverWorkspace& workspace) {
+/* The pointers of the kernel below do not alias: the Gram matrix belongs to
+   the solver's workspace and the rows to the training set. */
+#if defined(__GNUC__) || defined(__clang__) || defined(_MSC_VER)
+#define SSL_RESTRICT __restrict
+#else
+#define SSL_RESTRICT
+#endif
+
+/* Builds the normal equations of the active examples, see
+   directLeastSquares: G = sum_i C_i x_i x_i' (upper triangle, row-major,
+   n x n) and b = sum_i C_i Y_i x_i.
+
+   Four rows are added per pass over G. Each element of G and b still
+   receives the terms of the rows in their order, so the sums are, bit for
+   bit, those of adding one row per pass; but the element is loaded and
+   stored once for four rows, and G, which the rows' passes otherwise
+   stream through, is read and written a quarter as often. */
+void accumulateNormalEquations(const AlgIn& data, const int* J, int active,
+                               double cpos, double cneg, double* G,
+                               double* b) {
   const int n = data.n;
   const double* Y = data.Y.data();
-  double* G = workspace.gram.data();  // upper triangle, row-major
-  double* b = workspace.r.data();
   std::fill(G, G + static_cast<size_t>(n) * n, 0.0);
   std::fill(b, b + n, 0.0);
-  for (int i = 0; i < active; i++) {
+  int i = 0;
+  for (; i + 4 <= active; i += 4) {
+    if (i + 12 <= active) {
+      for (int q = i + 8; q < i + 12; q++) prefetchRow(data.row(J[q]), n);
+    }
+    const int i0 = J[i], i1 = J[i + 1], i2 = J[i + 2], i3 = J[i + 3];
+    const double* SSL_RESTRICT x0 = data.row(i0);
+    const double* SSL_RESTRICT x1 = data.row(i1);
+    const double* SSL_RESTRICT x2 = data.row(i2);
+    const double* SSL_RESTRICT x3 = data.row(i3);
+    const double c0 = (Y[i0] == 1) ? cpos : cneg;
+    const double c1 = (Y[i1] == 1) ? cpos : cneg;
+    const double c2 = (Y[i2] == 1) ? cpos : cneg;
+    const double c3 = (Y[i3] == 1) ? cpos : cneg;
+    const double y0 = Y[i0], y1 = Y[i1], y2 = Y[i2], y3 = Y[i3];
+    for (int j = 0; j < n; j++) {
+      const double cx0 = c0 * x0[j], cx1 = c1 * x1[j], cx2 = c2 * x2[j],
+                   cx3 = c3 * x3[j];
+      double t = b[j];
+      t += cx0 * y0;
+      t += cx1 * y1;
+      t += cx2 * y2;
+      t += cx3 * y3;
+      b[j] = t;
+      double* SSL_RESTRICT Gj = G + static_cast<size_t>(j) * n;
+      for (int k = j; k < n; k++) {
+        double g = Gj[k];
+        g += cx0 * x0[k];
+        g += cx1 * x1[k];
+        g += cx2 * x2[k];
+        g += cx3 * x3[k];
+        Gj[k] = g;
+      }
+    }
+  }
+  // the last one to three rows
+  for (; i < active; i++) {
     const int ii = J[i];
-    if (i + 4 < active) prefetchRow(data.row(J[i + 4]), n);
     const double* x = data.row(ii);
     const double c = (Y[ii] == 1) ? cpos : cneg;
     for (int j = 0; j < n; j++) {
@@ -254,6 +298,22 @@ int directLeastSquares(const AlgIn& data, const double lambda, const int* J,
       }
     }
   }
+}
+#undef SSL_RESTRICT
+
+/* Solves the same least squares problem as CGLS exactly, by Cholesky
+   factorisation of the normal equations
+     (lambda I + sum_i C_i x_i x_i') beta = sum_i C_i Y_i x_i
+   over the active examples. The n x n system (n = number of features plus
+   one) is built in a single pass over the active rows, whereas CGLS needs
+   two passes per iteration. Updates the outputs of the active examples. */
+int directLeastSquares(const AlgIn& data, const double lambda, const int* J,
+                       int active, double* beta, double* o, double cpos,
+                       double cneg, SolverWorkspace& workspace) {
+  const int n = data.n;
+  double* G = workspace.gram.data();  // upper triangle, row-major
+  double* b = workspace.r.data();
+  accumulateNormalEquations(data, J, active, cpos, cneg, G, b);
   // Cholesky factorisation G = L L', with L stored in the lower triangle
   for (int j = 0; j < n; j++) {
     G[static_cast<size_t>(j) * n + j] += lambda;
