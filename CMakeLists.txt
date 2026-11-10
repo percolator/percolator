@@ -22,6 +22,15 @@ if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Darwin"
 endif()
 
 project(PERCOLATOR)
+
+# The oldest supported GCC is 9: the code uses std::filesystem, which GCC 8
+# keeps in a separate library (the link fails with undefined references).
+# GCC 11 adds std::to_chars and std::from_chars for double; with GCC 9 and 10
+# the slower number conversions are used (see src/CMakeLists.txt).
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 9)
+  message(FATAL_ERROR "Percolator needs GCC 9 or later "
+                      "(this is GCC ${CMAKE_CXX_COMPILER_VERSION}).")
+endif()
 set(PERCOLATOR_SOURCE_DIR ${CMAKE_SOURCE_DIR})
 include("CommonCMake.txt")
 
