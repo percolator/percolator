@@ -79,7 +79,10 @@ Caller::Caller()
   // A process can run Percolator more than once (Crux, the unit tests).
   // The settings below are process-wide and changed by the options and by
   // the steps of a run, so they are set back to their initial values here,
-  // and every run gives the same results as in a new process.
+  // and every run gives the same results as in a new process. This holds
+  // for the verbosity and --no-terminate too: a setting made before the
+  // Caller is constructed does not reach its run.
+  Globals::clean();
   PseudoRandom::setSeed(1u);
   PosteriorEstimator::resetToDefaults();
   ProteinProbEstimator::setCalcProteinLevelProb(false);

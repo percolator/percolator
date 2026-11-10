@@ -29,6 +29,7 @@
 
 #include "Caller.h"
 #include "TmpDir.h"
+#include "Globals.h"
 
 namespace {
 
@@ -112,6 +113,31 @@ TEST(CallerTest, RunsGiveTheSameResultsAfterOtherRuns) {
     EXPECT_EQ(first, readFile(file(std::string("protein2") + suffix)))
         << suffix;
   }
+}
+
+// -v and --no-terminate of one run used to stay set for every later run of
+// the process: only main() restored them.
+TEST(CallerTest, VerbosityAndNoTerminateDoNotCarryOver) {
+  Globals::clean();  // earlier tests leave their verbosity behind
+  const int defaultVerbosity = Globals::getInstance()->getVerbose();
+  ASSERT_NE(0, defaultVerbosity);
+  ASSERT_FALSE(Globals::getInstance()->getNoTerminate());
+  {
+    std::vector<std::string> args = {"percolator", "-v", "0", "--no-terminate",
+                                     "missing.pin"};
+    std::vector<char*> argv;
+    for (std::string& arg : args) argv.push_back(&arg[0]);
+    Caller caller;
+    ASSERT_TRUE(caller.parseOptions(static_cast<int>(args.size()), argv.data()));
+    EXPECT_EQ(0, Globals::getInstance()->getVerbose());
+    EXPECT_TRUE(Globals::getInstance()->getNoTerminate());
+  }
+  {
+    Caller caller;
+    EXPECT_EQ(defaultVerbosity, Globals::getInstance()->getVerbose());
+    EXPECT_FALSE(Globals::getInstance()->getNoTerminate());
+  }
+  Globals::clean();
 }
 
 namespace {
