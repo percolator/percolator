@@ -15,12 +15,25 @@
 
  *******************************************************************************/
 #include <cstdlib>
+#ifdef __GLIBC__
+#include <malloc.h>
+#endif
 #include "Caller.h"
 #include "Globals.h"
 using namespace std;
 
 
 int main(int argc, char** argv) {
+#ifdef __GLIBC__
+  // glibc serves a block above its mmap threshold from a mapping of its own
+  // and returns it to the system when it is freed. The threshold starts at
+  // 128 KiB but rises to the size of every such block that is freed, up to
+  // 32 MiB, and smaller blocks then stay in the heap after they are freed:
+  // the training data of the first stages remained resident during the
+  // later ones. A fixed threshold switches the adjustment off. Set here and
+  // not in the library, whose callers choose their own allocator settings.
+  mallopt(M_MMAP_THRESHOLD, 1024 * 1024);
+#endif
   int retVal = EXIT_FAILURE; 
   {
     Caller caller;
