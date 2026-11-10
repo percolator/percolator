@@ -47,6 +47,9 @@ head -n 1 "$IN/concatenated.pin" > "$IN/part1.pin"
 head -n 1 "$IN/concatenated.pin" > "$IN/part2.pin"
 awk 'NR > 1 && NR % 2 == 0' "$IN/concatenated.pin" >> "$IN/part1.pin"
 awk 'NR > 1 && NR % 2 == 1' "$IN/concatenated.pin" >> "$IN/part2.pin"
+# a FASTA file with the proteins of the concatenated input
+awk -f "$SRC/tests/ci/proteins_fasta.awk" "$IN/concatenated.pin" \
+  > "$IN/concatenated.fasta" || exit 2
 
 runs=0
 failures=0
@@ -119,6 +122,27 @@ perc syn_separate "$IN/separate.pin"
 perc syn_separate_tdc -Y "$IN/separate.pin"
 perc syn_separate_tdc_pava --tdc-pep --pava-pep "$IN/separate.pin"
 perc syn_multi_file "$IN/part1.pin" "$IN/part2.pin"
+perc syn_folds1 --num-folds 1 "$IN/concatenated.pin"
+perc syn_folds5 --num-folds 5 "$IN/concatenated.pin"
+perc syn_folds10_separate --num-folds 10 "$IN/separate.pin"
+perc syn_in_place --in-place-training "$IN/concatenated.pin"
+perc syn_in_place_subset --in-place-training -N $((NPSMS / 4)) \
+  "$IN/separate.pin"
+perc syn_merge_train --merge-normalization train "$IN/concatenated.pin"
+perc syn_merge_train_decoys --merge-normalization train-decoys \
+  "$IN/separate.pin"
+perc syn_merge_none --merge-normalization none "$IN/concatenated.pin"
+perc syn_direction_pooled --direction-check pooled "$IN/concatenated.pin"
+perc syn_direction_second_chance --direction-check second-chance \
+  "$IN/separate.pin"
+perc syn_search_input_separate -I separate "$IN/concatenated.pin"
+perc syn_search_input_concatenated -I concatenated "$IN/separate.pin"
+perc syn_train_fdr_initial --train-fdr-initial 0.05 "$IN/concatenated.pin"
+perc syn_fasta -f "$IN/concatenated.fasta" -z trypsin -P decoy_ \
+  -l "$OUT/syn_fasta/proteins.txt" -L "$OUT/syn_fasta/decoy_proteins.txt" \
+  "$IN/concatenated.pin"
+perc syn_stdin --stdinput-tab < "$IN/concatenated.pin"
+perc syn_tab_in -j "$IN/concatenated.pin"
 qval qv_default "$QD/target.xcorr" "$QD/null.xcorr"
 qval qv_irls_pep --irls-pep "$QD/target.xcorr" "$QD/null.xcorr"
 qval qv_pava_pep --pava-pep "$QD/target.xcorr" "$QD/null.xcorr"
