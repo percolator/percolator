@@ -18,9 +18,12 @@
 
 #include <gtest/gtest.h>
 
+#include <iostream>
 #include <memory>
+#include <string>
 #include <vector>
 
+#include "Globals.h"
 #include "MyException.h"
 #include "Normalizer.h"
 
@@ -74,4 +77,29 @@ TEST(NormalizerTest, UniNormalizerRejectsAnInfiniteRange) {
   auto okRows = makeRows({1e300, -1e300, 1.0});
   EXPECT_NO_THROW(setSet(*ok, okRows));
   EXPECT_DOUBLE_EQ(2e300, ok->GetVDiv()[1]);
+}
+
+// At -v 3 the normalization factors are printed with two digits. The
+// precision of cerr must be the same afterwards: the Stage lines of -v 3
+// are printed with it.
+TEST(NormalizerTest, StdvNormalizerRestoresThePrecisionOfCerr) {
+  const int origVerbose = Globals::getInstance()->getVerbose();
+  Globals::getInstance()->setVerbose(3);
+  const std::streamsize origPrecision = std::cerr.precision(6);
+  ::testing::internal::CaptureStderr();
+
+  std::unique_ptr<Normalizer> norm = Normalizer::create(Normalizer::STDV);
+  auto rows = makeRows({1.0, 3.0, 1.0, 3.0});
+  setSet(*norm, rows);
+  EXPECT_EQ(6, std::cerr.precision());
+
+  std::vector<double*> features;
+  for (auto& row : rows) features.push_back(row.data());
+  norm->updateSet(features, 0, 2);
+  EXPECT_EQ(6, std::cerr.precision());
+
+  const std::string printed = ::testing::internal::GetCapturedStderr();
+  EXPECT_NE(std::string::npos, printed.find("Normalization factors"));
+  std::cerr.precision(origPrecision);
+  Globals::getInstance()->setVerbose(origVerbose);
 }

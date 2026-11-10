@@ -82,6 +82,9 @@ void StdvNormalizer::setSet(std::vector<double*>& featuresV,
       sub[ix] += features[ix - numFeatures];
     }
   }
+  // the factors are printed with two digits; the precision of cerr is put
+  // back afterwards, since the Stage lines of -v 3 are printed with it
+  const std::streamsize oldPrecision = cerr.precision();
   if (VERB > 2) {
     cerr.precision(2);
     cerr << "Normalization factors" << endl << "Avg ";
@@ -131,6 +134,7 @@ void StdvNormalizer::setSet(std::vector<double*>& featuresV,
   }
   if (VERB > 2) {
     cerr << endl;
+    cerr.precision(oldPrecision);
   }
   checkFactorsFinite(0, numFeatures + numRetentionFeatures, "mean",
                      "standard deviation");
@@ -150,6 +154,9 @@ void StdvNormalizer::updateSet(vector<double*> & featuresV, size_t offset,
       sub[offset + ix] += features[ix];
     }
   }
+  // the factors are printed with two digits; the precision of cerr is put
+  // back afterwards, since the Stage lines of -v 3 are printed with it
+  const std::streamsize oldPrecision = cerr.precision();
   if (VERB > 2) {
     cerr.precision(2);
     cerr << "Normalization factors" << endl << "Avg ";
@@ -189,6 +196,7 @@ void StdvNormalizer::updateSet(vector<double*> & featuresV, size_t offset,
   }
   if (VERB > 2) {
     cerr << endl;
+    cerr.precision(oldPrecision);
   }
   checkFactorsFinite(offset, offset + numFeatures, "mean",
                      "standard deviation");
