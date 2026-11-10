@@ -749,7 +749,8 @@ void CrossValidation::postIterationProcessing(Scores& fullset,
     // vector given with --init-weights, the same in all folds, or else the
     // default vector chosen on that fold's training set; with --override the
     // trained vector, since the other folds' vectors were trained on the
-    // bin. The weights written with -w then describe the scores.
+    // bin. The weights written with -w then describe the scores, but for
+    // the exception that follows.
     //
     // Except with -N under test, after a reset and with --override: -N then
     // scores all PSMs with the averaged weights (see below), so the merged

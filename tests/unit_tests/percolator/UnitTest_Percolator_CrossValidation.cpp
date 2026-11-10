@@ -406,8 +406,10 @@ static void trainAndMerge(unsigned int numFolds, MergeNormalization scheme,
     FeatureNames::resetNumFeatures();
 }
 
-// trainAndMerge finds each test bin scored with its own fold's final
-// weights. When the check passes, they are the trained ones. When it fails,
+// Without -N, trainAndMerge finds each test bin scored with its own fold's
+// final weights (for -N see ResetUnderMinusNScoresTheBinsWithTheFirstVector
+// and OverrideUnderMinusNScoresAllPsmsWithTheAveragedWeights). When the
+// check passes, they are the trained ones. When it fails,
 // here by a test FDR that no target reaches, they are, with --override, the
 // trained ones, which were not trained on that bin, and otherwise the
 // default vector of a single feature chosen on the fold's training set.

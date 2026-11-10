@@ -105,8 +105,9 @@ class Scores {
         totalNumberOfTargets_(0) {}
 
   // Replaces the PSMs of this set by those of the cross-validation bins sv,
-  // scored with the weights all_w (after a reset under -N, CrossValidation
-  // scores them all with all_w[0] for TEST), and rescales each bin's scores
+  // scored with the weights all_w (after a failed direction check under -N,
+  // a reset or --override, CrossValidation scores them all with all_w[0]
+  // for TEST), and rescales each bin's scores
   // and weights as the scheme says: TEST takes the anchors from the bin's
   // own scores, TRAIN and TRAIN_DECOYS take binScales[bin] (see
   // calcScoreScale), NONE keeps the raw scores. The result is sorted by
