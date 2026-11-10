@@ -223,9 +223,16 @@ bool Caller::parseOptions(int argc, char** argv) {
                    "", TRUE_IF_SET);
   cmd.defineOption("", "in-place-training",
                    "Train the SVMs on the feature rows of the PSMs in place "
-                   "instead of on copies of them. This lowers the peak "
-                   "memory, by about 30% with 30 features, but takes 15 to "
-                   "20% more CPU time. The results are the same.",
+                   "instead of on copies of them. The results are the same. "
+                   "With 3 folds and 30 features this lowers the peak memory "
+                   "by about a third (31 to 34% for 1M to 10M PSMs), and by "
+                   "more with more folds. The solver then reads rows that "
+                   "are scattered over memory, which costs more the larger "
+                   "the input: the SVM training took 20% more CPU time for "
+                   "1M PSMs and about 40% more for 4M and 10M, the whole "
+                   "run 1%, 10% and 15% more, and 10M PSMs took 6 to 18% "
+                   "longer on 3 threads. --folds-in-memory 1 saves less "
+                   "memory, 20 to 25% with 3 folds, without that cost.",
                    "", TRUE_IF_SET);
   cmd.defineOption("J", "tab-out",
                    "Output computed features to the specified file in "
