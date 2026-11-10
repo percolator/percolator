@@ -742,9 +742,17 @@ int Scores::calcScoresAndQvals(std::vector<double>& w,
 int Scores::calcScores(std::vector<double>& w) {
   std::size_t ix;
   const long numScores = static_cast<long>(scores_.size());
+  const int numFeatures = static_cast<int>(FeatureNames::getNumFeatures());
 #pragma omp parallel for schedule(static) \
     if (numScores > 100000 && !omp_in_parallel())
   for (long i = 0; i < numScores; ++i) {
+    // The PSM records and their feature rows are scattered in memory, in
+    // an order that the processor cannot predict: the record is requested
+    // 16 PSMs ahead and the row, whose address is in the record, 8 ahead.
+    if (i + 16 < numScores) prefetchAddress(scores_[i + 16].pPSM);
+    if (i + 8 < numScores) {
+      prefetchRow(scores_[i + 8].pPSM->features, numFeatures);
+    }
     scores_[i].score = calcScore(scores_[i].pPSM->features, w);
   }
   // already sorted when scored again with the same weights, as the test
