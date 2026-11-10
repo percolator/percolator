@@ -21,6 +21,7 @@
 #include <algorithm>
 #include <cassert>
 #include <cmath>
+#include <cstdint>
 #include <exception>
 #include <fstream>
 #include <functional>
@@ -32,6 +33,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -1342,33 +1344,186 @@ void Scores::weedOutRedundant(
   postMergeStep();
 }
 
+namespace {
+
+// FNV-1a hash of a peptide
+std::uint64_t hashPeptide(std::string_view peptide) {
+  std::uint64_t hash = 0xcbf29ce484222325ULL;
+  for (const char c : peptide) {
+    hash = (hash ^ static_cast<unsigned char>(c)) * 0x100000001b3ULL;
+  }
+  return hash;
+}
+
+// What keepBestPsmPerPeptide sorts for each PSM: the hash of its peptide,
+// its score and, in one word, its label (in the highest byte, as
+// 1 + LabelType, so that a greater label is a greater number) and its index
+// in the score list.
+struct PeptideKey {
+  std::uint64_t hash;
+  double score;
+  std::uint64_t labelAndIndex;
+
+  static const int kLabelShift = 56;
+  std::uint64_t label() const { return labelAndIndex >> kLabelShift; }
+  std::size_t index() const {
+    return static_cast<std::size_t>(
+        labelAndIndex & ((std::uint64_t(1) << kLabelShift) - 1));
+  }
+};
+
+}  // namespace
+
 void Scores::keepBestPsmPerPeptide(
     std::map<std::string, unsigned int>& peptideSpecCounts,
     double specCountQvalThreshold) {
-  // lexicographically order the scores_ (based on peptides names,labels and
-  // scores)
-  parallelSort(scores_.begin(), scores_.end(), lexicOrderProb());
+  keepBestPsmPerPeptide(peptideSpecCounts, specCountQvalThreshold,
+                        &hashPeptide);
+}
 
-  // the views point into the PSMs, which stay in place
-  std::string_view previousPeptide = "";
-  LabelType previousLabel = LabelType::UNDEFINED;
-  size_t lastWrittenIdx = 0u;
-  for (size_t idx = 0u; idx < scores_.size(); ++idx) {
-    std::string_view currentPeptide =
-        scores_[idx].pPSM->getPeptideSequenceView();
-    LabelType currentLabel = scores_[idx].label;
-    if (currentPeptide != previousPeptide || currentLabel != previousLabel) {
-      // insert as a new score
-      scores_[lastWrittenIdx++] = scores_[idx];
-      previousPeptide = currentPeptide;
-      previousLabel = currentLabel;
-    }
-    if (specCountQvalThreshold > 0.0 &&
-        scores_[idx].q < specCountQvalThreshold) {
-      ++peptideSpecCounts[std::string(currentPeptide)];
+/**
+ * Keeps the best PSM of each peptide and label: the first one in the order
+ * of lexicOrderProb (peptide, label, score, id and line). The kept PSMs stay
+ * in their order. Counts in peptideSpecCounts the PSMs of each peptide with
+ * a q value below specCountQvalThreshold, if that is positive.
+ *
+ * Sorting the score list with lexicOrderProb follows the pointers of two
+ * PSMs to their peptides in every comparison. Instead, a key of 24 bytes
+ * per PSM is sorted by the hash of the peptide, the label and the score,
+ * which reads the peptide of each PSM once. PSMs with the same hash are
+ * then checked to have the same peptide; if they do not, which a 64-bit
+ * hash makes rare, they are sorted with lexicOrderProb. PSMs that tie in
+ * hash, label and score are compared with lexicOrderProb as well, so that
+ * the PSM kept is the same.
+ */
+void Scores::keepBestPsmPerPeptide(
+    std::map<std::string, unsigned int>& peptideSpecCounts,
+    double specCountQvalThreshold, PeptideHash hash) {
+  const std::vector<ScoreHolder>& scores = scores_;
+  const long numScores = static_cast<long>(scores.size());
+  if (specCountQvalThreshold > 0.0) {
+    for (const ScoreHolder& sh : scores) {
+      if (sh.q < specCountQvalThreshold) {
+        ++peptideSpecCounts[std::string(sh.pPSM->getPeptideSequenceView())];
+      }
     }
   }
-  scores_.resize(lastWrittenIdx);
+
+  // not initialised: the threads that write the keys touch them first
+  std::unique_ptr<PeptideKey[]> keyBuffer(
+      new PeptideKey[static_cast<std::size_t>(numScores)]);
+  PeptideKey* const keys = keyBuffer.get();
+  const bool parallel = numScores > 100000 && numLoopThreads() > 1;
+#pragma omp parallel for schedule(static) if (parallel)
+  for (long i = 0; i < numScores; ++i) {
+    // the PSM is requested 16 PSMs ahead and its peptide, whose address is
+    // in the PSM, 8 ahead
+    if (i + 16 < numScores) prefetchAddress(scores[i + 16].pPSM);
+    if (i + 8 < numScores) {
+      prefetchAddress(scores[i + 8].pPSM->stringsAddress());
+    }
+    const ScoreHolder& sh = scores[i];
+    PeptideKey& key = keys[i];
+    key.hash = hash(sh.pPSM->getPeptideSequenceView());
+    key.score = sh.score;
+    key.labelAndIndex =
+        (static_cast<std::uint64_t>(1 + static_cast<int>(sh.label))
+         << PeptideKey::kLabelShift) |
+        static_cast<std::uint64_t>(i);
+  }
+  const lexicOrderProb lexicOrder;
+  parallelSort(keys, keys + numScores,
+               [&scores, &lexicOrder](const PeptideKey& a,
+                                      const PeptideKey& b) {
+                 if (a.hash != b.hash) return a.hash < b.hash;
+                 if (a.label() != b.label()) return a.label() > b.label();
+                 if (a.score != b.score) return a.score > b.score;
+                 return lexicOrder(scores[a.index()], scores[b.index()]);
+               });
+
+  // The PSMs with the same hash form a run of keys. The runs are divided
+  // among the threads, which mark the PSMs to keep.
+  std::vector<unsigned char> keep(scores.size(), 0);
+  const int numChunks = parallel ? numLoopThreads() : 1;
+  // a chunk starts with the first run that starts at or after its share of
+  // the keys, and ends where the next one starts
+  std::vector<long> chunkBegin(static_cast<std::size_t>(numChunks) + 1,
+                               numScores);
+  for (int c = 0; c < numChunks; ++c) {
+    long begin = numScores / numChunks * c;
+    while (begin > 0 && begin < numScores &&
+           keys[begin].hash == keys[begin - 1].hash) {
+      ++begin;
+    }
+    chunkBegin[static_cast<std::size_t>(c)] = begin;
+  }
+  auto peptideOf = [&scores](const PeptideKey& key) {
+    return scores[key.index()].pPSM->getPeptideSequenceView();
+  };
+#pragma omp parallel for schedule(static, 1) if (numChunks > 1)
+  for (int c = 0; c < numChunks; ++c) {
+    const long chunkEnd = chunkBegin[static_cast<std::size_t>(c) + 1];
+    // Only the peptides of runs of several PSMs are read. Their scores,
+    // PSMs and peptides are scattered in memory and are requested 24, 16
+    // and 8 keys ahead of the key i at which a run is being delimited.
+    auto inLongRun = [keys, chunkEnd](long i) {
+      return keys[i - 1].hash == keys[i].hash ||
+             (i + 1 < chunkEnd && keys[i + 1].hash == keys[i].hash);
+    };
+    auto requestAhead = [&](long i) {
+      if (i + 24 < chunkEnd && inLongRun(i + 24)) {
+        prefetchAddress(&scores[keys[i + 24].index()]);
+      }
+      if (i + 16 < chunkEnd && inLongRun(i + 16)) {
+        prefetchAddress(scores[keys[i + 16].index()].pPSM);
+      }
+      if (i + 8 < chunkEnd && inLongRun(i + 8)) {
+        prefetchAddress(
+            scores[keys[i + 8].index()].pPSM->stringsAddress());
+      }
+    };
+    long begin = chunkBegin[static_cast<std::size_t>(c)];
+    while (begin < chunkEnd) {
+      long end = begin;
+      do {
+        requestAhead(end);
+        ++end;
+      } while (end < chunkEnd && keys[end].hash == keys[begin].hash);
+      if (end - begin == 1) {
+        keep[keys[begin].index()] = 1;
+        begin = end;
+        continue;
+      }
+      // nearly always the PSMs of one peptide, by label and score
+      bool onePeptide = true;
+      const std::string_view first = peptideOf(keys[begin]);
+      for (long i = begin + 1; i < end && onePeptide; ++i) {
+        onePeptide = peptideOf(keys[i]) == first;
+      }
+      if (!onePeptide) {
+        // peptides that share a hash value: order their PSMs by peptide
+        std::sort(keys + begin, keys + end,
+                  [&scores, &lexicOrder](const PeptideKey& a,
+                                         const PeptideKey& b) {
+                    return lexicOrder(scores[a.index()], scores[b.index()]);
+                  });
+      }
+      for (long i = begin; i < end; ++i) {
+        if (i == begin || keys[i].label() != keys[i - 1].label() ||
+            (!onePeptide && peptideOf(keys[i]) != peptideOf(keys[i - 1]))) {
+          keep[keys[i].index()] = 1;
+        }
+      }
+      begin = end;
+    }
+  }
+  keyBuffer.reset();
+
+  std::size_t numKept = 0;
+  for (std::size_t i = 0; i < scores_.size(); ++i) {
+    if (keep[i]) scores_[numKept++] = scores_[i];
+  }
+  scores_.resize(numKept);
 }
 
 /**

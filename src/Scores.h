@@ -27,6 +27,8 @@
 #include <cstdlib>
 #include <iostream>
 #include <map>
+#include <string>
+#include <string_view>
 #include <vector>
 
 #include "FeatureMemoryPool.h"
@@ -321,6 +323,12 @@ class Scores {
   void keepBestPsmPerPeptide(
       std::map<std::string, unsigned int>& peptideSpecCounts,
       double specCountQvalThreshold);
+  // The same with the given hash of the peptides, which groups the PSMs:
+  // for the unit tests, which force peptides to share a hash value.
+  typedef std::uint64_t (*PeptideHash)(std::string_view peptide);
+  void keepBestPsmPerPeptide(
+      std::map<std::string, unsigned int>& peptideSpecCounts,
+      double specCountQvalThreshold, PeptideHash hash);
   void keepBestPsmPerSpectrum();
   // Sorts the scores and returns whether their targets and decoys separate
   // too well, which postMergeStep reports as an error; estimates no pi0, so

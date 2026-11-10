@@ -25,6 +25,7 @@
 #endif
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <cstdio>
 #include <cstdarg>
 #include <fstream>
@@ -32,9 +33,11 @@
 #include <map>
 #include <memory>
 #include <random>
+#include <set>
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 #include "SetHandler.h"
@@ -2684,6 +2687,8 @@ class ExposedScores : public Scores {
   void setPi0(double pi0) { pi0_ = pi0; }
   using Scores::getScoreLabelPairs;
   using Scores::getTargetPValues;
+  using Scores::keepBestPsmPerPeptide;
+  using Scores::PeptideHash;
 };
 
 // calcQvals must give bit for bit the q values and the count of
@@ -2935,6 +2940,125 @@ TEST(ProteinOrderTest, DecoyWinsScoreTies)
     EXPECT_EQ(proteins[1].getName(), "decoy_prot_1");
     EXPECT_EQ(proteins[2].getName(), "prot_1");
     EXPECT_EQ(proteins[3].getName(), "prot_2");
+}
+
+namespace {
+
+// hashes for keepBestPsmPerPeptide that make peptides share a value
+std::uint64_t sameHashForAll(std::string_view) { return 42u; }
+std::uint64_t hashOfLength(std::string_view peptide) {
+  return peptide.size() % 3;
+}
+std::uint64_t hashOfFirstLetter(std::string_view peptide) {
+  return peptide.empty() ? 0u : static_cast<unsigned char>(peptide[0]);
+}
+
+// PSMs of numPeptides peptides with few distinct scores, so that PSMs of a
+// peptide tie in score and are told apart by their ids and lines.
+void addPeptidePsms(std::size_t numPsms, std::size_t numPeptides,
+                    PsmStore& psmStore, Scores& scores) {
+  unsigned int seed = 977u;
+  auto next = [&seed]() {
+    seed = seed * 1103515245u + 12345u;
+    return (seed >> 8) & 0xffffu;
+  };
+  const LabelType labels[] = {LabelType::TARGET, LabelType::DECOY,
+                              LabelType::TARGET, LabelType::PSEUDO_TARGET};
+  for (std::size_t i = 0; i < numPsms; ++i) {
+    std::size_t pep = (next() * 65536u + next()) % numPeptides;
+    // the peptides, of 1 to 6 letters, with and without flanks
+    std::string peptide;
+    do {
+      peptide += static_cast<char>('A' + pep % 7);
+      pep /= 7;
+    } while (pep > 0);
+    if (next() % 2) peptide = "K." + peptide + ".R";
+    PSMDescription* psm = psmStore.add(PSMDescription());
+    psmStore.storeStrings(*psm, "id" + std::to_string(next() % 50), peptide,
+                          {});
+    psm->scan = static_cast<unsigned int>(i);
+    psm->setLineNr(static_cast<unsigned int>(i));
+    ScoreHolder sh(0.5 * (next() % 4), labels[next() % 4], psm);
+    sh.q = 0.001 * (next() % 20);
+    scores.addScoreHolder(sh);
+  }
+}
+
+}  // namespace
+
+// keepBestPsmPerPeptide keeps the PSMs that the sort with lexicOrderProb
+// kept, in the order of the list, and counts the same PSMs per peptide:
+// with its own hash, and with hashes under which all peptides, the peptides
+// of a length or those with the same first letter share a value, so that the
+// PSMs of several peptides have to be told apart by their peptides. Below
+// and above the size from which the keys are made and checked on all threads.
+TEST_F(ScoresTest, KeepBestPsmPerPeptideWithCollidingHashes)
+{
+    for (std::size_t numPsms : {0u, 1u, 2000u, 130000u}) {
+        PsmStore psmStore;
+        Scores input(false);
+        addPeptidePsms(numPsms, numPsms / 4 + 3, psmStore, input);
+
+        // the reference: the first PSM of each peptide and label in the
+        // order of lexicOrderProb
+        std::vector<ScoreHolder> sorted(input.begin(), input.end());
+        std::sort(sorted.begin(), sorted.end(), lexicOrderProb());
+        std::set<const PSMDescription*> best;
+        std::map<std::string, unsigned int> expectedCounts;
+        for (std::size_t i = 0; i < sorted.size(); ++i) {
+            if (i == 0 ||
+                sorted[i].pPSM->getPeptideSequenceView() !=
+                    sorted[i - 1].pPSM->getPeptideSequenceView() ||
+                sorted[i].label != sorted[i - 1].label) {
+                best.insert(sorted[i].pPSM);
+            }
+            if (sorted[i].q < 0.01) {
+                ++expectedCounts[sorted[i].pPSM->getPeptideSequence()];
+            }
+        }
+        std::vector<const PSMDescription*> expected;
+        for (const ScoreHolder& sh : input) {
+            if (best.count(sh.pPSM)) expected.push_back(sh.pPSM);
+        }
+        if (numPsms > 1u) {
+            ASSERT_LT(expected.size(), numPsms);
+            ASSERT_GT(expected.size(), numPsms / 8);
+        }
+
+        const ExposedScores::PeptideHash hashes[] = {nullptr, &sameHashForAll,
+                                              &hashOfLength,
+                                              &hashOfFirstLetter};
+        for (std::size_t h = 0; h < 4; ++h) {
+            for (bool withCounts : {false, true}) {
+                SCOPED_TRACE(::testing::Message()
+                             << numPsms << " PSMs, hash " << h << ", counts "
+                             << withCounts);
+                ExposedScores scores(false);
+                for (const ScoreHolder& sh : input) scores.addScoreHolder(sh);
+                std::map<std::string, unsigned int> counts;
+                const double threshold = withCounts ? 0.01 : -1.0;
+                if (hashes[h] == nullptr) {
+                    scores.keepBestPsmPerPeptide(counts, threshold);
+                } else {
+                    scores.keepBestPsmPerPeptide(counts, threshold,
+                                                 hashes[h]);
+                }
+                // size() is the number of targets and decoys, not set here
+                ASSERT_EQ(expected.size(), static_cast<std::size_t>(
+                                               scores.end() - scores.begin()));
+                std::size_t numWrong = 0, ix = 0;
+                for (const ScoreHolder& sh : scores) {
+                    if (sh.pPSM != expected[ix++]) ++numWrong;
+                }
+                EXPECT_EQ(0u, numWrong);
+                if (withCounts) {
+                    EXPECT_EQ(expectedCounts, counts);
+                } else {
+                    EXPECT_TRUE(counts.empty());
+                }
+            }
+        }
+    }
 }
 
 // The result lines, which are formatted in blocks on all threads, are the
