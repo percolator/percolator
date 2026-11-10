@@ -22,6 +22,12 @@ jobs:
     - name: tests
       # unit tests and system tests, on the binaries of the build tree
       run: cd ${{ github.workspace }}/build/percolator && ctest --output-on-failure
+    - name: golden_hashes
+      # every output file of the option matrix must be byte for byte what
+      # the manifest tests/ci/option_matrix.sha256 records; a commit that
+      # changes results on purpose writes the manifest again with
+      # tests/ci/check_golden.sh --update (see tests/ci/README.md)
+      run: bash tests/ci/check_golden.sh --strict ${{ github.workspace }}/build/percolator ${{ github.workspace }}/build/golden
     - name: check_package
       # the .deb must declare its library dependencies and hold no test binary
       run: |
@@ -44,6 +50,15 @@ jobs:
       run: ./admin/builders/centos64_build.sh -s `pwd`/.. -r `pwd`/../my_rel -b `pwd`/../my_build
     - name: tests
       run: cd ../my_build/percolator && ctest --output-on-failure
+    - name: golden_hashes
+      # another compiler and C library than the manifest was made with:
+      # differences are listed, and the hashes uploaded, without failing
+      run: bash tests/ci/check_golden.sh --report ../my_build/percolator golden
+    - name: upload_hashes
+      uses: actions/upload-artifact@v4
+      with:
+        name: golden-hashes-almalinux
+        path: golden/hashes.sha256
 
   build-osx:
     runs-on: macos-15
@@ -55,6 +70,15 @@ jobs:
       run: admin/builders/osx64_build.sh  -s ${{ github.workspace }}/.. -r ${{ github.workspace }}/release -b ${{ github.workspace }}/build
     - name: tests
       run: cd ${{ github.workspace }}/build/percolator && ctest --output-on-failure
+    - name: golden_hashes
+      # the manifest was made on x86-64 Linux: differences are listed, and
+      # the hashes uploaded, without failing
+      run: bash tests/ci/check_golden.sh --report ${{ github.workspace }}/build/percolator ${{ github.workspace }}/build/golden
+    - name: upload_hashes
+      uses: actions/upload-artifact@v4
+      with:
+        name: golden-hashes-osx
+        path: ${{ github.workspace }}/build/golden/hashes.sha256
     - name: check_binary
       # minos must be 12.0 (CMAKE_OSX_DEPLOYMENT_TARGET); libomp should be
       # linked statically, so that the binary runs without Homebrew
