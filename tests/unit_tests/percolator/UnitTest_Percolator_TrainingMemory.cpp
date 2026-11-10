@@ -283,6 +283,141 @@ TEST(TrainingMemoryTest, trainingSetCopiesOrPointsToTheFeatureRows) {
   FeatureNames::resetNumFeatures();
 }
 
+// A training set of more PSMs than the 100,000 from which the rows are
+// counted and copied in one chunk per thread equals the one made by
+// appending the selected PSMs one by one, with and without the best
+// positive per spectrum, also when it is built again in the same AlgIn.
+TEST(TrainingMemoryTest, largeTrainingSetEqualsRowByRowAppend) {
+  const unsigned int numFeatures = 5;
+  FeatureNames::resetNumFeatures();
+  FeatureNames::setNumFeatures(numFeatures);
+  const std::size_t numPsms = 250007;
+  std::vector<double> features(numPsms * numFeatures);
+  std::vector<PSMDescription> psms(numPsms);
+  Scores scores(false);
+  unsigned int seed = 20261u;
+  for (std::size_t i = 0; i < numPsms; ++i) {
+    for (unsigned int k = 0; k < numFeatures; ++k) {
+      seed = seed * 1103515245u + 12345u;
+      features[i * numFeatures + k] = static_cast<double>(seed >> 8) / 1024.0;
+    }
+    psms[i].features = &features[i * numFeatures];
+    psms[i].scan = static_cast<unsigned int>(i / 3);  // three PSMs per scan
+    psms[i].setLineNr(static_cast<unsigned int>(i));
+    seed = seed * 1103515245u + 12345u;
+    const bool isDecoy = (seed >> 16) % 3 == 0;
+    ScoreHolder sh(static_cast<double>(numPsms - i),
+                   isDecoy ? LabelType::DECOY : LabelType::TARGET, &psms[i]);
+    seed = seed * 1103515245u + 12345u;
+    sh.q = (seed >> 16) % 4 == 0 ? 0.5 : 0.001;
+    scores.addScoreHolder(sh);
+  }
+  for (bool bestPositive : {false, true}) {
+    // the reference: the selected PSMs, one by one
+    std::vector<const PSMDescription*> expected;
+    for (const ScoreHolder& sh : scores) {
+      if (sh.isDecoy()) expected.push_back(sh.pPSM);
+    }
+    const std::size_t numNegatives = expected.size();
+    unsigned int lastScan = static_cast<unsigned int>(-1);
+    for (const ScoreHolder& sh : scores) {
+      if (!sh.isTarget() || sh.q > 0.01) continue;
+      // the scores decrease, so the first target of a scan is its best
+      if (bestPositive && sh.pPSM->scan == lastScan) continue;
+      lastScan = sh.pPSM->scan;
+      expected.push_back(sh.pPSM);
+    }
+    ASSERT_GT(numNegatives, 50000u);
+    ASSERT_GT(expected.size() - numNegatives, 50000u);
+
+    AlgIn data(static_cast<int>(numFeatures) + 1);
+    const double* firstRow = nullptr;
+    for (int round = 0; round < 2; ++round) {
+      scores.generateNegativeTrainingSet(data, 1.0);
+      ASSERT_EQ(static_cast<int>(numNegatives), data.m);
+      scores.generatePositiveTrainingSet(data, 0.01, 1.0, bestPositive);
+      ASSERT_EQ(static_cast<int>(expected.size()), data.m);
+      ASSERT_EQ(static_cast<int>(numNegatives), data.negatives);
+      ASSERT_EQ(static_cast<int>(expected.size() - numNegatives),
+                data.positives);
+      ASSERT_EQ(expected.size(), data.Y.size());
+      // the matrix is allocated once
+      if (round == 0) firstRow = data.row(0);
+      ASSERT_EQ(firstRow, data.row(0));
+      std::size_t numWrong = 0;
+      for (std::size_t i = 0; i < expected.size(); ++i) {
+        const double* row = data.row(static_cast<int>(i));
+        for (unsigned int k = 0; k < numFeatures; ++k) {
+          if (row[k] != expected[i]->features[k]) ++numWrong;
+        }
+        if (row[numFeatures] != 1.0) ++numWrong;
+        if (data.Y[i] != (i < numNegatives ? -1.0 : 1.0)) ++numWrong;
+      }
+      ASSERT_EQ(0u, numWrong);
+    }
+  }
+  FeatureNames::resetNumFeatures();
+}
+
+// resizeExamples and set give the examples of add, clear keeps the matrix,
+// and examples written before a resize survive it.
+TEST(TrainingMemoryTest, examplesSetInPlaceEqualAppendedOnes) {
+  const int numFeatures = 4;
+  const int numRows = 3000;
+  std::vector<double> features(static_cast<std::size_t>(numRows) * numFeatures);
+  for (std::size_t i = 0; i < features.size(); ++i) {
+    features[i] = 0.25 * static_cast<double>(i);
+  }
+  AlgIn appended(numFeatures + 1);
+  for (int i = 0; i < numRows; ++i) {
+    appended.add(&features[static_cast<std::size_t>(i) * numFeatures],
+                 i % 3 ? 1 : -1);
+  }
+  AlgIn data(numFeatures + 1);
+  for (int round = 0; round < 2; ++round) {
+    // in two parts, the second one written backwards
+    data.resizeExamples(1000);
+    ASSERT_EQ(1000, data.m);
+    for (std::size_t i = 0; i < 1000; ++i) {
+      data.set(i, &features[i * numFeatures], i % 3 ? 1 : -1);
+    }
+    const double* firstRow = data.row(0);
+    data.resizeExamples(static_cast<std::size_t>(numRows));
+    if (round == 1) {
+      EXPECT_EQ(firstRow, data.row(0));
+    }
+    for (std::size_t i = static_cast<std::size_t>(numRows); i-- > 1000;) {
+      data.set(i, &features[i * numFeatures], i % 3 ? 1 : -1);
+    }
+    ASSERT_EQ(appended.m, data.m);
+    ASSERT_EQ(appended.Y, data.Y);
+    for (int i = 0; i < numRows; ++i) {
+      for (int k = 0; k <= numFeatures; ++k) {
+        ASSERT_EQ(appended.row(i)[k], data.row(i)[k]);
+      }
+    }
+    data.positives = 1;
+    data.negatives = 2;
+    data.clear();
+    EXPECT_EQ(0, data.m);
+    EXPECT_EQ(0, data.positives);
+    EXPECT_EQ(0, data.negatives);
+    EXPECT_TRUE(data.Y.empty());
+  }
+  // in place, the examples are the given rows
+  std::vector<double> rows(3 * (numFeatures + 1), 1.0);
+  AlgIn inPlace(numFeatures + 1, true);
+  inPlace.resizeExamples(3);
+  for (std::size_t i = 3; i-- > 0;) {
+    inPlace.set(i, &rows[i * (numFeatures + 1)], -1);
+  }
+  for (int i = 0; i < 3; ++i) {
+    EXPECT_EQ(&rows[static_cast<std::size_t>(i) * (numFeatures + 1)],
+              inPlace.row(i));
+    EXPECT_EQ(-1.0, inPlace.Y[static_cast<std::size_t>(i)]);
+  }
+}
+
 // Copied rows stay valid when the matrix grows without a reserve and when
 // the training set is copied or moved.
 TEST(TrainingMemoryTest, copiedRowsFollowTheMatrix) {
@@ -311,6 +446,21 @@ TEST(TrainingMemoryTest, copiedRowsFollowTheMatrix) {
     }
   }
   EXPECT_NE(data.row(0), assigned.row(0));
+  // a set that was emptied and one that was moved from can be copied,
+  // assigned to and filled again
+  data.clear();
+  AlgIn emptyCopy(data);
+  EXPECT_EQ(0, emptyCopy.m);
+  emptyCopy.add(&features[0], 1);
+  EXPECT_EQ(features[1], emptyCopy.row(0)[1]);
+  EXPECT_EQ(0, copy.m);
+  copy.add(&features[numFeatures], -1);
+  EXPECT_EQ(features[numFeatures], copy.row(0)[0]);
+  copy = assigned;
+  ASSERT_EQ(numRows, copy.m);
+  EXPECT_EQ(features[features.size() - 1],
+            copy.row(numRows - 1)[numFeatures - 1]);
+  EXPECT_EQ(numRows, assigned.m);
 }
 
 // The solver gives the same weights and outputs on copied rows and on rows

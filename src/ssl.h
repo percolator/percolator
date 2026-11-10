@@ -11,9 +11,12 @@
  *******************************************************************************/
 #ifndef _svmlin_H
 #define _svmlin_H
+#include <algorithm>
 #include <cassert>
-#include <vector>
 #include <ctime>
+#include <memory>
+#include <utility>
+#include <vector>
 
 using namespace std;
 
@@ -34,11 +37,50 @@ using namespace std;
    only pointers to the rows are kept, which saves the copies (8 n bytes per
    example) but makes the solver slower; the rows must then hold the
    intercept, as the rows of a FeatureMemoryPool set up for this do, and
-   outlive this. */
+   outlive this.
+
+   The matrix is a buffer that is not initialised: memory that reserve()
+   or resizeExamples() allocates is first touched when a row is written,
+   by the thread that writes it. clear() keeps the buffer. */
 class AlgIn {
   public:
     explicit AlgIn(const int numFeat, bool rowsInPlace = false)
         : n(numFeat), rowsInPlace_(rowsInPlace) {}
+    /* copies the examples; the copy has room for these only */
+    AlgIn(const AlgIn& other)
+        : m(other.m), n(other.n), positives(other.positives),
+          negatives(other.negatives), Y(other.Y),
+          rowsInPlace_(other.rowsInPlace_),
+          rowPointers_(other.rowPointers_) {
+      const size_t used = static_cast<size_t>(m) * static_cast<size_t>(n);
+      if (!rowsInPlace_ && used > 0) {
+        rows_.reset(new double[used]);
+        rowsCapacity_ = used;
+        std::copy(other.rows_.get(), other.rows_.get() + used, rows_.get());
+      }
+    }
+    AlgIn(AlgIn&& other) noexcept
+        : m(other.m), n(other.n), positives(other.positives),
+          negatives(other.negatives), Y(std::move(other.Y)),
+          rowsInPlace_(other.rowsInPlace_), rows_(std::move(other.rows_)),
+          rowsCapacity_(other.rowsCapacity_),
+          rowPointers_(std::move(other.rowPointers_)) {
+      other.rowsCapacity_ = 0;
+      other.clear();
+    }
+    AlgIn& operator=(AlgIn other) noexcept {
+      std::swap(m, other.m);
+      std::swap(n, other.n);
+      std::swap(positives, other.positives);
+      std::swap(negatives, other.negatives);
+      Y.swap(other.Y);
+      std::swap(rowsInPlace_, other.rowsInPlace_);
+      rows_.swap(other.rows_);
+      std::swap(rowsCapacity_, other.rowsCapacity_);
+      rowPointers_.swap(other.rowPointers_);
+      return *this;
+    }
+
     int m = 0; /* number of examples */
     int n; /* number of features, including the intercept */
     int positives = 0;
@@ -48,12 +90,12 @@ class AlgIn {
     const double* row(int i) const {
       return rowsInPlace_
                  ? rowPointers_[static_cast<size_t>(i)]
-                 : rows_.data() + static_cast<size_t>(i) * static_cast<size_t>(n);
+                 : rows_.get() + static_cast<size_t>(i) * static_cast<size_t>(n);
     }
     bool rowsInPlace() const { return rowsInPlace_; }
+    /* removes the examples and keeps the memory */
     void clear() {
       m = positives = negatives = 0;
-      rows_.clear();
       rowPointers_.clear();
       Y.clear();
     }
@@ -62,27 +104,65 @@ class AlgIn {
       if (rowsInPlace_) {
         rowPointers_.reserve(numExamples);
       } else {
-        rows_.reserve(numExamples * static_cast<size_t>(n));
+        growRows(numExamples * static_cast<size_t>(n));
       }
       Y.reserve(numExamples);
     }
     /* appends an example with the n - 1 features of row */
     void add(const double* row, double label) {
+      const size_t i = static_cast<size_t>(m);
+      resizeExamples(i + 1);
+      set(i, row, label);
+    }
+    /* Changes the number of examples to numExamples. The examples before
+       the previous number are kept; the others have a label of 0 and rows
+       that are not initialised, and must be written with set(). */
+    void resizeExamples(size_t numExamples) {
+      if (rowsInPlace_) {
+        rowPointers_.resize(numExamples);
+      } else {
+        const size_t need = numExamples * static_cast<size_t>(n);
+        if (need > rowsCapacity_) {
+          // grows by doubling, from 1024 rows, when nothing was reserved
+          growRows(std::max(need, std::max(2 * rowsCapacity_,
+                                           1024 * static_cast<size_t>(n))));
+        }
+      }
+      Y.resize(numExamples);
+      m = static_cast<int>(numExamples);
+    }
+    /* Writes example i < m: the n - 1 features of row and the label.
+       Threads may write distinct examples at the same time. */
+    void set(size_t i, const double* row, double label) {
       if (rowsInPlace_) {
         assert(row[n - 1] == 1.0);
-        rowPointers_.push_back(row);
+        rowPointers_[i] = row;
       } else {
-        rows_.insert(rows_.end(), row, row + (n - 1));
-        rows_.push_back(1.0);
+        double* dst = rows_.get() + i * static_cast<size_t>(n);
+        std::copy(row, row + (n - 1), dst);
+        dst[n - 1] = 1.0;
       }
-      Y.push_back(label);
-      ++m;
+      Y[i] = label;
     }
 
   private:
     bool rowsInPlace_;
-    std::vector<double> rows_; /* m x n, the copies */
+    /* the copies, m x n values in use of rowsCapacity_; not a vector, which
+       would write zeros into every value before the rows are copied in */
+    std::unique_ptr<double[]> rows_;
+    size_t rowsCapacity_ = 0;
     std::vector<const double*> rowPointers_; /* m, with rowsInPlace */
+
+    /* makes room for numValues values and keeps the examples */
+    void growRows(size_t numValues) {
+      if (numValues <= rowsCapacity_) return;
+      std::unique_ptr<double[]> grown(new double[numValues]);
+      std::copy(rows_.get(),
+                rows_.get() + static_cast<size_t>(m) * static_cast<size_t>(n),
+                grown.get());
+      rows_.swap(grown);
+      rowsCapacity_ = numValues;
+    }
 };
 
 /* Asks the processor to load the n values of a row into the cache. The
@@ -99,6 +179,17 @@ inline void prefetchRow(const double* row, int n) {
 #else
   (void)row;
   (void)n;
+#endif
+}
+
+/* Asks the processor to load the cache line at p: for a loop that follows
+   pointers to scattered records, such as the PSMs of a score list, and
+   requests each record a few iterations ahead. */
+inline void prefetchAddress(const void* p) {
+#if defined(__GNUC__) || defined(__clang__)
+  __builtin_prefetch(p);
+#else
+  (void)p;
 #endif
 }
 

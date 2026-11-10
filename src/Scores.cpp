@@ -1162,6 +1162,82 @@ int Scores::countTargetsBelowFdr(const FeatureRows& rows,
   return countTargetsBelowFdr(combined, fdr, skipDecoysPlusOne);
 }
 
+namespace {
+
+// The number of threads that a loop over the PSMs may use: one inside a
+// parallel region, where the loops of this file run on the calling thread.
+int numLoopThreads() {
+#ifdef _OPENMP
+  return omp_in_parallel() ? 1 : std::max(1, omp_get_max_threads());
+#else
+  return 1;
+#endif
+}
+
+// Appends to data the PSMs of scores for which select is true, in their
+// order, with the given label, and returns their number. The selected PSMs
+// are first counted in one chunk of the scores per thread, which gives each
+// chunk its position in data; the threads then copy the rows of their
+// chunks there. select only reads the score list.
+template <class Select>
+int appendTrainingRows(const std::vector<ScoreHolder>& scores, AlgIn& data,
+                       double label, Select select) {
+  const long numScores = static_cast<long>(scores.size());
+  const int numChunks = numScores > 100000 ? numLoopThreads() : 1;
+  // offset[c]: the number of selected PSMs before chunk c
+  std::vector<std::size_t> offset(static_cast<std::size_t>(numChunks) + 1, 0);
+#pragma omp parallel for schedule(static, 1) if (numChunks > 1)
+  for (int c = 0; c < numChunks; ++c) {
+    const long begin = numScores / numChunks * c;
+    const long end =
+        c + 1 == numChunks ? numScores : numScores / numChunks * (c + 1);
+    std::size_t count = 0;
+    for (long i = begin; i < end; ++i) {
+      count += select(scores[static_cast<std::size_t>(i)]) ? 1u : 0u;
+    }
+    offset[static_cast<std::size_t>(c) + 1] = count;
+  }
+  for (int c = 0; c < numChunks; ++c) {
+    offset[static_cast<std::size_t>(c) + 1] +=
+        offset[static_cast<std::size_t>(c)];
+  }
+  const std::size_t base = static_cast<std::size_t>(data.m);
+  data.resizeExamples(base + offset.back());
+
+  // The PSM records and their feature rows are scattered in memory. The
+  // row pointers of a block of PSMs are gathered first, with the records
+  // requested ahead, and the rows are then copied, requested ahead likewise.
+  const int kBlock = 256;
+  const int numValues = data.n - 1;
+#pragma omp parallel for schedule(static, 1) if (numChunks > 1)
+  for (int c = 0; c < numChunks; ++c) {
+    const long begin = numScores / numChunks * c;
+    const long end =
+        c + 1 == numChunks ? numScores : numScores / numChunks * (c + 1);
+    std::size_t next = base + offset[static_cast<std::size_t>(c)];
+    const double* rows[kBlock];
+    long i = begin;
+    while (i < end) {
+      int filled = 0;
+      for (; i < end && filled < kBlock; ++i) {
+        if (i + 16 < end &&
+            select(scores[static_cast<std::size_t>(i + 16)])) {
+          prefetchAddress(scores[static_cast<std::size_t>(i + 16)].pPSM);
+        }
+        const ScoreHolder& sh = scores[static_cast<std::size_t>(i)];
+        if (select(sh)) rows[filled++] = sh.pPSM->features;
+      }
+      for (int k = 0; k < filled; ++k) {
+        if (k + 8 < filled) prefetchRow(rows[k + 8], numValues);
+        data.set(next++, rows[k], label);
+      }
+    }
+  }
+  return static_cast<int>(offset.back());
+}
+
+}  // namespace
+
 /**
  * Starts a new training set in data with the decoys, in the order of this
  * set. generatePositiveTrainingSet then appends the positives.
@@ -1170,13 +1246,8 @@ void Scores::generateNegativeTrainingSet(AlgIn& data, const double /*cneg*/) {
   data.clear();
   // room for the largest possible training set; only touched when used
   data.reserve(scores_.size());
-  std::vector<ScoreHolder>::const_iterator scoreIt = scores_.begin();
-  for (; scoreIt != scores_.end(); ++scoreIt) {
-    if (scoreIt->isDecoy()) {
-      data.add(scoreIt->pPSM->features, -1);
-    }
-  }
-  data.negatives = data.m;
+  data.negatives = appendTrainingRows(
+      scores_, data, -1, [](const ScoreHolder& sh) { return sh.isDecoy(); });
 }
 
 /**
@@ -1188,7 +1259,6 @@ void Scores::generatePositiveTrainingSet(AlgIn& data,
                                          const double fdr,
                                          const double /*cpos*/,
                                          const bool trainBestPositive) const {
-  int p = 0;
   if (trainBestPositive) {
     std::vector<ScoreHolder> best;
     for (const ScoreHolder& sh : scores_) {
@@ -1200,19 +1270,14 @@ void Scores::generatePositiveTrainingSet(AlgIn& data,
     best.erase(std::unique(best.begin(), best.end(), UniqueScanLabel()),
                best.end());
     parallelSort(best.begin(), best.end(), greater<ScoreHolder>());
-    for (const ScoreHolder& sh : best) {
-      data.add(sh.pPSM->features, 1);
-      ++p;
-    }
+    data.positives = appendTrainingRows(
+        best, data, 1, [](const ScoreHolder&) { return true; });
   } else {
-    for (const ScoreHolder& sh : scores_) {
-      if (sh.isTarget() && sh.q <= fdr) {
-        data.add(sh.pPSM->features, 1);
-        ++p;
-      }
-    }
+    data.positives =
+        appendTrainingRows(scores_, data, 1, [fdr](const ScoreHolder& sh) {
+          return sh.isTarget() && sh.q <= fdr;
+        });
   }
-  data.positives = p;
 }
 
 void Scores::weedOutRedundant() {
