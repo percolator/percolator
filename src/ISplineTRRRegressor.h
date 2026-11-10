@@ -2,11 +2,14 @@
 #define ISPLINE_TRR_REGRESSOR_H_
 
 #include "MonotoneRegressor.h"
+#include "MyException.h"
 #include <algorithm>
 #include <cassert>
 #include <cmath>
+#include <iostream>
 #include <limits>
 #include <numeric>
+#include <sstream>
 #include <vector>
 
 // Small dense linear algebra for the p x p problems of the I-spline fit
@@ -71,7 +74,8 @@ struct QuadraticModel {
 // minimum until a bound blocks, or, when nothing blocks, releases the bound
 // variable whose gradient points furthest into the box. For a strictly
 // convex problem this ends at the exact optimum after a finite number of
-// iterations.
+// iterations. converged is false if the iteration limit (maxIters, or
+// 10 p + 100 if that is 0) was reached first or G is not positive definite.
 struct BoxQPResult {
   Vec x;
   double fval;
@@ -112,12 +116,12 @@ inline bool solveOnSubset(const DenseMatrix& G, const std::vector<int>& F,
 }
 
 inline BoxQPResult solveBoxQP(const QuadraticModel& q, const Vec& lb,
-                              const Vec& ub, Vec x) {
+                              const Vec& ub, Vec x, int maxIterations = 0) {
   const int p = static_cast<int>(x.size());
   projectToBox(x, lb, ub);
   std::vector<char> atBound(p);
   for (int i = 0; i < p; ++i) atBound[i] = (x[i] == lb[i] || x[i] == ub[i]);
-  const int maxIters = 10 * p + 100;
+  const int maxIters = maxIterations > 0 ? maxIterations : 10 * p + 100;
   int it = 0;
   bool converged = false;
   for (; it < maxIters; ++it) {
@@ -186,13 +190,27 @@ inline BoxQPResult solveBoxQP(const QuadraticModel& q, const Vec& lb,
 
 namespace ispline_detail {
 
-inline std::vector<double> normalize_to_unit_interval(const std::vector<double>& x) {
+// negated: x holds the negated scores, for the error message
+inline std::vector<double> normalize_to_unit_interval(const std::vector<double>& x,
+                                                      bool negated = false) {
   if (x.empty()) return {};
 
   auto mm = std::minmax_element(x.begin(), x.end());
   const double xmin = *mm.first;
   const double xmax = *mm.second;
   const double span = xmax - xmin;
+  // Scores near 1e308 and -1e308 have an infinite span, and (x - xmin) / span
+  // is then inf / inf for the largest of them: every PEP came out as NaN.
+  // The comparison is also false for a NaN.
+  if (!(span <= std::numeric_limits<double>::max())) {
+    std::ostringstream oss;
+    oss << "ERROR: Cannot estimate PEPs by I-spline regression: the scores "
+        << "range from " << (negated ? -xmax : xmin) << " to "
+        << (negated ? -xmin : xmax) << ", and their span is not "
+        << "a finite number. Check the input for scores that are too large "
+        << "in magnitude." << std::endl;
+    throw MyException(oss.str());
+  }
   if (!(span > 0.0)) {
     return std::vector<double>(x.size(), 0.5);
   }
@@ -369,7 +387,8 @@ public:
       for (auto& v : x_work) v = -v;
       x_ptr = &x_work;
     }
-    const std::vector<double> x_norm = ispline_detail::normalize_to_unit_interval(*x_ptr);
+    const std::vector<double> x_norm = ispline_detail::normalize_to_unit_interval(
+        *x_ptr, params_.y_decreasing_in_x);
     x_work.clear();
     x_work.shrink_to_fit();
 
@@ -490,7 +509,17 @@ public:
     if (params_.intercept_col >= 0 && params_.intercept_col < p)
       lb[params_.intercept_col] = -std::numeric_limits<double>::infinity();
 
-    BoxQPResult sol = solveBoxQP(q, lb, ub, Vec(p, 0.0));
+    BoxQPResult sol =
+        solveBoxQP(q, lb, ub, Vec(p, 0.0), params_.max_solver_iters);
+    // The solver stops without the optimum at its iteration limit, or when
+    // the normal equations are not positive definite. The coefficients are
+    // within their bounds, so the fit is monotone, but it is not the
+    // least-squares fit.
+    if (!sol.converged) {
+      std::cerr << "Warning: the I-spline regression of the PEPs did not "
+                << "converge (" << sol.iters << " iterations, " << p
+                << " coefficients); the PEPs may be inaccurate." << std::endl;
+    }
 
     // Predict + clamp; prefix[a] is the sum of the first a I-spline
     // coefficients, so a row costs O(d)
