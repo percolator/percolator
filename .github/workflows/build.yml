@@ -1,6 +1,30 @@
 name: Build
 
-on: [push, pull_request]
+# Runs for pull requests and for pushes to master. A branch without a pull
+# request is built with "Run workflow" (workflow_dispatch). A new push to a
+# pull request cancels the run of the previous one.
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+# Compilers: the minimum is GCC 9 (std::filesystem without an extra
+# library; CMakeLists.txt refuses older ones), and GCC 11 for the fast
+# number conversions (std::to_chars and std::from_chars for double). The
+# jobs build with GCC 13 (ubuntu-latest), GCC 11 (almalinux:9), GCC 9
+# (minimum-compiler), AppleClang (macos-15) and Visual Studio 2022.
+#
+# Platforms: the jobs that end with the steps option_matrix,
+# matrix_hashes and the two uploads (Linux x86-64 and arm64, macOS arm64,
+# Windows) run tests/ci/option_matrix.sh and upload the hashes of its
+# outputs (matrix-hashes-<platform>, tests/ci/matrix_hashes.py) and, for
+# five days, the outputs (matrix-outputs-<platform>). The job
+# platform-differences prints what differs from Linux x86-64.
 
 # Idle OpenMP threads sleep instead of spinning: the runners have few cores,
 # and spinning threads slow the tests down several times when the cores are
@@ -41,6 +65,77 @@ jobs:
         depends=$(dpkg-deb -f "$deb" Depends)
         grep -q libgomp1 <<< "$depends"
         if grep -q gtest_unit <<< "$contents"; then exit 1; fi
+    - name: option_matrix
+      run: bash tests/ci/option_matrix.sh build/percolator matrix
+    - name: matrix_hashes
+      run: python3 tests/ci/matrix_hashes.py hash matrix > matrix/hashes.txt
+    - name: upload_matrix_hashes
+      uses: actions/upload-artifact@v4
+      with:
+        name: matrix-hashes-linux-x86_64
+        path: matrix/hashes.txt
+    - name: upload_matrix_outputs
+      uses: actions/upload-artifact@v4
+      with:
+        name: matrix-outputs-linux-x86_64
+        path: |
+          matrix
+          !matrix/inputs/**
+        retention-days: 5
+
+  # arm64 Linux, built and tested on an arm64 runner. GCC contracts a*b+c
+  # into a fused multiply-add there, so a printed digit can differ from
+  # x86-64 (see platform-differences).
+  build-ubuntu-arm64:
+    runs-on: ubuntu-24.04-arm
+    steps:
+    - uses: actions/checkout@v6
+    - name: configure
+      run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+    - name: build
+      run: cmake --build build -j 4
+    - name: tests
+      run: cd build && ctest --output-on-failure
+    - name: option_matrix
+      run: bash tests/ci/option_matrix.sh build matrix
+    - name: matrix_hashes
+      run: python3 tests/ci/matrix_hashes.py hash matrix > matrix/hashes.txt
+    - name: upload_matrix_hashes
+      uses: actions/upload-artifact@v4
+      with:
+        name: matrix-hashes-linux-arm64
+        path: matrix/hashes.txt
+    - name: upload_matrix_outputs
+      uses: actions/upload-artifact@v4
+      with:
+        name: matrix-outputs-linux-arm64
+        path: |
+          matrix
+          !matrix/inputs/**
+        retention-days: 5
+
+  # The oldest supported compiler: GCC 9 on Ubuntu 20.04, where
+  # std::to_chars and std::from_chars for double are missing and the slower
+  # number conversions are used. Not blocking until it has passed once: no
+  # GCC 9 was at hand when the job was written.
+  minimum-compiler:
+    runs-on: ubuntu-latest
+    container: 'ubuntu:20.04'
+    continue-on-error: true
+    env:
+      DEBIAN_FRONTEND: noninteractive
+    steps:
+    - name: preinstall
+      run: apt-get update && apt-get install -y g++ cmake make git python3
+    - uses: actions/checkout@v6
+    - name: configure
+      run: g++ --version && cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+    - name: build
+      run: cmake --build build -j 4
+    - name: tests
+      run: cd build && ctest --output-on-failure
+    - name: option_matrix
+      run: bash tests/ci/option_matrix.sh build matrix
 
   build-almalinux:
     runs-on: ubuntu-latest
@@ -96,6 +191,23 @@ jobs:
         otool -L "$bin"
         minos=$(otool -l "$bin" | awk '/LC_BUILD_VERSION/ {f = 1} f && $1 == "minos" && !done {print $2; done = 1}')
         test "$minos" = "12.0"
+    - name: option_matrix
+      run: bash tests/ci/option_matrix.sh build/percolator matrix
+    - name: matrix_hashes
+      run: python3 tests/ci/matrix_hashes.py hash matrix > matrix/hashes.txt
+    - name: upload_matrix_hashes
+      uses: actions/upload-artifact@v4
+      with:
+        name: matrix-hashes-macos-arm64
+        path: matrix/hashes.txt
+    - name: upload_matrix_outputs
+      uses: actions/upload-artifact@v4
+      with:
+        name: matrix-outputs-macos-arm64
+        path: |
+          matrix
+          !matrix/inputs/**
+        retention-days: 5
 
   build-windows:
     runs-on: windows-2022
@@ -111,11 +223,12 @@ jobs:
       run: |
         echo %GITHUB_WORKSPACE%
         call "%GITHUB_WORKSPACE%\admin\builders\nativew64_build.bat" -s "%GITHUB_WORKSPACE%\.." -r "%GITHUB_WORKSPACE%\rel" -b "%GITHUB_WORKSPACE%\build"
-    - name: unit_tests
+    - name: tests
+      # unit tests and system tests, on the binaries of the build tree
       run: |
         cd /D "%GITHUB_WORKSPACE%\build\percolator"
         for /f "tokens=2 delims==" %%i in ('findstr /b "CMAKE_CTEST_COMMAND:INTERNAL=" CMakeCache.txt') do set "CTEST=%%i"
-        "%CTEST%" -C Release --output-on-failure -R UnitTest
+        "%CTEST%" -C Release --output-on-failure
     - name: check_runtime_dlls
       # with the static C++ runtime, percolator.exe must not need the
       # Visual C++ Redistributable (only vcomp140.dll and system DLLs)
@@ -126,6 +239,55 @@ jobs:
         type deps.txt
         findstr /i "msvcp140 vcruntime140" deps.txt > nul && (echo percolator.exe needs the Visual C++ runtime DLLs& exit /b 1)
         exit /b 0
+    - name: option_matrix
+      # with Git Bash, on build/percolator/src/Release/percolator.exe
+      shell: bash
+      env:
+        PYTHON: python
+      run: bash tests/ci/option_matrix.sh build/percolator matrix
+    - name: matrix_hashes
+      shell: bash
+      run: python tests/ci/matrix_hashes.py hash matrix > matrix/hashes.txt
+    - name: upload_matrix_hashes
+      uses: actions/upload-artifact@v4
+      with:
+        name: matrix-hashes-windows-x86_64
+        path: matrix/hashes.txt
+    - name: upload_matrix_outputs
+      uses: actions/upload-artifact@v4
+      with:
+        name: matrix-outputs-windows-x86_64
+        path: |
+          matrix
+          !matrix/inputs/**
+        retention-days: 5
+
+  # Prints the output files of the option matrix that differ between the
+  # platforms, with their first differing lines. A report, not a check:
+  # compilers and math libraries round differently (fused multiply-add on
+  # arm64), which changes a printed digit now and then.
+  platform-differences:
+    needs: [build-ubuntu, build-ubuntu-arm64, build-osx, build-windows]
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v6
+    - uses: actions/download-artifact@v4
+      with:
+        pattern: matrix-outputs-*
+        path: platforms
+    - name: compare
+      shell: bash
+      run: |
+        mkdir -p platforms && cd platforms
+        reference=matrix-outputs-linux-x86_64
+        if [ ! -d "$reference" ]; then
+          echo "no outputs of Linux x86-64 to compare with"
+          exit 0
+        fi
+        others=$(ls -d matrix-outputs-* | grep -v -x "$reference" || true)
+        python3 ../tests/ci/matrix_hashes.py compare "$reference" $others | tee report.txt
+        { echo '```'; cat report.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
 
   # ASan and UBSan over the unit tests, the system tests and a matrix of
   # option combinations (tests/ci/option_matrix.sh); any report fails the job.
