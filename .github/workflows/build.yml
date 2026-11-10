@@ -128,7 +128,9 @@ jobs:
         exit /b 0
 
   # ASan and UBSan over the unit tests, the system tests and a matrix of
-  # option combinations (tests/ci/option_matrix.sh); any report fails the job
+  # option combinations (tests/ci/option_matrix.sh); any report fails the job.
+  # The build keeps the assertions: CMake's RelWithDebInfo flags are
+  # "-O2 -g -DNDEBUG", which the job replaces by "-O2 -g".
   sanitizers:
     runs-on: ubuntu-latest
     env:
@@ -145,6 +147,8 @@ jobs:
         -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-sanitize-recover=all -fno-omit-frame-pointer"
         -DCMAKE_C_FLAGS="-fsanitize=address,undefined -fno-sanitize-recover=all -fno-omit-frame-pointer"
         -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined"
+        -DCMAKE_CXX_FLAGS_RELWITHDEBINFO="-O2 -g"
+        -DCMAKE_C_FLAGS_RELWITHDEBINFO="-O2 -g"
     - name: build
       run: cmake --build build -j 4
     - name: tests
