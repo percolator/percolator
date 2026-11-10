@@ -148,7 +148,8 @@ LabelType DataSet::readPsm(const std::string& line, const unsigned int lineNr,
         if (reader.error()) {
           ostringstream temp;
           temp << "ERROR: Reading tab file, error reading scan number of PSM " 
-              << id << ". Check if scan number is an integer." << std::endl;
+              << id << ". Check if scan number is an integer between "
+              << INT_MIN << " and " << INT_MAX << "." << std::endl;
           throw MyException(temp.str());
         } else {
           hasScannr = true;

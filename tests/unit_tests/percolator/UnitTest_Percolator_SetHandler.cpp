@@ -651,3 +651,47 @@ TEST(PsmHeaderTest, FastPathMatchesGetScanIdAndReadPsm)
     FeatureNames::resetNumFeatures();
     PSMDescription::resetSpectrumFileNames();
 }
+
+// A scan number above 2^31 - 1 is refused; the error said "Check if scan
+// number is an integer", which it is.
+TEST(PsmHeaderTest, ScanNumberErrorNamesTheRange)
+{
+    SetHandlerHeaderEx sh;
+    std::vector<OptionalField> fields = {SCANNR};
+    FeatureNames::resetNumFeatures();
+    const std::string range = "between -2147483648 and 2147483647.";
+    for (const char* scan : {"2147483648", "-2147483649", "4294967296", "1.5", "x"}) {
+        const std::string line = std::string("id\t1\t") + scan + "\tK.PEPTIDEK.A\tprot";
+        int label = 0;
+        try {
+            sh.getScanIdEx(line, label, fields, 7u);
+            ADD_FAILURE() << "no exception for " << scan;
+        } catch (const MyException& e) {
+            const std::string message = e.what();
+            EXPECT_NE(std::string::npos, message.find("scan number on line 7"))
+                << message;
+            EXPECT_NE(std::string::npos, message.find(range)) << message;
+        }
+        FeatureMemoryPool pool;
+        PsmStore store;
+        PSMDescription* psm = NULL;
+        try {
+            DataSet::readPsm(line, 7u, fields, true, psm, pool, store, "decoy_");
+            ADD_FAILURE() << "no exception for " << scan;
+        } catch (const MyException& e) {
+            const std::string message = e.what();
+            EXPECT_NE(std::string::npos, message.find("scan number of PSM id"))
+                << message;
+            EXPECT_NE(std::string::npos, message.find(range)) << message;
+        }
+    }
+    // the ends of the range are read
+    for (const char* scan : {"2147483647", "-2147483648", "0"}) {
+        const std::string line = std::string("id\t1\t") + scan + "\tK.PEPTIDEK.A\tprot";
+        int label = 0;
+        ScanId scanId;
+        EXPECT_NO_THROW(scanId = sh.getScanIdEx(line, label, fields, 7u)) << scan;
+        EXPECT_EQ(std::string(scan), std::to_string(scanId.first));
+    }
+    FeatureNames::resetNumFeatures();
+}

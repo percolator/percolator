@@ -537,7 +537,8 @@ ScanId SetHandler::getScanId(const std::string& psmLine, int& label,
         if (reader.error()) {
           ostringstream temp;
           temp << "ERROR: Reading tab file, error reading scan number on line " 
-              << lineNr << ". Check if scan number is an integer." << std::endl;
+              << lineNr << ". Check if scan number is an integer between "
+              << INT_MIN << " and " << INT_MAX << "." << std::endl;
           throw MyException(temp.str());
         } else {
           hasScannr = true;
