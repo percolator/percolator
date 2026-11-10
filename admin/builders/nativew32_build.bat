@@ -1,6 +1,14 @@
-net use z: \\vboxsrv\vagrant
-
 @echo off
+:: Builds Percolator for 32-bit Windows with Visual Studio and makes the NSIS
+:: installer. Three cmake commands; nothing is downloaded or installed.
+::
+:: Needs: CMake 3.15 or later on the PATH, Visual Studio 2019 or later with
+:: the C++ workload (CMake finds the newest one), and NSIS for the installer.
+:: The GitHub runner images hold all three.
+::
+:: usage: nativew32_build.bat [-s <dir that holds percolator\>] [-b <build dir>] [-r <release dir>]
+::   The build tree is <build dir>\percolator; the installer is copied to
+::   <release dir>.
 
 setlocal
 
@@ -18,98 +26,30 @@ SHIFT
 GOTO parse
 :endparse
 
-cd /D "%SRC_DIR%"
-
-call percolator\admin\builders\_init_msvc_.bat 32bit
-if %errorlevel% NEQ 0 (
-  EXIT /B %errorlevel%
+where cmake > nul 2> nul
+if errorlevel 1 (
+  echo ERROR: cmake is not on the PATH
+  exit /B 1
 )
 
-::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-:::::::::::: START INSTALL DEPENDENCIES ::::::::::::::::
-::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-
-call percolator\admin\builders\_urls_and_file_names_.bat
-
-set INSTALL_DIR=%BUILD_DIR%\tools
-if not exist "%INSTALL_DIR%" (md "%INSTALL_DIR%")
 if not exist "%RELEASE_DIR%" (md "%RELEASE_DIR%")
-
-if not exist "%INSTALL_DIR%\7zip" (
-  echo Downloading and installing 7-Zip
-  call :downloadfile %ZIP_URL% %INSTALL_DIR%\7zip.exe
-  "%INSTALL_DIR%\7zip.exe" /S /D=%INSTALL_DIR%\7zip
-)
-set ZIP_EXE="%INSTALL_DIR%\7zip\7z.exe"
-
-if not exist "%INSTALL_DIR%\%CMAKE_BASE%" (
-  echo Downloading and installing CMake
-  call :downloadfile %CMAKE_URL% %INSTALL_DIR%\cmake.zip
-  %ZIP_EXE% x "%INSTALL_DIR%\cmake.zip" -o"%INSTALL_DIR%" -aoa -xr!doc > NUL
-)
-set CMAKE_EXE="%INSTALL_DIR%\%CMAKE_BASE%\bin\cmake.exe"
-
-
-::: Needed for CPack :::
-set NSIS_DIR=%INSTALL_DIR%\nsis
-if not exist "%NSIS_DIR%" (
-  echo Downloading and installing NSIS installer
-  call :downloadfile "%NSIS_URL%" %INSTALL_DIR%\nsis.exe
-  "%INSTALL_DIR%\nsis.exe" /S /D=%INSTALL_DIR%\nsis
-)
-setlocal
-set PATH=%PATH%;%INSTALL_DIR%\nsis
-
-::::::::::::::::::::::::::::::::::::::::::::::::::::::
-:::::::::::: END INSTALL DEPENDENCIES ::::::::::::::::
-::::::::::::::::::::::::::::::::::::::::::::::::::::::
-
-
-
-:::::::::::::::::::::::::::::::::::::::::
-:::::::::::: START BUILD ::::::::::::::::
-:::::::::::::::::::::::::::::::::::::::::
-
-if not exist "%BUILD_DIR%" (md "%BUILD_DIR%")
-
-::msbuild INSTALL.vcxproj /p:Configuration=%BUILD_TYPE% /m
-::msbuild RUN_TESTS.vcxproj /p:Configuration=%BUILD_TYPE% /m
-
-::::::: Building percolator :::::::
 if not exist "%BUILD_DIR%\percolator" (md "%BUILD_DIR%\percolator")
-cd /D "%BUILD_DIR%\percolator"
-echo cmake percolator.....
-%CMAKE_EXE% -G "Visual Studio %MSVC_VER%" "%SRC_DIR%\percolator"
-echo build percolator (this will take a few minutes).....
-msbuild PACKAGE.vcxproj /p:Configuration=%BUILD_TYPE% /m
 
-:::::::::::::::::::::::::::::::::::::::
-:::::::::::: END BUILD ::::::::::::::::
-:::::::::::::::::::::::::::::::::::::::
+echo cmake percolator.....
+cmake -S "%SRC_DIR%\percolator" -B "%BUILD_DIR%\percolator" -A Win32 -DGOOGLE_TEST=1
+if errorlevel 1 exit /B 1
+
+echo build percolator (this will take a few minutes).....
+cmake --build "%BUILD_DIR%\percolator" --config %BUILD_TYPE% --parallel
+if errorlevel 1 exit /B 1
+
+echo package percolator.....
+cmake --build "%BUILD_DIR%\percolator" --config %BUILD_TYPE% --target PACKAGE
+if errorlevel 1 exit /B 1
 
 echo Copying installers to %RELEASE_DIR%
-set /A exit_code=0
-call :copytorelease "%BUILD_DIR%\percolator\per*.exe"
+copy /Y "%BUILD_DIR%\percolator\per*.exe" "%RELEASE_DIR%"
+if errorlevel 1 exit /B 1
 
 echo Finished buildscript execution in build directory %BUILD_DIR%
-
-cd "%SRC_DIR%\percolator\admin\builders"
-
-EXIT /B %exit_code%
-
-::: subroutines
-:getabspath
-SET "%1=%~f2"
-EXIT /B
-
-:downloadfile
-echo Downloading "%1" to "%2"
-PowerShell "[Net.ServicePointManager]::SecurityProtocol = 'tls12, tls11, tls'; (new-object System.Net.WebClient).DownloadFile('%1','%2')"
-EXIT /B
-
-:copytorelease
-echo Copying "%1" to "%RELEASE_DIR%"
-xcopy %1 "%RELEASE_DIR%" /Y
-dir %1 /b /a-d >nul 2>&1
-set /A exit_code=exit_code+%ERRORLEVEL%
-EXIT /B
+exit /B 0
