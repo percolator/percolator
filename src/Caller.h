@@ -99,6 +99,7 @@ class Caller {
   static constexpr unsigned int kDefaultNumFolds = 3u;
   unsigned int numFolds_ = kDefaultNumFolds;  // --num-folds
   bool numFoldsSet_ = false;    // --num-folds given
+  unsigned int foldsInMemory_ = 0u;  // --folds-in-memory, 0: by --num-folds
   double selectedCpos_, selectedCneg_;
   bool classicTraining_ = false;
   bool inPlaceTraining_ = false;

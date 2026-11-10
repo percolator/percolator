@@ -101,6 +101,26 @@ class CrossValidation {
   // FeatureMemoryPool for which canTrainInPlace(numFeatures) holds; set
   // before preIterationSetup
   void inline setSvmRowsInPlace(bool on) { svmRowsInPlace_ = on; }
+  // The number of folds whose training sets are held as copies of the
+  // feature rows at once (see AlgIn): the SVMs of these folds are trained
+  // in parallel, then the buffers are reused for the next folds. The
+  // results do not depend on it. 0, the default, holds all folds at once
+  // for up to kMaxFoldsAllAtOnce folds and one fold with more; a larger
+  // number than there are folds means all. No effect with
+  // setSvmRowsInPlace, which makes no copies. Set before preIterationSetup.
+  void inline setFoldsAtOnce(unsigned int n) { foldsAtOnce_ = n; }
+  static constexpr unsigned int kMaxFoldsAllAtOnce = 3u;
+  // the number of folds held at once for the setting foldsAtOnce and
+  // numFolds folds
+  static unsigned int foldsHeldAtOnce(unsigned int foldsAtOnce,
+                                      unsigned int numFolds);
+  // With fewer folds held at once than there are, the passes in which each
+  // training set serves a single solve (after the grid search is fixed, with
+  // a single candidate pair, and the solve on a whole fold of nested cross
+  // validation) would run their solves one after the other. With this
+  // setting they train all folds in parallel on the rows in place instead,
+  // which needs rows as for setSvmRowsInPlace.
+  void inline setSingleSolvesInPlace(bool on) { singleSolvesInPlace_ = on; }
   // let postIterationProcessing list the input line and fold of every test
   // PSM for getTestFolds, before the merge empties the test sets (-N); after
   // a failed direction check under test, a reset or --override, it then
@@ -127,7 +147,11 @@ class CrossValidation {
   static MergeNormalization defaultMergeNormalization(unsigned int numFolds);
 
  protected:
+  // the training sets of the folds held at once, one per nested fold
   std::vector<AlgIn> svmInputs_;
+  // the training sets of all folds as row pointers, see
+  // setSingleSolvesInPlace
+  std::vector<AlgIn> svmRowLists_;
   std::vector<std::vector<double> > weights_;  // svm weights for each fold
   std::vector<CandidateCposCfrac>
       classWeightsPerFold_;  // cpos, cneg pairs to train for each nested CV
@@ -136,6 +160,8 @@ class CrossValidation {
   bool quickValidation_;
   bool classicTraining_ = false;
   bool svmRowsInPlace_ = false;
+  unsigned int foldsAtOnce_ = 0u;
+  bool singleSolvesInPlace_ = false;
   bool recordTestFolds_ = false;
   std::vector<std::pair<unsigned int, unsigned int> > testFolds_;
   bool usePi0_;
@@ -186,6 +212,16 @@ class CrossValidation {
     std::vector<double> outputs;
   };
 
+  // the number of folds whose training sets are held at once
+  unsigned int foldsAtOnce() const {
+    return foldsHeldAtOnce(foldsAtOnce_, numFolds_);
+  }
+  // The training sets to fill for a pass over the folds and the number of
+  // folds per group of that pass: the set of nested fold b of the i-th fold
+  // of a group is element i * nestedXvalBins_ + b. singleSolves: each
+  // training set serves one solve.
+  std::vector<AlgIn>& svmInputsOfPass(bool singleSolves,
+                                      unsigned int& foldsPerPass);
   void initializeGridSearch(double targetDecoySizeRatio);
   void trainCpCnPair(CandidateCposCfrac& cpCnFold,
                      const options& pOptions,

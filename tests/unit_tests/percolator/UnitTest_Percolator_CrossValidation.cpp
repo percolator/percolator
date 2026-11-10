@@ -64,6 +64,11 @@ public:
     std::vector<Scores> const& trainBins(void) const {
         return trainScores_;
     }
+    // the training sets held as copies (or as rows in place with
+    // setSvmRowsInPlace) and those held as row pointers for single solves
+    std::size_t numSvmInputs(void) const { return svmInputs_.size(); }
+    std::size_t numSvmRowLists(void) const { return svmRowLists_.size(); }
+    bool gridFixed(void) const { return gridFixed_; }
 };
 
 /*
@@ -1330,4 +1335,125 @@ TEST_F(CrossValidationTest, ResetRestoresWeightFileVectorUnlessDefaultIsBetter)
     std::remove(weightFile.c_str());
     DataSet::resetFeatureNames();
     FeatureNames::resetNumFeatures();
+}
+
+// How the training sets are held, see CrossValidation::setFoldsAtOnce
+struct FoldsAtOnceCase {
+    unsigned int numFolds;
+    unsigned int nestedBins;
+    bool quickValidation;
+    unsigned int foldsAtOnce;    // setFoldsAtOnce
+    bool singleSolvesInPlace;    // setSingleSolvesInPlace
+    bool rowsInPlace;            // setSvmRowsInPlace
+    std::size_t expectedInputs;  // training sets held after the training
+    std::size_t expectedRowLists;
+};
+
+// Trains on 600 PSMs with two features, whose rows end with the intercept
+// 1.0 as those of a pool for in-place training do, and returns the weights
+// of the folds.
+static std::vector<std::vector<double> > trainFoldsAtOnce(
+    const FoldsAtOnceCase& c) {
+    FeatureNames::resetNumFeatures();
+    FeatureNames::setNumFeatures(2);
+    const int numPsms = 600;
+    std::vector<double> features(3 * numPsms, 1.0);
+    SetHandler setHandler(0);
+    PsmStore psmStore;
+    DataSet* targets = new DataSet();
+    DataSet* decoys = new DataSet();
+    targets->setLabel(LabelType::TARGET);
+    decoys->setLabel(LabelType::DECOY);
+    unsigned int seed = 77u;
+    for (int i = 0; i < numPsms; ++i) {
+        seed = seed * 1103515245u + 12345u;
+        const bool isTarget = i % 2 == 0;
+        const bool isCorrect = isTarget && i % 4 == 0;
+        PSMDescription* psm = psmStore.add(PSMDescription());
+        psm->features = &features[3 * i];
+        psm->features[0] = static_cast<double>((seed >> 8) % 1000) / 250.0 +
+                           (isCorrect ? 2.5 : 0.0);
+        psm->features[1] = static_cast<double>((seed >> 4) % 1000) / 250.0 +
+                           (isCorrect ? 2.5 : 0.0);
+        psm->scan = static_cast<unsigned int>(1 + i);
+        (isTarget ? targets : decoys)->registerPsm(psm);
+    }
+    setHandler.push_back_dataset(std::unique_ptr<DataSet>(targets));
+    setHandler.push_back_dataset(std::unique_ptr<DataSet>(decoys));
+    std::unique_ptr<Normalizer> norm = Normalizer::create(Normalizer::STDV);
+    setHandler.normalizeFeatures(*norm);
+    for (int i = 0; i < numPsms; ++i) {
+        EXPECT_EQ(1.0, features[3 * i + 2]);  // the intercepts are kept
+    }
+
+    PseudoRandom::setSeed(1u);
+    CrossValidationEx crossValidation(c.quickValidation, false, 0.05, 0.05,
+                                      0.05, 0.0, 0.0, 10, false,
+                                      c.nestedBins, false, 2, false, 1.0,
+                                      c.numFolds);
+    crossValidation.setSvmRowsInPlace(c.rowsInPlace);
+    crossValidation.setFoldsAtOnce(c.foldsAtOnce);
+    crossValidation.setSingleSolvesInPlace(c.singleSolvesInPlace);
+    Scores scores(false);
+    scores.populateWithPSMs(setHandler);
+    SanityCheck check;
+    crossValidation.preIterationSetup(scores, check, norm.get());
+    crossValidation.train(norm.get());
+    // the passes after the grid search ran, except with quick validation,
+    // which has a single pair from the start
+    EXPECT_EQ(!c.quickValidation, crossValidation.gridFixed());
+    EXPECT_EQ(c.expectedInputs, crossValidation.numSvmInputs());
+    EXPECT_EQ(c.expectedRowLists, crossValidation.numSvmRowLists());
+    std::vector<std::vector<double> > weights = crossValidation.weights();
+    FeatureNames::resetNumFeatures();
+    return weights;
+}
+
+// The number of folds whose training sets are held at once, and training
+// the single solves of a fold on the rows in place, change the memory and
+// the order of the solves but not the weights: every SVM is trained on the
+// same rows from the same start. With and without nested cross validation
+// and with a single candidate pair (quick validation).
+TEST_F(CrossValidationTest, FoldsAtOnceGiveTheSameWeights)
+{
+    for (unsigned int nestedBins : {1u, 2u}) {
+        for (bool quick : {false, true}) {
+            SCOPED_TRACE(testing::Message() << "nested bins " << nestedBins
+                                            << ", quick " << quick);
+            const unsigned int b = nestedBins;
+            // all four folds at once, as copies
+            const std::vector<std::vector<double> > reference =
+                trainFoldsAtOnce({4, b, quick, 4, false, false, 4 * b, 0});
+            ASSERT_EQ(4u, reference.size());
+            EXPECT_NE(reference[0], reference[1]);
+            const FoldsAtOnceCase cases[] = {
+                // the default with more than three folds: one fold
+                {4, b, quick, 0, false, false, b, 0},
+                {4, b, quick, 1, false, false, b, 0},
+                // three folds, then the fourth
+                {4, b, quick, 3, false, false, 3 * b, 0},
+                // more than there are: all
+                {4, b, quick, 9, false, false, 4 * b, 0},
+                // single solves in place: once the grid is fixed, or with
+                // a single pair, no copies are left
+                {4, b, quick, 0, true, false, 0, 4 * b},
+                // no effect when all folds are held at once
+                {4, b, quick, 4, true, false, 4 * b, 0},
+                // all rows in place: all folds at once whatever is set
+                {4, b, quick, 1, true, true, 4 * b, 0},
+            };
+            for (const FoldsAtOnceCase& c : cases) {
+                SCOPED_TRACE(testing::Message()
+                             << "folds at once " << c.foldsAtOnce
+                             << ", single solves in place "
+                             << c.singleSolvesInPlace << ", rows in place "
+                             << c.rowsInPlace);
+                EXPECT_EQ(reference, trainFoldsAtOnce(c));
+            }
+        }
+    }
+    // up to three folds are all held at once by default
+    trainFoldsAtOnce({3, 1, false, 0, false, false, 3, 0});
+    trainFoldsAtOnce({3, 1, false, 0, true, false, 3, 0});
+    trainFoldsAtOnce({3, 1, false, 1, false, false, 1, 0});
 }

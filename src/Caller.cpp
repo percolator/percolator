@@ -197,6 +197,23 @@ bool Caller::parseOptions(int argc, char** argv) {
       "each fold's training set (--merge-normalization train-decoys) unless "
       "a scheme is given. Default = 3.",
       "number");
+  cmd.defineOption(
+      Option::NO_SHORT_OPT, "folds-in-memory",
+      "The SVMs are trained on copies of the feature rows of each fold's "
+      "training set, which the solver reads faster than the rows themselves. "
+      "This is the number of folds whose copies are held at once: the SVMs of "
+      "these folds are trained in parallel, then the memory is used for the "
+      "next folds. The results are the same for any number. With 1, the peak "
+      "memory is 20 to 25% lower with 3 folds, and less than half with 10 "
+      "folds, than with all folds at once. The search for Cpos and Cneg "
+      "keeps up to 9 threads busy with one fold, which trains 9 SVMs there; "
+      "where a fold trains a single SVM, as it does after that search, all "
+      "folds are trained in parallel on the rows in place (see "
+      "--in-place-training), so the run takes about as long. A number "
+      "between 1 and the number of folds is of use with more threads than a "
+      "fold has SVMs to train. Default = all folds with up to 3 folds "
+      "(--num-folds), 1 with more. No effect with --in-place-training.",
+      "number");
   cmd.defineOption("", "classic-training",
                    "Train the SVMs as Percolator 3.09 did: every SVM is "
                    "solved from zero weights with conjugate gradients, Cpos "
@@ -721,6 +738,9 @@ bool Caller::parseOptions(int argc, char** argv) {
   }
   if (cmd.isOptionSet("in-place-training")) {
     inPlaceTraining_ = true;
+  }
+  if (cmd.isOptionSet("folds-in-memory")) {
+    foldsInMemory_ = cmd.getUInt("folds-in-memory", 1, 1000);
   }
   if (cmd.isOptionSet("train-best-positive")) {
     trainBestPositive_ = true;
@@ -1417,8 +1437,14 @@ int Caller::run() {
   SetHandler setHandler(maxPSMs_);
   setHandler.setDecoyPrefix(protEstimatorDecoyPrefix_);
   setHandler.setInputSegments(std::move(inputSegments));
-  // rows that the SVM can train on in place
-  setHandler.getFeaturePool().setSvmRowsInPlace(inPlaceTraining_);
+  // Rows that the SVM can train on in place: with --in-place-training, and
+  // where the copies of fewer folds than there are are held at once
+  // (--folds-in-memory), whose single solves then run in place.
+  const bool singleSolvesInPlace =
+      !useResetAlgorithm_ &&  // which trains on one fold
+      CrossValidation::foldsHeldAtOnce(foldsInMemory_, numFolds_) < numFolds_;
+  setHandler.getFeaturePool().setSvmRowsInPlace(inPlaceTraining_ ||
+                                                singleSolvesInPlace);
   Scores allScores(useMixMax_);
   allScores.setOutputRT(outputRT_);
 
@@ -1556,6 +1582,10 @@ int Caller::run() {
     crossValidation.setSvmRowsInPlace(
         inPlaceTraining_ && setHandler.getFeaturePool().canTrainInPlace(
                                 DataSet::getNumFeatures()));
+    crossValidation.setFoldsAtOnce(foldsInMemory_);
+    crossValidation.setSingleSolvesInPlace(
+        singleSolvesInPlace && setHandler.getFeaturePool().canTrainInPlace(
+                                   DataSet::getNumFeatures()));
     // with -N, the test fold of each subset PSM, for getTestFolds below
     crossValidation.setRecordTestFolds(setHandler.getMaxPSMs() > 0u &&
                                        numFolds > 1u);
