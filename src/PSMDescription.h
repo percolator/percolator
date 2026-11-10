@@ -153,6 +153,9 @@ class PSMDescription {
         numProteins_ = static_cast<unsigned int>(numProteins);
     }
 
+    // The address of the record with the peptide and the id, for a prefetch
+    // some iterations before a loop over scattered PSMs reads them.
+    const void* stringsAddress() const { return record_; }
     std::string_view getFullPeptide() const {
         if (record_ == nullptr) return std::string_view();
         size_t peptideLength;

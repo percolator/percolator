@@ -21,6 +21,7 @@
 #include <algorithm>
 #include <cassert>
 #include <cmath>
+#include <exception>
 #include <fstream>
 #include <functional>
 #include <iostream>
@@ -45,6 +46,20 @@
 #include "ssl.h"
 #include "IsotonicPEP.h"
 #include "NumberFormatter.h"
+
+namespace {
+
+// The number of threads that a loop over the PSMs may use: one inside a
+// parallel region, where the loops of this file run on the calling thread.
+int numLoopThreads() {
+#ifdef _OPENMP
+  return omp_in_parallel() ? 1 : std::max(1, omp_get_max_threads());
+#else
+  return 1;
+#endif
+}
+
+}  // namespace
 
 const char* mergeNormalizationName(MergeNormalization scheme) {
   switch (scheme) {
@@ -260,7 +275,6 @@ void Scores::scoreAndAddPSM(ScoreHolder& sh,
 }
 
 void Scores::print(LabelType label, std::ostream& os) {
- std::vector<ScoreHolder>::iterator scoreIt = scores_.begin();
   os << "PSMId\t";
   if (PSMDescription::hasSpectrumFileName()) {
     os << "filename\t";
@@ -274,11 +288,9 @@ void Scores::print(LabelType label, std::ostream& os) {
 
   const NumberFormatter format(os);
   if (format.sameAsStream()) {
-    // the lines are built in a buffer, which is written in large blocks
-    std::string buffer;
-    for (; scoreIt != scores_.end(); ++scoreIt) {
-      if (scoreIt->label != label) continue;
-      PSMDescription* psm = scoreIt->pPSM;
+    auto appendLine = [this, &format](std::string& buffer,
+                                      const ScoreHolder& sh) {
+      PSMDescription* psm = sh.pPSM;
       buffer.append(psm->getId());
       buffer += '\t';
       const std::string& fileName = psm->getSpectrumFileName();
@@ -286,11 +298,11 @@ void Scores::print(LabelType label, std::ostream& os) {
         buffer.append(fileName);
         buffer += '\t';
       }
-      format.append(buffer, scoreIt->score);
+      format.append(buffer, sh.score);
       buffer += '\t';
-      format.append(buffer, scoreIt->q);
+      format.append(buffer, sh.q);
       buffer += '\t';
-      format.append(buffer, scoreIt->pep);
+      format.append(buffer, sh.pep);
       buffer += '\t';
       buffer.append(psm->getFullPeptide());
       buffer += '\t';
@@ -300,15 +312,50 @@ void Scores::print(LabelType label, std::ostream& os) {
         format.append(buffer, psm->getRetentionTime());
       }
       buffer += '\n';
-      if (buffer.size() >= NumberFormatter::kWriteBlockSize) {
-        os.write(buffer.data(), static_cast<std::streamsize>(buffer.size()));
+    };
+    // Formatting the numbers takes most of the time of writing a result
+    // file. The lines are built on all threads, each thread those of a
+    // block of PSMs in a buffer of its own, and the buffers are then
+    // written in the order of the PSMs.
+    const long numScores = static_cast<long>(scores_.size());
+    const long kBlockSize = 1 << 14;
+    const int numBuffers = numScores > kBlockSize ? numLoopThreads() : 1;
+    std::vector<std::string> buffers(static_cast<std::size_t>(numBuffers));
+    std::exception_ptr error;
+    for (long start = 0; start < numScores; start += kBlockSize * numBuffers) {
+#pragma omp parallel for schedule(static, 1) if (numBuffers > 1)
+      for (int b = 0; b < numBuffers; ++b) {
+        std::string& buffer = buffers[static_cast<std::size_t>(b)];
         buffer.clear();
+        const long begin = std::min(numScores, start + b * kBlockSize);
+        const long end = std::min(numScores, begin + kBlockSize);
+        try {
+          for (long i = begin; i < end; ++i) {
+            // the PSM is requested 8 PSMs ahead and its strings, whose
+            // address is in the PSM, 4 ahead
+            if (i + 8 < end && scores_[i + 8].label == label) {
+              prefetchAddress(scores_[i + 8].pPSM);
+            }
+            if (i + 4 < end && scores_[i + 4].label == label) {
+              prefetchAddress(scores_[i + 4].pPSM->stringsAddress());
+            }
+            if (scores_[i].label == label) appendLine(buffer, scores_[i]);
+          }
+        } catch (...) {
+          // an exception must not leave the parallel region
+#pragma omp critical(scores_print_error)
+          if (!error) error = std::current_exception();
+        }
+      }
+      if (error) std::rethrow_exception(error);
+      for (const std::string& buffer : buffers) {
+        os.write(buffer.data(), static_cast<std::streamsize>(buffer.size()));
       }
     }
-    os.write(buffer.data(), static_cast<std::streamsize>(buffer.size()));
     return;
   }
 
+  std::vector<ScoreHolder>::iterator scoreIt = scores_.begin();
   for (; scoreIt != scores_.end(); ++scoreIt) {
     if (scoreIt->label == label) {
       PSMDescription* psm = scoreIt->pPSM;
@@ -1171,16 +1218,6 @@ int Scores::countTargetsBelowFdr(const FeatureRows& rows,
 }
 
 namespace {
-
-// The number of threads that a loop over the PSMs may use: one inside a
-// parallel region, where the loops of this file run on the calling thread.
-int numLoopThreads() {
-#ifdef _OPENMP
-  return omp_in_parallel() ? 1 : std::max(1, omp_get_max_threads());
-#else
-  return 1;
-#endif
-}
 
 // Appends to data the PSMs of scores for which select is true, in their
 // order, with the given label, and returns their number. The selected PSMs

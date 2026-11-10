@@ -32,6 +32,7 @@
 #include <map>
 #include <memory>
 #include <random>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -2934,4 +2935,61 @@ TEST(ProteinOrderTest, DecoyWinsScoreTies)
     EXPECT_EQ(proteins[1].getName(), "decoy_prot_1");
     EXPECT_EQ(proteins[2].getName(), "prot_1");
     EXPECT_EQ(proteins[3].getName(), "prot_2");
+}
+
+// The result lines, which are formatted in blocks on all threads, are the
+// lines that operator<< writes for the PSMs with the label, in the order of
+// the list: for lists shorter and longer than a round of blocks.
+TEST_F(ScoresTest, PrintWritesTheLinesInOrder)
+{
+    for (std::size_t numPsms : {0u, 5u, 16384u, 100003u}) {
+        for (bool withRt : {false, true}) {
+            SCOPED_TRACE(::testing::Message()
+                         << numPsms << " PSMs, rt " << withRt);
+            PsmStore psmStore;
+            Scores scores(false);
+            scores.setOutputRT(withRt);
+            unsigned int seed = 31u;
+            std::ostringstream expectedTargets, expectedDecoys;
+            for (std::ostringstream* os :
+                 {&expectedTargets, &expectedDecoys}) {
+                *os << "PSMId\tscore\tq-value\tposterior_error_prob\t"
+                    << "peptide\tproteinIds" << (withRt ? "\trt\n" : "\n");
+            }
+            for (std::size_t i = 0; i < numPsms; ++i) {
+                seed = seed * 1103515245u + 12345u;
+                const bool isDecoy = (seed >> 16) % 3 == 0;
+                const std::string id = "psm_" + std::to_string(i);
+                const std::string peptide =
+                    "K.PEP" + std::to_string(seed >> 20) + ".R";
+                PSMDescription* psm = psmStore.add(PSMDescription());
+                std::string proteins;
+                if (i % 2) {
+                    psmStore.storeStrings(*psm, id, peptide, {"protA", "protB"});
+                    proteins = "protA\tprotB";
+                } else {
+                    psmStore.storeStrings(*psm, id, peptide, {"protC"});
+                    proteins = "protC";
+                }
+                psm->setRetentionTime(static_cast<double>(seed >> 12) / 7.0);
+                ScoreHolder sh(static_cast<double>(seed) / 3.0e8 - 5.0,
+                               isDecoy ? LabelType::DECOY : LabelType::TARGET,
+                               psm);
+                sh.q = 1.0 / static_cast<double>(1u + (seed >> 24));
+                sh.pep = static_cast<double>(i % 1000) * 1e-7;
+                scores.addScoreHolder(sh);
+                std::ostringstream& os =
+                    isDecoy ? expectedDecoys : expectedTargets;
+                os << id << '\t' << sh.score << '\t' << sh.q << '\t' << sh.pep
+                   << '\t' << peptide << '\t' << proteins;
+                if (withRt) os << '\t' << psm->getRetentionTime();
+                os << '\n';
+            }
+            std::ostringstream targets, decoys;
+            scores.print(LabelType::TARGET, targets);
+            scores.print(LabelType::DECOY, decoys);
+            EXPECT_TRUE(expectedTargets.str() == targets.str());
+            EXPECT_TRUE(expectedDecoys.str() == decoys.str());
+        }
+    }
 }
