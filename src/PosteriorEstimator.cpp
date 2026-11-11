@@ -209,6 +209,10 @@ void PosteriorEstimator::finishStandalone(
   vector<double> q(0), xvals(0);
   if (pvalInput) {
     getQValuesFromP(pi0, p, q);
+    if (includeNegativesInResult_) {
+      // one q value per line, as for score input: the decoys are printed too
+      q = getAllQValuesFromP(pi0, p, q, combined);
+    }
   } else {
     getQValues(pi0, combined, q, false, 0.5, includeNegativesInResult_);
   }
@@ -381,6 +385,42 @@ void PosteriorEstimator::getQValuesFromP(double pi0,
 		q.push_back((*myP * m * pi0) / (double)nP);
 	}
 	partial_sum(q.rbegin(), q.rend(), q.rbegin(), mymin);
+}
+
+/**
+ * The q values of all entries of combined for p value input, where the
+ * targets are the p values and the decoys are the quantiles of the uniform
+ * distribution that run() adds. A target keeps its value of
+ * getQValuesFromP (targetQ). A decoy gets the same estimate at its own p
+ * value d, pi0 * m * d / #{p <= d}, limited by the q value of the next
+ * target, so that the values do not decrease along the list. Both p and
+ * combined have to be sorted in ascending order.
+ */
+vector<double> PosteriorEstimator::getAllQValuesFromP(double pi0,
+    const vector<double>& p, const vector<double>& targetQ,
+    const vector<pair<double, bool> >& combined) {
+  const double m = static_cast<double>(p.size());
+  vector<double> q;
+  q.reserve(combined.size());
+  size_t numTargets = 0;  // targets written so far
+  size_t numLe = 0;       // p values <= the current decoy
+  for (const auto& elem : combined) {
+    if (elem.second) {
+      // a target of combined is a p value, so targetQ has a value for it
+      q.push_back(targetQ.at(numTargets++));
+      continue;
+    }
+    while (numLe < p.size() && p[numLe] <= elem.first) {
+      ++numLe;
+    }
+    double fdr = pi0 * m * elem.first /
+                 static_cast<double>((std::max)(numLe, static_cast<size_t>(1)));
+    if (numLe < targetQ.size()) {
+      fdr = (std::min)(fdr, targetQ[numLe]);
+    }
+    q.push_back(fdr);
+  }
+  return q;
 }
 
 // assumes pep are sorted in ascending order
@@ -651,11 +691,14 @@ void PosteriorEstimator::estimateMonotonePEP(
   vector<double> q, targetQ, targetX;
   if (pvalInput) {
     getQValuesFromP(pi0, p, q);
+    if (includeNegativesInResult_) {
+      q = getAllQValuesFromP(pi0, p, q, combined);
+    }
   } else {
     getQValues(pi0, combined, q, false, 0.5, includeNegativesInResult_);
   }
   // q holds one value per target, or per entry with includeNegativesInResult_
-  const bool allEntries = !pvalInput && includeNegativesInResult_;
+  const bool allEntries = includeNegativesInResult_;
   for (size_t ix = 0, iq = 0; ix < combined.size(); ++ix) {
     if (!combined[ix].second && !allEntries) continue;
     if (combined[ix].second && iq < q.size()) {

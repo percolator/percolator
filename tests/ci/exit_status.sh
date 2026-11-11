@@ -156,6 +156,27 @@ fails qv_unknown_option "is invalid" \
 fails qv_input_missing "Could not open" "$QVAL" no_such_file.txt "$QD/null.xcorr"
 fails qv_input_empty "contains no values" "$QVAL" empty.pin "$QD/null.xcorr"
 
+# -d on a p value file prints the p values and as many generated decoys,
+# each with a q value: these used to be read past the end of a vector
+"$PY" -c 'import random
+random.seed(1)
+for i in range(500):
+    print(random.random() ** (1 if i % 2 else 4))' > pvalues.txt
+for option in "" --pava-pep --irls-pep; do
+  name=qv_pvalues_decoys${option:+_${option#--}}
+  expect "$name" 0 "" "$QVAL" -d $option pvalues.txt
+  "$QVAL" -d $option pvalues.txt 2> /dev/null | cmp -s - "$name.stdout.txt"
+  same=$?
+  if [ "$same" -ne 0 ] || ! awk -F '\t' '
+      NR > 1 && (NF != 3 || $3 !~ /^[0-9.e+-]+$/ || $3 + 0 < 0 ||
+                 $3 + 0 > 1 || $3 + 0 < last) { exit 1 }
+      NR > 1 { last = $3 + 0 }
+      END { if (NR != 1001) exit 1 }' "$name.stdout.txt"; then
+    failures=$((failures + 1))
+    echo "FAIL $name (q values not in [0, 1], decreasing, or not repeatable)"
+  fi
+done
+
 # a full disk
 if [ -c /dev/full ]; then
   for option in m M r B w J; do

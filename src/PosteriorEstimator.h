@@ -52,6 +52,11 @@ class PosteriorEstimator {
                               std::vector<double>& q);
   static void getQValuesFromPEP(const std::vector<double>& pep,
                               std::vector<double>& q);
+  // For p value input with the decoys in the result (-d): the q values of
+  // all entries of combined, the targets with those of getQValuesFromP.
+  static std::vector<double> getAllQValuesFromP(double pi0,
+      const std::vector<double>& p, const std::vector<double>& targetQ,
+      const std::vector<std::pair<double, bool> >& combined);
   static bool checkSeparation(std::vector<double>& p);
   static double estimatePi0(std::vector<double>& p,
                             const unsigned int numBoot = 100);
