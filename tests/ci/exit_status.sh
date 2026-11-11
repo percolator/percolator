@@ -4,7 +4,9 @@
 # on output they cannot write: unknown and invalid options, missing, empty
 # and malformed input, inputs without targets or decoys, output files that
 # are the input, lie in a missing directory or are on a full disk
-# (/dev/full, where it exists).
+# (/dev/full, where it exists). A few cases must end with status 0 and
+# output that can be used: --no-terminate on such inputs, and qvality -d
+# on p values.
 #
 # usage: tests/ci/exit_status.sh <build-dir> <out-dir>
 #   PYTHON names the Python 3 interpreter.
@@ -122,6 +124,20 @@ fails input_text_feature "error reading in feature vector" \
   "$PERC" text_feature.pin
 fails input_nan_feature "strange feature" "$PERC" nan_feature.pin
 fails input_short_row "error reading" "$PERC" short_row.pin
+# --no-terminate goes on without target PSMs; the protein inference then
+# has decoy proteins only, which used to end in a segmentation fault. They
+# are written with the q value 1.
+expect no_targets_proteins_no_terminate 0 "no target PSMs" \
+  "$PERC" --no-terminate -f auto -P decoy_ -z trypsin \
+  -L no_targets_decoy_proteins.txt no_targets.pin
+if ! awk -F '\t' 'NR > 1 && $3 != 1 { exit 1 } END { if (NR < 2) exit 1 }' \
+    no_targets_decoy_proteins.txt; then
+  failures=$((failures + 1))
+  echo "FAIL no_targets_proteins_no_terminate (decoy proteins, q value 1)"
+fi
+expect no_decoys_proteins_no_terminate 0 "no decoy PSMs" \
+  "$PERC" --no-terminate -f auto -P decoy_ -z trypsin \
+  -l no_decoys_proteins.txt no_decoys.pin
 # mix-max with unequal numbers of target and decoy PSMs, here a concatenated
 # search taken for separate searches, is a warning: the numbers do not tell
 # whether the q values are too low

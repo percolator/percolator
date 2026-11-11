@@ -107,6 +107,15 @@ void ProteinProbEstimator::estimatePValues() {
   PosteriorEstimator::getPValues(combined, pvalues);
   
   std::vector<ProteinScoreHolder>::iterator protIt = proteins_.begin();
+  if (pvalues.empty()) {
+    // getPValues gives one p value per target protein (group). An input
+    // with decoys only gets this far with --no-terminate; its proteins,
+    // all decoys, get the p value 1.
+    for (; protIt != proteins_.end(); ++protIt) {
+      protIt->setP(1.0);
+    }
+    return;
+  }
   std::vector<double>::const_iterator pIt = pvalues.begin();
   bool isTarget = false;
   for (; protIt != proteins_.end(); ++protIt) {
