@@ -103,6 +103,13 @@ class Globals {
     bool getNoTerminate() {
       return noTerminate_;
     }
+    // For an error that --no-terminate lets the run survive. Without the
+    // flag, throws MyException(error + thrownSuffix). With it, prints error
+    // and recovery ("No-terminate flag set: ...") to stderr and returns; the
+    // caller then does what the recovery text says.
+    static void failUnlessNoTerminate(const std::string& error,
+                                      const char* recovery,
+                                      const char* thrownSuffix = "");
   private:
     Globals() = default;
     int verbose = 2;

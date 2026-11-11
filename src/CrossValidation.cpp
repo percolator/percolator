@@ -140,12 +140,9 @@ int CrossValidation::preIterationSetup(Scores& fullset,
       oss << "Error: cross-validation fold " << set + 1 << " of " << numFolds_
           << " received no PSMs, the input has too few spectra for "
           << numFolds_ << " folds. Use fewer folds (--num-folds).\n";
-      if (NO_TERMINATE) {
-        cerr << oss.str() << "No-terminate flag set: ignoring error."
-             << std::endl;
-        break;
-      }
-      throw MyException(oss.str());
+      Globals::failUnlessNoTerminate(oss.str(),
+                                     "No-terminate flag set: ignoring error.");
+      break;
     }
   }
   // With very few spectra all of them can fall into the test set of one
@@ -345,12 +342,10 @@ void CrossValidation::checkWeightsFinite() const {
                   : std::string("the bias term m0"))
           << " in cross validation split " << set + 1 << " is "
           << weights_[set][ix] << " after training." << std::endl;
-      if (NO_TERMINATE) {
-        cerr << oss.str() << "No-terminate flag set: ignoring the error."
-             << std::endl;
-        return;
-      }
-      throw MyException(oss.str() + "Terminating.\n");
+      Globals::failUnlessNoTerminate(
+          oss.str(), "No-terminate flag set: ignoring the error.",
+          "Terminating.\n");
+      return;
     }
   }
 }

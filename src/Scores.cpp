@@ -399,23 +399,15 @@ void Scores::populateWithPSMs(SetHandler& setHandler) {
   if (totalNumberOfTargets_ == 0) {
     ostringstream oss;
     oss << "Error: no target PSMs were provided.\n";
-    if (NO_TERMINATE) {
-      cerr << oss.str() << "No-terminate flag set: ignoring error."
-           << std::endl;
-    } else {
-      throw MyException(oss.str());
-    }
+    Globals::failUnlessNoTerminate(oss.str(),
+                                   "No-terminate flag set: ignoring error.");
   }
 
   if (totalNumberOfDecoys_ == 0) {
     ostringstream oss;
     oss << "Error: no decoy PSMs were provided.\n";
-    if (NO_TERMINATE) {
-      cerr << oss.str() << "No-terminate flag set: ignoring error."
-           << std::endl;
-    } else {
-      throw MyException(oss.str());
-    }
+    Globals::failUnlessNoTerminate(oss.str(),
+                                   "No-terminate flag set: ignoring error.");
   }
 
   // check for the minimum recommended number of positive and negative hits
@@ -491,13 +483,9 @@ void Scores::createXvalSetsBySpectrum(std::vector<Scores>& train,
   if (scores_.size() == 0) {
     ostringstream oss;
     oss << "Error: no scored PSMs were provided.\n";
-    if (NO_TERMINATE) {
-      cerr << oss.str() << "No-terminate flag set: ignoring error."
-           << std::endl;
-      return;
-    } else {
-      throw MyException(oss.str());
-    }
+    Globals::failUnlessNoTerminate(oss.str(),
+                                   "No-terminate flag set: ignoring error.");
+    return;
   }
 
   // The folds are filled with whole spectra while remain counts PSMs, so a
@@ -628,13 +616,9 @@ void Scores::normalizeScores(double fdr, std::vector<double>& weights,
   if (scores_.size() == 0) {
     ostringstream oss;
     oss << "Error: no scored PSMs were provided.\n";
-    if (NO_TERMINATE) {
-      cerr << oss.str() << "No-terminate flag set: ignoring error."
-           << std::endl;
-      return;
-    } else {
-      throw MyException(oss.str());
-    }
+    Globals::failUnlessNoTerminate(oss.str(),
+                                   "No-terminate flag set: ignoring error.");
+    return;
   }
   applyScoreScale(getScoreScale(MergeNormalization::TEST, fdr), weights,
                   singleBin, MergeNormalization::TEST, fdr);
@@ -1662,14 +1646,11 @@ int Scores::getInitDirection(const double initialSelectionFdr,
         << "Consider setting/raising the initial training FDR threshold "
            "(--train-fdr-initial)."
         << std::endl;
-    if (NO_TERMINATE) {
-      cerr << oss.str();
-      std::cerr << "No-terminate flag set: setting initial direction to the "
-                << "first feature and ignoring the error." << std::endl;
-      bestFeature = 0;
-    } else {
-      throw MyException(oss.str() + "Terminating.\n");
-    }
+    Globals::failUnlessNoTerminate(oss.str(),
+        "No-terminate flag set: setting initial direction to the first "
+        "feature and ignoring the error.",
+        "Terminating.\n");
+    bestFeature = 0;
   }
 
   if (bestFeature >= 0) {

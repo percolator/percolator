@@ -198,11 +198,9 @@ void PickedProteinInterface::groupProteins(Scores& peptideScores,
     if (fail) {
       ostringstream oss;
       oss << "ERROR: Could not process the fasta database, check if path is correct." << std::endl;
-      if (NO_TERMINATE) {
-        std::cerr << oss.str() << "No-terminate flag set: ignoring error and skipping protein grouping." << std::endl;
-      } else {
-        throw MyException(oss.str());
-      }
+      Globals::failUnlessNoTerminate(oss.str(),
+          "No-terminate flag set: ignoring error and skipping protein "
+          "grouping.");
     }
     
     if (!pickedProteinCaller.fastaHasDecoys()) {
@@ -214,11 +212,9 @@ void PickedProteinInterface::groupProteins(Scores& peptideScores,
       if (fail) {
         ostringstream oss;
         oss << "ERROR: Could not process the fasta database, check if path is correct." << std::endl;
-        if (NO_TERMINATE) {
-          std::cerr << oss.str() << "No-terminate flag set: ignoring error and skipping protein grouping." << std::endl;
-        } else {
-          throw MyException(oss.str());
-        }
+        Globals::failUnlessNoTerminate(oss.str(),
+            "No-terminate flag set: ignoring error and skipping protein "
+            "grouping.");
       }
     } else if (VERB > 1) {
       std::cerr << "Decoy proteins detected in fasta database, "
@@ -347,11 +343,9 @@ bool PickedProteinInterface::pickedProteinCheckId(std::string& proteinId, bool i
       ostringstream oss;
       oss << "ERROR: Could not detect the decoy prefix \"" << decoyPattern_ 
           << "\" for the decoy protein identifier \"" << proteinId << "\"." << std::endl;
-      if (NO_TERMINATE) {
-        std::cerr << oss.str() << "No-terminate flag set: ignoring error and skipping removal of decoyPrefix." << std::endl;
-      } else {
-        throw MyException(oss.str());
-      }
+      Globals::failUnlessNoTerminate(oss.str(),
+          "No-terminate flag set: ignoring error and skipping removal of "
+          "decoyPrefix.");
     } else {
       targetId = proteinId.substr(decoyPattern_.size());
     }

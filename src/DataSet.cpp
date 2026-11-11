@@ -219,13 +219,10 @@ void DataSet::readFeaturesAndProteins(TabReader& reader, LabelType label,
       ostringstream oss;
       oss << "ERROR: Reached strange feature with val=" << featureRow[j]
            << " col=" << j << " for PSM with id " << id << endl;
-      if (NO_TERMINATE) {
-        std::cerr << oss.str();
-        std::cerr << "No-terminate flag set: setting value to 0 and ignoring the error." << std::endl;
-        featureRow[j] = 0.0;
-      } else {
-        throw MyException(oss.str() + "Terminating.\n");
-      }
+      Globals::failUnlessNoTerminate(oss.str(),
+          "No-terminate flag set: setting value to 0 and ignoring the error.",
+          "Terminating.\n");
+      featureRow[j] = 0.0;
     }
   }
   if (reader.error()) {
@@ -270,13 +267,9 @@ void DataSet::readFeaturesAndProteins(TabReader& reader, LabelType label,
         temp << "ERROR: Reading tab file, error reading PSM " << id 
           << ". Found tab character after reading proteins even though " << PSMDescription::getProteinNameSeparator() 
           << " was specified as --protein-name-separator." << std::endl;
-        if (NO_TERMINATE) {
-          std::cerr << temp.str();
-          std::cerr << "No-terminate flag set: ignoring error and continuing "
-                    << "without PSMs." << std::endl;
-        } else {
-          throw MyException(temp.str());
-        }
+        Globals::failUnlessNoTerminate(temp.str(),
+            "No-terminate flag set: ignoring error and continuing without "
+            "PSMs.");
       }
     }
   }

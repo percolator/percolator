@@ -261,12 +261,10 @@ void SetHandler::checkPeptideColumn(const std::string& headerLine,
          << "Peptide column, but the first PSM, on "
          << describeLine(firstPsmLineNr) << ", has " << numFeatures
          << " features." << std::endl;
-    if (NO_TERMINATE) {
-      cerr << temp.str() << "No-terminate flag set: ignoring the error, the "
-           << "feature names may be wrong." << std::endl;
-      return;
-    }
-    throw MyException(temp.str());
+    Globals::failUnlessNoTerminate(temp.str(),
+        "No-terminate flag set: ignoring the error, the feature names may be "
+        "wrong.");
+    return;
   }
 }
 
@@ -331,13 +329,8 @@ void SetHandler::readPSMs(istream& dataStream, std::string& psmLine,
   if (psmLine.size() == 0) {
     ostringstream temp;
     temp << "ERROR: Reading tab file, could not find any PSMs." << std::endl;
-    if (NO_TERMINATE) {
-      cerr << temp.str() << "No-terminate flag set: ignoring error and continuing "
-          << "without PSMs." << std::endl;
-      
-    } else {
-      throw MyException(temp.str());
-    }
+    Globals::failUnlessNoTerminate(temp.str(),
+        "No-terminate flag set: ignoring error and continuing without PSMs.");
   } else if (maxPSMs_ > 0u) { // reservoir sampling to create subset of size maxPSMs_
     std::priority_queue<PSMDescriptionPriority> subsetPSMs;
     // scan id -> (priority of its first PSM, labels seen as in addLabel);
@@ -569,13 +562,9 @@ ScanId SetHandler::getScanId(const std::string& psmLine, int& label,
               << psmLine.substr(0, psmLine.find('\t')) << " on line " << lineNr
               << " is " << scanId.second << " instead of a finite number."
               << std::endl;
-          if (NO_TERMINATE) {
-            cerr << temp.str() << "No-terminate flag set: setting it to 0 "
-                << "and ignoring the error." << std::endl;
-            scanId.second = 0.0;
-          } else {
-            throw MyException(temp.str());
-          }
+          Globals::failUnlessNoTerminate(temp.str(),
+              "No-terminate flag set: setting it to 0 and ignoring the error.");
+          scanId.second = 0.0;
         }
         break;
       } case CALCMASS: {
@@ -672,12 +661,10 @@ int SetHandler::readAndScoreTab(istream& dataStream,
   if (numFeatures < 1) {
     ostringstream oss;
     oss << "ERROR: Reading tab file, too few features present." << std::endl;
-    if (NO_TERMINATE) {
-      cerr << oss.str() << "No-terminate flag set: ignoring error and using a pseudo-feature of zeroes." << std::endl;
-      featurePool_.createPool(1u);
-    } else {
-      throw MyException(oss.str());
-    }
+    Globals::failUnlessNoTerminate(oss.str(),
+        "No-terminate flag set: ignoring error and using a pseudo-feature of "
+        "zeroes.");
+    featurePool_.createPool(1u);
   } else {
     featurePool_.createPool(DataSet::getNumFeatures());
   }  
@@ -692,12 +679,10 @@ int SetHandler::readAndScoreTab(istream& dataStream,
   if (hasDefaultValues && init_values.size() > static_cast<std::size_t>(numFeatures)) {
     ostringstream oss;
     oss << "ERROR: Reading tab file, too many default values present." << std::endl;
-    if (NO_TERMINATE) {
-      cerr << oss.str() << "No-terminate flag set: ignoring error and trimming default value vector." << std::endl;
-      init_values.resize(static_cast<std::size_t>(numFeatures));
-    } else {
-      throw MyException(oss.str());
-    }
+    Globals::failUnlessNoTerminate(oss.str(),
+        "No-terminate flag set: ignoring error and trimming default value "
+        "vector.");
+    init_values.resize(static_cast<std::size_t>(numFeatures));
   }
 
   // read in the data
