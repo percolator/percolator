@@ -146,7 +146,6 @@ bool SanityCheck::getDefaultDirection(const Scores& trainset, size_t set,
 void SanityCheck::chooseResetVectors(const vector<Scores>& trainset) {
   resetWeights_.assign(trainset.size(), fileWeights_);
   resetCounts_.assign(trainset.size(), std::make_pair(0, 0));
-  PosteriorEstimator::setNegative(true);  // as getInitDirection
   for (size_t set = 0; set < trainset.size(); ++set) {
     Scores::FeatureRows rows;
     trainset[set].getFeatureRows(rows);

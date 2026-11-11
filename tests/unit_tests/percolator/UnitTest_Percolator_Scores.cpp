@@ -2279,9 +2279,6 @@ TEST(ScoresCountTest, CountTargetsBelowFdrMatchesCalcScoresAndQvals)
         Scores::FeatureRows rows;
         scores.getFeatureRows(rows);
         Scores::CountBuffers buffers;
-        // countTargetsBelowFdr needs the q values of the decoys as well;
-        // calcScoresAndQvals sets this only after the first call below
-        PosteriorEstimator::setNegative(true);
         for (double fdr : {0.01, 0.05, 0.2}) {
             for (bool skipDecoysPlusOne : {false, true}) {
                 int count = scores.countTargetsBelowFdr(
@@ -2355,8 +2352,85 @@ TEST(ScoresPepTest, BothPathwaysGiveMonotoneCalibratedPeps)
 
 namespace {
 
+// The q value walk as PosteriorEstimator::getQValues was written before it,
+// Scores::calcQvals and the count-only grid evaluation shared
+// walkFdrEstimates (FdrWalk.h): an independent reference for all three,
+// with the mix-max counts read from arrays and the out_of_range of their
+// lookup.
+void referenceGetQValues(double pi0,
+                         const std::vector<std::pair<double, bool> >& combined,
+                         std::vector<double>& q, bool skipDecoysPlusOne,
+                         double nullTargetWinProb, bool includeNegatives) {
+    double decoyFactor = nullTargetWinProb / (1.0 - nullTargetWinProb);
+    std::vector<double> h_w_le_z, h_z_le_z;  // N_{w<=z} and N_{z<=z}
+    if (pi0 < 1.0) {
+        int cnt_z = 0, cnt_w = 0, queue = 0;
+        for (auto rev = combined.rbegin(); rev != combined.rend(); ++rev) {
+            if (rev->second) {
+                ++cnt_w;
+            } else {
+                ++cnt_z;
+                ++queue;
+            }
+            if (rev + 1 == combined.rend() || rev->first != (rev + 1)->first) {
+                for (int i = 0; i < queue; ++i) {
+                    h_w_le_z.push_back(static_cast<double>(cnt_w));
+                    h_z_le_z.push_back(static_cast<double>(cnt_z));
+                }
+                queue = 0;
+            }
+        }
+    }
+    double estPx_lt_zj = 0.0;
+    double E_f1_mod_run_tot = 0.0;
+    double fdr = 0.0;
+    int n_z_ge_w = 1, n_w_ge_w = 0;
+    if (skipDecoysPlusOne) n_z_ge_w = 0;
+    int decoyQueue = 0, targetQueue = 0;
+    for (auto myPair = combined.begin(); myPair != combined.end(); ++myPair) {
+        if (myPair->second) {
+            ++n_w_ge_w;
+            ++targetQueue;
+        } else {
+            ++n_z_ge_w;
+            ++decoyQueue;
+        }
+        if (myPair + 1 == combined.end() ||
+            myPair->first != (myPair + 1)->first) {
+            if (pi0 < 1.0 && decoyQueue > 0) {
+                int j = static_cast<int>(h_w_le_z.size()) - (n_z_ge_w - 1);
+                int cnt_w =
+                    static_cast<int>(h_w_le_z.at(static_cast<std::size_t>(j)));
+                int cnt_z =
+                    static_cast<int>(h_z_le_z.at(static_cast<std::size_t>(j)));
+                estPx_lt_zj =
+                    (double)(cnt_w - pi0 * cnt_z) / ((1.0 - pi0) * cnt_z);
+                estPx_lt_zj = estPx_lt_zj > 1 ? 1 : estPx_lt_zj;
+                estPx_lt_zj = estPx_lt_zj < 0 ? 0 : estPx_lt_zj;
+                E_f1_mod_run_tot += decoyQueue * estPx_lt_zj * (1.0 - pi0);
+            }
+            if (includeNegatives) {
+                targetQueue += decoyQueue;
+            }
+            fdr = (n_z_ge_w * pi0 + E_f1_mod_run_tot) /
+                  (double)((std::max)(1, n_w_ge_w)) * decoyFactor;
+            for (int i = 0; i < targetQueue; ++i) {
+                q.push_back((std::min)(fdr, 1.0));
+            }
+            decoyQueue = 0;
+            targetQueue = 0;
+        }
+    }
+    double minFdr = q.empty() ? 0.0 : q.back();
+    for (std::size_t i = q.size(); i--;) {
+        minFdr = minFdr > q[i] ? q[i] : minFdr;
+        q[i] = minFdr;
+    }
+}
+
 // The number of targets with a q value below fdr as calcQvals counts it
-// with pi0 = 1: sort all PSMs, best first, and count with getQValues.
+// with pi0 = 1: sort all PSMs, best first, and count with the reference
+// walk.
 int referenceTargetCount(std::vector<std::pair<double, bool> > psms,
                          bool lowBest, double fdr, bool skipDecoysPlusOne,
                          double nullTargetWinProb) {
@@ -2366,9 +2440,8 @@ int referenceTargetCount(std::vector<std::pair<double, bool> > psms,
                   return lowBest ? a.first < b.first : a.first > b.first;
               });
     std::vector<double> q;
-    PosteriorEstimator::setNegative(true);
-    PosteriorEstimator::getQValues(1.0, psms, q, skipDecoysPlusOne,
-                                   nullTargetWinProb);
+    referenceGetQValues(1.0, psms, q, skipDecoysPlusOne, nullTargetWinProb,
+                        true);
     int count = 0;
     for (std::size_t i = 0; i < q.size(); ++i) {
         if (q[i] < fdr && psms[i].second) ++count;
@@ -2597,9 +2670,8 @@ TEST(ScoresCountTest, InitDirectionMatchesFullSortOfEachFeature)
                 for (int i = 0; i < 2; ++i) {
                     if (i == 1) std::reverse(combined.begin(), combined.end());
                     std::vector<double> q;
-                    PosteriorEstimator::setNegative(true);
-                    PosteriorEstimator::getQValues(1.0, combined, q, true,
-                                                   nullTargetWinProb);
+                    referenceGetQValues(1.0, combined, q, true,
+                                        nullTargetWinProb, true);
                     int positives = 0;
                     for (size_t k = 0; k < q.size(); ++k) {
                         if (q[k] < fdr && combined[k].second) ++positives;
@@ -2693,11 +2765,12 @@ class ExposedScores : public Scores {
   using Scores::PeptideHash;
 };
 
-// calcQvals must give bit for bit the q values and the count of
-// PosteriorEstimator::getQValues on the (score, isTarget) pairs, including
-// the out_of_range of its mix-max lookup with skipDecoysPlusOne when the
-// best-scoring group with decoys has a single decoy. Returns whether
-// getQValues threw.
+// calcQvals and PosteriorEstimator::getQValues, with and without the q
+// values of the decoys, must give bit for bit the q values and the count of
+// the reference walk on the (score, isTarget) pairs, including the
+// out_of_range of its mix-max lookup with skipDecoysPlusOne when the
+// best-scoring group with decoys has a single decoy. Returns whether the
+// reference threw.
 bool expectQvalsAsGetQValues(ExposedScores& scores, double pi0,
                              double nullTargetWinProb, bool skipDecoysPlusOne,
                              double fdr, const std::string& what) {
@@ -2706,13 +2779,29 @@ bool expectQvalsAsGetQValues(ExposedScores& scores, double pi0,
   std::vector<std::pair<double, bool> > combined;
   scores.getScoreLabelPairs(combined);
   std::vector<double> expected;
-  PosteriorEstimator::setNegative(true);
   bool expectThrow = false;
   try {
-    PosteriorEstimator::getQValues(pi0, combined, expected, skipDecoysPlusOne,
-                                   nullTargetWinProb);
+    referenceGetQValues(pi0, combined, expected, skipDecoysPlusOne,
+                        nullTargetWinProb, true);
   } catch (const std::out_of_range&) {
     expectThrow = true;
+  }
+  for (bool includeNegatives : {true, false}) {
+    std::vector<double> reference, q;
+    if (expectThrow) {
+      EXPECT_THROW(PosteriorEstimator::getQValues(
+                       pi0, combined, q, skipDecoysPlusOne, nullTargetWinProb,
+                       includeNegatives),
+                   std::out_of_range)
+          << what;
+      continue;
+    }
+    referenceGetQValues(pi0, combined, reference, skipDecoysPlusOne,
+                        nullTargetWinProb, includeNegatives);
+    PosteriorEstimator::getQValues(pi0, combined, q, skipDecoysPlusOne,
+                                   nullTargetWinProb, includeNegatives);
+    EXPECT_EQ(reference, q) << what << ", includeNegatives "
+                            << includeNegatives;
   }
   if (expectThrow) {
     EXPECT_THROW(scores.calcQvals(fdr, skipDecoysPlusOne), std::out_of_range)

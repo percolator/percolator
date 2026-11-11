@@ -608,7 +608,6 @@ int CrossValidation::mergeCpCnPairs(
   }
 
   std::vector<int> truePositives(classWeightsPerFold_.size());
-  PosteriorEstimator::setNegative(true);  // also get q-values for decoys
 #pragma omp parallel
   {
     Scores::CountBuffers buffers;  // one per thread, for all its pairs

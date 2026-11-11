@@ -200,8 +200,8 @@ void ProteinProbEstimator::estimateQValuesEmp() {
   getCombinedList(combined);
   
   std::vector<double> qvaluesEmp;
-  PosteriorEstimator::setNegative(true); // also get q-values for decoys
-  PosteriorEstimator::getQValues(pi0_, combined, qvaluesEmp);
+  // also get q-values for decoys
+  PosteriorEstimator::getQValues(pi0_, combined, qvaluesEmp, false, 0.5, true);
   
   std::vector<ProteinScoreHolder>::iterator protIt = proteins_.begin();
   std::vector<double>::const_iterator qIt = qvaluesEmp.begin();

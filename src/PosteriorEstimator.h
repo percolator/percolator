@@ -34,16 +34,20 @@ class PosteriorEstimator {
   string greeter();
   int run();
   // PEP = oddsFactor * (fitted decoy odds), capped at 1; oddsFactor is the
-  // expected number of incorrect targets per decoy (2 with RESET)
+  // expected number of incorrect targets per decoy (2 with RESET).
+  // reversed: combined is sorted by increasing score, lower scores are better
   static void estimatePEP(std::vector<std::pair<double, bool> >& combined,
           bool usePi0, double pi0, std::vector<double>& peps,
-		      bool include_negative = false, double oddsFactor = 1.0);
+		      bool include_negative = false, double oddsFactor = 1.0,
+		      bool reversed = false);
   static void getPValues(const std::vector<std::pair<double, bool> >& combined,
                          std::vector<double>& p);
+  // q holds one value per target, or per entry with includeNegatives
   static void getQValues(double pi0,
                          const std::vector<std::pair<double, bool> >& combined,
                          std::vector<double>& q, bool skipDecoysPlusOne = false,
-                         double nullTargetWinProb = 0.5);
+                         double nullTargetWinProb = 0.5,
+                         bool includeNegatives = false);
   static void getQValuesFromP(double pi0, const std::vector<double>& p,
                               std::vector<double>& q);
   static void getQValuesFromPEP(const std::vector<double>& pep,
@@ -51,16 +55,9 @@ class PosteriorEstimator {
   static bool checkSeparation(std::vector<double>& p);
   static double estimatePi0(std::vector<double>& p,
                             const unsigned int numBoot = 100);
-  static void setReversed(bool status) {
-	  reversed = status;
-  }
-  static bool getReversed() { return reversed; }
   // Sets the process-wide settings of the estimation, which the options of
   // qvality and earlier runs change, back to their initial values.
   static void resetToDefaults();
-  static void setNegative(bool negative) {
-    includeNegativesInResult = negative;
-  }
   static void setUsePi0(bool usePi0) {
     usePi0_ = usePi0;
   }
@@ -73,7 +70,8 @@ class PosteriorEstimator {
                        std::vector<double>& h_z_le_z);
 
   static void estimate(std::vector<std::pair<double, bool> >& combined,
-                       LogisticRegression& lr, bool usePi0, double pi0);
+                       LogisticRegression& lr, bool usePi0, double pi0,
+                       bool reversed);
   // PEPs by I-spline or PAVA regression, from the target q values or, with
   // tdcPep_, from the decoy rate; same entries as finishStandalone reports
   void estimateMonotonePEP(const std::vector<std::pair<double, bool> >& combined,
@@ -91,7 +89,9 @@ class PosteriorEstimator {
 
   // used for standalone execution
   std::string targetFile, decoyFile;
-  static bool reversed, pvalInput, includeNegativesInResult, competition, usePi0_;
+  static bool pvalInput, competition, usePi0_;
+  // lower scores are better (-r, p value input); report the decoys too (-d)
+  bool reversed_ = false, includeNegativesInResult_ = false;
   std::string resultFileName;
   // PEP method: I-spline by default, PAVA, or P-IRLS; regression on the
   // target q values by default or on the target-decoy labels (tdcPep_)
