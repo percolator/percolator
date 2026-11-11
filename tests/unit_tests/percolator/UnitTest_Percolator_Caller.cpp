@@ -169,8 +169,10 @@ TEST(CallerTest, HelpReturnsWithoutEndingTheProcess) {
 namespace {
 
 // separate searches of 1,500 spectra: a target PSM for every spectrum and
-// a decoy PSM for one spectrum in every decoyEvery
-void writeSeparateInput(const std::string& fileName, int decoyEvery) {
+// a decoy PSM for one spectrum in every decoyEvery; with fewerTargets a
+// decoy PSM for every spectrum and a target PSM for one in every decoyEvery
+void writeSeparateInput(const std::string& fileName, int decoyEvery,
+                        bool fewerTargets = false) {
   std::mt19937 rng(23);
   std::normal_distribution<double> noise(0.0, 1.0);
   std::ofstream out(fileName);
@@ -188,8 +190,10 @@ void writeSeparateInput(const std::string& fileName, int decoyEvery) {
         << (isTarget ? "prot_" : "decoy_prot_") << scan % 300 << '\n';
   };
   for (int scan = 1; scan <= 1500; ++scan) {
-    write(scan, true, rng() % 2 == 0 ? 2.5 : 0.0);
-    if (scan % decoyEvery == 0) write(scan, false, 0.0);
+    const double shift = rng() % 2 == 0 ? 2.5 : 0.0;
+    const bool both = scan % decoyEvery == 0;
+    if (both || !fewerTargets) write(scan, true, shift);
+    if (both || fewerTargets) write(scan, false, 0.0);
   }
 }
 
@@ -214,11 +218,12 @@ int runAndCapture(std::vector<std::string> args, std::string& err) {
 
 }  // namespace
 
-// Mix-max does not scale by the numbers of targets and decoys, so with half
-// as many decoy PSMs its q values are about half of what they should be.
-// This used to be a warning; it is an error unless --no-terminate is set.
-// Target-decoy competition (-Y) and equal numbers are not affected.
-TEST(CallerTest, MixMaxWithUnequalTargetsAndDecoysIsAnError) {
+// Mix-max does not scale by the numbers of targets and decoys. Numbers that
+// differ by more than 10% get a warning that names both and says which way
+// the q values can be wrong; the run goes on, since the numbers alone do not
+// tell whether they are (it was an error for five commits). Target-decoy
+// competition (-Y), equal numbers and -v 0 print no warning.
+TEST(CallerTest, MixMaxWithUnequalTargetsAndDecoysIsAWarning) {
   TmpDir tmpDir;
   fs::path dir = tmpDir.getPath();
   const std::string equal = (dir / "equal.pin").string();
@@ -227,27 +232,45 @@ TEST(CallerTest, MixMaxWithUnequalTargetsAndDecoysIsAnError) {
   const std::string peptides = (dir / "peptides.txt").string();
   writeSeparateInput(equal, 1);
   writeSeparateInput(half, 2);
-  const std::string message = "needs one target and one decoy PSM per spectrum";
+  const std::string message = "Warning: the mix-max method takes each decoy";
   std::string err;
 
   EXPECT_EQ(1, runAndCapture({"-m", psms, "-r", peptides, equal}, err));
   EXPECT_NE(std::string::npos, err.find("using mix-max method")) << err;
   EXPECT_EQ(std::string::npos, err.find(message)) << err;
 
+  // fewer decoys than targets
   fs::remove(psms);
-  EXPECT_EQ(0, runAndCapture({"-m", psms, "-r", peptides, half}, err));
+  EXPECT_EQ(1, runAndCapture({"-m", psms, "-r", peptides, half}, err));
   EXPECT_NE(std::string::npos, err.find(message)) << err;
   EXPECT_NE(std::string::npos, err.find("1500 target and 750 decoy PSMs"))
       << err;
-  EXPECT_TRUE(readFile(psms).empty());  // no results are written
-  // also at -v 0, where the warning was not printed at all
-  EXPECT_EQ(0, runAndCapture({"-v", "0", "-m", psms, "-r", peptides, half}, err));
-  EXPECT_NE(std::string::npos, err.find(message)) << err;
-
-  EXPECT_EQ(1, runAndCapture({"--no-terminate", "-m", psms, "-r", peptides, half}, err));
-  EXPECT_NE(std::string::npos, err.find(message)) << err;
-  EXPECT_NE(std::string::npos, err.find("No-terminate flag set")) << err;
+  EXPECT_NE(std::string::npos, err.find("are too low")) << err;
+  EXPECT_EQ(std::string::npos, err.find("are too high")) << err;
+  EXPECT_EQ(std::string::npos, err.find("Error")) << err;
   EXPECT_FALSE(readFile(psms).empty());
+  const std::string withWarning = readFile(psms);
+
+  // --no-terminate and -v 0 change nothing but the messages
+  EXPECT_EQ(1, runAndCapture(
+                   {"--no-terminate", "-m", psms, "-r", peptides, half}, err));
+  EXPECT_NE(std::string::npos, err.find(message)) << err;
+  EXPECT_EQ(std::string::npos, err.find("No-terminate flag set")) << err;
+  EXPECT_EQ(withWarning, readFile(psms));
+  EXPECT_EQ(1,
+            runAndCapture({"-v", "0", "-m", psms, "-r", peptides, half}, err));
+  EXPECT_EQ(std::string::npos, err.find(message)) << err;
+  EXPECT_EQ(withWarning, readFile(psms));
+
+  // fewer targets than decoys: the labels exchanged
+  const std::string flipped = (dir / "flipped.pin").string();
+  writeSeparateInput(flipped, 2, true);
+  EXPECT_EQ(1, runAndCapture({"-m", psms, "-r", peptides, flipped}, err));
+  EXPECT_NE(std::string::npos, err.find(message)) << err;
+  EXPECT_NE(std::string::npos, err.find("750 target and 1500 decoy PSMs"))
+      << err;
+  EXPECT_NE(std::string::npos, err.find("are too high")) << err;
+  EXPECT_EQ(std::string::npos, err.find("are too low")) << err;
 
   fs::remove(psms);
   EXPECT_EQ(1, runAndCapture({"-Y", "-m", psms, "-r", peptides, half}, err));
@@ -256,8 +279,8 @@ TEST(CallerTest, MixMaxWithUnequalTargetsAndDecoysIsAnError) {
 }
 
 // RESET does not use mix-max, so the numbers of target and decoy PSMs of
-// separate searches are no reason to stop it: the run gave status 1 with the
-// mix-max message, and with --no-terminate the files of -I concatenated.
+// separate searches are nothing to report: the run gave the mix-max message
+// (and status 1 while that was an error), and the files of -I concatenated.
 TEST(CallerTest, ResetIsNotStoppedByTheMixMaxCheck) {
   TmpDir tmpDir;
   fs::path dir = tmpDir.getPath();
@@ -269,8 +292,7 @@ TEST(CallerTest, ResetIsNotStoppedByTheMixMaxCheck) {
 
   EXPECT_EQ(1, runAndCapture({"--reset-algorithm", "-r", peptides, half}, err));
   EXPECT_NE(std::string::npos, err.find("Percolator-RESET")) << err;
-  EXPECT_EQ(std::string::npos, err.find("needs one target and one decoy"))
-      << err;
+  EXPECT_EQ(std::string::npos, err.find("mix-max method takes")) << err;
   EXPECT_FALSE(readFile(peptides).empty());
 
   EXPECT_EQ(1, runAndCapture({"--reset-algorithm", "-I", "concatenated", "-r",

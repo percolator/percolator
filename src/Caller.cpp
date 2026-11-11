@@ -336,10 +336,9 @@ bool Caller::parseOptions(int argc, char** argv) {
       "y", "post-processing-mix-max",
       "Use the mix-max method to assign q-values and PEPs. Note that this "
       "option only has an effect if the input PSMs are from separate target "
-      "and decoy searches. This is the default setting. Mix-max needs one "
-      "target and one decoy PSM per spectrum: numbers of target and decoy "
-      "PSMs that differ by more than 10% are an error, since its q-values "
-      "would be too low with fewer decoys (--no-terminate runs them anyway).",
+      "and decoy searches. This is the default setting. Mix-max takes each "
+      "decoy PSM for one incorrect target PSM: a warning is printed if the "
+      "numbers of target and decoy PSMs differ by more than 10%.",
       "", TRUE_IF_SET);
   cmd.defineOption(
       "Y", "post-processing-tdc",
@@ -1395,31 +1394,33 @@ bool Caller::loadAndNormalizeData(std::istream& dataStream,
   }
 
   // Mix-max takes each decoy PSM for one incorrect target PSM and does not
-  // scale by the numbers of targets and decoys, so with fewer decoys than
-  // targets its q values and PEPs are too low, and with more too high.
-  // RESET does not use mix-max: it competes the peptides and takes its q
-  // values from the decoys it held out, whichever search type was detected.
-  if (useMixMax_ && !useResetAlgorithm_ &&
+  // scale by the numbers of targets and decoys. Decoy PSMs that are missing
+  // at random make its q values and PEPs too low, missing target PSMs make
+  // them too high. The two numbers alone do not tell: PSMs that both
+  // searches dropped below a score threshold leave more targets than decoys
+  // and q values that are not too low, so this is a warning and not an
+  // error. RESET does not use mix-max: it competes the peptides and takes
+  // its q values from the decoys it held out, whichever search type was
+  // detected.
+  if (VERB > 0 && useMixMax_ && !useResetAlgorithm_ &&
       std::abs(1.0 - allScores.getTargetDecoySizeRatio()) > 0.1) {
-    std::cerr << "Error: the mix-max method needs one target and one decoy "
-              << "PSM per spectrum, but the input has "
+    std::cerr << "Warning: the mix-max method takes each decoy PSM for one "
+              << "incorrect target PSM, but the input has "
               << allScores.posSize() << " target and " << allScores.negSize()
-              << " decoy PSMs, which differ by more than 10%. With fewer "
-              << "decoys than targets the q values and PEPs of mix-max are "
-              << "too low, with more they are too high. If the input comes "
-              << "from a concatenated target-decoy search, use "
-              << "-Y/--post-processing-tdc or -I concatenated, and neither "
-              << "-y/--post-processing-mix-max nor -I separate. If it comes "
-              << "from separate searches, give the target and the decoy PSM "
-              << "of every spectrum: target-decoy competition (-Y) does not "
-              << "make up for missing decoy PSMs either." << std::endl;
-    if (NO_TERMINATE) {
-      std::cerr << "No-terminate flag set: ignoring error and using mix-max "
-                << "with unequal numbers of target and decoy PSMs."
-                << std::endl;
+              << " decoy PSMs, which differ by more than 10%. ";
+    if (allScores.posSize() > allScores.negSize()) {
+      std::cerr << "If decoy PSMs are missing for some of the spectra, the "
+                << "q values and PEPs are too low, by up to the ratio of "
+                << "the two numbers; they are not if both searches left "
+                << "out the PSMs below a score threshold. ";
     } else {
-      return false;
+      std::cerr << "With fewer target than decoy PSMs the q values and PEPs "
+                << "are too high, and identifications are lost. ";
     }
+    std::cerr << "If the input comes from a concatenated target-decoy "
+              << "search, use -Y/--post-processing-tdc or -I concatenated, "
+              << "and neither -y/--post-processing-mix-max nor -I separate."
+              << std::endl;
   }
   return success;
 }

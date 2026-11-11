@@ -148,10 +148,7 @@ perc syn_merge_none --merge-normalization none "$IN/concatenated.pin"
 perc syn_direction_pooled --direction-check pooled "$IN/concatenated.pin"
 perc syn_direction_second_chance --direction-check second-chance \
   "$IN/separate.pin"
-# mix-max on a concatenated search, whose targets and decoys differ in
-# number, is an error without --no-terminate
-perc syn_search_input_separate -I separate --no-terminate \
-  "$IN/concatenated.pin"
+perc syn_search_input_separate -I separate "$IN/concatenated.pin"
 perc syn_search_input_concatenated -I concatenated "$IN/separate.pin"
 perc syn_train_fdr_initial --train-fdr-initial 0.05 "$IN/concatenated.pin"
 perc syn_fasta -f "$IN/concatenated.fasta" -z trypsin -P decoy_ \
