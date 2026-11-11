@@ -236,7 +236,7 @@ void SetHandler::getFeatureNames(const std::string& headerLine,
     throw MyException(temp.str());
   }
   featureNames.initFeatures();
-  assert(numFeatures == DataSet::getNumFeatures());
+  assert(static_cast<unsigned int>(numFeatures) == DataSet::getNumFeatures());
 }
 
 /**

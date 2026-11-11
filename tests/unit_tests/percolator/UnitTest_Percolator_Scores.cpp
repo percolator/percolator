@@ -67,8 +67,10 @@ class OneThread {
         omp_set_num_threads(numThreads_);
 #endif
     }
+#ifdef _OPENMP
   private:
     int numThreads_ = 1;
+#endif
 };
 
 }  // namespace

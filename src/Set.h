@@ -28,7 +28,7 @@ class Set : public Array<int> {
     return Array<int>::operator [](rhs);
   }
   using Array<int>::operator[];
-  const int & operator [](std::size_t k) const {
+  const int & operator [](std::size_t k) const override {
     return Array<int>::operator [](k);
   }
 
