@@ -114,7 +114,8 @@ add_library(perclibrary STATIC BaseSpline.cpp MassHandler.cpp PSMDescription.cpp
 								  SetHandler.cpp StdvNormalizer.cpp Caller.cpp CompositionSorter.cpp CrossValidation.cpp Enzyme.cpp Globals.cpp NoNormalizer.cpp Normalizer.cpp
 								  SanityCheck.cpp UniNormalizer.cpp DataSet.cpp TabFileValidator.cpp FeatureNames.cpp LogisticRegression.cpp Numerical.cpp Option.cpp PosteriorEstimator.cpp
 								  ProteinProbEstimator.cpp Scores.cpp PseudoRandom.cpp Set.cpp ssl.cpp PackedVector.cpp
-								  PackedMatrix.cpp MyException.cpp ProteinScoreHolder.cpp PickedProteinInterface.cpp FeatureMemoryPool.cpp Timer.cpp TmpDir.cpp ValidateTabFile.cpp Vector.cpp)
+								  PackedMatrix.cpp MyException.cpp ProteinScoreHolder.cpp PickedProteinInterface.cpp FeatureMemoryPool.cpp Timer.cpp TmpDir.cpp ValidateTabFile.cpp Vector.cpp
+								  picked_protein/PickedProteinCaller.cpp picked_protein/ProteinDigest.cpp)
 
 if(OpenMP_CXX_FOUND)
   target_link_libraries(perclibrary PUBLIC ${COMMON_LIBRARIES} OpenMP::OpenMP_CXX)
@@ -123,17 +124,18 @@ else()
 endif()
 target_compile_definitions(perclibrary INTERFACE ${PERCOLATOR_CHARCONV_DEFINITIONS})
 
-###############################################################################
-# COMPILE INTERNAL LIBRARIES
-###############################################################################
-
-#COMPILE PICKED PROTEIN
-add_subdirectory(picked_protein)
+# The picked-protein sources (src/picked_protein) are part of perclibrary:
+# they and PickedProteinInterface.cpp use each other, so two static
+# libraries had to be linked in one order. The target picked_protein remains
+# as a name for targets that link "perclibrary picked_protein"; it builds no
+# library file.
+add_library(picked_protein INTERFACE)
+target_link_libraries(picked_protein INTERFACE perclibrary)
 
 #INCLUDE PERCOLATOR HEADERS
 include_directories(.)
 
-#INCLUDE PICKED PROTEIN HEADERS FOR PERCLIBRARY
+#INCLUDE PICKED PROTEIN HEADERS
 include_directories(picked_protein)
 
 ################################################################################
