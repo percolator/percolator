@@ -1281,9 +1281,18 @@ bool Caller::loadAndNormalizeData(std::istream& dataStream,
     std::cerr << "Reading tab-delimited input from datafile " << inputFN_
                 << std::endl;
   }
+  InputSummary inputSummary;
   {
     StageTimer stageTimer("read input");
-    success = setHandler.readTab(dataStream, check_);
+    success = setHandler.readTab(dataStream, inputSummary);
+  }
+  if (success) {
+    // the feature of --default-direction is known once the header is read
+    check_.checkAndSetDefaultDir();
+    if (!inputSummary.defaultWeights.empty()) {
+      check_.addDefaultWeights(inputSummary.defaultWeights);
+    }
+    check_.setConcatenatedSearch(inputSummary.concatenatedSearch);
   }
 
   // Reading input files (pin or temporary file)
@@ -1618,7 +1627,7 @@ int Caller::run() {
     timer.reset();
 
     if (tabOutputFN_.length() > 0) {
-      setHandler.writeTab(tabOutputFN_, check_);
+      setHandler.writeTab(tabOutputFN_, check_.getDefaultWeights());
     }
 
     // Do the SVM training
@@ -1673,7 +1682,7 @@ int Caller::run() {
     fileStream.clear();
     fileStream.seekg(0, ios::beg);
     success = setHandler.readAndScoreTab(fileStream, rawWeights, allScores,
-                                         check_, rawFoldWeights, subsetFolds);
+                                         rawFoldWeights, subsetFolds);
     std::vector<std::pair<unsigned int, unsigned int> >().swap(subsetFolds);
     // Reading input files (pin or temporary file)
     if (!success) {

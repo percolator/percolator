@@ -75,8 +75,8 @@ class TrackedDataSet : public DataSet, DeletionTracker { };
 int SetHandlerTest::testInput(SetHandler *handler, char const *input)
 {
     std::istringstream str(input);
-    SanityCheck check;
-    return handler->readTab(str, check);
+    InputSummary summary;
+    return handler->readTab(str, summary);
 }
 
 // Verify DataSets are stored correctly, and are deleted when
@@ -178,14 +178,13 @@ TEST_F(SetHandlerTest, TestScoreWithFoldWeights)
         {"a", 1.0 + 2.0 + 0.5}, {"b", -100.0 - 1.0}, {"d", -20.0}};
     for (int withFolds = 0; withFolds < 2; ++withFolds) {
         SetHandler sh(0);
-        SanityCheck check;
         Scores scores(false);
         std::istringstream str(input);
         if (withFolds) {
-            ASSERT_TRUE(sh.readAndScoreTab(str, rawWeights, scores, check,
+            ASSERT_TRUE(sh.readAndScoreTab(str, rawWeights, scores,
                                            foldWeights, lineFolds));
         } else {
-            ASSERT_TRUE(sh.readAndScoreTab(str, rawWeights, scores, check));
+            ASSERT_TRUE(sh.readAndScoreTab(str, rawWeights, scores));
         }
         ASSERT_EQ(scores.size(), 3u);
         for (const ScoreHolder& h : scores) {
@@ -302,9 +301,9 @@ TEST_F(SetHandlerTest, TestCountSpectraWithRepeatedLabels)
     for (unsigned int maxPSMs : {0u, 4u}) {
         SetHandler sh(maxPSMs);
         std::istringstream str(input);
-        SanityCheck check;
-        EXPECT_TRUE(sh.readTab(str, check));
-        EXPECT_FALSE(check.concatenatedSearch());
+        InputSummary summary;
+        EXPECT_TRUE(sh.readTab(str, summary));
+        EXPECT_FALSE(summary.concatenatedSearch);
         EXPECT_EQ(7u, sh.getSampledLines());
         EXPECT_EQ(3u, sh.getSampledSpectra());
         EXPECT_EQ(2u, sh.getSampledSpectraWithRepeatedLabel());
@@ -316,9 +315,9 @@ TEST_F(SetHandlerTest, TestCountSpectraWithRepeatedLabels)
         "a\t1\t1\t100\t1\tK.PEP.R\tP\n"
         "b\t-1\t2\t100\t2\tK.PEP.R\tP\n"
         "c\t1\t3\t100\t1\tK.PEP.R\tP\n");
-    SanityCheck check;
-    EXPECT_TRUE(sh.readTab(str, check));
-    EXPECT_TRUE(check.concatenatedSearch());
+    InputSummary summary;
+    EXPECT_TRUE(sh.readTab(str, summary));
+    EXPECT_TRUE(summary.concatenatedSearch);
     EXPECT_EQ(3u, sh.getSampledSpectra());
     EXPECT_EQ(0u, sh.getSampledSpectraWithRepeatedLabel());
     sh.reset();
@@ -396,9 +395,9 @@ TEST_F(SetHandlerTest, TestSearchTypeDetection)
         for (unsigned int maxPSMs : {0u, 10u}) {  // full read and -N
             SetHandler sh(maxPSMs);
             std::istringstream str(std::string(header) + input[0]);
-            SanityCheck check;
-            ASSERT_TRUE(sh.readTab(str, check));
-            EXPECT_EQ(input[1][0] == '1', check.concatenatedSearch())
+            InputSummary summary;
+            ASSERT_TRUE(sh.readTab(str, summary));
+            EXPECT_EQ(input[1][0] == '1', summary.concatenatedSearch)
                 << input[0] << "maxPSMs " << maxPSMs;
         }
     }

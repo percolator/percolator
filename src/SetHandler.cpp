@@ -151,10 +151,18 @@ LabelType SetHandler::getLabel(int setPos) {
   return subsets_[static_cast<std::size_t>(setPos)]->getLabel();
 }
 
-int SetHandler::readTab(istream& dataStream, SanityCheck& check) {
+int SetHandler::readTab(istream& dataStream, InputSummary& summary) {
   std::vector<double> noWeights;
   Scores noScores(true);
-  return readAndScoreTab(dataStream, noWeights, noScores, check);
+  return readOrScoreTab(dataStream, noWeights, noScores, {}, {}, &summary);
+}
+
+int SetHandler::readAndScoreTab(istream& dataStream,
+    std::vector<double>& rawWeights, Scores& allScores,
+    const std::vector<std::vector<double> >& foldWeights,
+    const std::vector<std::pair<unsigned int, unsigned int> >& lineFolds) {
+  return readOrScoreTab(dataStream, rawWeights, allScores, foldWeights,
+                        lineFolds, NULL);
 }
 
 int SetHandler::getOptionalFields(const std::string& headerLine, 
@@ -291,7 +299,8 @@ bool SetHandler::getInitValues(const std::string& defaultDirectionLine,
   return hasDefaultValues;
 }
 
-void SetHandler::writeTab(const string& dataFN, const SanityCheck& check) {
+void SetHandler::writeTab(const string& dataFN,
+                          const std::vector<double>& initial_values) {
   ofstream dataStream(dataFN.data(), ios::out);
   dataStream << "SpecId\tLabel\tScanNr\tExpMass\tCalcMass\t";
   if (PSMDescription::hasSpectrumFileName()) {
@@ -299,7 +308,6 @@ void SetHandler::writeTab(const string& dataFN, const SanityCheck& check) {
   }
   dataStream << DataSet::getFeatureNames().getFeatureNames()
       << "\tPeptide\tProteins" << std::endl;
-  const vector<double>& initial_values = check.getDefaultWeights();
   if (initial_values.size() > 0) {
     dataStream << "DefaultDirection\t-\t-\t-\t-";
     for (size_t i = 0; i < initial_values.size(); ++i) {
@@ -616,10 +624,11 @@ ScanId SetHandler::getScanId(const std::string& psmLine, int& label,
   return scanId;
 }
 
-int SetHandler::readAndScoreTab(istream& dataStream,
-    std::vector<double>& rawWeights, Scores& allScores, SanityCheck& check,
+int SetHandler::readOrScoreTab(istream& dataStream,
+    std::vector<double>& rawWeights, Scores& allScores,
     const std::vector<std::vector<double> >& foldWeights,
-    const std::vector<std::pair<unsigned int, unsigned int> >& lineFolds) {
+    const std::vector<std::pair<unsigned int, unsigned int> >& lineFolds,
+    InputSummary* summary) {
   if (!dataStream) {
     std::cerr << "ERROR: Cannot open data stream." << std::endl;
     return 0;
@@ -697,9 +706,11 @@ int SetHandler::readAndScoreTab(istream& dataStream,
     
     readPSMs(dataStream, psmLine, hasInitialValueRow, concatenatedSearch, optionalFields);
     
-    check.checkAndSetDefaultDir();
-    if (hasDefaultValues) check.addDefaultWeights(init_values); 
-    check.setConcatenatedSearch(concatenatedSearch);
+    if (summary != NULL) {
+      summary->concatenatedSearch = concatenatedSearch;
+      summary->defaultWeights.clear();
+      if (hasDefaultValues) summary->defaultWeights = init_values;
+    }
   }
   return 1;
 }

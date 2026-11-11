@@ -39,7 +39,6 @@
 #include "Scores.h"
 #include "Globals.h"
 #include "PSMDescription.h"
-#include "SanityCheck.h"
 #include "PseudoRandom.h"
 #include "FeatureMemoryPool.h"
 #include "ScanIdTable.h"
@@ -59,6 +58,20 @@ struct PSMDescriptionPriority {
 * ScanId is a tuple of (ScanNr, ExpMass).
 */
 typedef std::pair<int, double> ScanId;
+
+/*
+* What reading the input found, besides the PSMs, for the caller to pass on
+* (to the SanityCheck of the run).
+*/
+struct InputSummary {
+  // No spectrum (scan number and experimental mass) has both a target and a
+  // decoy PSM: the input comes from a concatenated search rather than from
+  // separate target and decoy searches.
+  bool concatenatedSearch = true;
+  // the initial direction of the DefaultDirection line; empty if the input
+  // has none or if it is all 0
+  std::vector<double> defaultWeights;
+};
 
 /*
 * SetHandler is a class that provides functionality to handle training,
@@ -82,20 +95,24 @@ class SetHandler {
   // number of PSM lines in the input, counted by the last full read
   size_t getNumPsmLines() const { return numPsmLines_; }
   
-  // Reads in tab delimited stream and returns a SanityCheck object based on
-  // the presence of default weights. Returns 0 on error, 1 on success.
-  int readTab(std::istream& dataStream, SanityCheck& check);
-  // With rawWeights, scores every PSM of the stream with them and adds it to
-  // allScores; a PSM whose input line is listed in lineFolds (sorted by
-  // line) is scored with foldWeights[fold] instead.
+  // Reads the PSMs of a tab delimited stream into the target and the decoy
+  // set and describes the input in summary. Returns 0 on error, without
+  // changing summary, and 1 on success.
+  int readTab(std::istream& dataStream, InputSummary& summary);
+  // The second pass of -N: scores every PSM of the stream with rawWeights
+  // and adds it to allScores; a PSM whose input line is listed in lineFolds
+  // (sorted by line) is scored with foldWeights[fold] instead.
   int readAndScoreTab(std::istream& dataStream,
-    std::vector<double>& rawWeights, Scores& allScores, SanityCheck& check,
+    std::vector<double>& rawWeights, Scores& allScores,
     const std::vector<std::vector<double> >& foldWeights = {},
     const std::vector<std::pair<unsigned int, unsigned int> >& lineFolds = {});
   void addQueueToSets(std::priority_queue<PSMDescriptionPriority>& subsetPSMs,
     DataSet* targetSet, DataSet* decoySet);
   
-  void writeTab(const std::string& dataFN, const SanityCheck& check);
+  // defaultWeights: the initial direction to write as the DefaultDirection
+  // line, if not empty
+  void writeTab(const std::string& dataFN,
+                const std::vector<double>& defaultWeights);
   void populateScoresWithPSMs(std::vector<ScoreHolder> &scores, LabelType label);
   void normalizeFeatures(Normalizer& norm);
   
@@ -166,6 +183,13 @@ class SetHandler {
   void warnIgnoredLabel(unsigned int lineNr, unsigned int& numIgnored) const;
   void warnIgnoredLabelTotal(unsigned int numIgnored) const;
   
+  // readTab (summary given, no weights) and readAndScoreTab
+  int readOrScoreTab(std::istream& dataStream,
+    std::vector<double>& rawWeights, Scores& allScores,
+    const std::vector<std::vector<double> >& foldWeights,
+    const std::vector<std::pair<unsigned int, unsigned int> >& lineFolds,
+    InputSummary* summary);
+
   unsigned int getSubsetIndexFromLabel(LabelType label);
   static inline std::string &rtrim(std::string &s);
   
