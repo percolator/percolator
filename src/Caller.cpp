@@ -1397,7 +1397,9 @@ bool Caller::loadAndNormalizeData(std::istream& dataStream,
   // Mix-max takes each decoy PSM for one incorrect target PSM and does not
   // scale by the numbers of targets and decoys, so with fewer decoys than
   // targets its q values and PEPs are too low, and with more too high.
-  if (useMixMax_ &&
+  // RESET does not use mix-max: it competes the peptides and takes its q
+  // values from the decoys it held out, whichever search type was detected.
+  if (useMixMax_ && !useResetAlgorithm_ &&
       std::abs(1.0 - allScores.getTargetDecoySizeRatio()) > 0.1) {
     std::cerr << "Error: the mix-max method needs one target and one decoy "
               << "PSM per spectrum, but the input has "

@@ -255,6 +255,30 @@ TEST(CallerTest, MixMaxWithUnequalTargetsAndDecoysIsAnError) {
   EXPECT_FALSE(readFile(psms).empty());
 }
 
+// RESET does not use mix-max, so the numbers of target and decoy PSMs of
+// separate searches are no reason to stop it: the run gave status 1 with the
+// mix-max message, and with --no-terminate the files of -I concatenated.
+TEST(CallerTest, ResetIsNotStoppedByTheMixMaxCheck) {
+  TmpDir tmpDir;
+  fs::path dir = tmpDir.getPath();
+  const std::string half = (dir / "half.pin").string();
+  const std::string peptides = (dir / "peptides.txt").string();
+  const std::string concatenated = (dir / "concatenated.txt").string();
+  writeSeparateInput(half, 2);
+  std::string err;
+
+  EXPECT_EQ(1, runAndCapture({"--reset-algorithm", "-r", peptides, half}, err));
+  EXPECT_NE(std::string::npos, err.find("Percolator-RESET")) << err;
+  EXPECT_EQ(std::string::npos, err.find("needs one target and one decoy"))
+      << err;
+  EXPECT_FALSE(readFile(peptides).empty());
+
+  EXPECT_EQ(1, runAndCapture({"--reset-algorithm", "-I", "concatenated", "-r",
+                              concatenated, half},
+                             err));
+  EXPECT_EQ(readFile(peptides), readFile(concatenated));
+}
+
 namespace {
 
 bool parseOnly(std::vector<std::string> args) {

@@ -128,6 +128,9 @@ fails mix_max_unequal "needs one target and one decoy PSM per spectrum" \
   "$PERC" -I separate good.pin
 fails mix_max_unequal_y "needs one target and one decoy PSM per spectrum" \
   "$PERC" -y good.pin
+# RESET does not use mix-max and runs such an input
+expect reset_unequal 0 "Running the Percolator-RESET algorithm" \
+  "$PERC" -S 1 -I separate --reset-algorithm -r reset_unequal.txt good.pin
 expect mix_max_unequal_no_terminate 0 "No-terminate flag set: ignoring error" \
   "$PERC" -S 1 -I separate --no-terminate -m unequal_psms.txt good.pin
 
