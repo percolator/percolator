@@ -76,7 +76,7 @@ class NumberFormatter {
     char buf[64];
     int length;
 #if PERCOLATOR_TO_CHARS_DOUBLE
-    if (isfinite(value)) {
+    if (std::isfinite(value)) {
       length = static_cast<int>(
           std::to_chars(buf, buf + sizeof(buf), value,
                         std::chars_format::general, precision_).ptr - buf);

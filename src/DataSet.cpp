@@ -161,7 +161,7 @@ LabelType DataSet::readPsm(const std::string& line, const unsigned int lineNr,
         // ScoreHolder.h need. SetHandler::getScanId checks every line first and
         // reports such a value also with NO_TERMINATE, so in that case it is
         // set to 0 here without a second message.
-        if (!isfinite(psm.expMass)) {
+        if (!std::isfinite(psm.expMass)) {
           if (!NO_TERMINATE) {
             ostringstream temp;
             temp << "ERROR: Reading tab file, the experimental mass of PSM "
@@ -215,7 +215,7 @@ void DataSet::readFeaturesAndProteins(TabReader& reader, LabelType label,
   psm.features = featureRow;
   for (unsigned int j = 0; j < numFeatures; j++) {
     featureRow[j] = reader.readDouble();
-    if (!isfinite(featureRow[j])) {
+    if (!std::isfinite(featureRow[j])) {
       ostringstream oss;
       oss << "ERROR: Reached strange feature with val=" << featureRow[j]
            << " col=" << j << " for PSM with id " << id << endl;
@@ -331,7 +331,7 @@ bool DataSet::readPsmHeader(TabReader& reader, const unsigned int lineNr,
         break;
       } case EXPMASS: {
         psm.expMass = reader.readDouble();
-        if (reader.error() || !isfinite(psm.expMass)) return false;
+        if (reader.error() || !std::isfinite(psm.expMass)) return false;
         break;
       } case CALCMASS: {
         if (header.calcMassField != NULL) return false;  // a repeated column

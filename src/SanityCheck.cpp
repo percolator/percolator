@@ -437,7 +437,7 @@ void SanityCheck::readWeights(istream& weightStream, vector<double>& w) {
   std::vector<double> raw;
   for (double value; rawStream >> value;) raw.push_back(value);
   bool allFinite = std::all_of(raw.begin(), raw.end(),
-                               [](double x) { return isfinite(x); });
+                               [](double x) { return std::isfinite(x); });
   if (!rawStream.eof() || raw.size() != numWeights || !allFinite) {
     ostringstream oss;
     oss << "ERROR: Line " << lineNr + 1 << " of the weights file "

@@ -551,7 +551,7 @@ void PosteriorEstimator::readScores(const std::string& fileName,
   while (in >> token) {
     char* end = nullptr;
     double value = std::strtod(token.c_str(), &end);
-    if (end == token.c_str() || *end != '\0' || !isfinite(value)) {
+    if (end == token.c_str() || *end != '\0' || !std::isfinite(value)) {
       ostringstream oss;
       oss << "ERROR: Value " << scores.size() + 1 << " of the " << role
           << " file " << fileName << " is not a finite number: \"" << token

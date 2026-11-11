@@ -64,7 +64,7 @@ void Normalizer::checkFactorsFinite(size_t begin, size_t end,
                                     const char* subName,
                                     const char* divName) const {
   for (size_t ix = begin; ix < end; ++ix) {
-    if (isfinite(sub[ix]) && isfinite(div[ix])) continue;
+    if (std::isfinite(sub[ix]) && std::isfinite(div[ix])) continue;
     ostringstream oss;
     oss << "ERROR: Cannot normalize feature "
         << DataSet::getFeatureNames().describeFeature(ix) << ": its "

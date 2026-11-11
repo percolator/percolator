@@ -564,7 +564,7 @@ ScanId SetHandler::getScanId(const std::string& psmLine, int& label,
               << lineNr << ". Check if experimental mass is a floating point number." << std::endl;
           throw MyException(temp.str());
         }
-        if (!isfinite(scanId.second)) {
+        if (!std::isfinite(scanId.second)) {
           ostringstream temp;
           temp << "ERROR: Reading tab file, the experimental mass of PSM "
               << psmLine.substr(0, psmLine.find('\t')) << " on line " << lineNr
