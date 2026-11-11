@@ -210,18 +210,17 @@ struct options {
     bool directSolve = false;
 };
 
-class Delta { /* used in line search */
-  public:
-    Delta() {
-      delta = 0.0;
-      index = 0;
-      s = 0;
-    }
-    ;
-    double delta;
-    int index;
-    int s;
+/* A breakpoint of the line search: the step at which example index enters
+   or leaves the active set. 12 bytes, without padding: every solving
+   thread holds one for each of its examples. Whether the example enters or
+   leaves is not stored; the line search takes it from the example's output. */
+#pragma pack(push, 4)
+struct Delta {
+  double delta = 0.0;
+  int index = 0;
 };
+#pragma pack(pop)
+static_assert(sizeof(Delta) == 12, "Delta has padding");
 // a total order, so that the line search does not depend on the sorting
 // algorithm
 inline bool operator<(const Delta& a, const Delta& b) {

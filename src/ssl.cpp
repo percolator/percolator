@@ -609,15 +609,13 @@ double line_search(double* w, double* w_bar, double lambda, double* o,
       R += (o_bar[i] - Y[i]) * d2;
       if (diff > 0) {
         deltas[p].delta = (1 - Y[i] * o[i]) / diff;
-        deltas[p].index = i;
-        deltas[p].s = -1;
+        deltas[p].index = i;  // active, leaves the active set
         p++;
       }
     } else {
       if (diff < 0) {
         deltas[p].delta = (1 - Y[i] * o[i]) / diff;
-        deltas[p].index = i;
-        deltas[p].s = 1;
+        deltas[p].index = i;  // inactive, enters the active set
         p++;
       }
     }
@@ -642,7 +640,9 @@ double line_search(double* w, double* w_bar, double lambda, double* o,
         return (-L / (R - L));
       }
       ii = deltas[i].index;
-      diff = (deltas[i].s) * ((Y[ii]==1)? cpos : cneg) * (o_bar[ii] - o[ii]);
+      // -1 for an example that leaves the active set, 1 for one that enters
+      const int sign = (Y[ii] * o[ii] < 1) ? -1 : 1;
+      diff = sign * ((Y[ii]==1)? cpos : cneg) * (o_bar[ii] - o[ii]);
       L += diff * (o[ii] - Y[ii]);
       R += diff * (o_bar[ii] - Y[ii]);
     }

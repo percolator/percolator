@@ -1124,12 +1124,23 @@ TEST_F(CrossValidationTest, EmptyFoldIsAnError)
 
 namespace {
 
-// line_search as it was before it sorted the breakpoints chunk by chunk:
-// one sort of all breakpoints. Also gives the numbers of breakpoints and
-// of visited breakpoints.
+// a breakpoint as line_search stored it, with the sign of its term
+struct ReferenceDelta {
+    double delta = 0.0;
+    int index = 0;
+    int s = 0;
+};
+bool operator<(const ReferenceDelta& a, const ReferenceDelta& b) {
+    return a.delta < b.delta || (a.delta == b.delta && a.index < b.index);
+}
+
+// line_search as it was before it sorted the breakpoints chunk by chunk
+// and took the sign of a breakpoint from the output of its example: one
+// sort of all breakpoints, which hold their signs. Also gives the numbers
+// of breakpoints and of visited breakpoints.
 double fullSortLineSearch(double* w, double* w_bar, double lambda, double* o,
                           double* o_bar, const double* Y, int d, int l,
-                          double cpos, double cneg, Delta* deltas,
+                          double cpos, double cneg, ReferenceDelta* deltas,
                           int& numBreakpoints, int& numVisited) {
     int i = 0;
     double omegaL = 0.0;
@@ -1241,7 +1252,8 @@ TEST(LineSearchTest, ChunkedSortGivesTheSameStepAsAFullSort)
         }
         const double cpos = 0.1 + uniform() * 10.0;
         const double cneg = 0.1 + uniform() * 10.0;
-        std::vector<Delta> deltas(l + 1), referenceDeltas(l + 1);
+        std::vector<Delta> deltas(l + 1);
+        std::vector<ReferenceDelta> referenceDeltas(l + 1);
         const double step = line_search(w.data(), w_bar.data(), 1.0, o.data(),
                                         o_bar.data(), Y.data(), d, l, cpos,
                                         cneg, deltas.data());
