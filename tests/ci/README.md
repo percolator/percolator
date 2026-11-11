@@ -10,7 +10,7 @@ can be run by hand on a build tree. They need bash, awk and Python 3 (for
 | `check_golden.sh [--update \| --report \| --strict] <build-dir> <out-dir>` | Runs the option matrix on inputs of 8,000 PSMs and compares the SHA-256 hash of every output file with `option_matrix.sha256`. |
 | `check_determinism.sh <build-dir> <out-dir>` | Runs the option matrix with 1 and with 4 threads; the outputs must be byte-identical. |
 | `exit_status.sh <build-dir> <out-dir>` | Bad input, invalid options and write errors must end with exit status 1 and a message. |
-| `count_warnings.sh <build-log> <budget>` | Counts the distinct compiler warnings of a build log. |
+| `count_warnings.sh <build-log> <budget>` | Counts the distinct compiler warnings of a build log; fails above the budget or when the log shows no compiled file. |
 | `check_symbol_versions.sh` | The glibc symbol versions of the portable Linux binaries. |
 
 ## The manifest of output hashes

@@ -344,18 +344,22 @@ jobs:
     - name: thread_independence
       run: bash tests/ci/check_determinism.sh build build/determinism
 
-  # Non-blocking: the number of distinct -Wall -Wextra warnings may only go
-  # down. Lower WARNING_BUDGET when warnings are fixed.
+  # Blocking: percolator, qvality and the unit tests compile without a
+  # warning of -Wall -Wextra. GoogleTest comes from the system, so its own
+  # sources are not compiled here. A warning that cannot be fixed at once
+  # may be allowed for a while by raising WARNING_BUDGET.
   warnings:
     runs-on: ubuntu-latest
-    continue-on-error: true
     env:
-      WARNING_BUDGET: 51
+      WARNING_BUDGET: 0
     steps:
     - uses: actions/checkout@v6
+    - name: preinstall
+      run: sudo apt-get update && sudo apt-get install -y libgtest-dev
     - name: build
       run: |
-        cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DNO_TESTS=ON -DCMAKE_CXX_FLAGS="-Wall -Wextra"
+        set -o pipefail
+        cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-Wall -Wextra"
         cmake --build build -j 4 2>&1 | tee build.log
     - name: count
       run: bash tests/ci/count_warnings.sh build.log "$WARNING_BUDGET"
