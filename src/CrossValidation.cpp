@@ -845,21 +845,9 @@ void CrossValidation::postIterationProcessing(Scores& fullset,
   // weights as the test bin. The training set holds (numFolds_ - 1) times
   // as many PSMs as the test bin, or the same PSMs with one fold, so the
   // anchors exist and are less noisy for small test bins.
-  std::vector<ScoreScale> binScales;
-  if (!skipNormalizeScores_ &&
-      (usedMergeNormalization_ == MergeNormalization::TRAIN ||
-       usedMergeNormalization_ == MergeNormalization::TRAIN_DECOYS)) {
-    binScales.resize(numFolds_);
-    for (std::size_t set = 0; set < numFolds_; ++set) {
-      binScales[set] = trainScores_[set].calcScoreScale(
-          weights_[set], usedMergeNormalization_, selectionFdr_);
-      if (VERB > 2) {
-        std::cerr << "Split " << set + 1 << ": rescaling the test scores by "
-                  << "the training set, offset " << binScales[set].offset
-                  << " and scale " << binScales[set].scale << std::endl;
-      }
-    }
-  }
+  const std::vector<ScoreScale> binScales = Scores::calcBinScales(
+      trainScores_, weights_, usedMergeNormalization_, selectionFdr_,
+      skipNormalizeScores_);
   // the default direction of validateDirection and the anchors above were
   // the last use of the training sets; merge empties the test sets
   std::vector<Scores>().swap(trainScores_);

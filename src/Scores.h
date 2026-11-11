@@ -150,6 +150,19 @@ class Scores {
                                 double testFdr,
                                 ReportedLists lists = ReportedLists());
 
+  // The rescaling of train and train-decoys for each bin, taken from the
+  // training set of its fold scored with the fold's weights w[bin]
+  // (calcScoreScale): what merge takes as binScales. Empty for the other
+  // schemes and with skipNormalizeScores. onCopies leaves the training sets
+  // as they are and prints nothing.
+  static std::vector<ScoreScale> calcBinScales(
+      std::vector<Scores>& trainBins,
+      const std::vector<std::vector<double> >& w,
+      MergeNormalization scheme,
+      double fdr,
+      bool skipNormalizeScores,
+      bool onCopies = false);
+
   iterator begin() { return scores_.begin(); }
   iterator end() { return scores_.end(); }
   const_iterator begin() const { return scores_.begin(); }
@@ -159,10 +172,10 @@ class Scores {
   void scoreAndAddPSM(ScoreHolder& sh,
                       const std::vector<double>& rawWeights,
                       FeatureMemoryPool& featurePool);
-  int calcScoresAndQvals(vector<double>& w,
+  int calcScoresAndQvals(const vector<double>& w,
                          double fdr,
                          bool skipDecoysPlusOne = false);
-  int calcScores(vector<double>& w);
+  int calcScores(const vector<double>& w);
   int calcQvals(double fdr, bool skipDecoysPlusOne = false);
   // whether a sort by decreasing score would leave the PSMs as they are
   bool isSortedByScore() const;
@@ -256,7 +269,7 @@ class Scores {
   // fdr), with the q values computed as merge does for a test bin, except
   // that a too good separation gives pi0 = 1 instead of an error. Used to
   // take the anchors of TRAIN and TRAIN_DECOYS from a training set.
-  ScoreScale calcScoreScale(std::vector<double>& w,
+  ScoreScale calcScoreScale(const std::vector<double>& w,
                             MergeNormalization scheme,
                             double fdr);
   // Rescales the scores and the weights by s. When s.scale <= 0 this is an
@@ -315,6 +328,28 @@ class Scores {
   std::vector<ScoreHolder> scores_;
 
   void getScoreLabelPairs(std::vector<std::pair<double, bool> >& combined);
+  // What ends the merge of the cross-validation bins, see mergeBins
+  enum class MergeStatus {
+    OK,
+    MISSING_SCALES,           // train, train-decoys: no scale for each bin
+    BIN_SEPARATES_TOO_WELL,   // a bin whose pi0 the merge estimates
+    CANNOT_RESCALE,           // the anchors of a bin do not exist
+    LIST_SEPARATES_TOO_WELL   // the merged list
+  };
+  // the one merge behind merge and countMergedTargets (Scores.cpp)
+  template <class GetBin>
+  MergeStatus mergeBins(std::size_t numBins,
+                        std::size_t numScores,
+                        GetBin getBin,
+                        std::vector<std::vector<double> >& weights,
+                        double fdr,
+                        bool skipNormalizeScores,
+                        MergeNormalization scheme,
+                        const std::vector<ScoreScale>& binScales,
+                        bool report);
+  // Whether there are no PSMs, which normalizeScores reports as an error
+  // (ignored with a message under --no-terminate)
+  bool noScoredPsms() const;
   // the p value of each target, in ascending order, from the decoys that
   // score at least as high; the scores have to be sorted
   void getTargetPValues(std::vector<double>& pvals) const;

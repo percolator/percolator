@@ -78,67 +78,6 @@ const char* mergeNormalizationName(MergeNormalization scheme) {
   return "unknown";
 }
 
-void Scores::merge(std::vector<Scores>& sv,
-                   double fdr,
-                   bool skipNormalizeScores,
-                   std::vector<std::vector<double> >& all_w,
-                   MergeNormalization scheme,
-                   const std::vector<ScoreScale>& binScales) {
-  const bool fromTrainingSets = scheme == MergeNormalization::TRAIN ||
-                                scheme == MergeNormalization::TRAIN_DECOYS;
-  if (!skipNormalizeScores && fromTrainingSets &&
-      binScales.size() != sv.size()) {
-    throw MyException(
-        "Error: the training-set rescaling of the cross-validation bins is "
-        "missing.\n");
-  }
-  scores_.clear();
-  size_t numScores = 0;
-  for (const Scores& binScores : sv) {
-    numScores += binScores.scores_.size();
-  }
-  scores_.reserve(numScores);
-  std::vector<Scores>::iterator cvBinScores = sv.begin();
-  std::vector<std::vector<double> >::iterator weights = all_w.begin();
-  for (std::size_t bin = 0; cvBinScores != sv.end();
-       cvBinScores++, weights++, ++bin) {
-    // the test sets are usually sorted already, by calcScores
-    if (!cvBinScores->isSortedByScore()) {
-      parallelSort(cvBinScores->begin(), cvBinScores->end(),
-                   greater<ScoreHolder>());
-    }
-    // the q values of a bin are only needed for its own anchors; the merged
-    // list gets new ones
-    if (scheme == MergeNormalization::TEST) {
-      cvBinScores->checkSeparationAndSetPi0();
-      cvBinScores->calcQvals(fdr);
-    }
-    if (!skipNormalizeScores) {
-      if (scheme == MergeNormalization::TEST) {
-        cvBinScores->normalizeScores(fdr, *weights, sv.size() == 1u);
-      } else if (fromTrainingSets) {
-        cvBinScores->applyScoreScale(binScales[bin], *weights,
-                                     sv.size() == 1u, scheme, fdr);
-      }
-    }
-    copy(cvBinScores->begin(), cvBinScores->end(), back_inserter(scores_));
-    // release the bin before the sort of all PSMs
-    cvBinScores->reset();
-  }
-  postMergeStep();
-}
-
-bool Scores::postMergeStep(bool tooGoodSeparationIsError) {
-  parallelSort(scores_.begin(), scores_.end(), greater<ScoreHolder>());
-  totalNumberOfDecoys_ = static_cast<unsigned int>(
-      count_if(scores_.begin(), scores_.end(), mem_fn(&ScoreHolder::isDecoy)));
-  totalNumberOfTargets_ = static_cast<unsigned int>(
-      count_if(scores_.begin(), scores_.end(), mem_fn(&ScoreHolder::isTarget)));
-  targetDecoySizeRatio_ =
-      totalNumberOfTargets_ / max(1.0, (double)totalNumberOfDecoys_);
-  return checkSeparationAndSetPi0(tooGoodSeparationIsError);
-}
-
 namespace {
 // Puts the global random number generator back into the state it had when
 // the guard was made, at every exit of the scope.
@@ -154,7 +93,173 @@ class RandomStateGuard {
  private:
   uint64_t state_;
 };
+
+bool takesAnchorsFromTrainingSets(MergeNormalization scheme) {
+  return scheme == MergeNormalization::TRAIN ||
+         scheme == MergeNormalization::TRAIN_DECOYS;
+}
 }  // namespace
+
+/*
+ * The merge of the cross-validation bins, for Scores::merge and for its dry
+ * run Scores::countMergedTargets, so that the two cannot drift apart: which
+ * bins are checked for a too good separation, where the anchors of a bin
+ * come from, and what makes a list unusable.
+ *
+ * getBin(bin) gives the bins in turn, scored; a bin is emptied once its PSMs
+ * are copied. weights[bin] is rescaled with the bin.
+ *
+ * report = true is the merge of the run. What cannot be merged is an error
+ * where it is found, with the message of the function that finds it
+ * (checkSeparationAndSetPi0, applyScoreScale, postMergeStep); under
+ * --no-terminate these print the message and the merge goes on, so the
+ * status is then OK. Only MISSING_SCALES is left to the caller.
+ *
+ * report = false is the dry run: nothing is printed or thrown, and the first
+ * thing that would end the merge is returned. It differs from the merge in
+ * two places, as the count did before the two shared this function:
+ * - A bin's pi0 is estimated, from random numbers, only where the anchors of
+ *   test need the bin's q values. The merge estimates it for every bin that
+ *   is checked, and the later estimates of the run follow those draws.
+ * - A single bin is not rescaled: the merge keeps its raw scores when that
+ *   fails, and a positive linear map does not change its q values.
+ */
+template <class GetBin>
+Scores::MergeStatus Scores::mergeBins(
+    std::size_t numBins,
+    std::size_t numScores,
+    GetBin getBin,
+    std::vector<std::vector<double> >& weights,
+    double fdr,
+    bool skipNormalizeScores,
+    MergeNormalization scheme,
+    const std::vector<ScoreScale>& binScales,
+    bool report) {
+  // without rescaling (--static) the raw scores are merged as with test
+  if (skipNormalizeScores) {
+    scheme = MergeNormalization::TEST;
+  }
+  const bool fromTrainingSets = takesAnchorsFromTrainingSets(scheme);
+  const bool singleBin = numBins == 1u;
+  const bool rescale = !skipNormalizeScores &&
+                       scheme != MergeNormalization::NONE &&
+                       (report || !singleBin);
+  if (rescale && fromTrainingSets && binScales.size() != numBins) {
+    return MergeStatus::MISSING_SCALES;
+  }
+  // Before it takes the anchors of test, the merge estimates the pi0 of each
+  // bin, which ends the run where the bin's targets and decoys separate too
+  // well; it does so without rescaling too (--static).
+  const bool binsChecked = scheme == MergeNormalization::TEST;
+  // the q values of a bin are only needed for its own anchors; the merged
+  // list gets new ones
+  const bool binQvalsNeeded = binsChecked && (report || rescale);
+  scores_.clear();
+  scores_.reserve(numScores);
+  for (std::size_t bin = 0; bin < numBins; ++bin) {
+    Scores& binScores = getBin(bin);
+    // the test sets are usually sorted already, by calcScores
+    if (!binScores.isSortedByScore()) {
+      parallelSort(binScores.begin(), binScores.end(),
+                   greater<ScoreHolder>());
+    }
+    if (binQvalsNeeded) {
+      if (binScores.checkSeparationAndSetPi0(report) && !report) {
+        return MergeStatus::BIN_SEPARATES_TOO_WELL;
+      }
+      binScores.calcQvals(fdr);
+    } else if (binsChecked && binScores.separatesTooWell()) {
+      return MergeStatus::BIN_SEPARATES_TOO_WELL;
+    }
+    if (rescale) {
+      const ScoreScale s =
+          fromTrainingSets
+              ? binScales[bin]
+              : binScores.getScoreScale(MergeNormalization::TEST, fdr);
+      if (!report && s.scale <= 0) {
+        return MergeStatus::CANNOT_RESCALE;
+      }
+      // an empty bin has no anchors of its own: an error of the merge
+      if (fromTrainingSets || !report || !binScores.noScoredPsms()) {
+        binScores.applyScoreScale(s, weights[bin], singleBin, scheme, fdr);
+      }
+    }
+    copy(binScores.begin(), binScores.end(), back_inserter(scores_));
+    // release the bin before the sort of all PSMs
+    binScores.reset();
+  }
+  // The final list of these scores would end the run with "too good
+  // separation" as well (Caller's postMergeStep)
+  if (postMergeStep(report) && !report) {
+    return MergeStatus::LIST_SEPARATES_TOO_WELL;
+  }
+  return MergeStatus::OK;
+}
+
+void Scores::merge(std::vector<Scores>& sv,
+                   double fdr,
+                   bool skipNormalizeScores,
+                   std::vector<std::vector<double> >& all_w,
+                   MergeNormalization scheme,
+                   const std::vector<ScoreScale>& binScales) {
+  size_t numScores = 0;
+  for (const Scores& binScores : sv) {
+    numScores += binScores.scores_.size();
+  }
+  const MergeStatus status = mergeBins(
+      sv.size(), numScores, [&sv](std::size_t bin) -> Scores& {
+        return sv[bin];
+      },
+      all_w, fdr, skipNormalizeScores, scheme, binScales, true);
+  if (status == MergeStatus::MISSING_SCALES) {
+    throw MyException(
+        "Error: the training-set rescaling of the cross-validation bins is "
+        "missing.\n");
+  }
+  // every other status is an error where it is found, or ignored there
+  // under --no-terminate
+}
+
+bool Scores::postMergeStep(bool tooGoodSeparationIsError) {
+  parallelSort(scores_.begin(), scores_.end(), greater<ScoreHolder>());
+  totalNumberOfDecoys_ = static_cast<unsigned int>(
+      count_if(scores_.begin(), scores_.end(), mem_fn(&ScoreHolder::isDecoy)));
+  totalNumberOfTargets_ = static_cast<unsigned int>(
+      count_if(scores_.begin(), scores_.end(), mem_fn(&ScoreHolder::isTarget)));
+  targetDecoySizeRatio_ =
+      totalNumberOfTargets_ / max(1.0, (double)totalNumberOfDecoys_);
+  return checkSeparationAndSetPi0(tooGoodSeparationIsError);
+}
+
+std::vector<ScoreScale> Scores::calcBinScales(
+    std::vector<Scores>& trainBins,
+    const std::vector<std::vector<double> >& w,
+    MergeNormalization scheme,
+    double fdr,
+    bool skipNormalizeScores,
+    bool onCopies) {
+  std::vector<ScoreScale> binScales;
+  if (skipNormalizeScores || !takesAnchorsFromTrainingSets(scheme)) {
+    return binScales;
+  }
+  binScales.resize(trainBins.size());
+  for (std::size_t bin = 0; bin < trainBins.size(); ++bin) {
+    if (onCopies) {
+      // one copy at a time: the training sets of all folds hold each PSM
+      // once per other fold
+      Scores trainScores(trainBins[bin]);
+      binScales[bin] = trainScores.calcScoreScale(w[bin], scheme, fdr);
+    } else {
+      binScales[bin] = trainBins[bin].calcScoreScale(w[bin], scheme, fdr);
+      if (VERB > 2) {
+        std::cerr << "Split " << bin + 1 << ": rescaling the test scores by "
+                  << "the training set, offset " << binScales[bin].offset
+                  << " and scale " << binScales[bin].scale << std::endl;
+      }
+    }
+  }
+  return binScales;
+}
 
 int Scores::countMergedTargets(const std::vector<Scores>& testBins,
                                const std::vector<Scores>& trainBins,
@@ -174,53 +279,36 @@ int Scores::countMergedTargets(const std::vector<Scores>& testBins,
   if (testBins.empty()) {
     return 0;
   }
-  const bool fromTrainingSets = scheme == MergeNormalization::TRAIN ||
-                                scheme == MergeNormalization::TRAIN_DECOYS;
-  assert(!fromTrainingSets || trainBins.size() == testBins.size());
-  // a positive linear map does not change the q values of a single bin
-  const bool rescale = !skipNormalizeScores &&
-                       scheme != MergeNormalization::NONE &&
-                       testBins.size() > 1u;
-  // Before it takes the anchors of test, the merge estimates the pi0 of each
-  // bin, which ends the run where the bin's targets and decoys separate too
-  // well; it does so without rescaling too (skipNormalizeScores, --static,
-  // which merges as test does).
-  const bool binsChecked =
-      scheme == MergeNormalization::TEST || skipNormalizeScores;
+  assert(skipNormalizeScores || !takesAnchorsFromTrainingSets(scheme) ||
+         trainBins.size() == testBins.size());
+  // the merge rescales the weights with the scores
+  std::vector<std::vector<double> > weights(w);
+  // The anchors of train and train-decoys, from each fold's training set
+  // scored with the fold's weights, as CrossValidation takes them before the
+  // merge. A single bin is not rescaled (see mergeBins).
+  std::vector<ScoreScale> binScales;
+  if (testBins.size() > 1u) {
+    // the training sets are only read: each is scored on a copy
+    binScales = calcBinScales(const_cast<std::vector<Scores>&>(trainBins),
+                              weights, scheme, fdr, skipNormalizeScores, true);
+  }
   Scores merged(testBins[0].usePi0_);
   merged.nullTargetWinProb_ = testBins[0].nullTargetWinProb_;
   size_t numScores = 0;
   for (const Scores& binScores : testBins) {
     numScores += binScores.scores_.size();
   }
-  merged.scores_.reserve(numScores);
-  for (std::size_t bin = 0; bin < testBins.size(); ++bin) {
-    Scores binScores(testBins[bin]);
-    std::vector<double> binWeights(w[bin]);
-    binScores.calcScores(binWeights);
-    if (binsChecked && binScores.separatesTooWell()) {
-      return -1;
-    }
-    if (rescale) {
-      ScoreScale s;
-      if (fromTrainingSets) {
-        Scores trainScores(trainBins[bin]);
-        s = trainScores.calcScoreScale(binWeights, scheme, fdr);
-      } else {
-        s = binScores.calcScoreScale(binWeights, scheme, fdr);
-      }
-      if (s.scale <= 0) {
-        return -1;
-      }
-      binScores.applyScoreScale(s, binWeights, false, scheme, fdr);
-    }
-    merged.scores_.insert(merged.scores_.end(), binScores.scores_.begin(),
-                          binScores.scores_.end());
-  }
-  // The final list of these scores would end the run with "too good
-  // separation" (Caller's postMergeStep), so a count of it cannot keep
-  // them; a reset gives other scores.
-  if (merged.postMergeStep(false)) {
+  // one bin at a time is copied and scored
+  Scores binCopy(false);
+  const MergeStatus status = merged.mergeBins(
+      testBins.size(), numScores,
+      [&](std::size_t bin) -> Scores& {
+        binCopy = testBins[bin];
+        binCopy.calcScores(weights[bin]);
+        return binCopy;
+      },
+      weights, fdr, skipNormalizeScores, scheme, binScales, false);
+  if (status != MergeStatus::OK) {
     return -1;
   }
   const int count = merged.calcQvals(testFdr);
@@ -603,6 +691,17 @@ void Scores::recalculateSizes() {
   targetDecoySizeRatio_ = totalNumberOfTargets_ / (double)totalNumberOfDecoys_;
 }
 
+bool Scores::noScoredPsms() const {
+  if (scores_.size() == 0) {
+    ostringstream oss;
+    oss << "Error: no scored PSMs were provided.\n";
+    Globals::failUnlessNoTerminate(oss.str(),
+                                   "No-terminate flag set: ignoring error.");
+    return true;
+  }
+  return false;
+}
+
 /**
  * Linear rescaling of SVM scores such that q=fdr = 0 and the median decoy = -1.
  * @param fdr fdr-cutoff to use, typically --trainFDR
@@ -614,11 +713,7 @@ void Scores::recalculateSizes() {
  */
 void Scores::normalizeScores(double fdr, std::vector<double>& weights,
                              bool singleBin) {
-  if (scores_.size() == 0) {
-    ostringstream oss;
-    oss << "Error: no scored PSMs were provided.\n";
-    Globals::failUnlessNoTerminate(oss.str(),
-                                   "No-terminate flag set: ignoring error.");
+  if (noScoredPsms()) {
     return;
   }
   applyScoreScale(getScoreScale(MergeNormalization::TEST, fdr), weights,
@@ -685,7 +780,7 @@ ScoreScale Scores::getScoreScale(MergeNormalization scheme,
   return s;
 }
 
-ScoreScale Scores::calcScoreScale(std::vector<double>& w,
+ScoreScale Scores::calcScoreScale(const std::vector<double>& w,
                                   MergeNormalization scheme,
                                   double fdr) {
   calcScores(w);
@@ -760,7 +855,7 @@ void Scores::applyScoreScale(const ScoreScale& s,
  * @param fdr FDR threshold specified by user (default 0.01)
  * @return number of true positives
  */
-int Scores::calcScoresAndQvals(std::vector<double>& w,
+int Scores::calcScoresAndQvals(const std::vector<double>& w,
                                double fdr,
                                bool skipDecoysPlusOne) {
   calcScores(w);
@@ -773,7 +868,7 @@ int Scores::calcScoresAndQvals(std::vector<double>& w,
  * @param fdr FDR threshold specified by user (default 0.01)
  * @return 0 on successfull execution
  */
-int Scores::calcScores(std::vector<double>& w) {
+int Scores::calcScores(const std::vector<double>& w) {
   std::size_t ix;
   const long numScores = static_cast<long>(scores_.size());
   const int numFeatures = static_cast<int>(FeatureNames::getNumFeatures());
