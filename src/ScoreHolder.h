@@ -80,16 +80,9 @@ inline bool operator>(const ScoreHolder& one, const ScoreHolder& other) {
   return compareIdAndLine(*one.pPSM, *other.pPSM) > 0;
 }
 
+// the same order read from the other side, also for NaN scores and masses
 inline bool operator<(const ScoreHolder& one, const ScoreHolder& other) {
-  if (one.score != other.score) return one.score < other.score;
-  if (one.pPSM->scan != other.pPSM->scan)
-    return one.pPSM->scan < other.pPSM->scan;
-  if (one.pPSM->expMass != other.pPSM->expMass)
-    return one.pPSM->expMass < other.pPSM->expMass;
-  if (one.label != other.label) return one.label < other.label;
-  if (one.pPSM->specFileNr != other.pPSM->specFileNr)
-    return one.pPSM->specFileNr < other.pPSM->specFileNr;
-  return compareIdAndLine(*one.pPSM, *other.pPSM) < 0;
+  return other > one;
 }
 
 struct lexicOrderProb {
