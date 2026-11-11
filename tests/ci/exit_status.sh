@@ -122,6 +122,14 @@ fails input_text_feature "error reading in feature vector" \
   "$PERC" text_feature.pin
 fails input_nan_feature "strange feature" "$PERC" nan_feature.pin
 fails input_short_row "error reading" "$PERC" short_row.pin
+# mix-max with unequal numbers of target and decoy PSMs: a concatenated
+# search taken for separate searches; --no-terminate runs it anyway
+fails mix_max_unequal "needs one target and one decoy PSM per spectrum" \
+  "$PERC" -I separate good.pin
+fails mix_max_unequal_y "needs one target and one decoy PSM per spectrum" \
+  "$PERC" -y good.pin
+expect mix_max_unequal_no_terminate 0 "No-terminate flag set: ignoring error" \
+  "$PERC" -S 1 -I separate --no-terminate -m unequal_psms.txt good.pin
 
 # output
 fails output_is_input "which is the input file" "$PERC" -m same.pin same.pin

@@ -336,7 +336,10 @@ bool Caller::parseOptions(int argc, char** argv) {
       "y", "post-processing-mix-max",
       "Use the mix-max method to assign q-values and PEPs. Note that this "
       "option only has an effect if the input PSMs are from separate target "
-      "and decoy searches. This is the default setting.",
+      "and decoy searches. This is the default setting. Mix-max needs one "
+      "target and one decoy PSM per spectrum: numbers of target and decoy "
+      "PSMs that differ by more than 10% are an error, since its q-values "
+      "would be too low with fewer decoys (--no-terminate runs them anyway).",
       "", TRUE_IF_SET);
   cmd.defineOption(
       "Y", "post-processing-tdc",
@@ -1391,13 +1394,30 @@ bool Caller::loadAndNormalizeData(std::istream& dataStream,
     allScores.populateWithPSMs(setHandler);
   }
 
-  if (VERB > 0 && useMixMax_ &&
-      abs(1.0 - allScores.getTargetDecoySizeRatio()) > 0.1) {
-    std::cerr << "Warning: The mix-max procedure is not well behaved when "
-              << "# targets (" << allScores.posSize() << ") != "
-              << "# decoys (" << allScores.negSize() << "). "
-              << "Consider using target-decoy competition (-Y flag)."
-              << std::endl;
+  // Mix-max takes each decoy PSM for one incorrect target PSM and does not
+  // scale by the numbers of targets and decoys, so with fewer decoys than
+  // targets its q values and PEPs are too low, and with more too high.
+  if (useMixMax_ &&
+      std::abs(1.0 - allScores.getTargetDecoySizeRatio()) > 0.1) {
+    std::cerr << "Error: the mix-max method needs one target and one decoy "
+              << "PSM per spectrum, but the input has "
+              << allScores.posSize() << " target and " << allScores.negSize()
+              << " decoy PSMs, which differ by more than 10%. With fewer "
+              << "decoys than targets the q values and PEPs of mix-max are "
+              << "too low, with more they are too high. If the input comes "
+              << "from a concatenated target-decoy search, use "
+              << "-Y/--post-processing-tdc or -I concatenated, and neither "
+              << "-y/--post-processing-mix-max nor -I separate. If it comes "
+              << "from separate searches, give the target and the decoy PSM "
+              << "of every spectrum: target-decoy competition (-Y) does not "
+              << "make up for missing decoy PSMs either." << std::endl;
+    if (NO_TERMINATE) {
+      std::cerr << "No-terminate flag set: ignoring error and using mix-max "
+                << "with unequal numbers of target and decoy PSMs."
+                << std::endl;
+    } else {
+      return false;
+    }
   }
   return success;
 }

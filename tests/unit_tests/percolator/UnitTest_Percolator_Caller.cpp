@@ -168,6 +168,95 @@ TEST(CallerTest, HelpReturnsWithoutEndingTheProcess) {
 
 namespace {
 
+// separate searches of 1,500 spectra: a target PSM for every spectrum and
+// a decoy PSM for one spectrum in every decoyEvery
+void writeSeparateInput(const std::string& fileName, int decoyEvery) {
+  std::mt19937 rng(23);
+  std::normal_distribution<double> noise(0.0, 1.0);
+  std::ofstream out(fileName);
+  out << "SpecId\tLabel\tScanNr\tExpMass\tf1\tf2\tf3\tPeptide\tProteins\n";
+  const char* residues = "ACDEFGHIKLMNPQRSTVWY";
+  int row = 0;
+  auto write = [&](int scan, bool isTarget, double shift) {
+    std::string peptide = "K.";
+    for (int k = ++row + 10000; k > 0; k /= 20) peptide += residues[k % 20];
+    peptide += "K.A";
+    out << (isTarget ? "target_" : "decoy_") << scan << '\t'
+        << (isTarget ? 1 : -1) << '\t' << scan << '\t' << 1000.0 + scan * 0.5
+        << '\t' << noise(rng) + shift << '\t' << noise(rng) + shift << '\t'
+        << noise(rng) << '\t' << peptide << '\t'
+        << (isTarget ? "prot_" : "decoy_prot_") << scan % 300 << '\n';
+  };
+  for (int scan = 1; scan <= 1500; ++scan) {
+    write(scan, true, rng() % 2 == 0 ? 2.5 : 0.0);
+    if (scan % decoyEvery == 0) write(scan, false, 0.0);
+  }
+}
+
+// parses the options and runs; returns what run() returns and the stderr
+int runAndCapture(std::vector<std::string> args, std::string& err) {
+  args.insert(args.begin(), "percolator");
+  std::vector<char*> argv;
+  for (std::string& arg : args) argv.push_back(&arg[0]);
+  argv.push_back(nullptr);
+  testing::internal::CaptureStderr();
+  int ran = -1;
+  {
+    Caller caller;
+    if (caller.parseOptions(static_cast<int>(args.size()), argv.data())) {
+      ran = caller.run();
+    }
+  }
+  err = testing::internal::GetCapturedStderr();
+  Globals::clean();
+  return ran;
+}
+
+}  // namespace
+
+// Mix-max does not scale by the numbers of targets and decoys, so with half
+// as many decoy PSMs its q values are about half of what they should be.
+// This used to be a warning; it is an error unless --no-terminate is set.
+// Target-decoy competition (-Y) and equal numbers are not affected.
+TEST(CallerTest, MixMaxWithUnequalTargetsAndDecoysIsAnError) {
+  TmpDir tmpDir;
+  fs::path dir = tmpDir.getPath();
+  const std::string equal = (dir / "equal.pin").string();
+  const std::string half = (dir / "half.pin").string();
+  const std::string psms = (dir / "psms.txt").string();
+  const std::string peptides = (dir / "peptides.txt").string();
+  writeSeparateInput(equal, 1);
+  writeSeparateInput(half, 2);
+  const std::string message = "needs one target and one decoy PSM per spectrum";
+  std::string err;
+
+  EXPECT_EQ(1, runAndCapture({"-m", psms, "-r", peptides, equal}, err));
+  EXPECT_NE(std::string::npos, err.find("using mix-max method")) << err;
+  EXPECT_EQ(std::string::npos, err.find(message)) << err;
+
+  fs::remove(psms);
+  EXPECT_EQ(0, runAndCapture({"-m", psms, "-r", peptides, half}, err));
+  EXPECT_NE(std::string::npos, err.find(message)) << err;
+  EXPECT_NE(std::string::npos, err.find("1500 target and 750 decoy PSMs"))
+      << err;
+  EXPECT_TRUE(readFile(psms).empty());  // no results are written
+  // also at -v 0, where the warning was not printed at all
+  EXPECT_EQ(0, runAndCapture({"-v", "0", "-m", psms, "-r", peptides, half}, err));
+  EXPECT_NE(std::string::npos, err.find(message)) << err;
+
+  EXPECT_EQ(1, runAndCapture({"--no-terminate", "-m", psms, "-r", peptides, half}, err));
+  EXPECT_NE(std::string::npos, err.find(message)) << err;
+  EXPECT_NE(std::string::npos, err.find("No-terminate flag set")) << err;
+  EXPECT_FALSE(readFile(psms).empty());
+
+  fs::remove(psms);
+  EXPECT_EQ(1, runAndCapture({"-Y", "-m", psms, "-r", peptides, half}, err));
+  EXPECT_EQ(std::string::npos, err.find(message)) << err;
+  EXPECT_FALSE(readFile(psms).empty());
+}
+
+namespace {
+
 bool parseOnly(std::vector<std::string> args) {
   args.insert(args.begin(), {"percolator", "-v", "0"});
   std::vector<char*> argv;
