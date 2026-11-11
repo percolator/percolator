@@ -170,15 +170,14 @@ std::string TabFileValidator::findDecoyPrefix(std::string fileName, int proteinI
   }
   const size_t numDecoys = starts.size() - 1;
 
-  /* Randomly sample 10% of the protein identifiers */
-  // std::shuffle swaps elements in an order that depends only on the number
-  // of elements and the generator, so shuffling the indices selects the same
-  // proteins as shuffling the protein names.
-  std::vector<size_t> order(numDecoys);
-  for (size_t i = 0; i < numDecoys; ++i) order[i] = i;
-  auto rng = std::default_random_engine {};
-  std::shuffle(std::begin(order), std::end(order), rng);
-  size_t numElements = static_cast<size_t>(ceil(0.1 * numDecoys));
+  /* Sample 10% of the protein identifiers: every tenth decoy, from the
+     first one on. The sample used to be the first tenth of a std::shuffle
+     with a default-constructed std::default_random_engine; both are
+     implementation-defined, so the sample, and with decoys of several
+     prefixes the detected prefix, could differ between standard libraries. */
+  const size_t numElements = (numDecoys + 9) / 10;
+  std::vector<size_t> order(numElements);
+  for (size_t i = 0; i < numElements; ++i) order[i] = 10 * i;
 
   // the longest common prefix of the sampled protein names
   std::string prefix;

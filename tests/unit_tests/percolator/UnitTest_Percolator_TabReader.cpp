@@ -193,8 +193,9 @@ TEST_F(TabReaderTest, CheckSequentialReading)
     ASSERT_TRUE(reader.error());
 }
 
-// The decoy prefix detection as it was before it kept only the label and
-// protein columns: a std::string for every column of every row.
+// The decoy prefix detection with a std::string for every column of every
+// row: the longest common prefix of every tenth decoy protein, from the
+// first one on, up to its first underscore.
 static std::string findDecoyPrefixReference(const std::string& fileName,
                                             int proteinIndex, int labelIndex) {
   std::ifstream file(fileName.c_str());
@@ -212,17 +213,17 @@ static std::string findDecoyPrefixReference(const std::string& fileName,
       col++;
     }
   }
-  auto rng = std::default_random_engine {};
-  std::shuffle(std::begin(proteinNames), std::end(proteinNames), rng);
-  int numElements = ceil(0.1 * proteinNames.size());
-  proteinNames.resize(numElements);
-  std::string prefix = TabFileValidator::getLongestCommonPrefix(proteinNames);
+  std::vector<std::string> sample;
+  for (size_t i = 0; i < proteinNames.size(); i += 10) {
+    sample.push_back(proteinNames[i]);
+  }
+  std::string prefix = TabFileValidator::getLongestCommonPrefix(sample);
   size_t loc = prefix.find("_");
   if (loc != std::string::npos) prefix = prefix.substr(0, loc + 1);
   return prefix;
 }
 
-// findDecoyPrefix gives the same prefix as before on generated files, with
+// findDecoyPrefix gives the prefix of the reference on generated files, with
 // and without common prefixes, with short rows, CRLF line ends and the label
 // column after the protein column.
 TEST(TabFileValidatorTest, FindDecoyPrefixMatchesReference)
@@ -277,6 +278,53 @@ TEST(TabFileValidatorTest, FindDecoyPrefixMatchesReference)
   }
   EXPECT_EQ("decoy_", TabFileValidator::findDecoyPrefix(fileName, 4, 1));
   EXPECT_EQ("decoy_", TabFileValidator::detectDecoyPrefix(fileName));
+  Globals::getInstance()->setVerbose(2);
+}
+
+// The sample is every tenth decoy (the 1st, 11th, 21st, ...), whatever the
+// standard library: with decoys of several prefixes the result follows from
+// the positions alone. It used to be drawn with std::shuffle and
+// std::default_random_engine, which are implementation-defined.
+TEST(TabFileValidatorTest, DecoyPrefixSamplesEveryTenthDecoy)
+{
+  Globals::getInstance()->setVerbose(0);
+  TmpDir tmpDir;
+  const std::string fileName = tmpDir.getPath() + "/input.pin";
+  auto write = [&](int numDecoys, int oddOne) {
+    std::ofstream out(fileName.c_str());
+    out << "SpecId\tLabel\tf\tPeptide\tProteins\n";
+    int decoy = 0;
+    for (int r = 0; decoy < numDecoys; ++r) {
+      if (r % 3 == 0) {  // targets in between do not count
+        out << "t" << r << "\t1\t0.5\tK.PEP.K\tsp_prot" << r << "\n";
+        continue;
+      }
+      // every tenth decoy has the prefix rev_, the others REVERSED_
+      const char* prefix = decoy % 10 == 0 ? "rev_" : "REVERSED_";
+      if (decoy == oddOne) prefix = "re_";
+      out << "d" << r << "\t-1\t0.5\tK.PEP.K\t" << prefix << "prot" << r
+          << "\n";
+      ++decoy;
+    }
+  };
+  for (int numDecoys : {1, 10, 11, 25, 31, 1000}) {
+    write(numDecoys, -1);
+    EXPECT_EQ("rev_", TabFileValidator::findDecoyPrefix(fileName, 4, 1))
+        << numDecoys << " decoys";
+  }
+  // the 21st decoy is in the sample of 21 to 30 decoys, and only "re" is
+  // common to "re_" and "rev_"; the 2nd decoy is never in it
+  write(25, 20);
+  EXPECT_EQ("re", TabFileValidator::findDecoyPrefix(fileName, 4, 1));
+  write(25, 1);
+  EXPECT_EQ("rev_", TabFileValidator::findDecoyPrefix(fileName, 4, 1));
+  // no decoys, no prefix
+  {
+    std::ofstream out(fileName.c_str());
+    out << "SpecId\tLabel\tf\tPeptide\tProteins\n"
+        << "t1\t1\t0.5\tK.PEP.K\tsp_prot1\n";
+  }
+  EXPECT_EQ("", TabFileValidator::findDecoyPrefix(fileName, 4, 1));
   Globals::getInstance()->setVerbose(2);
 }
 
