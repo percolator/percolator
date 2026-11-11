@@ -571,3 +571,78 @@ TEST(PickedProteinCallerTest, LongProteins) {
   EXPECT_EQ((std::map<std::string, std::string>{{"part", "long2"}}),
             fragments);
 }
+
+// The names and cleavage rules of the enzymes. The numbers of cleaved pairs
+// among all 256 x 256 pairs of chars are those of the 13 Enzyme subclasses
+// that the table in Enzyme.cpp replaced.
+TEST(EnzymeTest, NamesAndRules) {
+  struct Expected {
+    Enzyme::EnzymeType type;
+    const char* name;
+    int cleavedPairs;
+  };
+  const Expected expected[] = {
+      {Enzyme::NO_ENZYME, "no_enzyme", 65536},
+      {Enzyme::TRYPSIN, "trypsin", 1019},
+      {Enzyme::TRYPSINP, "trypsinp", 1021},
+      {Enzyme::CHYMOTRYPSIN, "chymotrypsin", 1527},
+      {Enzyme::THERMOLYSIN, "thermolysin", 2030},
+      {Enzyme::PROTEINASEK, "proteinasek", 2806},
+      {Enzyme::PEPSIN, "pepsin", 2531},
+      {Enzyme::ELASTASE, "elastase", 1527},
+      {Enzyme::LYSN, "lys-n", 766},
+      {Enzyme::LYSC, "lys-c", 765},
+      {Enzyme::ARGC, "arg-c", 765},
+      {Enzyme::ASPN, "asp-n", 766},
+      {Enzyme::GLUC, "glu-c", 1019},
+  };
+  for (const Expected& e : expected) {
+    std::unique_ptr<Enzyme> byType = Enzyme::createEnzyme(e.type);
+    std::unique_ptr<Enzyme> byName = Enzyme::createEnzyme(std::string(e.name));
+    EXPECT_EQ(e.type, byType->getEnzymeType());
+    EXPECT_EQ(e.type, byName->getEnzymeType());
+    EXPECT_EQ(e.name, byType->getStringEnzyme());
+    EXPECT_EQ(e.name, Enzyme::getString(e.type));
+    int cleavedPairs = 0;
+    for (int n = -128; n < 128; ++n) {
+      for (int c = -128; c < 128; ++c) {
+        const bool cleaved = byType->isEnzymatic(static_cast<char>(n),
+                                                 static_cast<char>(c));
+        EXPECT_EQ(cleaved, byName->isEnzymatic(static_cast<char>(n),
+                                               static_cast<char>(c)));
+        if (cleaved) ++cleavedPairs;
+      }
+    }
+    EXPECT_EQ(e.cleavedPairs, cleavedPairs) << e.name;
+  }
+
+  // names in any case; unknown names and values
+  EXPECT_EQ(Enzyme::LYSC, Enzyme::createEnzyme("LYS-C")->getEnzymeType());
+  EXPECT_THROW(Enzyme::createEnzyme("lysc"), MyException);
+  EXPECT_EQ(Enzyme::TRYPSIN,
+            Enzyme::createEnzyme(static_cast<Enzyme::EnzymeType>(13))
+                ->getEnzymeType());
+
+  // single rules: the proline rule, the ends of the protein, and the two
+  // rules that look at both residues
+  std::unique_ptr<Enzyme> trypsin = Enzyme::createEnzyme(Enzyme::TRYPSIN);
+  EXPECT_TRUE(trypsin->isEnzymatic('K', 'A'));
+  EXPECT_FALSE(trypsin->isEnzymatic('K', 'P'));
+  EXPECT_FALSE(trypsin->isEnzymatic('A', 'K'));
+  EXPECT_TRUE(trypsin->isEnzymatic('-', 'P'));
+  EXPECT_TRUE(trypsin->isEnzymatic('A', '-'));
+  EXPECT_TRUE(trypsin->isEnzymatic(std::string("K.AEPTIDER.A")));
+  EXPECT_FALSE(trypsin->isEnzymatic(std::string("K.PEPTIDER.A")));
+  EXPECT_FALSE(trypsin->isEnzymatic(std::string("A.PEPTIDEK.P")));
+  std::string peptide = "-MKPRKAFDEGR-";
+  EXPECT_EQ(4u, trypsin->countEnzymatic(peptide));
+  std::unique_ptr<Enzyme> thermolysin =
+      Enzyme::createEnzyme(Enzyme::THERMOLYSIN);
+  EXPECT_TRUE(thermolysin->isEnzymatic('R', 'G'));
+  EXPECT_FALSE(thermolysin->isEnzymatic('K', 'G'));
+  EXPECT_FALSE(thermolysin->isEnzymatic('D', 'A'));
+  std::unique_ptr<Enzyme> pepsin = Enzyme::createEnzyme(Enzyme::PEPSIN);
+  EXPECT_TRUE(pepsin->isEnzymatic('F', 'A'));
+  EXPECT_TRUE(pepsin->isEnzymatic('A', 'F'));
+  EXPECT_FALSE(pepsin->isEnzymatic('R', 'F'));
+}

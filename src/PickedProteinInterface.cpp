@@ -69,7 +69,7 @@ bool PickedProteinInterface::initialize(Scores& peptideScores, const Enzyme* enz
                 << " currently not supported. Using unspecific digestion to identify"
                 << " duplicate and fragment proteins" << std::endl;
         }
-        enzymeString = NoEnzyme::getString();
+        enzymeString = Enzyme::getString(Enzyme::NO_ENZYME);
       }
       digestEnzyme = Enzyme::NO_ENZYME;
       max_non_enzymatic_flanks = 2;
@@ -144,7 +144,7 @@ bool PickedProteinInterface::initialize(Scores& peptideScores, const Enzyme* enz
       max_non_enzymatic_flanks = max_non_enzymatic_flanks_trypsinp;
       max_miscleavages = max_miscleavages_trypsinp;
       digestEnzyme = Enzyme::TRYPSINP;
-      enzymeString = TrypsinP::getString();
+      enzymeString = Enzyme::getString(Enzyme::TRYPSINP);
     }
     
     // if more than half of the flanks or non enzymatic, probably the protease is wrong
