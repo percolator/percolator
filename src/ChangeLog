@@ -135,6 +135,7 @@ Interface changes (Crux and other library users):
 * SetHandler::readTab fills an InputSummary (concatenatedSearch, defaultWeights) instead of a SanityCheck, readAndScoreTab takes no SanityCheck, and writeTab takes the default weights; SetHandler.h no longer includes SanityCheck.h. DataSet::readPsm and readPsmBody lose the overloads that added the PSM to the set.
 * New ConcatenatedPins and ConcatenatedPinStream (ValidateTabFile.h), which give the lines of several input files as one input; ValidateTabFile::concatenateMultiplePINs writes these lines and is no longer used by Caller, which has no TmpDir. SetHandler::setInputSegments has an overload for a list that grows while the files are read.
 * DJB2Hash is removed from CompositionSorter.h; CompositionSorter::psmsOnly and psmAndPeptide return the winners in the order of first appearance. PAVARegressor::fit_xy pools observations with equal x.
+* New static Caller::resetProcessSettings, the reset of the process-wide settings that the constructor of Caller does. The unit tests call it before each test (a listener in their main file): a run with -f left protein inference on, and DataSetTest and SetHandlerTest then failed when --gtest_shuffle put them after it.
 
 v3.09
 * Replaced I-spline rank-based PEP calibration with score-based I-spline calibration as the new default; use --rank-pep to opt back to the previous rank-based behaviour. (#403)

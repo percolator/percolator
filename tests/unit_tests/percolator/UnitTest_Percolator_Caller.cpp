@@ -115,6 +115,37 @@ TEST(CallerTest, RunsGiveTheSameResultsAfterOtherRuns) {
   }
 }
 
+// The settings a test leaves behind do not reach the next test: the main
+// file of the unit tests resets them before each test. The first test here
+// leaves what a run with -f, -v 0 and --no-terminate leaves, and what made
+// DataSetTest and SetHandlerTest fail when they ran after such a run with
+// --gtest_shuffle; the second runs after it in the default order.
+TEST(ProcessSettingsTest, ATestLeavesSettingsBehind) {
+  Globals::getInstance()->setVerbose(0);
+  Globals::getInstance()->setNoTerminate(true);
+  ProteinProbEstimator::setCalcProteinLevelProb(true);
+  PSMDescription::setProteinNameSeparator(";");
+}
+
+TEST(ProcessSettingsTest, TheNextTestStartsFromTheInitialSettings) {
+  EXPECT_EQ(2, Globals::getInstance()->getVerbose());
+  EXPECT_FALSE(Globals::getInstance()->getNoTerminate());
+  EXPECT_FALSE(ProteinProbEstimator::getCalcProteinLevelProb());
+  EXPECT_EQ("\t", PSMDescription::getProteinNameSeparator());
+}
+
+TEST(ProcessSettingsTest, ResetProcessSettings) {
+  Globals::getInstance()->setVerbose(5);
+  Globals::getInstance()->setNoTerminate(true);
+  ProteinProbEstimator::setCalcProteinLevelProb(true);
+  PSMDescription::setProteinNameSeparator(";");
+  Caller::resetProcessSettings();
+  EXPECT_EQ(2, Globals::getInstance()->getVerbose());
+  EXPECT_FALSE(Globals::getInstance()->getNoTerminate());
+  EXPECT_FALSE(ProteinProbEstimator::getCalcProteinLevelProb());
+  EXPECT_EQ("\t", PSMDescription::getProteinNameSeparator());
+}
+
 // -v and --no-terminate of one run used to stay set for every later run of
 // the process: only main() restored them.
 TEST(CallerTest, VerbosityAndNoTerminateDoNotCarryOver) {

@@ -55,6 +55,14 @@ class Caller {
   Caller();
   virtual ~Caller();
 
+  // Sets the process-wide settings that the options and the steps of a run
+  // change (verbosity, --no-terminate, random seed, PEP method, protein
+  // inference, protein separator, spectrum file names, feature names,
+  // warnings given once) back to their initial values. The constructor
+  // calls it; a run leaves its settings behind, so code that goes on after
+  // a run and reads them, like the unit tests, calls it as well.
+  static void resetProcessSettings();
+
   static string greeter();
   string extendedGreeter();
   bool parseOptions(int argc, char** argv);

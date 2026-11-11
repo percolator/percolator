@@ -24,7 +24,27 @@
  */
 #include <gtest/gtest.h>
 
+#include "Caller.h"
+
+namespace {
+
+// Every test starts from the initial process-wide settings. A run of
+// Caller leaves its settings behind (protein inference after -f, the
+// verbosity), and a test that failed part-way does not restore what it
+// set, so without this the result of a test depended on the tests before
+// it, and on their order with --gtest_shuffle.
+class ResetProcessSettings : public ::testing::EmptyTestEventListener {
+  void OnTestStart(const ::testing::TestInfo&) override {
+    Caller::resetProcessSettings();
+  }
+};
+
+}  // namespace
+
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
+  // the listeners own the object
+  ::testing::UnitTest::GetInstance()->listeners().Append(
+      new ResetProcessSettings);
   return RUN_ALL_TESTS();
 }
