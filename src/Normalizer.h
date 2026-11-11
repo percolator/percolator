@@ -29,9 +29,7 @@ class Normalizer {
   virtual void setSet(vector<double*>& /* featuresV */,
                       vector<double*>& /* rtFeaturesV */, size_t /* numFeatures */,
                       size_t /* numRetentionFeatures*/ ) {}
-  virtual void updateSet(vector<double*>& /* featuresV */, size_t /* offset */,
-                         size_t /* numFeatures */) {}
-  
+
   void normalizeSet(vector<double*>& featuresV,
                     vector<double*>& rtFeaturesV);
   void normalizeSet(vector<double*>& featuresV,

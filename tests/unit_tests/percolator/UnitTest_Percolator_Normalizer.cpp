@@ -152,11 +152,6 @@ TEST(NormalizerTest, StdvNormalizerRestoresThePrecisionOfCerr) {
   setSet(*norm, rows);
   EXPECT_EQ(6, std::cerr.precision());
 
-  std::vector<double*> features;
-  for (auto& row : rows) features.push_back(row.data());
-  norm->updateSet(features, 0, 2);
-  EXPECT_EQ(6, std::cerr.precision());
-
   const std::string printed = ::testing::internal::GetCapturedStderr();
   EXPECT_NE(std::string::npos, printed.find("Normalization factors"));
   std::cerr.precision(origPrecision);

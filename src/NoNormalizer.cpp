@@ -60,13 +60,3 @@ void NoNormalizer::setSet(std::vector<double*>& /* featuresV */,
     div[ix] = 1.0;
   }
 }
-
-
-void NoNormalizer::updateSet(vector<double*> & /* featuresV */, size_t /* offset */,
-                               size_t numFeatures) {
-  size_t ix;
-  for (ix = 0; ix < numFeatures; ++ix) {
-    sub[ix] = 0.;
-    div[ix] = 1.0;
-  }
-}
