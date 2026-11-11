@@ -224,3 +224,115 @@ TEST_P(TdcToPepCalibrationTest, SparseHighScoreDecoys_DoNotForceLargeTailFloor) 
   ASSERT_EQ(top_target_count, 100);
   EXPECT_LT(top_target_sum / top_target_count, 0.05);
 }
+
+// PAVA with tied x: observations with the same x are one block, so they
+// get the same fitted value whatever their order in the input. They used
+// to be fed one by one, in input order, and a run of equal x was split
+// where its y values happened to be ordered.
+TEST(PavaTiesTest, EqualXGetsOneValue) {
+  auto pava = make_monotone_regressor(RegressorType::PAVA);
+  // decreasing in x (the default): three observations at x = 3 with mean
+  // 1/3, two at x = 2 with mean 1/2, one at x = 1
+  const std::vector<double> x = {3.0, 3.0, 3.0, 2.0, 2.0, 1.0};
+  const std::vector<double> y = {0.0, 1.0, 0.0, 1.0, 0.0, 1.0};
+  const std::vector<double> fit = pava->fit_xy(x, y);
+  ASSERT_EQ(6u, fit.size());
+  // fed one by one this gave 0, 0.5, 0.5, 0.5, 0.5, 1
+  const std::vector<double> expected = {1.0 / 3, 1.0 / 3, 1.0 / 3,
+                                        0.5, 0.5, 1.0};
+  for (size_t i = 0; i < fit.size(); ++i) {
+    EXPECT_DOUBLE_EQ(expected[i], fit[i]) << "observation " << i;
+  }
+
+  // a tie block that violates the order is merged with its neighbour as a
+  // whole, weighted by its size: (1 + 1 + 0) at x = 3 and (0) at x = 2
+  const std::vector<double> fit2 =
+      pava->fit_xy({3.0, 3.0, 3.0, 2.0, 1.0}, {1.0, 1.0, 0.0, 0.0, 1.0});
+  for (size_t i = 0; i < 4; ++i) {
+    EXPECT_DOUBLE_EQ(0.5, fit2[i]) << "observation " << i;
+  }
+  EXPECT_DOUBLE_EQ(1.0, fit2[4]);
+}
+
+TEST(PavaTiesTest, FitDoesNotDependOnTheOrderOfTiedObservations) {
+  std::mt19937 rng(7);
+  const int n = 2000;
+  // scores on a coarse grid, so that most of them are tied; decoys are
+  // more likely at low scores
+  std::vector<double> x(n), y(n);
+  for (int i = 0; i < n; ++i) {
+    const int level = static_cast<int>(rng() % 40);
+    x[i] = 0.25 * level;
+    y[i] = (rng() % 80) < static_cast<unsigned>(40 - level) ? 1.0 : 0.0;
+  }
+  auto pava = make_monotone_regressor(RegressorType::PAVA);
+  const std::vector<double> fit = pava->fit_xy(x, y);
+  // equal x, equal fit; and the fit does not increase with x
+  std::vector<int> order(n);
+  std::iota(order.begin(), order.end(), 0);
+  std::sort(order.begin(), order.end(),
+            [&](int a, int b) { return x[a] > x[b]; });
+  int distinct = 1;
+  for (int k = 1; k < n; ++k) {
+    if (x[order[k]] == x[order[k - 1]]) {
+      EXPECT_EQ(fit[order[k - 1]], fit[order[k]]) << "x " << x[order[k]];
+    } else {
+      EXPECT_LE(fit[order[k - 1]], fit[order[k]]) << "x " << x[order[k]];
+      ++distinct;
+    }
+  }
+  EXPECT_EQ(40, distinct);
+  // the fit keeps the sum of y
+  EXPECT_NEAR(std::accumulate(y.begin(), y.end(), 0.0),
+              std::accumulate(fit.begin(), fit.end(), 0.0), 1e-9);
+  // another input order of the same observations gives the same fit
+  std::vector<int> perm(n);
+  std::iota(perm.begin(), perm.end(), 0);
+  std::shuffle(perm.begin(), perm.end(), rng);
+  std::vector<double> xp(n), yp(n);
+  for (int i = 0; i < n; ++i) {
+    xp[i] = x[perm[i]];
+    yp[i] = y[perm[i]];
+  }
+  const std::vector<double> fitp = pava->fit_xy(xp, yp);
+  for (int i = 0; i < n; ++i) {
+    EXPECT_EQ(fit[perm[i]], fitp[i]) << "observation " << perm[i];
+  }
+}
+
+// Without ties the fit is what it was: that of the y values in the order
+// of x, one block per observation.
+TEST(PavaTiesTest, DistinctXIsTheFitOfTheSortedValues) {
+  std::mt19937 rng(11);
+  const int n = 500;
+  std::vector<double> x(n), y(n);
+  for (int i = 0; i < n; ++i) {
+    x[i] = n - i;  // descending, distinct
+    y[i] = (rng() % n) < static_cast<unsigned>(i) ? 1.0 : 0.0;
+  }
+  auto pava = make_monotone_regressor(RegressorType::PAVA);
+  EXPECT_EQ(pava->fit_y(y), pava->fit_xy(x, y));
+}
+
+// --tdc-pep --pava-pep: PSMs with the same score get the same PEP.
+TEST(PavaTiesTest, TdcPepsOfEqualScoresAreEqual) {
+  std::mt19937 rng(3);
+  const int n = 3000;
+  std::vector<double> scores(n), is_decoy(n);
+  for (int i = 0; i < n; ++i) {
+    const int level = 60 - i / 50;  // 50 PSMs per score, best first
+    scores[i] = 0.5 * level;
+    is_decoy[i] = (rng() % 120) < static_cast<unsigned>(60 - level) ? 1.0
+                                                                     : 0.0;
+  }
+  InferPEP infer(/*use_ispline=*/false);
+  const std::vector<double> pep = infer.tdc_to_pep(is_decoy, scores);
+  ASSERT_EQ(static_cast<size_t>(n), pep.size());
+  for (int i = 1; i < n; ++i) {
+    if (scores[i] == scores[i - 1]) {
+      EXPECT_EQ(pep[i - 1], pep[i]) << "PSM " << i;
+    } else {
+      EXPECT_LE(pep[i - 1], pep[i]) << "PSM " << i;
+    }
+  }
+}
