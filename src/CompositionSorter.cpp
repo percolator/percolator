@@ -153,8 +153,8 @@ int CompositionSorter::addPSMs(const Scores& scores, bool useTDC) {
   for (ScoreHolder* pScr : scoreHolders) {
     std::string_view peptide = pScr->getPSM()->getPeptideSequenceView();
     builder.build(peptide, signature);
-    // a new signature is inserted at the same point of the sequence of
-    // insertions as before, so the map iterates in the same order
+    // a new signature gets the next number, so the compositions are
+    // numbered in the order in which they first appear
     auto composition = compositionIndex_.find(signature);
     if (composition == compositionIndex_.end()) {
       composition =
@@ -171,18 +171,16 @@ int CompositionSorter::addPSMs(const Scores& scores, bool useTDC) {
 
 int CompositionSorter::sortScorePerPeptide() {
   const size_t numCompositions = compositionIndex_.size();
-  // the position of each composition in the iteration order of the map
-  std::vector<unsigned int> rank(numCompositions);
-  unsigned int nextRank = 0;
-  for (const auto& composition : compositionIndex_) {
-    rank[composition.second] = nextRank++;
-  }
-  // Order the PSMs by that position with a counting sort, which keeps the
+  // Order the PSMs by the number of their composition, which is the order
+  // in which the compositions first appeared, and not by the iteration
+  // order of the hash map: that order depends on the hash function and on
+  // the bucket layout of the standard library, so the same input and seed
+  // gave other peptides on another platform. A counting sort keeps the
   // PSMs of a composition in the order in which they were added ...
   const size_t n = compositionPsms_.size();
   std::vector<size_t> compositionStart(numCompositions + 1, 0);
   for (const CompositionPsm& cp : compositionPsms_) {
-    ++compositionStart[rank[cp.composition] + 1];
+    ++compositionStart[cp.composition + 1];
   }
   for (size_t r = 0; r < numCompositions; ++r) {
     compositionStart[r + 1] += compositionStart[r];
@@ -193,7 +191,7 @@ int CompositionSorter::sortScorePerPeptide() {
     std::vector<size_t> next(compositionStart.begin(),
                              compositionStart.end() - 1);
     for (size_t i = 0; i < n; ++i) {
-      destination[i] = next[rank[compositionPsms_[i].composition]]++;
+      destination[i] = next[compositionPsms_[i].composition]++;
     }
     for (size_t i = 0; i < n; ++i) {
       while (destination[i] != i) {
@@ -398,28 +396,29 @@ int CompositionSorter::psmAndPeptide(const Scores& scores,
 }
 
 void CompositionSorter::psmsOnly(const Scores& scores, Scores& winnerPeptides) {
-  // Use an unordered_map (hash map) to store the best ScoreHolder for each
-  // peptide sequence. The keys view the peptides of the PSMs, which outlive
-  // the map. std::hash<std::string_view> gives the same value as
-  // std::hash<std::string> for the same characters, and the peptides are
-  // inserted in the same sequence, so the map iterates in the same order
-  // as with std::string keys.
-  std::unordered_map<std::string_view, const ScoreHolder*> bestScoreHolders;
+  // The best ScoreHolder of each peptide, in the order in which the
+  // peptides first appear in scores. The hash map only looks up the
+  // position of a peptide: the winners are not read in its iteration order,
+  // which depends on std::hash and the bucket layout of the standard
+  // library and so differed between libstdc++, libc++ and MSVC. The keys
+  // view the peptides of the PSMs, which outlive the map.
+  std::unordered_map<std::string_view, std::size_t> peptideIndex;
+  std::vector<const ScoreHolder*> bestScoreHolders;
 
   // Iterate over each ScoreHolder, with one lookup per PSM
   for (const ScoreHolder& sh : scores) {
-    auto inserted = bestScoreHolders.try_emplace(
-        sh.getPSM()->getPeptideSequenceView(), &sh);
-    // Update the map if the current ScoreHolder has a higher score for the
-    // peptide
-    if (!inserted.second && sh.score > inserted.first->second->score) {
-      inserted.first->second = &sh;
+    auto inserted = peptideIndex.try_emplace(
+        sh.getPSM()->getPeptideSequenceView(), bestScoreHolders.size());
+    if (inserted.second) {
+      bestScoreHolders.push_back(&sh);
+    } else if (sh.score > bestScoreHolders[inserted.first->second]->score) {
+      // the current ScoreHolder has a higher score for the peptide
+      bestScoreHolders[inserted.first->second] = &sh;
     }
   }
 
-  // Collect the best ScoreHolders into a result vector
-  for (const auto& entry : bestScoreHolders) {
-    winnerPeptides.addScoreHolder(*(entry.second));
+  for (const ScoreHolder* best : bestScoreHolders) {
+    winnerPeptides.addScoreHolder(*best);
   }
   winnerPeptides.recalculateSizes();
 

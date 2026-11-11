@@ -5,17 +5,6 @@
 #include <unordered_map>
 #include <vector>
 
-// based on the djb2 algorithm
-struct DJB2Hash {
-  size_t operator()(const std::string& s) const {
-    unsigned long hash = 5381;
-    for (char c : s) {
-      hash = ((hash << 5) + hash) + c;
-    }
-    return hash;
-  }
-};
-
 class ScoreHolder;
 class Scores;
 
@@ -42,9 +31,10 @@ class CompositionSorter {
 
  protected:
   // composition signature -> number, in the order in which the signatures
-  // first appear. The compositions are processed in the iteration order of
-  // this map, as when it held the peptides and PSMs of each composition.
-  std::unordered_map<std::string, unsigned int, DJB2Hash> compositionIndex_;
+  // first appear. The compositions are processed in the order of their
+  // numbers; the map is only used for lookups, so its hash function and
+  // iteration order do not affect the result.
+  std::unordered_map<std::string, unsigned int> compositionIndex_;
   // the PSMs added, with the number of their composition and their peptide,
   // which views the PSM's own sequence; sortScorePerPeptide orders them by
   // composition, peptide and decreasing score

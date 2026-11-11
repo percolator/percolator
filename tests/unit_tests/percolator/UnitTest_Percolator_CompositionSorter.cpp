@@ -17,8 +17,11 @@
 
 /*
  * Unit tests for the peptide selection of the RESET algorithm
- * (CompositionSorter): the winners, and their order, are compared with the
- * earlier implementations, which are kept here as references.
+ * (CompositionSorter): the winners, and their order, are compared with
+ * straightforward reference implementations and with fixed examples. The
+ * order is that in which the peptides (or compositions) first appear among
+ * the PSMs; it must not depend on a hash function, since RESET draws its
+ * pseudo-targets by position.
  */
 
 #include <gtest/gtest.h>
@@ -87,22 +90,64 @@ class RandomPsms {
     Scores scores_{false};
 };
 
-// CompositionSorter::psmsOnly before it used std::string_view keys.
+// The best PSM of each peptide (the first of those with the highest score),
+// in the order in which the peptides first appear.
 std::vector<ScoreHolder> referencePsmsOnly(const Scores& scores) {
-    std::unordered_map<std::string, ScoreHolder*> bestScoreHolders;
-    for (const ScoreHolder& sh : scores) {
-        const std::string& peptide = sh.getPSM()->getPeptideSequence();
-        if (bestScoreHolders.find(peptide) == bestScoreHolders.end() ||
-            sh.score > bestScoreHolders[peptide]->score) {
-            bestScoreHolders[peptide] = const_cast<ScoreHolder*>(&sh);
-        }
-    }
+    std::map<std::string, size_t> position;
     std::vector<ScoreHolder> winners;
-    for (const auto& entry : bestScoreHolders) {
-        winners.push_back(*(entry.second));
+    for (const ScoreHolder& sh : scores) {
+        const std::string peptide = sh.getPSM()->getPeptideSequence();
+        auto found = position.find(peptide);
+        if (found == position.end()) {
+            position[peptide] = winners.size();
+            winners.push_back(sh);
+        } else if (sh.score > winners[found->second].score) {
+            winners[found->second] = sh;
+        }
     }
     return winners;
 }
+
+// PSMs with the given peptides, scores and labels, in this order
+class ListedPsms {
+  public:
+    struct Row {
+        const char* peptide;
+        double score;
+        bool isTarget;
+    };
+    explicit ListedPsms(const std::vector<Row>& rows) {
+        psms_.resize(rows.size());
+        for (size_t i = 0; i < rows.size(); ++i) {
+            peptides_.push_back(std::string("K.") + rows[i].peptide + ".R");
+            store_.storeStrings(psms_[i], "", peptides_.back(), {});
+            psms_[i].scan = static_cast<unsigned int>(i + 1);
+            scores_.addScoreHolder(ScoreHolder(
+                rows[i].score,
+                rows[i].isTarget ? LabelType::TARGET : LabelType::DECOY,
+                &psms_[i]));
+        }
+        scores_.recalculateSizes();
+    }
+    const Scores& scores() const { return scores_; }
+    // the peptides (without flanks) and scores of the winners, "PEP:score"
+    static std::vector<std::string> describe(const Scores& winners) {
+        std::vector<std::string> out;
+        for (const ScoreHolder& sh : winners) {
+            std::string peptide(sh.getPSM()->getPeptideSequenceView());
+            out.push_back(peptide + ":" +
+                          std::to_string(static_cast<int>(sh.score)) +
+                          (sh.isTarget() ? "t" : "d"));
+        }
+        return out;
+    }
+
+  private:
+    std::deque<std::string> peptides_;
+    PsmStore store_;
+    std::vector<PSMDescription> psms_;
+    Scores scores_{false};
+};
 
 void expectSameWinners(const std::vector<ScoreHolder>& expected,
                        const Scores& winners, const std::string& what) {
@@ -133,8 +178,8 @@ class CompositionSorterTest : public ::testing::Test {
 
 }  // namespace
 
-// psmsOnly selects the same best PSM per peptide, in the same order, as
-// the implementation with std::string keys.
+// psmsOnly selects the best PSM per peptide, in the order in which the
+// peptides first appear.
 TEST_F(CompositionSorterTest, PsmsOnlyKeepsTheWinnersAndTheirOrder)
 {
     for (int round = 0; round < 8; ++round) {
@@ -147,6 +192,24 @@ TEST_F(CompositionSorterTest, PsmsOnlyKeepsTheWinnersAndTheirOrder)
         EXPECT_EQ(winners.size(),
                   static_cast<unsigned int>(winners.end() - winners.begin()));
     }
+}
+
+// A fixed example: the order of the winners is the order of the first PSM
+// of each peptide, whatever the hash function of the standard library; a
+// later PSM replaces the winner only with a strictly higher score.
+TEST_F(CompositionSorterTest, PsmsOnlyOrdersTheWinnersByFirstOccurrence)
+{
+    ListedPsms psms({{"QWERTY", 3.0, true},  {"AAK", 1.0, false},
+                     {"MNPQ", 7.0, true},    {"AAK", 5.0, true},
+                     {"QWERTY", 3.0, false}, {"ZZZ", 2.0, false},
+                     {"MNPQ", 6.0, false},   {"B", 9.0, true},
+                     {"ZZZ", 8.0, true},     {"AAK", 4.0, false}});
+    Scores winners(false);
+    CompositionSorter::psmsOnly(psms.scores(), winners);
+    const std::vector<std::string> expected = {
+        "QWERTY:3t", "AAK:5t", "MNPQ:7t", "ZZZ:8t",
+        "B:9t"};
+    EXPECT_EQ(expected, ListedPsms::describe(winners));
 }
 
 // defined in CompositionSorter.cpp
@@ -178,14 +241,15 @@ std::string referenceSignature(const std::string& peptide) {
     return signature;
 }
 
-// The composition competition of CompositionSorter before it kept the PSMs
-// in one sorted vector: a hash map of compositions, each with a std::map of
-// its peptides and their PSMs.
+// The composition competition with one std::map of peptides and their PSMs
+// per composition; the compositions are kept in the order in which they
+// first appear.
 std::vector<ScoreHolder> referenceCompositionWinners(
         const Scores& scores, unsigned int decoysPerTarget, bool useTDC) {
-    std::unordered_map<std::string,
-                       std::map<std::string, std::vector<ScoreHolder*>>,
-                       DJB2Hash> compositionToPeptidesToScore;
+    typedef std::map<std::string, std::vector<ScoreHolder*>> PeptidesToScore;
+    std::map<std::string, size_t> compositionNumber;
+    std::vector<std::pair<std::string, PeptidesToScore>>
+        compositionToPeptidesToScore;
     std::vector<ScoreHolder*> scoreHolders;
     for (const auto& scr : scores) {
         scoreHolders.push_back(const_cast<ScoreHolder*>(&scr));
@@ -194,7 +258,17 @@ std::vector<ScoreHolder> referenceCompositionWinners(
     for (ScoreHolder* pScr : scoreHolders) {
         std::string peptide = pScr->getPSM()->getPeptideSequence();
         std::string signature = referenceSignature(peptide);
-        compositionToPeptidesToScore[signature][peptide].push_back(pScr);
+        auto found = compositionNumber.find(signature);
+        if (found == compositionNumber.end()) {
+            found = compositionNumber
+                        .emplace(signature,
+                                 compositionToPeptidesToScore.size())
+                        .first;
+            compositionToPeptidesToScore.emplace_back(signature,
+                                                      PeptidesToScore());
+        }
+        compositionToPeptidesToScore[found->second].second[peptide].push_back(
+            pScr);
     }
     auto compareScoreHolder = [](const ScoreHolder* lhs,
                                  const ScoreHolder* rhs) {
@@ -286,6 +360,32 @@ TEST_F(CompositionSorterTest, SignatureMatchesTheMapOfStrings)
                   sorter.generateCompositionSignature(peptide))
             << "peptide " << peptide;
     }
+}
+
+// A fixed example of --composition-match: the compositions are processed
+// in the order of their first PSM, the peptides of a composition in the
+// order of their strings; each target is grouped with the next decoy of its
+// composition and the better of the two is kept.
+TEST_F(CompositionSorterTest, CompositionMatchOrdersTheWinnersByFirstOccurrence)
+{
+    ListedPsms psms({{"TSET", 2.0, false},  // composition E1S1T2, with TEST
+                     {"KAA", 6.0, false},   // composition A2K1, with AAK, AKA
+                     {"WWW", 1.0, true},    // alone
+                     {"TEST", 5.0, true},
+                     {"AAK", 4.0, true},
+                     {"AKA", 3.0, true},
+                     {"TEST", 1.0, true},
+                     {"GG", 7.0, false}});  // alone
+    Scores winners(false);
+    CompositionSorter sorter;
+    sorter.psmAndPeptide(psms.scores(), winners, 1);
+    // E1S1T2: TEST(5) against TSET(2). A2K1: targets AAK, AKA in string
+    // order and the decoy KAA(6), which is grouped with AAK and wins; AKA
+    // has no decoy left.
+    const std::vector<std::string> expected = {
+        "TEST:5t", "KAA:6d", "AKA:3t", "WWW:1t",
+        "GG:7d"};
+    EXPECT_EQ(expected, ListedPsms::describe(winners));
 }
 
 // psmAndPeptide (--composition-match) selects the same winners, in the
