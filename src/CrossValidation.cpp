@@ -68,6 +68,7 @@ CrossValidation::CrossValidation(bool quickValidation,
     : quickValidation_(quickValidation),
       usePi0_(usePi0),
       reportPerformanceEachIteration_(reportPerformanceEachIteration),
+      numThreads_(numThreads),
       testFdr_(testFdr),
       selectionFdr_(selectionFdr),
       initialSelectionFdr_(initialSelectionFdr),
@@ -76,7 +77,6 @@ CrossValidation::CrossValidation(bool quickValidation,
       niter_(niter),
       nestedXvalBins_(nestedXvalBins),
       trainBestPositive_(trainBestPositive),
-      numThreads_(numThreads),
       skipNormalizeScores_(skipNormalizeScores),
       decoyFractionTraining_(decoyFractionTraining),
       numFolds_(numFolds) {
@@ -219,7 +219,7 @@ void CrossValidation::initializeGridSearch(double targetDecoySizeRatio) {
   // Form cpos, cneg pairs per nested CV fold
   CandidateCposCfrac cpCnFold;
   for (unsigned int set = 0; set < numFolds_; ++set) {
-    for (int nestedSet = 0; nestedSet < nestedXvalBins_; nestedSet++) {
+    for (unsigned int nestedSet = 0; nestedSet < nestedXvalBins_; nestedSet++) {
       for (double cpos : candidatesCpos_) {
         for (double cfrac : candidatesCfrac_) {
           cpCnFold.cpos = cpos;
@@ -395,7 +395,7 @@ std::vector<AlgIn>& CrossValidation::svmInputsOfPass(
  *        hyperplane from SVM
  * @return Estimation of number of true positives
  */
-int CrossValidation::doStep(const Normalizer* pNorm, double selectionFdr) {
+int CrossValidation::doStep(const Normalizer* /* pNorm */, double selectionFdr) {
   // Setup
   options pOptions;
   pOptions.lambda = 1.0;

@@ -186,7 +186,7 @@ TEST_F(CrossValidationTest, doStepTest)
     // be weighted.
 
     SanityCheck check;
-    int numInit = crossValidation->preIterationSetup(scores, check, pNorm);
+    crossValidation->preIterationSetup(scores, check, pNorm);
     std::vector< std::vector<double> > const& w = crossValidation->weights();
     ASSERT_EQ(numFolds, w.size());
     for (unsigned int i = 0 ; i < numFolds ; ++i) {

@@ -183,7 +183,9 @@ TEST_F(IsplineRegressionTest, WarnsWhenTheSolverDoesNotConverge) {
     // the stopped fit is still monotone and within the bounds
     for (size_t i = 0; i < stopped.size(); ++i) {
         EXPECT_TRUE(stopped[i] >= 0.0 && stopped[i] <= 1.0) << i;
-        if (i > 0) EXPECT_GE(stopped[i], stopped[i - 1] - 1e-12) << i;
+        if (i > 0) {
+            EXPECT_GE(stopped[i], stopped[i - 1] - 1e-12) << i;
+        }
     }
 }
 

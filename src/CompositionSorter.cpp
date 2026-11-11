@@ -432,7 +432,7 @@ void CompositionSorter::psmsOnly(const Scores& scores, Scores& winnerPeptides) {
 
 void CompositionSorter::retainRepresentatives(const Scores& psms,
                                               Scores& winnerPeptides,
-                                              double selectionFDR,
+                                              double /* selectionFDR */,
                                               unsigned int decoysPerTarget,
                                               bool useCompositionMatch) {
   if (useCompositionMatch) {

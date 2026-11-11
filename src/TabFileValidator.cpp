@@ -110,7 +110,7 @@ std::string TabFileValidator::getLongestCommonPrefix(std::vector<std::string> st
   for (int j = referenceStringLength; j > 0; --j) {
     string stem = referenceString.substr(0, j);
     bool foundStem = true;
-    for (int k = 1; k < numStrings; ++k) {
+    for (size_t k = 1; k < numStrings; ++k) {
       if (strings.at(k).find(stem) != 0) {
         foundStem = false;
         break;

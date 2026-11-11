@@ -99,7 +99,7 @@ class SetHandler {
   void populateScoresWithPSMs(std::vector<ScoreHolder> &scores, LabelType label);
   void normalizeFeatures(Normalizer& norm);
   
-  LabelType const getLabel(int setPos);
+  LabelType getLabel(int setPos);
   inline int getSizeFromLabel(LabelType label) {
     return static_cast<int>(subsets_[getSubsetIndexFromLabel(label)]->getSize());
   }

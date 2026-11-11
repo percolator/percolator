@@ -146,7 +146,7 @@ void SetHandler::normalizeFeatures(Normalizer& norm) {
   norm.normalizeSet(featuresV, rtFeaturesV);
 }
 
-LabelType const SetHandler::getLabel(int setPos) {
+LabelType SetHandler::getLabel(int setPos) {
   assert(setPos >= 0 && setPos < (signed int)subsets_.size());
   return subsets_[static_cast<std::size_t>(setPos)]->getLabel();
 }
@@ -161,7 +161,7 @@ int SetHandler::getOptionalFields(const std::string& headerLine,
     std::vector<OptionalField>& optionalFields) {
   TabReader reader(headerLine);
   reader.skip(2u); // discard id, label
-  bool hasScannr = false, hasRt = false, hasDm = false;
+  bool hasScannr = false;
   while (!reader.error()) {
     std::string optionalHeader = reader.readString();
     // transform to lower case for case insensitive matching
@@ -176,7 +176,6 @@ int SetHandler::getOptionalFields(const std::string& headerLine,
       optionalFields.push_back(CALCMASS);
     } else if ((optionalHeader == "rt" || optionalHeader == "retentiontime")) {
       optionalFields.push_back(RETTIME);
-      hasRt = true;
     } else if ((optionalHeader == "filename" || optionalHeader == "spectrafile")) {
       optionalFields.push_back(FILENAME);
     } else {
