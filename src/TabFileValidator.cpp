@@ -59,12 +59,11 @@ bool TabFileValidator::isTabFiles(std::vector<std::string> fileNames) {
 }
 
 std::string TabFileValidator::getDecoyPrefix(std::vector<std::string> fileNames) {
-  std::string decoyPrefix;
-  for (const string &fileName : fileNames) {
-      decoyPrefix = detectDecoyPrefix(fileName);
-      break;
-  };
-  return decoyPrefix;
+  // the prefix is detected in the first file only
+  if (fileNames.empty()) {
+    return std::string();
+  }
+  return detectDecoyPrefix(fileNames.front());
 }
 
 void TabFileValidator::getProteinAndLabelColumnIndices(std::string fileName, int &proteinIndex, int &labelIndex) {

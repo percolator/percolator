@@ -274,7 +274,6 @@ class Scores {
                         double specCountQvalThreshold);
   void weedOutRedundantTDC();
 
-  void printRetentionTime(ostream& outs, double fdr);
 
   void print(LabelType label, std::ostream& os = std::cout);
 

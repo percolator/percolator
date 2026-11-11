@@ -1494,31 +1494,28 @@ int Caller::run() {
       allScores = std::move(winnerPeptides);
     }
 
-    bool useSingleFold = true;
     decoyFractionTraining = 0.5;
-    if (useSingleFold) {
-      // From Algorithm S3 of the percolator-RESET supplementary material
-      // decoyFractionTraining - the probability of assigning a decoy to the
-      // training set
-      // A plain loop in a fixed order, so that the random numbers go to
-      // the same PSMs in every run; do not parallelise it.
-      for (ScoreHolder& sh : allScores) {
-        if (sh.isDecoy() &&
-            PseudoRandom::lcg_uniform_rand() > decoyFractionTraining) {
-          sh.label = LabelType::PSEUDO_TARGET;
-        }
+    // From Algorithm S3 of the percolator-RESET supplementary material
+    // decoyFractionTraining - the probability of assigning a decoy to the
+    // training set
+    // A plain loop in a fixed order, so that the random numbers go to
+    // the same PSMs in every run; do not parallelise it.
+    for (ScoreHolder& sh : allScores) {
+      if (sh.isDecoy() &&
+          PseudoRandom::lcg_uniform_rand() > decoyFractionTraining) {
+        sh.label = LabelType::PSEUDO_TARGET;
       }
-
-      // we do not necessarily need multiple folds with RESET because the pseudo
-      // targets take care of the overfitting.
-      if (numFoldsSet_ && numFolds_ != 1u) {
-        std::cerr << "Warning: --num-folds " << numFolds_ << " is ignored "
-                  << "with --reset-algorithm, which trains on a single fold."
-                  << std::endl;
-      }
-      numFolds = 1u;
-      nestedXvalBins_ = 3u;
     }
+
+    // RESET trains on a single fold: the pseudo targets take care of the
+    // overfitting.
+    if (numFoldsSet_ && numFolds_ != 1u) {
+      std::cerr << "Warning: --num-folds " << numFolds_ << " is ignored "
+                << "with --reset-algorithm, which trains on a single fold."
+                << std::endl;
+    }
+    numFolds = 1u;
+    nestedXvalBins_ = 3u;
   }
 
   // an explicit --num-folds 3 behaves like the default, which has never

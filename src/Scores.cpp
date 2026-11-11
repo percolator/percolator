@@ -1559,25 +1559,6 @@ void Scores::keepBestPsmPerSpectrum() {
   scores_.erase(
       std::unique(scores_.begin(), scores_.end(), UniqueScanMassCharge()),
       scores_.end());
-
-  /* does not actually release memory because of memory fragmentation
-  double previousExpMass = 0.0;
-  unsigned int previousScan = 0u;
-  size_t lastWrittenIdx = 0u;
-  for (size_t idx = 0u; idx < scores_.size(); ++idx){
-    double currentExpMass = scores_.at(idx).pPSM->expMass;
-    int currentScan = scores_.at(idx).pPSM->scan;
-    if (currentExpMass != previousExpMass || currentScan != previousScan) {
-      // insert as a new score
-      scores_.at(lastWrittenIdx++).swap(scores_.at(idx));
-      previousScan = currentScan;
-      previousExpMass = currentExpMass;
-    } else {
-      PSMDescription::deletePtr(scores_.at(idx).pPSM);
-    }
-  }
-  scores_.resize(lastWrittenIdx);
-  */
 }
 
 int Scores::bestInitDirection(double initialSelectionFdr, int& bestFeature,
