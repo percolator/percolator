@@ -21,6 +21,9 @@ faster std::from_chars and std::to_chars. The continuous integration builds
 with GCC 11 and 13 on Linux (x86-64 and arm64), AppleClang on macOS 15 (the
 binaries run on macOS 12 and later) and Visual Studio 2022 on Windows; its
 job with GCC 9 does not block yet.
+For a profile or a coverage report, pass the compiler's flag, e.g.
+`-DCMAKE_CXX_FLAGS=-pg` (gprof) or `-DCMAKE_CXX_FLAGS=--coverage` (gcov);
+there are no separate CMake options for them.
 Results can differ in a printed digit between platforms, since compilers and
 math libraries round differently; the Build workflow lists the differences
 (job platform-differences).

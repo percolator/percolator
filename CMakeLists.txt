@@ -21,7 +21,7 @@ if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Darwin"
       "Minimum macOS version of the binaries")
 endif()
 
-project(PERCOLATOR)
+project(PERCOLATOR LANGUAGES CXX)
 
 # The oldest supported GCC is 9: the code uses std::filesystem, which GCC 8
 # keeps in a separate library (the link fails with undefined references).
@@ -54,11 +54,8 @@ MESSAGE( STATUS "CMAKE_INSTALL_PREFIX = ${CMAKE_INSTALL_PREFIX}" )
 MESSAGE( STATUS "CMAKE_BUILD_TYPE = ${CMAKE_BUILD_TYPE}" )
 MESSAGE( STATUS "CMAKE_PREFIX_PATH = ${CMAKE_PREFIX_PATH}" )
 MESSAGE( STATUS "NO_TESTS = ${NO_TESTS}" )
-MESSAGE( STATUS "GOOGLE_TEST = ${GOOGLE_TEST}" )
-MESSAGE( STATUS "GOOGLE_TEST_PATH = ${GOOGLE_TEST_PATH}" )
 MESSAGE( STATUS "TARGET_ARCH = ${TARGET_ARCH}" )
 MESSAGE( STATUS "TOOL CHAIN FILE = ${CMAKE_TOOLCHAIN_FILE}")
-MESSAGE( STATUS "PROFILING = ${PROFILING}")
 MESSAGE( STATUS
 "-------------------------------------------------------------------------------"
 )

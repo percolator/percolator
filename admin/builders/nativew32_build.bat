@@ -36,7 +36,7 @@ if not exist "%RELEASE_DIR%" (md "%RELEASE_DIR%")
 if not exist "%BUILD_DIR%\percolator" (md "%BUILD_DIR%\percolator")
 
 echo cmake percolator.....
-cmake -S "%SRC_DIR%\percolator" -B "%BUILD_DIR%\percolator" -A Win32 -DGOOGLE_TEST=1
+cmake -S "%SRC_DIR%\percolator" -B "%BUILD_DIR%\percolator" -A Win32
 if errorlevel 1 exit /B 1
 
 echo build percolator (this will take a few minutes).....

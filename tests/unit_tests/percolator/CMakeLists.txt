@@ -99,12 +99,6 @@ target_link_libraries(gtest_unit
 find_package(Threads REQUIRED)
 target_link_libraries(gtest_unit PRIVATE Threads::Threads)
 
-# (Optional: if you want coverage)
-if(COVERAGE)
-    target_compile_options(gtest_unit PRIVATE -ftest-coverage -fprofile-arcs)
-    target_link_options(gtest_unit PRIVATE -ftest-coverage -fprofile-arcs)
-endif()
-
 # =============================
 # Enable test
 # =============================

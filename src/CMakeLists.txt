@@ -145,24 +145,10 @@ if(CRUX)
 ELSE(CRUX)
   add_executable(percolator main.cpp)
 
-  if(PROFILING AND UNIX)
-    set_target_properties(percolator PROPERTIES COMPILE_FLAGS -pg LINK_FLAGS -pg)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 ${PROFILING_COMMON_FLAGS}")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3 ${PROFILING_COMMON_FLAGS}")
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 ${PROFILING_COMMON_FLAGS}")
-    set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O3 ${PROFILING_COMMON_FLAGS}")
-    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -g -DNDEBUG ${PROFILING_COMMON_FLAGS}")
-    set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -O0 -g -DNDEBUG ${PROFILING_COMMON_FLAGS}")
-  endif()
-
   # SET LIBRARIES FOR PERCOLATOR
   list(APPEND COMMON_LIBRARIES perclibrary picked_protein)
 
-  if(COVERAGE)
-    target_link_libraries(percolator PRIVATE -fprofile-arcs ${COMMON_LIBRARIES})
-  else(COVERAGE)
-    target_link_libraries(percolator PRIVATE ${COMMON_LIBRARIES})
-  endif(COVERAGE)
+  target_link_libraries(percolator PRIVATE ${COMMON_LIBRARIES})
 
   # INSTALL PERCOLATOR
   install(TARGETS percolator EXPORT PERCOLATOR DESTINATION bin) # Important to use relative path here (used by CPack)!

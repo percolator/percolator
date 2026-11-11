@@ -125,7 +125,7 @@ function build_component() {
 
 mkdir -p ${release_dir}
 
-build_component "percolator" "${src_dir}/percolator" "-DGOOGLE_TEST=1"
+build_component "percolator" "${src_dir}/percolator" ""
 
 echo "build directory was : ${build_dir}";
 

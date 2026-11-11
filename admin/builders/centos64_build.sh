@@ -48,7 +48,7 @@ echo "cmake percolator ....."
 mkdir -p ${build_dir}/percolator
 cd ${build_dir}/percolator
 (set -x; \
-cmake -DCMAKE_BUILD_TYPE=Release -DGOOGLE_TEST=1 -DCMAKE_INSTALL_PREFIX=/usr ${src_dir}/percolator; \
+cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr ${src_dir}/percolator; \
 )
 make -j 4
 make test
