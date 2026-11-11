@@ -117,16 +117,6 @@ void DataSet::fillFeatures(std::vector<double*>& features) {
  * TODO: remove dataStream parameter and return int with type of error to handle upstream.
  * @param line tab delimited string containing the psm details
  */
-void DataSet::readPsm(const std::string& line, const unsigned int lineNr,
-    const std::vector<OptionalField>& optionalFields, FeatureMemoryPool& featurePool,
-    PsmStore& psmStore, const std::string& decoyPrefix) {
-  PSMDescription* myPsm = NULL;
-  bool readProteins = true;
-  readPsm(line, lineNr, optionalFields, readProteins, myPsm, featurePool,
-          psmStore, decoyPrefix);
-  registerPsm(myPsm);
-}
-
 LabelType DataSet::readPsm(const std::string& line, const unsigned int lineNr,
     const std::vector<OptionalField>& optionalFields, bool readProteins,
     PSMDescription*& myPsm, FeatureMemoryPool& featurePool,
@@ -393,19 +383,6 @@ bool DataSet::readPsmBody(TabReader& reader, PsmHeader& header,
   label = header.label == 1 ? LabelType::TARGET : LabelType::DECOY;
   readFeaturesAndProteins(reader, label, readProteins, psm, header.id, myPsm,
                           featurePool, psmStore, decoyPrefix);
-  return true;
-}
-
-bool DataSet::readPsmBody(TabReader& reader, PsmHeader& header,
-    FeatureMemoryPool& featurePool, PsmStore& psmStore,
-    const std::string& decoyPrefix) {
-  PSMDescription* myPsm = NULL;
-  LabelType label;
-  if (!readPsmBody(reader, header, true, myPsm, label, featurePool, psmStore,
-                   decoyPrefix)) {
-    return false;
-  }
-  registerPsm(myPsm);
   return true;
 }
 

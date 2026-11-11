@@ -321,6 +321,113 @@ void SetHandler::writeTab(const string& dataFN,
   closeOutputFile(dataStream, dataFN);
 }
 
+/*
+ * The loop over the PSM lines of the input, for the three ways of reading
+ * them (all PSMs, the subset of -N, and its second pass that scores all
+ * PSMs): starts with the line in psmLine, which is line firstLineNr of the
+ * input, strips the white space at the end of each line, calls
+ * perLine(line, lineNr) and reads on until the stream ends. An exception
+ * gets the file and line of a multi-file input. Returns the number of the
+ * line after the last one.
+ */
+template <class PerLine>
+unsigned int SetHandler::forEachPsmLine(istream& dataStream,
+    std::string& psmLine, unsigned int firstLineNr, const char* progressVerb,
+    PerLine perLine) {
+  unsigned int lineNr = firstLineNr;
+  try {
+    do {
+      if (lineNr % 1000000 == 0 && VERB > 1) {
+        std::cerr << progressVerb << " line " << lineNr << std::endl;
+      }
+      psmLine = rtrim(psmLine);
+      perLine(psmLine, lineNr);
+      incrementLineNr(lineNr);
+    } while (getline(dataStream, psmLine));
+  } catch (const MyException& e) {
+    rethrowWithSource(e, lineNr);
+  }
+  return lineNr;
+}
+
+/*
+ * One PSM line while it is read, for the three loops: first its label and
+ * scan id, which decide whether the PSM is kept, then, for a kept PSM, the
+ * rest of the line.
+ *
+ * The line is parsed once by the fast path, DataSet::readPsmHeader and
+ * readPsmBody. A line that the fast path refuses is read as before the
+ * fast path existed, by getScanId, which words the errors of the fields
+ * before the features with the line number, and DataSet::readPsm: together
+ * they are the one place that diagnoses a malformed line. Most refused
+ * lines end there in an error. The refused lines that are still read, with
+ * the same PSM as before, are (PsmHeaderTest.FastPathMatchesGetScanIdAndReadPsm
+ * finds no others among 30,000 mutated lines):
+ * - an experimental mass that is not finite, under --no-terminate, which
+ *   sets it to 0 with a message;
+ * - a header with a repeated CalcMass, retention time or file name column,
+ *   whose last value counts;
+ * - a calculated mass or retention time that does not end at its tab but
+ *   at other white space ("1.5 "), or a blank or an empty column before
+ *   them that shifts where the numbers are found, as long as the numbers
+ *   that follow can still be read one after the other. strtod skips white
+ *   space, tabs included, before a number.
+ */
+class SetHandler::PsmLineReader {
+ public:
+  // diagnoseHeader = false, for a second pass over lines that were read
+  // before: a line that the fast path refuses gets its label only, without
+  // the errors and messages of getScanId
+  PsmLineReader(SetHandler& setHandler, const std::string& line,
+                unsigned int lineNr, std::vector<OptionalField>& fields,
+                bool diagnoseHeader = true)
+      : setHandler_(setHandler), line_(line), lineNr_(lineNr),
+        fields_(fields), reader_(line) {
+    if (diagnoseHeader) {
+      fast_ = setHandler_.readScanIdAndLabel(line_, lineNr_, fields_, reader_,
+                                             header_, scanId_, label_);
+    } else {
+      fast_ = DataSet::readPsmHeader(reader_, lineNr_, fields_, header_);
+      label_ = header_.label;
+      if (!fast_) {
+        TabReader labelReader(line_);
+        labelReader.skip(1u);  // id
+        label_ = labelReader.readInt();
+      }
+    }
+  }
+  int label() const { return label_; }
+  bool isDecoy() const { return label_ == -1; }
+  // lines with other labels are ignored
+  bool hasPsmLabel() const { return label_ == 1 || label_ == -1; }
+  const ScanId& scanId() const { return scanId_; }
+  // Reads the rest of the line into a new PSM of the store and returns its
+  // label, TARGET for the label 1 and DECOY otherwise.
+  LabelType readPsm(bool readProteins, PSMDescription*& psm) {
+    LabelType label = LabelType::UNDEFINED;
+    if (!fast_ ||
+        !DataSet::readPsmBody(reader_, header_, readProteins, psm, label,
+                              setHandler_.featurePool_, setHandler_.psmStore_,
+                              setHandler_.decoyPrefix_)) {
+      label = DataSet::readPsm(line_, lineNr_, fields_, readProteins, psm,
+                               setHandler_.featurePool_, setHandler_.psmStore_,
+                               setHandler_.decoyPrefix_);
+    }
+    return label;
+  }
+
+ private:
+  SetHandler& setHandler_;
+  const std::string& line_;
+  const unsigned int lineNr_;
+  std::vector<OptionalField>& fields_;
+  TabReader reader_;
+  PsmHeader header_;
+  bool fast_ = false;
+  int label_ = 0;
+  ScanId scanId_;
+};
+
 void SetHandler::readPSMs(istream& dataStream, std::string& psmLine, 
     bool hasInitialValueRow, bool& concatenatedSearch,
     std::vector<OptionalField>& optionalFields) {
@@ -345,20 +452,11 @@ void SetHandler::readPSMs(istream& dataStream, std::string& psmLine,
     // all PSMs of a scan id share its priority
     ScanIdPriorityTable scanIdLookUp;
     unsigned int upperLimit = UINT_MAX;
-    try {  // not indented: rethrowWithSource adds the file of the line
-    do {
-      if (lineNr % 1000000 == 0 && VERB > 1) {
-        std::cerr << "Processing line " << lineNr << std::endl;
-      }
-      psmLine = rtrim(psmLine);
-      
-      int label = 0;
-      ScanId scanId;
-      TabReader reader(psmLine);
-      PsmHeader header;
-      const bool simple = readScanIdAndLabel(psmLine, lineNr, optionalFields,
-                                             reader, header, scanId, label);
-      bool isDecoy = (label == -1);
+    lineNr = forEachPsmLine(dataStream, psmLine, lineNr, "Processing",
+        [&](const std::string& line, unsigned int currentLine) {
+      PsmLineReader psmReader(*this, line, currentLine, optionalFields);
+      const ScanId& scanId = psmReader.scanId();
+      const bool isDecoy = psmReader.isDecoy();
       const bool sampling = numSampledLines < kRepeatSampleLines;
       // the generator's values are below PseudoRandom::kRandMax < 2^32
       uint32_t priority = 0u;
@@ -375,19 +473,12 @@ void SetHandler::readPSMs(istream& dataStream, std::string& psmLine,
         sampledSpectra_ = scanIdLookUp.size();
       }
 
-      if (label != 1 && label != -1) {
-        warnIgnoredLabel(lineNr, numIgnoredLabels);
+      if (!psmReader.hasPsmLabel()) {
+        warnIgnoredLabel(currentLine, numIgnoredLabels);
       } else if (subsetPSMs.size() < maxPSMs_ || randIdx < upperLimit) {
         PSMDescriptionPriority psmPriority;
         bool readProteins = false;
-        if (!simple ||
-            !DataSet::readPsmBody(reader, header, readProteins, psmPriority.psm,
-                                  psmPriority.label, featurePool_, psmStore_,
-                                  decoyPrefix_)) {
-          psmPriority.label = DataSet::readPsm(psmLine, lineNr, optionalFields,
-                                   readProteins, psmPriority.psm, featurePool_,
-                                   psmStore_, decoyPrefix_);
-        }
+        psmPriority.label = psmReader.readPsm(readProteins, psmPriority.psm);
         psmPriority.priority = randIdx;
         subsetPSMs.push(psmPriority);
         if (subsetPSMs.size() > maxPSMs_) {
@@ -398,11 +489,7 @@ void SetHandler::readPSMs(istream& dataStream, std::string& psmLine,
           subsetPSMs.pop();
         }
       }
-      incrementLineNr(lineNr);
-    } while (getline(dataStream, psmLine));
-    } catch (const MyException& e) {
-      rethrowWithSource(e, lineNr);
-    }
+    });
     if (numSampledLines < kRepeatSampleLines) {
       sampledSpectra_ = scanIdLookUp.size();
     }
@@ -416,19 +503,11 @@ void SetHandler::readPSMs(istream& dataStream, std::string& psmLine,
     // kRepeatSampleLines lines; the priorities are not used
     std::unique_ptr<ScanIdPriorityTable> sampledScanIds(
         new ScanIdPriorityTable());
-    try {  // not indented: rethrowWithSource adds the file of the line
-    do {
-      if (lineNr % 1000000 == 0 && VERB > 1) {
-        std::cerr << "Reading line " << lineNr << std::endl;
-      }
-      psmLine = rtrim(psmLine);
-      int label = 0;
-      ScanId scanId;
-      TabReader reader(psmLine);
-      PsmHeader header;
-      const bool simple = readScanIdAndLabel(psmLine, lineNr, optionalFields,
-                                             reader, header, scanId, label);
-      bool isDecoy = (label == -1);
+    lineNr = forEachPsmLine(dataStream, psmLine, lineNr, "Reading",
+        [&](const std::string& line, unsigned int currentLine) {
+      PsmLineReader psmReader(*this, line, currentLine, optionalFields);
+      const ScanId& scanId = psmReader.scanId();
+      const bool isDecoy = psmReader.isDecoy();
       if (concatenatedSearch &&
           separateSearchDetector.add(scanId.first, scanId.second, isDecoy)) {
         concatenatedSearch = false;
@@ -449,21 +528,16 @@ void SetHandler::readPSMs(istream& dataStream, std::string& psmLine,
           sampledScanIds.reset();
         }
       }
-      if (label == 1 || label == -1) {
-        DataSet* dataSet = label == 1 ? targetSet.get() : decoySet.get();
-        if (!simple || !dataSet->readPsmBody(reader, header, featurePool_,
-                                             psmStore_, decoyPrefix_)) {
-          dataSet->readPsm(psmLine, lineNr, optionalFields, featurePool_,
-                           psmStore_, decoyPrefix_);
-        }
+      if (psmReader.hasPsmLabel()) {
+        DataSet* dataSet =
+            psmReader.label() == 1 ? targetSet.get() : decoySet.get();
+        PSMDescription* psm = NULL;
+        psmReader.readPsm(true, psm);
+        dataSet->registerPsm(psm);
       } else {
-        warnIgnoredLabel(lineNr, numIgnoredLabels);
+        warnIgnoredLabel(currentLine, numIgnoredLabels);
       }
-      incrementLineNr(lineNr);
-    } while (getline(dataStream, psmLine));
-    } catch (const MyException& e) {
-      rethrowWithSource(e, lineNr);
-    }
+    });
     if (concatenatedSearch &&
         separateSearchDetector.foundSeparateSearches()) {
       concatenatedSearch = false;
@@ -580,7 +654,7 @@ ScanId SetHandler::getScanId(const std::string& psmLine, int& label,
         if (reader.error()) {
           ostringstream temp;
           temp << "ERROR: Reading tab file, error reading calculated mass on line " 
-              << lineNr << ". Check if experimental mass is a floating point number." << std::endl;
+              << lineNr << ". The line ends in this column." << std::endl;
           throw MyException(temp.str());
         }
         break;
@@ -589,7 +663,7 @@ ScanId SetHandler::getScanId(const std::string& psmLine, int& label,
         if (reader.error()) {
           ostringstream temp;
           temp << "ERROR: Reading tab file, error reading retention time on line " 
-              << lineNr << ". Check if experimental mass is a floating point number." << std::endl;
+              << lineNr << ". The line ends in this column." << std::endl;
           throw MyException(temp.str());
         }
         break;
@@ -598,7 +672,7 @@ ScanId SetHandler::getScanId(const std::string& psmLine, int& label,
         if (reader.error()) {
           ostringstream temp;
           temp << "ERROR: Reading tab file, error reading delta mass on line " 
-              << lineNr << ". Check if experimental mass is a floating point number." << std::endl;
+              << lineNr << ". The line ends in this column." << std::endl;
           throw MyException(temp.str());
         }
         break;
@@ -726,37 +800,20 @@ void SetHandler::readAndScorePSMs(istream& dataStream, std::string& psmLine,
   // (index in allScores, fold) of the PSMs scored with a fold's weights
   std::vector<std::pair<size_t, unsigned int> > foldRows;
   foldRows.reserve(lineFolds.size());
-  try {  // not indented: rethrowWithSource adds the file of the line
-  do {
-    if (lineNr % 1000000 == 0 && VERB > 1) {
-      std::cerr << "Processing line " << lineNr << std::endl;
-    }
-    psmLine = rtrim(psmLine);
-    // DataSet::readPsm would read any label other than 1 as a decoy, while
-    // the training data ignore such lines
-    TabReader reader(psmLine);
-    PsmHeader header;
-    const bool simple =
-        DataSet::readPsmHeader(reader, lineNr, optionalFields, header);
-    int label = header.label;
-    if (!simple) {
-      TabReader labelReader(psmLine);
-      labelReader.skip(1u);  // id
-      label = labelReader.readInt();
-    }
-    if (label == 1 || label == -1) {
+  lineNr = forEachPsmLine(dataStream, psmLine, lineNr, "Processing",
+      [&](const std::string& line, unsigned int currentLine) {
+    // The first pass has read the scan id of every line. Lines with a label
+    // other than 1 and -1 are ignored, as in the training data.
+    PsmLineReader psmReader(*this, line, currentLine, optionalFields, false);
+    if (psmReader.hasPsmLabel()) {
       ScoreHolder sh;
-      if (!simple ||
-          !DataSet::readPsmBody(reader, header, readProteins, sh.pPSM, sh.label,
-                                featurePool_, psmStore_, decoyPrefix_)) {
-        sh.label = DataSet::readPsm(psmLine, lineNr, optionalFields, readProteins,
-                                    sh.pPSM, featurePool_, psmStore_, decoyPrefix_);
-      }
-      while (nextFold < lineFolds.size() && lineFolds[nextFold].first < lineNr) {
+      sh.label = psmReader.readPsm(readProteins, sh.pPSM);
+      while (nextFold < lineFolds.size() &&
+             lineFolds[nextFold].first < currentLine) {
         ++nextFold;
       }
       const bool inFold = nextFold < lineFolds.size() &&
-                          lineFolds[nextFold].first == lineNr;
+                          lineFolds[nextFold].first == currentLine;
       if (inFold) {
         foldRows.emplace_back(
             static_cast<size_t>(allScores.end() - allScores.begin()),
@@ -766,11 +823,7 @@ void SetHandler::readAndScorePSMs(istream& dataStream, std::string& psmLine,
           sh, inFold ? foldWeights.at(lineFolds[nextFold].second) : rawWeights,
           featurePool_);
     }
-    incrementLineNr(lineNr);
-  } while (getline(dataStream, psmLine));
-  } catch (const MyException& e) {
-    rethrowWithSource(e, lineNr);
-  }
+  });
   rescaleFoldScores(allScores, foldRows, foldWeights.size());
 
   if (VERB > 1) {

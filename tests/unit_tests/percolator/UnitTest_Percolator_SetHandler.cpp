@@ -16,11 +16,13 @@
  */
 
 #include <gtest/gtest.h>
+#include <algorithm>
 #include <cmath>
 #include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <limits>
+#include <map>
 #include <random>
 #include <sstream>
 #include <unordered_map>
@@ -585,6 +587,10 @@ TEST(PsmHeaderTest, FastPathMatchesGetScanIdAndReadPsm)
                                        FILENAME, DELTAMASS};
     std::mt19937 rng(17);
     int numSimple = 0;
+    // lines that the fast path refuses and that are read all the same, with
+    // an example of each kind
+    int numRefusedButRead = 0;
+    std::map<std::string, std::string> refusedButRead;
     for (int trial = 0; trial < 30000; ++trial) {
         std::vector<OptionalField> fields;
         const int numFields = static_cast<int>(rng() % 5);
@@ -611,15 +617,17 @@ TEST(PsmHeaderTest, FastPathMatchesGetScanIdAndReadPsm)
 
         std::string results[2];
         for (int fast = 0; fast < 2; ++fast) {
+            // both ways print the warnings that are printed once per run
+            DataSet::resetWarnings();
             std::ostringstream messages;
             std::streambuf* cerrBuffer = std::cerr.rdbuf(messages.rdbuf());
             std::ostringstream result;
+            bool simple = false, bodyRefused = false, read = false;
             try {
                 int label = 0;
                 ScanId scanId;
                 TabReader reader(line);
                 PsmHeader header;
-                bool simple = false;
                 if (fast) {
                     simple = sh.readScanIdAndLabelEx(line, lineNr, fields, reader,
                                                      header, scanId, label);
@@ -634,20 +642,63 @@ TEST(PsmHeaderTest, FastPathMatchesGetScanIdAndReadPsm)
                     LabelType psmLabel = LabelType::UNDEFINED;
                     if (!simple || !DataSet::readPsmBody(reader, header, true, psm,
                             psmLabel, featurePool, psmStore, decoyPrefix)) {
+                        bodyRefused = simple;
                         psmLabel = DataSet::readPsm(line, lineNr, fields, true, psm,
                             featurePool, psmStore, decoyPrefix);
                     }
                     result << describePsm(psm, psmLabel);
+                    read = true;
                 }
             } catch (const MyException& e) {
                 result << "exception " << e.what();
             }
             std::cerr.rdbuf(cerrBuffer);
             results[fast] = result.str() + " messages " + messages.str();
+            if (fast && read && (!simple || bodyRefused)) {
+                // The kinds listed at SetHandler::PsmLineReader: the header
+                // is refused for a non-finite experimental mass, which is
+                // only read under --no-terminate, and for a repeated
+                // column; the body for a calculated mass or retention time
+                // that is not one number ending at its tab.
+                ++numRefusedButRead;
+                std::string kind = "body: mass or retention time column";
+                if (!simple) {
+                    kind = messages.str().find("experimental mass") !=
+                                   std::string::npos
+                               ? "header: non-finite experimental mass"
+                               : "header: repeated column";
+                    if (kind == "header: repeated column") {
+                        std::vector<OptionalField> sorted(fields);
+                        std::sort(sorted.begin(), sorted.end());
+                        EXPECT_TRUE(std::adjacent_find(sorted.begin(),
+                                                       sorted.end()) !=
+                                    sorted.end())
+                            << "refused without a repeated column: " << line;
+                    } else {
+                        EXPECT_TRUE(NO_TERMINATE) << line;
+                    }
+                } else {
+                    EXPECT_TRUE(std::find(fields.begin(), fields.end(),
+                                          CALCMASS) != fields.end() ||
+                                std::find(fields.begin(), fields.end(),
+                                          RETTIME) != fields.end())
+                        << line;
+                }
+                refusedButRead.emplace(kind, line);
+            }
         }
         ASSERT_EQ(results[0], results[1]) << "line " << line;
     }
     EXPECT_GT(numSimple, 5000);  // the fast path is exercised
+    // every kind of refused line that is read occurs
+    EXPECT_EQ(3u, refusedButRead.size());
+    EXPECT_GT(numRefusedButRead, 100);
+    if (::testing::GTEST_FLAG(also_run_disabled_tests)) {  // to list them
+        std::cout << numRefusedButRead << " refused lines were read\n";
+        for (const auto& example : refusedButRead) {
+            std::cout << example.first << ": [" << example.second << "]\n";
+        }
+    }
     Globals::getInstance()->setNoTerminate(false);
     Globals::getInstance()->setVerbose(verbosity);
     FeatureNames::resetNumFeatures();

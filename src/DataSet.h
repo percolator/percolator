@@ -85,10 +85,9 @@ class DataSet {
   void fillFeatures(std::vector<double*>& features);
   void clearFeaturePointers();
   
-  void readPsm(const std::string& line, const unsigned int lineNr,
-               const std::vector<OptionalField>& optionalFields, 
-               FeatureMemoryPool& featurePool, PsmStore& psmStore,
-               const std::string& decoyPrefix);
+  // Reads a PSM line into a new PSM of the store, without checking the
+  // fields before the features, which SetHandler::getScanId does. For the
+  // lines that the fast path below refuses.
   static LabelType readPsm(const std::string& line, const unsigned int lineNr,
     const std::vector<OptionalField>& optionalFields, bool readProteins,
     PSMDescription*& myPsm, FeatureMemoryPool& featurePool,
@@ -101,10 +100,6 @@ class DataSet {
     const std::vector<OptionalField>& optionalFields, PsmHeader& header);
   static bool readPsmBody(TabReader& reader, PsmHeader& header,
     bool readProteins, PSMDescription*& myPsm, LabelType& label,
-    FeatureMemoryPool& featurePool, PsmStore& psmStore,
-    const std::string& decoyPrefix);
-  // as above, and adds the PSM to this set
-  bool readPsmBody(TabReader& reader, PsmHeader& header,
     FeatureMemoryPool& featurePool, PsmStore& psmStore,
     const std::string& decoyPrefix);
   

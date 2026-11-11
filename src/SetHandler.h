@@ -209,6 +209,12 @@ class SetHandler {
     std::vector<OptionalField>& optionalFields, TabReader& reader,
     PsmHeader& header, ScanId& scanId, int& label);
     
+  // the loop over the PSM lines and the reader of one line (SetHandler.cpp)
+  template <class PerLine>
+  unsigned int forEachPsmLine(std::istream& dataStream, std::string& psmLine,
+    unsigned int firstLineNr, const char* progressVerb, PerLine perLine);
+  class PsmLineReader;
+
   void readPSMs(std::istream& dataStream, std::string& psmLine,
     bool hasInitialValueRow, bool& separateSearches,
     std::vector<OptionalField>& optionalFields);
