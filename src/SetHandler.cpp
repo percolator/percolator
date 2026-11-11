@@ -46,11 +46,11 @@ std::string SetHandler::describeLine(unsigned int lineNr) const {
   oss << "line ";
   // the last input file whose lines start at or before lineNr
   auto it = std::upper_bound(
-      inputSegments_.begin(), inputSegments_.end(), lineNr,
+      inputSegments_->begin(), inputSegments_->end(), lineNr,
       [](unsigned int line, const InputSegment& segment) {
         return line < segment.firstLine;
       });
-  if (it == inputSegments_.begin()) {
+  if (it == inputSegments_->begin()) {
     oss << lineNr;
   } else {
     --it;
@@ -62,7 +62,7 @@ std::string SetHandler::describeLine(unsigned int lineNr) const {
 
 void SetHandler::rethrowWithSource(const MyException& e,
                                    unsigned int lineNr) const {
-  if (inputSegments_.empty()) throw;
+  if (inputSegments_->empty()) throw;
   std::ostringstream oss;
   oss << e.what() << "Line " << lineNr << " of the concatenated input is "
       << describeLine(lineNr) << "." << std::endl;

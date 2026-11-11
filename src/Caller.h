@@ -39,7 +39,6 @@ limitations under the License.
 #include "SanityCheck.h"
 #include "Scores.h"
 #include "SetHandler.h"
-#include "TmpDir.h"
 
 #include <algorithm>
 
@@ -68,7 +67,6 @@ class Caller {
   std::unique_ptr<ProteinProbEstimator> protEstimator_;
   std::unique_ptr<Enzyme> enzyme_;
   // holds the concatenation of multiple input files, removed at the end
-  std::unique_ptr<TmpDir> tmpDir_;
 
   // --version or --help was given: parseOptions printed it and run does
   // nothing

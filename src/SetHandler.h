@@ -131,7 +131,14 @@ class SetHandler {
   // For an input concatenated from several files: where the lines of each
   // file are, so that messages can name the file and line of a PSM.
   void setInputSegments(std::vector<InputSegment> segments) {
-    inputSegments_ = std::move(segments);
+    ownSegments_ = std::move(segments);
+    inputSegments_ = &ownSegments_;
+  }
+  // The same for a list that the reader of the files extends while the
+  // lines are read (ConcatenatedPins::segments); it has to outlive the
+  // reading.
+  void setInputSegments(const std::vector<InputSegment>* segments) {
+    inputSegments_ = segments;
   }
   // "line <lineNr>", or "line <n> of <file>" for a concatenated input
   std::string describeLine(unsigned int lineNr) const;
@@ -157,7 +164,9 @@ class SetHandler {
   std::vector<std::unique_ptr<DataSet> > subsets_;
   FeatureMemoryPool featurePool_;
   std::string decoyPrefix_; // Used to determine if a psm is a decoy
-  std::vector<InputSegment> inputSegments_;  // empty for a single input file
+  // empty for a single input file
+  std::vector<InputSegment> ownSegments_;
+  const std::vector<InputSegment>* inputSegments_ = &ownSegments_;
   size_t sampledLines_ = 0u, sampledSpectra_ = 0u,
          sampledSpectraWithRepeatedLabel_ = 0u;
   // labels seen per spectrum while reading: target (any label but -1),

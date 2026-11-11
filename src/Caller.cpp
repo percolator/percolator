@@ -1278,8 +1278,13 @@ bool Caller::loadAndNormalizeData(std::istream& dataStream,
                                   Scores& allScores) {
   bool success;
   if (VERB > 1) {
-    std::cerr << "Reading tab-delimited input from datafile " << inputFN_
+    if (inputFNs_.size() > 1) {
+      std::cerr << "Reading tab-delimited input from the " << inputFNs_.size()
+                << " input files" << std::endl;
+    } else {
+      std::cerr << "Reading tab-delimited input from datafile " << inputFN_
                 << std::endl;
+    }
   }
   InputSummary inputSummary;
   {
@@ -1437,22 +1442,23 @@ int Caller::run() {
     }
   }
 
-  std::vector<InputSegment> inputSegments;
+  // Several input files are read in turn, as one input.
+  std::unique_ptr<ConcatenatedPinStream> severalFiles;
   if (inputFNs_.size() == 1) {
     inputFN_ = inputFNs_.at(0);
   } else if (inputFNs_.size() > 1) {
-    StageTimer stageTimer("concatenate input files");
-    tmpDir_ = std::make_unique<TmpDir>();
-    ValidateTabFile validateTab;
-    inputFN_ = validateTab.concatenateMultiplePINs(inputFNs_, tmpDir_->getPath(),
-                                                   &inputSegments);
+    StageTimer stageTimer("validate input files");
+    severalFiles = std::make_unique<ConcatenatedPinStream>(inputFNs_);
   }
 
   int success = 0;
   std::ifstream fileStream;
   SetHandler setHandler(maxPSMs_);
   setHandler.setDecoyPrefix(protEstimatorDecoyPrefix_);
-  setHandler.setInputSegments(std::move(inputSegments));
+  if (severalFiles) {
+    // grows as the files are reached
+    setHandler.setInputSegments(&severalFiles->segments());
+  }
   // Rows that the SVM can train on in place: with --in-place-training, and
   // where the copies of fewer folds than there are are held at once
   // (--folds-in-memory), whose single solves then run in place.
@@ -1464,9 +1470,13 @@ int Caller::run() {
   Scores allScores(useMixMax_);
   allScores.setOutputRT(outputRT_);
 
-  // returning instead of exiting lets the destructor remove tmpDir_
-  if (!loadAndNormalizeData(getDataInStream(fileStream),
-                            setHandler, allScores)) {
+  // the stream that is read again by the second pass of -N
+  std::istream& inputStream =
+      severalFiles ? static_cast<std::istream&>(*severalFiles) : fileStream;
+  if (!loadAndNormalizeData(
+          severalFiles && !readStdIn_ ? inputStream
+                                      : getDataInStream(fileStream),
+          setHandler, allScores)) {
     return 0;
   }
 
@@ -1679,9 +1689,9 @@ int Caller::run() {
     allScores.reserve(setHandler.getNumPsmLines());
     setHandler.reset();
 
-    fileStream.clear();
-    fileStream.seekg(0, ios::beg);
-    success = setHandler.readAndScoreTab(fileStream, rawWeights, allScores,
+    inputStream.clear();
+    inputStream.seekg(0, ios::beg);
+    success = setHandler.readAndScoreTab(inputStream, rawWeights, allScores,
                                          rawFoldWeights, subsetFolds);
     std::vector<std::pair<unsigned int, unsigned int> >().swap(subsetFolds);
     // Reading input files (pin or temporary file)

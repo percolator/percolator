@@ -373,6 +373,195 @@ TEST_F(SetHandlerTest, TestConcatenateSkipsFilesWithoutPsms)
     in.close();  // before the directory is removed
 }
 
+// Several input files read in turn give the lines of the concatenated file:
+// zeros in the columns that a file lacks, no DefaultDirection line but the
+// first file's, no line for a file without PSMs. The stream gives the same
+// bytes over the borders of its blocks, the segments name the file of each
+// line as soon as the line is read, and seekg(0) starts again.
+TEST_F(SetHandlerTest, TestSeveralFilesAsOneStream)
+{
+    namespace fs = std::filesystem;
+    TmpDir tmpDir;
+    fs::path dir = tmpDir.getPath();
+    std::vector<std::string> names;
+    auto write = [&](const char* name, const std::string& text) {
+        std::ofstream((dir / name).string()) << text;
+        names.push_back((dir / name).string());
+    };
+    Globals::getInstance()->setVerbose(0);
+    // a.pin lacks the columns C3 and C4, c.pin lacks C2
+    std::string a = "id\tLabel\tF1\tC2\tPeptide\tProteins\n";
+    for (int i = 0; i < 5000; ++i) {
+        a += "a" + std::to_string(i) + "\t1\t0.5\t1\tK.PEP.R\tP" +
+             std::to_string(i) + "\n";
+    }
+    write("a.pin", a);
+    write("b.pin", "id\tLabel\tF1\tC2\tC3\tC4\tPeptide\tProteins\n"
+                   "DefaultDirection\t-\t1\t0\t0\t0\n"
+                   "b1\t-1\t2\t0\t1\t0\tK.PEP.R\tP\tQ\n");
+    write("empty.pin", "id\tLabel\tF1\tC2\tC3\tC4\tPeptide\tProteins\n");
+    write("c.pin", "id\tLabel\tF1\tC3\tC4\tPeptide\tProteins\n"
+                   "c1\t1\t3\t0\t1\tK.PEP.R\tP\n");
+    ::testing::internal::CaptureStderr();
+    ConcatenatedPinStream stream(names);
+    EXPECT_EQ("Warning: the input file " + names[2] + " contains no PSMs.\n",
+              ::testing::internal::GetCapturedStderr());
+    EXPECT_TRUE(stream.segments().empty());
+
+    std::vector<std::string> lines;
+    std::string line;
+    ASSERT_TRUE(static_cast<bool>(std::getline(stream, line)));
+    EXPECT_EQ("id\tLabel\tF1\tC2\tC3\tC4\tPeptide\tProteins\t", line);
+    lines.push_back(line);
+    ASSERT_TRUE(static_cast<bool>(std::getline(stream, line)));
+    EXPECT_EQ("a0\t1\t0.5\t1\t0\t0\tK.PEP.R\tP0\t", line);
+    lines.push_back(line);
+    // the file of a line is known when the line has been read
+    ASSERT_EQ(1u, stream.segments().size());
+    EXPECT_EQ(2u, stream.segments()[0].firstLine);
+    while (std::getline(stream, line)) lines.push_back(line);
+    ASSERT_EQ(5003u, lines.size());
+    EXPECT_EQ("a4999\t1\t0.5\t1\t0\t0\tK.PEP.R\tP4999\t", lines[5000]);
+    EXPECT_EQ("b1\t-1\t2\t0\t1\t0\tK.PEP.R\tP\tQ\t", lines[5001]);
+    EXPECT_EQ("c1\t1\t3\t0\t0\t1\tK.PEP.R\tP\t", lines[5002]);
+    const std::vector<InputSegment> segments = stream.segments();
+    ASSERT_EQ(3u, segments.size());
+    EXPECT_EQ(5002u, segments[1].firstLine);
+    EXPECT_EQ(3u, segments[1].firstFileLine);  // after its DefaultDirection
+    EXPECT_EQ(names[1], segments[1].fileName);
+    EXPECT_EQ(5003u, segments[2].firstLine);
+    EXPECT_EQ(2u, segments[2].firstFileLine);
+    EXPECT_EQ(names[3], segments[2].fileName);
+
+    // the file that concatenateMultiplePINs writes holds the same lines
+    std::vector<InputSegment> fileSegments;
+    ValidateTabFile validate;
+    Globals::getInstance()->setVerbose(0);
+    ::testing::internal::CaptureStderr();
+    std::string out = validate.concatenateMultiplePINs(names, dir.string(),
+                                                       &fileSegments);
+    ::testing::internal::GetCapturedStderr();
+    {
+        std::ifstream in(out);
+        std::size_t ix = 0;
+        for (; std::getline(in, line); ++ix) {
+            ASSERT_LT(ix, lines.size());
+            ASSERT_EQ(lines[ix], line) << "line " << ix + 1;
+        }
+        EXPECT_EQ(lines.size(), ix);
+    }
+    ASSERT_EQ(segments.size(), fileSegments.size());
+    for (std::size_t ix = 0; ix < segments.size(); ++ix) {
+        EXPECT_EQ(segments[ix].firstLine, fileSegments[ix].firstLine);
+        EXPECT_EQ(segments[ix].firstFileLine, fileSegments[ix].firstFileLine);
+        EXPECT_EQ(segments[ix].fileName, fileSegments[ix].fileName);
+    }
+
+    // again from the start, after the end and from the middle of a file
+    for (int pass = 0; pass < 2; ++pass) {
+        stream.clear();
+        stream.seekg(0, std::ios::beg);
+        ASSERT_TRUE(static_cast<bool>(stream));
+        const std::size_t numLines = pass == 0 ? 2500u : lines.size();
+        for (std::size_t ix = 0; ix < numLines; ++ix) {
+            ASSERT_TRUE(static_cast<bool>(std::getline(stream, line)));
+            ASSERT_EQ(lines[ix], line) << "pass " << pass << ", line " << ix + 1;
+        }
+        EXPECT_EQ(3u, stream.segments().size());
+    }
+    EXPECT_FALSE(static_cast<bool>(std::getline(stream, line)));
+    // no other position can be sought
+    stream.clear();
+    stream.seekg(10, std::ios::beg);
+    EXPECT_TRUE(stream.fail());
+}
+
+// The reader of all PSMs and the subset reader of -N give the same
+// messages, in the same order, and the same error for malformed lines: the
+// error of the lowest failing line, after the messages of the lines before
+// it. A reader that works ahead of the line it reports (number conversion
+// on several threads was tried and measured slower) has to keep this.
+TEST_F(SetHandlerTest, TestBothReadersReportMalformedLinesAlike)
+{
+    const std::string header = "id\tLabel\tF1\tF2\tPeptide\tProteins\n";
+    const int numLines = 9000;
+    // (line of the input, what replaces its PSM line)
+    typedef std::vector<std::pair<int, std::string> > Edits;
+    const std::string strange = "x\t1\t0.5\tnan\tK.PEP.R\tP";
+    const std::string text = "x\t1\tabc\t1\tK.PEP.R\tP";
+    const std::string ignored = "x\t0\t0.5\t1\tK.PEP.R\tP";
+    const std::string unflanked = "x\t1\t0.5\t1\tPEPTIDE\tP";
+    const std::string noPeptide = "x\t1\t0.5\t1";
+    const std::string blank = "x\t1\t0.5 \t1\tK.PEP.R\tP";  // still read
+    const std::string shifted = "x\t1\t0.5 2\t1\tK.PEP.R\tP";
+    const std::string strangeAndUnflanked = "x\t1\tinf\t1\tPEPTIDE\tP";
+    const std::vector<Edits> cases = {
+        {},
+        {{10, strange}},
+        {{10, ignored}, {20, strange}, {30, ignored}},
+        {{10, strange}, {20, ignored}, {30, text}, {40, ignored}},
+        {{2, unflanked}, {3, strange}},
+        {{2, strange}, {3, unflanked}},
+        {{5000, noPeptide}, {10, strange}},
+        {{10, noPeptide}, {9, strange}, {11, strange}},
+        {{4097, strange}, {4098, ignored}, {8193, text}},
+        {{4096, text}, {4097, strange}},
+        {{100, blank}, {200, shifted}, {150, ignored}},
+        {{7, strangeAndUnflanked}, {8, ignored}},
+        {{numLines + 1, strange}, {numLines, ignored}},
+        {{2, text}}};
+    const int verbosity = Globals::getInstance()->getVerbose();
+    Globals::getInstance()->setVerbose(1);
+    int numErrors = 0, numMessages = 0;
+    for (std::size_t c = 0; c < cases.size(); ++c) {
+        std::vector<std::string> lines(static_cast<std::size_t>(numLines));
+        for (int i = 0; i < numLines; ++i) {
+            lines[static_cast<std::size_t>(i)] =
+                "p" + std::to_string(i) + "\t" + (i % 2 ? "1" : "-1") + "\t" +
+                std::to_string(i % 7) + ".25\t1e-3\tK.PEP.R\tP";
+        }
+        for (const auto& edit : cases[c]) {
+            lines[static_cast<std::size_t>(edit.first - 2)] = edit.second;
+        }
+        std::string input = header;
+        for (const std::string& line : lines) input += line + "\n";
+        for (bool noTerminate : {false, true}) {
+            Globals::getInstance()->setNoTerminate(noTerminate);
+            std::string results[2];
+            for (int lineByLine = 0; lineByLine < 2; ++lineByLine) {
+                DataSet::resetWarnings();
+                FeatureNames::resetNumFeatures();
+                DataSet::resetFeatureNames();
+                SetHandler sh(lineByLine ? 1000000u : 0u);
+                std::istringstream str(input);
+                InputSummary summary;
+                std::string error;
+                ::testing::internal::CaptureStderr();
+                try {
+                    sh.readTab(str, summary);
+                } catch (const MyException& e) {
+                    error = e.what();
+                }
+                results[lineByLine] =
+                    ::testing::internal::GetCapturedStderr() + "error: " +
+                    error;
+                if (!lineByLine) {
+                    numErrors += error.empty() ? 0 : 1;
+                    numMessages += results[0].size() > 7u ? 1 : 0;
+                }
+            }
+            EXPECT_EQ(results[1], results[0])
+                << "case " << c << ", --no-terminate " << noTerminate;
+        }
+    }
+    EXPECT_GT(numErrors, 10);
+    EXPECT_GT(numMessages, 20);
+    Globals::getInstance()->setNoTerminate(false);
+    Globals::getInstance()->setVerbose(verbosity);
+    DataSet::resetWarnings();
+    DataSet::resetFeatureNames();
+}
+
 // The search type is detected from scan ids (scan number and experimental
 // mass) that occur with both a decoy and another label.
 TEST_F(SetHandlerTest, TestSearchTypeDetection)
