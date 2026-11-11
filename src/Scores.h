@@ -84,6 +84,41 @@ struct ReportedLists {
 };
 
 /*
+ * How the cross-validation bins of a run are merged, for the merge itself
+ * (CrossValidation::postIterationProcessing, Scores::merge) and for the
+ * direction check, whose merged counts repeat it (SanityCheck,
+ * Scores::countMergedTargets). Caller::run builds the one value.
+ */
+struct MergePlan {
+  // --merge-normalization, or the default of the number of folds
+  // (CrossValidation::defaultMergeNormalization): the scheme of the merge,
+  // of the pooled count and of the fallback that the second chance counts
+  MergeNormalization scheme = MergeNormalization::TEST;
+  // The scheme of the merge where the second chance of the direction check
+  // kept the trained SVMs: train-decoys, as it counts them, unless a scheme
+  // was given, whose list the second chance then checks as well
+  MergeNormalization secondChanceScheme = MergeNormalization::TRAIN_DECOYS;
+  // --trainFDR as CrossValidation resolved it, which sets it: the anchors of
+  // test and train are taken at q = fdr
+  double fdr = 0.01;
+  // --static: the raw scores are merged, whatever the scheme
+  bool skipNormalizeScores = false;
+  // the lists the run makes from the merged one (-Y, the peptide level),
+  // which the merged counts also find unusable when they separate too well
+  ReportedLists lists;
+
+  // The scheme the bins are merged with. --static rescales nothing and
+  // ignores the scheme, after a second chance too: its bins are merged as
+  // with test, which also makes -N rescale the scores of all PSMs.
+  MergeNormalization usedScheme(bool keptBySecondChance) const {
+    if (skipNormalizeScores) {
+      return MergeNormalization::TEST;
+    }
+    return keptBySecondChance ? secondChanceScheme : scheme;
+  }
+};
+
+/*
  * Scores is a container of ScoreHolders that allows you to do a sorted merge
  * of vectors of ScoreHolder.
  *

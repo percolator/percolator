@@ -828,7 +828,7 @@ bool Caller::parseOptions(int argc, char** argv) {
     numIterations_ = 0;
     selectedCpos_ = 0.5;
     selectedCneg_ = 0.5;
-    skipNormalizeScores_ = true;
+    mergePlan_.skipNormalizeScores = true;
     normalizerType_ = Normalizer::NONORM;
     if (!cmd.isOptionSet("init-weights")) {
       std::cerr << "Error: the --static option requires the --init-weights "
@@ -836,20 +836,20 @@ bool Caller::parseOptions(int argc, char** argv) {
       return 0;
     }
   } else {
-    skipNormalizeScores_ = false;
+    mergePlan_.skipNormalizeScores = false;
   }
 
   if (cmd.isOptionSet("merge-normalization")) {
     mergeNormalizationSet_ = true;
     const std::string scheme = cmd.options["merge-normalization"];
     if (scheme == "test") {
-      mergeNormalization_ = MergeNormalization::TEST;
+      mergePlan_.scheme = MergeNormalization::TEST;
     } else if (scheme == "train") {
-      mergeNormalization_ = MergeNormalization::TRAIN;
+      mergePlan_.scheme = MergeNormalization::TRAIN;
     } else if (scheme == "train-decoys") {
-      mergeNormalization_ = MergeNormalization::TRAIN_DECOYS;
+      mergePlan_.scheme = MergeNormalization::TRAIN_DECOYS;
     } else if (scheme == "none") {
-      mergeNormalization_ = MergeNormalization::NONE;
+      mergePlan_.scheme = MergeNormalization::NONE;
     } else {
       std::cerr << "Error: --merge-normalization has to be one out of "
                 << "\"test\", \"train\", \"train-decoys\" or \"none\"."
@@ -857,7 +857,7 @@ bool Caller::parseOptions(int argc, char** argv) {
       return 0;
     }
     if (cmd.isOptionSet("static") &&
-        mergeNormalization_ != MergeNormalization::TEST) {
+        mergePlan_.scheme != MergeNormalization::TEST) {
       std::cerr << "Warning: --merge-normalization has no effect with "
                 << "--static, whose scores are not rescaled." << std::endl;
     }
@@ -882,16 +882,16 @@ bool Caller::parseOptions(int argc, char** argv) {
   // the second chance then keeps them only if their list merged with that
   // scheme can be used as well.
   if (cmd.isOptionSet("merge-normalization")) {
-    check_.setSecondChanceMergeScheme(mergeNormalization_);
+    mergePlan_.secondChanceScheme = mergePlan_.scheme;
   }
   // The pooled check merges the test bins as the final list is merged. Its
   // scheme takes the anchors from the training sets, which also exist for
   // the small test bins that the pooled check is meant for.
   if (check_.directionCheck() == SanityCheck::DirectionCheck::POOLED) {
     if (!cmd.isOptionSet("merge-normalization")) {
-      mergeNormalization_ = MergeNormalization::TRAIN_DECOYS;
+      mergePlan_.scheme = MergeNormalization::TRAIN_DECOYS;
       mergeNormalizationSet_ = true;
-    } else if (mergeNormalization_ == MergeNormalization::TEST) {
+    } else if (mergePlan_.scheme == MergeNormalization::TEST) {
       std::cerr << "Error: --direction-check pooled cannot be combined with "
                 << "--merge-normalization test, whose anchors are taken from "
                 << "each test bin and do not exist for small bins. Use "
@@ -1552,17 +1552,23 @@ int Caller::run() {
   // noisy, so without a given scheme they are merged by their training-set
   // decoys. --static never rescales and keeps test, which decides how -N
   // scores all PSMs.
-  MergeNormalization mergeNormalization = mergeNormalization_;
-  if (!mergeNormalizationSet_ && !skipNormalizeScores_) {
-    mergeNormalization = CrossValidation::defaultMergeNormalization(numFolds);
-    if (mergeNormalization != mergeNormalization_ && VERB > 1) {
+  MergePlan mergePlan = mergePlan_;
+  if (!mergeNormalizationSet_ && !mergePlan.skipNormalizeScores) {
+    mergePlan.scheme = CrossValidation::defaultMergeNormalization(numFolds);
+    if (mergePlan.scheme != mergePlan_.scheme && VERB > 1) {
       std::cerr << "Merging the " << numFolds << " cross-validation bins "
                 << "with --merge-normalization "
-                << mergeNormalizationName(mergeNormalization)
+                << mergeNormalizationName(mergePlan.scheme)
                 << ", the default with more than " << kDefaultNumFolds
                 << " folds." << std::endl;
     }
   }
+  // The merged counts of the direction check find a list unusable where
+  // the run would end with "too good separation": also where the lists
+  // that calculatePSMProb makes from the merged one separate too well.
+  mergePlan.lists.bestPsmPerSpectrum = targetDecoyCompetition_;
+  mergePlan.lists.bestPsmPerPeptide =
+      reportUniquePeptides_ || ProteinProbEstimator::getCalcProteinLevelProb();
 
   // The cross-validation sets and SVM inputs are only needed for training,
   // the scope releases them before the post-processing steps.
@@ -1573,13 +1579,13 @@ int Caller::run() {
   std::vector<std::pair<unsigned int, unsigned int> > subsetFolds;
   // the scheme of the merge, which the second chance of the direction check
   // can change
-  MergeNormalization usedMergeNormalization = mergeNormalization;
+  MergeNormalization usedMergeNormalization = mergePlan.scheme;
   {
     CrossValidation crossValidation(
         quickValidation_, reportEachIteration_, testFdr_, selectionFdr_,
         initialSelectionFdr_, selectedCpos_, selectedCneg_, numIterations_,
         useMixMax_, nestedXvalBins_, trainBestPositive_, numThreads_,
-        skipNormalizeScores_, decoyFractionTraining, numFolds);
+        decoyFractionTraining, numFolds);
     crossValidation.setClassicTraining(classicTraining_);
     // in place only on rows that end with the intercept, which the pool
     // gives unless the input has no features
@@ -1593,15 +1599,7 @@ int Caller::run() {
     // with -N, the test fold of each subset PSM, for getTestFolds below
     crossValidation.setRecordTestFolds(setHandler.getMaxPSMs() > 0u &&
                                        numFolds > 1u);
-    crossValidation.setMergeNormalization(mergeNormalization);
-    // The merged counts of the direction check find a list unusable where
-    // the run would end with "too good separation": also where the lists
-    // that calculatePSMProb makes from the merged one separate too well.
-    ReportedLists reportedLists;
-    reportedLists.bestPsmPerSpectrum = targetDecoyCompetition_;
-    reportedLists.bestPsmPerPeptide =
-        reportUniquePeptides_ || ProteinProbEstimator::getCalcProteinLevelProb();
-    check_.setReportedLists(reportedLists);
+    crossValidation.setMergePlan(mergePlan);
 
     int firstNumberOfPositives =
         crossValidation.preIterationSetup(allScores, check_, pNorm_.get());

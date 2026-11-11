@@ -48,15 +48,24 @@ class SanityCheck {
     SECOND_CHANCE,  // as BINS; where that count would reset, the trained
                     // SVMs are kept if the merged out-of-fold list,
                     // rescaled by the training decoys, can be used (see
-                    // setReportedLists) and holds targets with
+                    // MergePlan::lists) and holds targets with
                     // q < test FDR and no fewer than the reset would
                     // report: the folds' default vectors, or under
                     // --init-weights the vectors of chooseResetVectors,
-                    // merged with the scheme of setMergeScheme; their list
-                    // merged with the scheme of setSecondChanceMergeScheme
-                    // has to be usable too
+                    // merged with the scheme of the plan; their list merged
+                    // with the plan's secondChanceScheme has to be usable
+                    // too
     POOLED          // in the merged out-of-fold list only, merged with the
-                    // scheme of setMergeScheme
+                    // scheme of the plan
+  };
+  // What validateDirection decided about the trained SVMs
+  enum class DirectionOutcome {
+    KEPT,                    // the count of the check passed
+    KEPT_BY_SECOND_CHANCE,   // the per-bin count failed, the second chance
+                             // kept them: the bins are merged with the
+                             // plan's secondChanceScheme
+    FAILED                   // not accepted: the folds were reset, or under
+                             // --override keep their trained vectors
   };
 
   void readWeights(std::istream& weightStream, std::vector<double>& w);
@@ -65,9 +74,9 @@ class SanityCheck {
                        std::vector<Scores>& trainset, const Normalizer* pNorm,
                        std::vector<std::vector<double> >& w, double test_fdr,
                        double initial_train_fdr);
-  bool validateDirection(std::vector<Scores>& testset,
-                         std::vector<Scores>& trainset,
-                         std::vector<std::vector<double> >& w);
+  DirectionOutcome validateDirection(std::vector<Scores>& testset,
+                                     std::vector<Scores>& trainset,
+                                     std::vector<std::vector<double> >& w);
   void resetDirection(std::vector<Scores>& trainset,
                       std::vector<std::vector<double> >& w);
 
@@ -78,31 +87,12 @@ class SanityCheck {
   void setOverrule(bool orl) { overRule_ = orl; }
   void setDirectionCheck(DirectionCheck check) { directionCheck_ = check; }
   DirectionCheck directionCheck() const { return directionCheck_; }
-  // whether the last validateDirection kept the trained SVMs by the second
-  // chance, after the per-bin count would have reset them
-  bool secondChanceKept() const { return secondChanceKept_; }
-  // the scheme of the final merge when the second chance keeps the trained
-  // SVMs; train-decoys, as counted, unless the caller sets another, whose
-  // list the second chance then also checks
-  void setSecondChanceMergeScheme(MergeNormalization scheme) {
-    secondChanceMergeScheme_ = scheme;
-  }
-  MergeNormalization secondChanceMergeScheme() const {
-    return secondChanceMergeScheme_;
-  }
-  // how the test bins are merged, which the pooled check repeats, see
-  // Scores::merge and Scores::countMergedTargets; the second chance counts
-  // the trained SVMs with train-decoys and the fallback with this scheme,
-  // both with fdr and skipNormalizeScores from here
-  void setMergeScheme(MergeNormalization scheme, double fdr,
-                      bool skipNormalizeScores) {
-    mergeScheme_ = scheme;
-    mergeFdr_ = fdr;
-    skipNormalizeScores_ = skipNormalizeScores;
-  }
-  // the lists the run makes from the merged one (-Y, the peptide level),
-  // which the merged counts also find unusable when they separate too well
-  void setReportedLists(ReportedLists lists) { reportedLists_ = lists; }
+  // How the test bins are merged, which the merged counts repeat, see
+  // MergePlan, Scores::merge and Scores::countMergedTargets: the pooled
+  // check counts with the plan's scheme; the second chance counts the
+  // trained SVMs with train-decoys and the fallback with the plan's scheme.
+  void setMergePlan(const MergePlan& plan) { plan_ = plan; }
+  const MergePlan& mergePlan() const { return plan_; }
   void addDefaultWeights(const std::vector<double>& defaultWeights) {
     defaultWeights_ = defaultWeights;
   }
@@ -124,10 +114,10 @@ class SanityCheck {
                            std::vector<double>& w, bool quiet) const;
   // Whether a reset chooses per fold between the vector of --init-weights
   // and the fold's default direction. Not with --static
-  // (skipNormalizeScores_), whose given weights are the model: a reset
+  // (skipNormalizeScores), whose given weights are the model: a reset
   // restores them.
   bool choosesResetVectors() const {
-    return !fileWeights_.empty() && !skipNormalizeScores_;
+    return !fileWeights_.empty() && !plan_.skipNormalizeScores;
   }
   // The vectors of a reset under --init-weights (choosesResetVectors): per
   // fold, the vector of the weights file or the fold's default direction,
@@ -161,11 +151,11 @@ class SanityCheck {
   // The second chance: the targets with q < test FDR in the merged
   // out-of-fold list with train-decoys for the trained weights w, against
   // those of the fallback as the run would report it (resetVectors, merged
-  // with the scheme of setMergeScheme), and whether they keep w, which also
+  // with the scheme of the plan), and whether they keep w, which also
   // needs the right sign of the --default-direction feature. A list that
-  // cannot be used, also by the lists of setReportedLists, counts -1 for w
+  // cannot be used, also by the lists of the plan, counts -1 for w
   // and 0 for the fallback. w is not kept either where its list merged with
-  // the scheme of setSecondChanceMergeScheme, which the run then uses,
+  // the plan's secondChanceScheme, which the run then uses,
   // cannot be used. Leaves the bins, the weights and the random number
   // generator as they are. Prints its decision.
   bool secondChance(const std::vector<Scores>& testset,
@@ -187,23 +177,16 @@ class SanityCheck {
   std::vector<double> fileWeights_;
   // input from concatenated search, i.e. not separate target and decoy searches
   bool concatenatedSearch_ = true;
-  // the direction check and the merge that the pooled count repeats
+  // the direction check and the merge that its merged counts repeat
   DirectionCheck directionCheck_ = DirectionCheck::BINS;
-  MergeNormalization mergeScheme_ = MergeNormalization::TEST;
-  double mergeFdr_ = 0.01;
-  bool skipNormalizeScores_ = false;
-  ReportedLists reportedLists_;
+  MergePlan plan_;
   // the second chance: the initial direction of each fold, which is also
-  // the vector a reset gives it without --init-weights, its decision in the
-  // last validateDirection and the scheme of the merge it implies
+  // the vector a reset gives it without --init-weights
   std::vector<std::vector<double> > initWeights_;
   // the vectors of a reset under --init-weights and, per fold, the targets
   // of the weights file and of the default direction (chooseResetVectors)
   std::vector<std::vector<double> > resetWeights_;
   std::vector<std::pair<int, int> > resetCounts_;
-  bool secondChanceKept_ = false;
-  MergeNormalization secondChanceMergeScheme_ =
-      MergeNormalization::TRAIN_DECOYS;
 };
 
 #endif /*SANITYCHECK_H_*/

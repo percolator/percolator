@@ -103,13 +103,15 @@ class Caller {
   double selectedCpos_, selectedCneg_;
   bool classicTraining_ = false;
   bool inPlaceTraining_ = false;
-  // --merge-normalization
-  MergeNormalization mergeNormalization_ = MergeNormalization::TEST;
+  // The merge of the cross-validation bins as the options give it:
+  // --merge-normalization (scheme, and secondChanceScheme where given) and
+  // --static (skipNormalizeScores). run() completes it.
+  MergePlan mergePlan_;
   // a scheme was given, or set by --direction-check pooled; otherwise run()
   // takes CrossValidation::defaultMergeNormalization of the folds
   bool mergeNormalizationSet_ = false;
   bool reportEachIteration_, quickValidation_, trainBestPositive_,
-      skipNormalizeScores_, useResetAlgorithm_,
+      useResetAlgorithm_,
       useCompositionMatch_, useIrlsPep_, useInterpolatingPep_, usePavaPep_,
       useTdcPep_;
 

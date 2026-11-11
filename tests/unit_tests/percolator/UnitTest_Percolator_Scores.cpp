@@ -49,6 +49,46 @@
 #include "Scores.h"
 #include "TmpDir.h"
 
+// SanityCheck with the parts of its MergePlan set one by one, and with the
+// outcome of validateDirection as the two answers the tests ask for.
+class CheckWithPlan : public SanityCheck {
+ public:
+  void setMergeScheme(MergeNormalization scheme, double fdr,
+                      bool skipNormalizeScores) {
+    MergePlan plan = mergePlan();
+    plan.scheme = scheme;
+    plan.fdr = fdr;
+    plan.skipNormalizeScores = skipNormalizeScores;
+    setMergePlan(plan);
+  }
+  void setSecondChanceMergeScheme(MergeNormalization scheme) {
+    MergePlan plan = mergePlan();
+    plan.secondChanceScheme = scheme;
+    setMergePlan(plan);
+  }
+  void setReportedLists(ReportedLists lists) {
+    MergePlan plan = mergePlan();
+    plan.lists = lists;
+    setMergePlan(plan);
+  }
+  MergeNormalization secondChanceMergeScheme() const {
+    return mergePlan().secondChanceScheme;
+  }
+  // whether the trained SVMs were accepted
+  bool validateDirection(std::vector<Scores>& testset,
+                         std::vector<Scores>& trainset,
+                         std::vector<std::vector<double> >& w) {
+    outcome_ = SanityCheck::validateDirection(testset, trainset, w);
+    return outcome_ != DirectionOutcome::FAILED;
+  }
+  bool secondChanceKept() const {
+    return outcome_ == DirectionOutcome::KEPT_BY_SECOND_CHANCE;
+  }
+
+ private:
+  DirectionOutcome outcome_ = DirectionOutcome::KEPT;
+};
+
 namespace {
 
 // Runs OpenMP code, such as GCC's parallel-mode sorts and partial sums in
@@ -656,7 +696,7 @@ TEST_F(ScoresTest, DefaultDirectionAfterResetHasZeroBias)
     }
     for (bool overrule : {false, true}) {
         SCOPED_TRACE(overrule);
-        SanityCheck check;
+        CheckWithPlan check;
         check.setDirectionCheck(SanityCheck::DirectionCheck::BINS);
         check.setOverrule(overrule);
         std::vector<std::vector<double> > w(numFolds,
@@ -1300,7 +1340,7 @@ TEST_F(ScoresTest, PooledDirectionCheckOnHandMadeBins)
         for (bool pooled : {false, true}) {
             SCOPED_TRACE(::testing::Message() << numBins << " bins, pooled "
                                               << pooled);
-            SanityCheck check;
+            CheckWithPlan check;
             check.addDefaultWeights(defaultWeights);
             check.setDirectionCheck(pooled
                                         ? SanityCheck::DirectionCheck::POOLED
@@ -1380,7 +1420,7 @@ TEST_F(ScoresTest, SecondChanceOnHandMadeBins)
         SCOPED_TRACE(::testing::Message() << c.numBins << " bins, testFdr "
                                           << c.testFdr << ", override "
                                           << c.overrule);
-        SanityCheck check;
+        CheckWithPlan check;
         check.addDefaultWeights(defaultWeights);
         check.setDirectionCheck(SanityCheck::DirectionCheck::SECOND_CHANCE);
         check.setOverrule(c.overrule);
@@ -1557,7 +1597,7 @@ TEST_F(ScoresTest, SecondChanceComparesWithTheReportedReset)
             SCOPED_TRACE(::testing::Message() << "--init-weights "
                                               << file.first << ", scheme "
                                               << static_cast<int>(scheme));
-            SanityCheck check;
+            CheckWithPlan check;
             check.setDirectionCheck(SanityCheck::DirectionCheck::SECOND_CHANCE);
             check.setMergeScheme(scheme, fdr, false);
             if (initWeights) {
@@ -1673,7 +1713,7 @@ TEST_F(ScoresTest, ResetChoosesTheWeightsFileOrTheDefaultVectorPerFold)
             SCOPED_TRACE(::testing::Message() << "case " << static_cast<int>(c)
                                               << ", check "
                                               << static_cast<int>(dc));
-            SanityCheck check;
+            CheckWithPlan check;
             check.setDirectionCheck(dc);
             check.setMergeScheme(MergeNormalization::TEST, fdr,
                                  c == Case::STATIC);
@@ -1928,7 +1968,7 @@ TEST_F(ScoresTest, SecondChanceChecksTheReportedLists)
                                  << (sharing == Example::Sharing::SPECTRUM)
                                  << ", pooled " << (checkType == Check::POOLED)
                                  << ", lists " << spectrum << peptide);
-                    SanityCheck check;
+                    CheckWithPlan check;
                     check.addDefaultWeights(defaultWeights);
                     check.setDirectionCheck(checkType);
                     check.setMergeScheme(checkType == Check::POOLED
@@ -2189,7 +2229,7 @@ TEST_F(ScoresTest, SecondChanceChecksTheSchemeOfTheKeptRun)
                                      << (checkType == Check::POOLED)
                                      << ", scheme " << static_cast<int>(scheme)
                                      << ", --static " << skipNormalizeScores);
-                        SanityCheck check;
+                        CheckWithPlan check;
                         check.addDefaultWeights(defaultWeights);
                         check.setDirectionCheck(checkType);
                         // as Caller sets an explicit scheme

@@ -44,13 +44,13 @@ public:
                       double selectedCpos, double selectedCneg,
                       unsigned int niter, bool usePi0,
                       unsigned int nestedXvalBins, bool trainBestPositive,
-                      unsigned int numThreads, bool skipNormalizeScores, 
+                      unsigned int numThreads,
                       double decoyFractionTraining, unsigned int numFolds)
         : CrossValidation(quickValidation, reportPerformanceEachIteration,
                           testFdr, selectionFdr, initialSelectionFdr,
                           selectedCpos, selectedCneg, niter, usePi0,
                           nestedXvalBins, trainBestPositive, numThreads,
-                          skipNormalizeScores, decoyFractionTraining, numFolds) { }
+                          decoyFractionTraining, numFolds) { }
     virtual ~CrossValidationEx() { }
     int doStepEx(Normalizer* pNorm, double selectionFdr) {
         return doStep(pNorm, selectionFdr);
@@ -132,7 +132,6 @@ TEST_F(CrossValidationTest, doStepTest)
                                   1,       // nestedXvalBins
                                   false,   // trainBestPositive
                                   1,       // numThreads
-                                  false,   // skipNormalizeScores
                                   1.0,     // decoyFractionTraining
                                   numFolds);
 
@@ -317,16 +316,18 @@ static void trainAndMerge(unsigned int numFolds, MergeNormalization scheme,
     PseudoRandom::setSeed(1u);
     CrossValidationEx crossValidation(false, false, checkOptions.testFdr,
                                       0.05, 0.05, 0.0, 0.0, 10,
-                                      checkOptions.separate, 1, false, 1,
-                                      checkOptions.skipNormalizeScores, 1.0,
+                                      checkOptions.separate, 1, false, 1, 1.0,
                                       numFolds);
-    crossValidation.setMergeNormalization(scheme);
+    MergePlan mergePlan;
+    mergePlan.scheme = scheme;
+    mergePlan.secondChanceScheme = checkOptions.secondChanceScheme;
+    mergePlan.skipNormalizeScores = checkOptions.skipNormalizeScores;
+    crossValidation.setMergePlan(mergePlan);
     Scores scores(checkOptions.separate);
     scores.populateWithPSMs(setHandler);
     SanityCheck check;
     check.setDirectionCheck(checkOptions.check);
     check.setOverrule(checkOptions.overrule);
-    check.setSecondChanceMergeScheme(checkOptions.secondChanceScheme);
     if (!checkOptions.initWeightFN.empty()) {
         check.setInitWeightFN(checkOptions.initWeightFN);
     }
@@ -359,7 +360,9 @@ static void trainAndMerge(unsigned int numFolds, MergeNormalization scheme,
         checkOptions.minusN && testFolds.empty() &&
         crossValidation.usedMergeNormalization() == MergeNormalization::TEST;
     if (result) {
-        result->secondChanceKept = check.secondChanceKept();
+        result->secondChanceKept =
+            crossValidation.directionOutcome() ==
+            SanityCheck::DirectionOutcome::KEPT_BY_SECOND_CHANCE;
         result->usedScheme = crossValidation.usedMergeNormalization();
         result->randomStateAfterMerge = PseudoRandom::getSeed();
         result->numTestFolds = testFolds.size();
@@ -1104,8 +1107,8 @@ TEST_F(CrossValidationTest, EmptyFoldIsAnError)
     for (unsigned int numFolds : {1u, 2u, 3u}) {
         SCOPED_TRACE(numFolds);
         CrossValidation crossValidation(false, false, 0.01, 0.01, 0.01, 0.0,
-                                        0.0, 10, false, 1, false, 1, false,
-                                        1.0, numFolds);
+                                        0.0, 10, false, 1, false, 1, 1.0,
+                                        numFolds);
         Scores scores(false);
         scores.populateWithPSMs(setHandler);
         EXPECT_EQ(2u, scores.getNumSpectra());
@@ -1401,7 +1404,7 @@ static std::vector<std::vector<double> > trainFoldsAtOnce(
     PseudoRandom::setSeed(1u);
     CrossValidationEx crossValidation(c.quickValidation, false, 0.05, 0.05,
                                       0.05, 0.0, 0.0, 10, false,
-                                      c.nestedBins, false, 2, false, 1.0,
+                                      c.nestedBins, false, 2, 1.0,
                                       c.numFolds);
     crossValidation.setSvmRowsInPlace(c.rowsInPlace);
     crossValidation.setFoldsAtOnce(c.foldsAtOnce);

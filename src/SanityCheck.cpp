@@ -89,9 +89,9 @@ int SanityCheck::getInitDirection(vector<Scores>& testset,
   // still scored above, so that both checks leave them in the same state.
   if (usePooledCount(w.size())) {
     initPositives_ = std::max(
-        0, Scores::countMergedTargets(testset, trainset, w, mergeScheme_,
-                                      mergeFdr_, skipNormalizeScores_,
-                                      test_fdr, reportedLists_));
+        0, Scores::countMergedTargets(testset, trainset, w, plan_.scheme,
+                                      plan_.fdr, plan_.skipNormalizeScores,
+                                      test_fdr, plan_.lists));
   }
   // The second chance counts the vectors of a reset only when it runs.
   // Without --init-weights, they are the initial ones, the default vectors,
@@ -191,8 +191,8 @@ bool SanityCheck::secondChance(const vector<Scores>& testset,
                                int& trainedCount) const {
   // the anchors of the training sets exist for test bins of any size
   trainedCount = Scores::countMergedTargets(
-      testset, trainset, w, MergeNormalization::TRAIN_DECOYS, mergeFdr_,
-      skipNormalizeScores_, test_fdr_, reportedLists_);
+      testset, trainset, w, MergeNormalization::TRAIN_DECOYS, plan_.fdr,
+      plan_.skipNormalizeScores, test_fdr_, plan_.lists);
   // The fallback that the second chance replaces, counted as the run would
   // report it: the vectors of a reset (each fold's default vector, or under
   // --init-weights per fold its vector or the default vector, whichever
@@ -204,33 +204,33 @@ bool SanityCheck::secondChance(const vector<Scores>& testset,
   if (resetWeights.size() == w.size()) {
     resetCount = std::max(
         0, Scores::countMergedTargets(testset, trainset, resetWeights,
-                                      mergeScheme_, mergeFdr_,
-                                      skipNormalizeScores_, test_fdr_,
-                                      reportedLists_));
+                                      plan_.scheme, plan_.fdr,
+                                      plan_.skipNormalizeScores, test_fdr_,
+                                      plan_.lists));
   }
   const bool countsKeep = trainedCount > 0 && trainedCount >= resetCount;
-  // A run that keeps the trained SVMs is merged with the scheme of
-  // setSecondChanceMergeScheme. Another scheme than train-decoys, given by
+  // A run that keeps the trained SVMs is merged with the plan's
+  // secondChanceScheme. Another scheme than train-decoys, given by
   // --merge-normalization, can end that run where train-decoys does not:
   // test checks the separation of each bin, and the scores of test, train
   // and none are merged on another scale. Its list therefore has to be
   // usable as well; the count of train-decoys still decides. --static
   // merges the raw scores, which the count above has already checked.
   const bool otherKeptScheme =
-      !skipNormalizeScores_ &&
-      secondChanceMergeScheme_ != MergeNormalization::TRAIN_DECOYS;
+      !plan_.skipNormalizeScores &&
+      plan_.secondChanceScheme != MergeNormalization::TRAIN_DECOYS;
   const bool unusableAsKept =
       countsKeep && otherKeptScheme &&
       Scores::countMergedTargets(testset, trainset, w,
-                                 secondChanceMergeScheme_, mergeFdr_,
-                                 skipNormalizeScores_, test_fdr_,
-                                 reportedLists_) < 0;
+                                 plan_.secondChanceScheme, plan_.fdr,
+                                 plan_.skipNormalizeScores, test_fdr_,
+                                 plan_.lists) < 0;
   // the sign check of --default-direction applies as after a passed count
   const bool wrongSign =
       countsKeep && !unusableAsKept && wrongSignOfDefaultDirection(w);
   const bool keep = countsKeep && !unusableAsKept && !wrongSign;
   cerr << "Second chance on the merged out-of-fold list"
-       << (skipNormalizeScores_ ? "" : ", rescaled by the training decoys")
+       << (plan_.skipNormalizeScores ? "" : ", rescaled by the training decoys")
        << ": ";
   if (trainedCount < 0) {
     cerr << "the trained SVMs give no usable list (" << kUnusableListReasons
@@ -243,12 +243,12 @@ bool SanityCheck::secondChance(const vector<Scores>& testset,
                  : (choosesResetVectors() ? "--init-weights or default vectors"
                                           : "--init-weights vector"))
          << " of a reset";
-    if (!skipNormalizeScores_) {
-      cerr << " merged with " << mergeNormalizationName(mergeScheme_);
+    if (!plan_.skipNormalizeScores) {
+      cerr << " merged with " << mergeNormalizationName(plan_.scheme);
     }
     if (unusableAsKept) {
       cerr << "; merged with "
-           << mergeNormalizationName(secondChanceMergeScheme_)
+           << mergeNormalizationName(plan_.secondChanceScheme)
            << ", as a run that keeps them would be, the trained SVMs give no "
            << "usable list (" << kUnusableListReasons << ")";
     }
@@ -257,9 +257,9 @@ bool SanityCheck::secondChance(const vector<Scores>& testset,
     cerr << "; --override keeps the trained SVMs in any case." << endl;
   } else if (keep) {
     cerr << "; the trained SVMs are kept";
-    if (!skipNormalizeScores_) {
+    if (!plan_.skipNormalizeScores) {
       cerr << ", merged with "
-           << mergeNormalizationName(secondChanceMergeScheme_);
+           << mergeNormalizationName(plan_.secondChanceScheme);
     }
     cerr << "." << endl;
   } else if (wrongSign) {
@@ -272,24 +272,24 @@ bool SanityCheck::secondChance(const vector<Scores>& testset,
   return keep;
 }
 
-bool SanityCheck::validateDirection(vector<Scores>& testset,
-                                    vector<Scores>& trainset,
-                                    vector<vector<double> >& w) {
-  secondChanceKept_ = false;
+SanityCheck::DirectionOutcome SanityCheck::validateDirection(
+    vector<Scores>& testset,
+    vector<Scores>& trainset,
+    vector<vector<double> >& w) {
   resetWeights_.clear();
   resetCounts_.clear();
   const bool pooled = usePooledCount(w.size());
   int overFDR = 0;
   if (pooled) {
     // on copies: the test bins are only scored once the direction is decided
-    overFDR = Scores::countMergedTargets(testset, trainset, w, mergeScheme_,
-                                         mergeFdr_, skipNormalizeScores_,
-                                         test_fdr_, reportedLists_);
+    overFDR = Scores::countMergedTargets(testset, trainset, w, plan_.scheme,
+                                         plan_.fdr, plan_.skipNormalizeScores,
+                                         test_fdr_, plan_.lists);
     if (overFDR < 0) {
       cerr << "The trained weights give no usable merged out-of-fold list: "
            << kUnusableListReasons << endl;
       resetDirection(trainset, w);
-      return false;
+      return DirectionOutcome::FAILED;
     }
     if (VERB > 1) {
       cerr << "Found " << overFDR << " targets with q<" << test_fdr_
@@ -340,7 +340,7 @@ bool SanityCheck::validateDirection(vector<Scores>& testset,
                << "alternative." << endl;
         }
       }
-      return false;
+      return DirectionOutcome::FAILED;
     }
   }
   if (wrongSignOfDefaultDirection(w)) {
@@ -349,7 +349,7 @@ bool SanityCheck::validateDirection(vector<Scores>& testset,
            << endl;
     }
     resetDirection(trainset, w);
-    return false;
+    return DirectionOutcome::FAILED;
   }
   if (pooled) {
     // the direction is kept: score the test bins with their folds' weights
@@ -359,8 +359,8 @@ bool SanityCheck::validateDirection(vector<Scores>& testset,
     }
   }
   // the per-bin count has already scored the test bins with w
-  secondChanceKept_ = keptBySecondChance;
-  return true;
+  return keptBySecondChance ? DirectionOutcome::KEPT_BY_SECOND_CHANCE
+                            : DirectionOutcome::KEPT;
 }
 
 /**

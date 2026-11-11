@@ -53,7 +53,6 @@ class CrossValidation {
                   unsigned int nestedXvalBins,
                   bool trainBestPositive,
                   unsigned int numThreads,
-                  bool skipNormalizeScores,
                   double decoyFractionTraining,
                   unsigned int numFolds);
 
@@ -127,16 +126,22 @@ class CrossValidation {
   // scores every test bin with the first fold's vector, since -N scores all
   // PSMs with the averaged weights
   void inline setRecordTestFolds(bool on) { recordTestFolds_ = on; }
-  // how the scores of the test bins are put on a common scale before they
-  // are merged, see Caller's --merge-normalization
-  void inline setMergeNormalization(MergeNormalization scheme) {
-    mergeNormalization_ = scheme;
-    usedMergeNormalization_ = scheme;
+  // How the scores of the test bins are put on a common scale before they
+  // are merged, see MergePlan and Caller's --merge-normalization. The plan's
+  // fdr is set here, to the selection FDR of the training.
+  void setMergePlan(const MergePlan& plan) {
+    mergePlan_ = plan;
+    mergePlan_.fdr = selectionFdr_;
+    usedMergeNormalization_ = mergePlan_.usedScheme(false);
   }
-  // the scheme postIterationProcessing merged with: the one set above, or
-  // the scheme of the direction check's second chance when that kept the
-  // trained SVMs (SanityCheck::secondChanceMergeScheme); always test when
-  // the scores are not rescaled (skipNormalizeScores, --static)
+  const MergePlan& mergePlan() const { return mergePlan_; }
+  // What the direction check of postIterationProcessing decided, and the
+  // scheme it then merged with (MergePlan::usedScheme): the plan's scheme,
+  // or its secondChanceScheme when the second chance kept the trained SVMs;
+  // always test when the scores are not rescaled (--static)
+  SanityCheck::DirectionOutcome directionOutcome() const {
+    return directionOutcome_;
+  }
   MergeNormalization usedMergeNormalization() const {
     return usedMergeNormalization_;
   }
@@ -180,8 +185,9 @@ class CrossValidation {
   unsigned int nestedXvalBins_;
 
   bool trainBestPositive_;
-  bool skipNormalizeScores_;
-  MergeNormalization mergeNormalization_ = MergeNormalization::TEST;
+  MergePlan mergePlan_;
+  SanityCheck::DirectionOutcome directionOutcome_ =
+      SanityCheck::DirectionOutcome::KEPT;
   MergeNormalization usedMergeNormalization_ = MergeNormalization::TEST;
 
   double decoyFractionTraining_;

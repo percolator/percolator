@@ -62,7 +62,6 @@ CrossValidation::CrossValidation(bool quickValidation,
                                  unsigned int nestedXvalBins,
                                  bool trainBestPositive,
                                  unsigned int numThreads,
-                                 bool skipNormalizeScores,
                                  double decoyFractionTraining,
                                  unsigned int numFolds)
     : quickValidation_(quickValidation),
@@ -77,7 +76,6 @@ CrossValidation::CrossValidation(bool quickValidation,
       niter_(niter),
       nestedXvalBins_(nestedXvalBins),
       trainBestPositive_(trainBestPositive),
-      skipNormalizeScores_(skipNormalizeScores),
       decoyFractionTraining_(decoyFractionTraining),
       numFolds_(numFolds) {
   // initialize selectionFdr_ and initialSelectionFdr_ if they have not been set
@@ -88,6 +86,7 @@ CrossValidation::CrossValidation(bool quickValidation,
       initialSelectionFdr_ = testFdr_;
     }
   }
+  mergePlan_.fdr = selectionFdr_;
 }
 
 /**
@@ -163,10 +162,9 @@ int CrossValidation::preIterationSetup(Scores& fullset,
   weights_ = vector<vector<double> >(
       numFolds_, vector<double>(FeatureNames::getNumFeatures() + 1));
   StageTimer stageTimer("initial direction");
-  // the pooled direction check merges the test bins as
+  // the merged counts of the direction check merge the test bins as
   // postIterationProcessing does
-  check.setMergeScheme(mergeNormalization_, selectionFdr_,
-                       skipNormalizeScores_);
+  check.setMergePlan(mergePlan_);
   int numPositive =
       check.getInitDirection(testScores_, trainScores_, pNorm, weights_,
                                testFdr_, initialSelectionFdr_);
@@ -794,23 +792,18 @@ void CrossValidation::postIterationProcessing(Scores& fullset,
     fullset.setNullTargetWinProb(testNullTargetWinProb);
   }
 
-  const bool directionValid =
+  directionOutcome_ =
       check.validateDirection(testScores_, trainScores_, weights_);
+  const bool directionValid =
+      directionOutcome_ != SanityCheck::DirectionOutcome::FAILED;
   // When the second chance of the direction check kept the trained SVMs,
   // whose test bins were too small for the per-bin count, the bins are
   // merged as it counted them, with the training-set decoys, unless the
   // caller chose another scheme for this case, whose list the second chance
-  // has then checked as well. --static (skipNormalizeScores_)
-  // rescales nothing and ignores the scheme, after a second chance too: the
-  // bins are merged as with test, which also makes -N rescale the scores of
-  // all PSMs as before the schemes existed.
-  if (skipNormalizeScores_) {
-    usedMergeNormalization_ = MergeNormalization::TEST;
-  } else {
-    usedMergeNormalization_ = check.secondChanceKept()
-                                  ? check.secondChanceMergeScheme()
-                                  : mergeNormalization_;
-  }
+  // has then checked as well (MergePlan::usedScheme).
+  usedMergeNormalization_ = mergePlan_.usedScheme(
+      directionOutcome_ ==
+      SanityCheck::DirectionOutcome::KEPT_BY_SECOND_CHANCE);
   if (!directionValid) {
     // Each test bin is scored with its own fold's vector: after a reset the
     // vector the fallback chose for that fold (under --init-weights the given
@@ -846,8 +839,8 @@ void CrossValidation::postIterationProcessing(Scores& fullset,
   // as many PSMs as the test bin, or the same PSMs with one fold, so the
   // anchors exist and are less noisy for small test bins.
   const std::vector<ScoreScale> binScales = Scores::calcBinScales(
-      trainScores_, weights_, usedMergeNormalization_, selectionFdr_,
-      skipNormalizeScores_);
+      trainScores_, weights_, usedMergeNormalization_, mergePlan_.fdr,
+      mergePlan_.skipNormalizeScores);
   // the default direction of validateDirection and the anchors above were
   // the last use of the training sets; merge empties the test sets
   std::vector<Scores>().swap(trainScores_);
@@ -858,8 +851,8 @@ void CrossValidation::postIterationProcessing(Scores& fullset,
   // are after a failed check with --override, whose trained vectors the
   // check did not accept.
   if (recordTestFolds_ && directionValid) recordTestFolds();
-  fullset.merge(testScores_, selectionFdr_, skipNormalizeScores_, weights_,
-                usedMergeNormalization_, binScales);
+  fullset.merge(testScores_, mergePlan_.fdr, mergePlan_.skipNormalizeScores,
+                weights_, usedMergeNormalization_, binScales);
 }
 
 MergeNormalization CrossValidation::defaultMergeNormalization(
