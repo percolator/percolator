@@ -60,8 +60,8 @@ such as unequal variances or heavier tails, or real data with a ground truth.
 
 Per-stage wall clock and CPU times are printed to stderr with `-v 3`
 (lines starting with `Stage`). The stages at the top level do not
-overlap: `validate input`, `concatenate input files` (several input
-files), `read input`, `normalize features`, `populate scores`,
+overlap: `validate input`, `validate input files` (several input
+files: their headers and first rows), `read input`, `normalize features`, `populate scores`,
 `training`, `post-iteration processing`, then for the PSMs and for the
 peptides the weed-out (`peptide weed-out`, or `PSM weed-out
 (target-decoy competition)` with -Y), the statistics (`PSM-level
