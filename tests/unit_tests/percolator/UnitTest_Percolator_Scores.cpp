@@ -2015,7 +2015,9 @@ class OneFeatureSets {
         return sets(test_, usePi0);
     }
     std::vector<Scores> trainBins(bool usePi0) const {
-        return sets(trainIsTest_ ? test_ : train_, usePi0);
+        // not sets(trainIsTest_ ? test_ : train_, ...): MSVC lets the
+        // arrays decay to pointers in the conditional expression
+        return trainIsTest_ ? sets(test_, usePi0) : sets(train_, usePi0);
     }
     const std::vector<std::vector<double> > w = {{1.0, 0.0}, {1.0, 0.0}};
 
