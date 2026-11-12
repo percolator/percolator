@@ -191,9 +191,11 @@ class TabReader {
   int readInt() {
     char* next = NULL;
     errno=0;
-    long val = strtol(f_, &next, 10);
+    // long long, not long: with 32-bit long (Windows), strtol saturates at
+    // INT_MAX, and the range check below never fires
+    long long val = strtoll(f_, &next, 10);
     if (next == f_ || (*next != '\0' && !isspace(static_cast<unsigned char>(*next)))
-                   || val < INT_MIN || val > INT_MAX) {
+                   || errno == ERANGE || val < INT_MIN || val > INT_MAX) {
       err = errno ? errno : 1;
     }
     advance(next);
