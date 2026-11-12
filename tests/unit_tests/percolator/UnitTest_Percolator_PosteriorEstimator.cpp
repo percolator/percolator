@@ -95,7 +95,9 @@ TEST(PosteriorEstimatorTest, QValuesFromPWithDecoys) {
   ASSERT_EQ(expected.size(), q.size());
   for (std::size_t i = 0; i < q.size(); ++i) {
     EXPECT_NEAR(expected[i], q[i], 1e-12) << "entry " << i;
-    if (i > 0) EXPECT_LE(q[i - 1], q[i]) << "entry " << i;
+    if (i > 0) {
+      EXPECT_LE(q[i - 1], q[i]) << "entry " << i;
+    }
   }
 
   // a decoy before the first p value, and pi0
