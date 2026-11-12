@@ -35,6 +35,12 @@ if(APPLE AND NOT OpenMP_CXX_FOUND)
 endif()
 if (OpenMP_CXX_FOUND)
     list(APPEND COMMON_LIBRARIES OpenMP::OpenMP_CXX)
+    # With STATIC on Linux, FindOpenMP takes libgomp.a, which calls dlopen
+    # and dlsym. Before glibc 2.34 they are in libdl, not in libc (the
+    # manylinux_2_28 wheels and the portable build), so libdl follows it.
+    if(UNIX AND NOT APPLE AND STATIC)
+      list(APPEND COMMON_LIBRARIES ${CMAKE_DL_LIBS})
+    endif()
 else()
   message(WARNING "OpenMP was not found, so percolator will run on one "
                   "thread only. On macOS, install libomp (brew install libomp).")
