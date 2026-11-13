@@ -17,18 +17,17 @@
 
 #include "PickedProteinInterface.h"
 
-using namespace PercolatorCrux;
+using PickedProtein::DigestType;
 
 PickedProteinInterface::PickedProteinInterface(const std::string& fastaDatabase,
-    double pvalueCutoff, bool reportFragmentProteins, bool reportDuplicateProteins,
+    bool reportFragmentProteins, bool reportDuplicateProteins,
     bool trivialGrouping, double absenceRatio, bool outputEmpirQval, 
     std::string& decoyPattern, double specCountQvalThreshold) :
       ProteinProbEstimator(trivialGrouping, absenceRatio, outputEmpirQval, 
                            decoyPattern, specCountQvalThreshold),
-      fastaProteinFN_(fastaDatabase), maxPeptidePval_(pvalueCutoff),
+      fastaProteinFN_(fastaDatabase),
       reportFragmentProteins_(reportFragmentProteins),
-      reportDuplicateProteins_(reportDuplicateProteins),
-      protInferenceMethod_(BESTPEPT) {
+      reportDuplicateProteins_(reportDuplicateProteins) {
   if (absenceRatio == 1.0) usePi0_ = false;
 }
 
@@ -44,38 +43,23 @@ bool PickedProteinInterface::initialize(Scores& peptideScores, const Enzyme* enz
   
   std::string enzymeString = enzyme->getStringEnzyme();
   
-  ENZYME_T cruxEnzyme;
+  // the protease for the digestion of the database
+  Enzyme::EnzymeType digestEnzyme = enzyme->getEnzymeType();
   bool tryTrypsinP = false;
   std::unique_ptr<Enzyme> trypsinP;
-  switch (enzyme->getEnzymeType()) {
+  switch (digestEnzyme) {
     case Enzyme::TRYPSIN:
-      cruxEnzyme = TRYPSIN;
       tryTrypsinP = true;
       trypsinP = Enzyme::createEnzyme(Enzyme::TRYPSINP);
       break;
     case Enzyme::TRYPSINP:
-      cruxEnzyme = TRYPSINP;
-      break;
     case Enzyme::CHYMOTRYPSIN:
-      cruxEnzyme = CHYMOTRYPSIN;
-      break;
     case Enzyme::ELASTASE:
-      cruxEnzyme = ELASTASE;
-      break;
     case Enzyme::LYSN:
-      cruxEnzyme = LYSN;
-      break;
     case Enzyme::LYSC:
-      cruxEnzyme = LYSC;
-      break;
     case Enzyme::ARGC:
-      cruxEnzyme = ARGC;
-      break;
     case Enzyme::ASPN:
-      cruxEnzyme = ASPN;
-      break;
     case Enzyme::GLUC:
-      cruxEnzyme = GLUC;
       break;
     case Enzyme::NO_ENZYME:
     default:
@@ -85,9 +69,9 @@ bool PickedProteinInterface::initialize(Scores& peptideScores, const Enzyme* enz
                 << " currently not supported. Using unspecific digestion to identify"
                 << " duplicate and fragment proteins" << std::endl;
         }
-        enzymeString = NoEnzyme::getString();
+        enzymeString = Enzyme::getString(Enzyme::NO_ENZYME);
       }
-      cruxEnzyme = NO_ENZYME;
+      digestEnzyme = Enzyme::NO_ENZYME;
       max_non_enzymatic_flanks = 2;
       break;
   }
@@ -159,28 +143,28 @@ bool PickedProteinInterface::initialize(Scores& peptideScores, const Enzyme* enz
       }
       max_non_enzymatic_flanks = max_non_enzymatic_flanks_trypsinp;
       max_miscleavages = max_miscleavages_trypsinp;
-      cruxEnzyme = TRYPSINP;
-      enzymeString = TrypsinP::getString();
+      digestEnzyme = Enzyme::TRYPSINP;
+      enzymeString = Enzyme::getString(Enzyme::TRYPSINP);
     }
     
     // if more than half of the flanks or non enzymatic, probably the protease is wrong
-    if (total_non_enzymatic_flanks > peptideScores.size()) {
+    if (static_cast<size_t>(total_non_enzymatic_flanks) > peptideScores.size()) {
       std::cerr << "Warning: more than half of the cleavage sites are non enzymatic, "
                 << "please verify that the right protease was specified." << std::endl;
     }
   }
   
-  DIGEST_T digest;
+  DigestType digest;
   std::string digestString = "";
   if (max_non_enzymatic_flanks == 0) {
-    digest = FULL_DIGEST;
+    digest = DigestType::Full;
     digestString = "full";
   } else if (max_non_enzymatic_flanks == 1) {
-    digest = PARTIAL_DIGEST;
+    digest = DigestType::Partial;
     digestString = "partial";
   } else {
-    digest = NON_SPECIFIC_DIGEST;
-    cruxEnzyme = TRYPSIN; // Use trypsin to create candidate protein groups
+    digest = DigestType::NonSpecific;
+    digestEnzyme = Enzyme::TRYPSIN; // Use trypsin to create candidate protein groups
     digestString = "non-specific";
   }
   if (VERB > 1) {
@@ -192,7 +176,7 @@ bool PickedProteinInterface::initialize(Scores& peptideScores, const Enzyme* enz
               << ", max-miscleavages=" << max_miscleavages << std::endl;
   }
   PickedProteinCaller pickedProteinCaller;
-  pickedProteinCaller.initConstraints(cruxEnzyme, digest, min_peptide_length, 
+  pickedProteinCaller.initConstraints(digestEnzyme, digest, min_peptide_length, 
                                 max_peptide_length, max_miscleavages);
   
   groupProteins(peptideScores, pickedProteinCaller);
@@ -214,11 +198,9 @@ void PickedProteinInterface::groupProteins(Scores& peptideScores,
     if (fail) {
       ostringstream oss;
       oss << "ERROR: Could not process the fasta database, check if path is correct." << std::endl;
-      if (NO_TERMINATE) {
-        std::cerr << oss.str() << "No-terminate flag set: ignoring error and skipping protein grouping." << std::endl;
-      } else {
-        throw MyException(oss.str());
-      }
+      Globals::failUnlessNoTerminate(oss.str(),
+          "No-terminate flag set: ignoring error and skipping protein "
+          "grouping.");
     }
     
     if (!pickedProteinCaller.fastaHasDecoys()) {
@@ -230,11 +212,9 @@ void PickedProteinInterface::groupProteins(Scores& peptideScores,
       if (fail) {
         ostringstream oss;
         oss << "ERROR: Could not process the fasta database, check if path is correct." << std::endl;
-        if (NO_TERMINATE) {
-          std::cerr << oss.str() << "No-terminate flag set: ignoring error and skipping protein grouping." << std::endl;
-        } else {
-          throw MyException(oss.str());
-        }
+        Globals::failUnlessNoTerminate(oss.str(),
+            "No-terminate flag set: ignoring error and skipping protein "
+            "grouping.");
       }
     } else if (VERB > 1) {
       std::cerr << "Decoy proteins detected in fasta database, "
@@ -329,7 +309,7 @@ void PickedProteinInterface::groupProteins(Scores& peptideScores,
   }
 }
 
-void PickedProteinInterface::computeProbabilities(const std::string& fname) {
+void PickedProteinInterface::computeProbabilities(const std::string& /*fname*/) {
   if (VERB > 2) {
     std::cerr << "Computing protein probabilities for " 
               << proteins_.size() << " protein groups." << std::endl;
@@ -337,36 +317,12 @@ void PickedProteinInterface::computeProbabilities(const std::string& fname) {
   for (std::vector<ProteinScoreHolder>::iterator it = proteins_.begin(); 
         it != proteins_.end(); it++) {
     const std::vector<ProteinScoreHolder::Peptide>& peptides = it->getPeptidesByRef();
-    switch (protInferenceMethod_) {
-      case FISHER: {
-        double fisher = 0.0;
-        for (std::vector<ProteinScoreHolder::Peptide>::const_iterator itP = peptides.begin();
-              itP != peptides.end(); itP++) {
-          fisher += log(itP->p / maxPeptidePval_);
-        }
-        double proteinPvalue = 0.0;
-        if (proteinPvalue == 0.0) proteinPvalue = DBL_MIN;
-        it->setP(proteinPvalue);
-        it->setScore(proteinPvalue);
-        break;
-      } case PEPPROD: { // MaxQuant's strategy
-        double logPepProd = 0.0;
-        for (std::vector<ProteinScoreHolder::Peptide>::const_iterator itP = peptides.begin();
-              itP != peptides.end(); itP++) {
-          logPepProd += log(itP->pep);
-        }
-        it->setScore(logPepProd);
-        break;
-      } case BESTPEPT: {
-        double maxScore = -1000.0;
-        for (std::vector<ProteinScoreHolder::Peptide>::const_iterator itP = peptides.begin();
-              itP != peptides.end(); itP++) {
-          maxScore = std::max(maxScore, itP->score);
-        }
-        it->setScore(-1.0*maxScore); // lower scores are better
-        break;
-      }
+    double maxScore = -1000.0;
+    for (std::vector<ProteinScoreHolder::Peptide>::const_iterator itP = peptides.begin();
+          itP != peptides.end(); itP++) {
+      maxScore = std::max(maxScore, itP->score);
     }
+    it->setScore(-1.0*maxScore); // lower scores are better
   }
   
   std::sort(proteins_.begin(), proteins_.end(), IntCmpScore());
@@ -387,11 +343,9 @@ bool PickedProteinInterface::pickedProteinCheckId(std::string& proteinId, bool i
       ostringstream oss;
       oss << "ERROR: Could not detect the decoy prefix \"" << decoyPattern_ 
           << "\" for the decoy protein identifier \"" << proteinId << "\"." << std::endl;
-      if (NO_TERMINATE) {
-        std::cerr << oss.str() << "No-terminate flag set: ignoring error and skipping removal of decoyPrefix." << std::endl;
-      } else {
-        throw MyException(oss.str());
-      }
+      Globals::failUnlessNoTerminate(oss.str(),
+          "No-terminate flag set: ignoring error and skipping removal of "
+          "decoyPrefix.");
     } else {
       targetId = proteinId.substr(decoyPattern_.size());
     }
@@ -472,31 +426,13 @@ void PickedProteinInterface::pickedProteinStrategy() {
 void PickedProteinInterface::estimatePEPs() {
   std::vector<std::pair<double, bool> > combined;
   std::vector<double> pvals;
-  switch (protInferenceMethod_) {
-    case FISHER: { // if we have well calibrated p-values
-      for (size_t i = 0; i < proteins_.size(); ++i) {
-        double pValue = proteins_.at(i).getP();
-        bool isTarget = proteins_.at(i).isTarget();
-        combined.push_back(make_pair(pValue, isTarget));
-        if (isTarget) {
-          pvals.push_back(pValue);
-        }
-      }
-      std::sort(combined.begin(), combined.end());
-      std::sort(pvals.begin(), pvals.end());
-      break;
-    } case PEPPROD:
-      case BESTPEPT: { // if we have some other type of score
-      for (size_t i = 0; i < proteins_.size(); ++i) {
-        double score = proteins_.at(i).getScore();
-        bool isTarget = proteins_.at(i).isTarget();
-        combined.push_back(make_pair(score, isTarget));
-      }
-      std::sort(combined.begin(), combined.end());
-      PosteriorEstimator::getPValues(combined, pvals);
-      break;
-    }
+  for (size_t i = 0; i < proteins_.size(); ++i) {
+    double score = proteins_.at(i).getScore();
+    bool isTarget = proteins_.at(i).isTarget();
+    combined.push_back(make_pair(score, isTarget));
   }
+  std::sort(combined.begin(), combined.end());
+  PosteriorEstimator::getPValues(combined, pvals);
   
   if (usePi0_) {
     pi0_ = PosteriorEstimator::estimatePi0(pvals);
@@ -507,8 +443,9 @@ void PickedProteinInterface::estimatePEPs() {
   
   std::vector<double> peps;
   bool includeNegativesInResult = true;
-  PosteriorEstimator::setReversed(true);
-  PosteriorEstimator::estimatePEP(combined, usePi0_, pi0_, peps, includeNegativesInResult);
+  // combined is sorted by increasing score: reversed
+  PosteriorEstimator::estimatePEP(combined, usePi0_, pi0_, peps,
+                                  includeNegativesInResult, 1.0, true);
   
   for (size_t i = 0; i < proteins_.size(); ++i) {
     proteins_.at(i).setPEP(peps.at(i));

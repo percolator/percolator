@@ -1,7 +1,7 @@
 #!/bin/bash
 # managing input arguments
 
-while getopts “s:b:r:t:” OPTION; do
+while getopts "s:b:r:t:d:" OPTION; do
     case $OPTION in
         s) src_dir=${OPTARG};;
         t) branch=${OPTARG};;
@@ -14,12 +14,6 @@ done
 
 # get current architecture
 ARCH=$(uname -m)
-
-sudo apt-get -y install gawk;
-if [[ ! -z `echo -e "$(lsb_release -r)" | gawk '($2>="22.04"){print
-    $2}'` ]]; then
-    sudo apt-get -y install libcurl4-openssl-dev;
-fi
 
 if [[ -z ${build_type} ]]; then
     build_type="Release";
@@ -74,7 +68,7 @@ mkdir -p $build_dir/percolator;
 cd $build_dir/percolator;
 echo "cmake percolator.....";
 (set -x;
-    cmake -DTARGET_ARCH=amd64 -DCMAKE_BUILD_TYPE=${build_type} -DCMAKE_INSTALL_PREFIX=/usr -DGOOGLE_TEST=1  $src_dir/percolator;
+    cmake -DCMAKE_BUILD_TYPE=${build_type} -DCMAKE_INSTALL_PREFIX=/usr $src_dir/percolator;
 )
 #-----make------
 echo "make percolator (this will take few minutes).....";

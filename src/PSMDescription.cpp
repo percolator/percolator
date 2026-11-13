@@ -65,3 +65,15 @@ void PSMDescription::printProteins(std::ostream& out) const {
         }
     }
 }
+
+void PSMDescription::appendProteins(std::string& out) const {
+    ProteinList proteinIds = proteins();
+    ProteinList::const_iterator it = proteinIds.begin();
+    if (it != proteinIds.end()) {
+        out += *it;
+        for (++it; it != proteinIds.end(); ++it) {
+            out += PSMDescription::proteinNameSeparator_;
+            out += *it;
+        }
+    }
+}

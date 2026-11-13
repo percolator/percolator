@@ -39,7 +39,6 @@ limitations under the License.
 #include "SanityCheck.h"
 #include "Scores.h"
 #include "SetHandler.h"
-#include "TmpDir.h"
 
 #include <algorithm>
 
@@ -56,6 +55,14 @@ class Caller {
   Caller();
   virtual ~Caller();
 
+  // Sets the process-wide settings that the options and the steps of a run
+  // change (verbosity, --no-terminate, random seed, PEP method, protein
+  // inference, protein separator, spectrum file names, feature names,
+  // warnings given once) back to their initial values. The constructor
+  // calls it; a run leaves its settings behind, so code that goes on after
+  // a run and reads them, like the unit tests, calls it as well.
+  static void resetProcessSettings();
+
   static string greeter();
   string extendedGreeter();
   bool parseOptions(int argc, char** argv);
@@ -68,10 +75,12 @@ class Caller {
   std::unique_ptr<ProteinProbEstimator> protEstimator_;
   std::unique_ptr<Enzyme> enzyme_;
   // holds the concatenation of multiple input files, removed at the end
-  std::unique_ptr<TmpDir> tmpDir_;
+
+  // --version or --help was given: parseOptions printed it and run does
+  // nothing
+  bool nothingToRun_ = false;
 
   // file input parameters
-  bool tabInput_;
   bool readStdIn_;
   std::string inputFN_;
   std::vector<std::string> inputFNs_;
@@ -93,10 +102,22 @@ class Caller {
   // SVM / cross validation parameters
   double selectionFdr_, initialSelectionFdr_, testFdr_;
   unsigned int numIterations_, maxPSMs_, nestedXvalBins_, numThreads_;
+  static constexpr unsigned int kDefaultNumFolds = 3u;
+  unsigned int numFolds_ = kDefaultNumFolds;  // --num-folds
+  bool numFoldsSet_ = false;    // --num-folds given
+  unsigned int foldsInMemory_ = 0u;  // --folds-in-memory, 0: by --num-folds
   double selectedCpos_, selectedCneg_;
   bool classicTraining_ = false;
+  bool inPlaceTraining_ = false;
+  // The merge of the cross-validation bins as the options give it:
+  // --merge-normalization (scheme, and secondChanceScheme where given) and
+  // --static (skipNormalizeScores). run() completes it.
+  MergePlan mergePlan_;
+  // a scheme was given, or set by --direction-check pooled; otherwise run()
+  // takes CrossValidation::defaultMergeNormalization of the folds
+  bool mergeNormalizationSet_ = false;
   bool reportEachIteration_, quickValidation_, trainBestPositive_,
-      skipNormalizeScores_, analytics_, useResetAlgorithm_,
+      useResetAlgorithm_,
       useCompositionMatch_, useIrlsPep_, useInterpolatingPep_, usePavaPep_,
       useTdcPep_;
 
@@ -106,6 +127,7 @@ class Caller {
   Timer timer;
 
   std::istream& getDataInStream(std::ifstream& fileStream);
+  void warnAboutSeveralCandidates(const SetHandler& setHandler) const;
   bool loadAndNormalizeData(std::istream& dataStream,
                             SetHandler& setHandler,
                             Scores& allScores);
@@ -115,6 +137,10 @@ class Caller {
   void writeResults(Scores& allScores, bool unique, bool writeOutput);
   void calculateProteinProbabilities(Scores& allScores);
   void checkIsWritable(const std::string& filePath);
+  // inputFiles holds (description, file name) pairs
+  void checkOutputFiles(
+      const std::vector<std::pair<std::string, std::string> >& inputFiles)
+      const;
 };
 
 #endif /*CALLER_H_*/

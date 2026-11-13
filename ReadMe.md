@@ -11,5 +11,27 @@ https://github.com/percolator/percolator/releases
 The building procedure is cmake-based. Helper scripts for building on
 different platforms can be found in: admin/builders/
 
+    cmake -S . -B build
+    cmake --build build -j 4
+    cd build && ctest
+
+Requirements: CMake 3.15 or later and a C++17 compiler. The oldest
+supported GCC is 9; from GCC 11 on, reading and writing numbers use the
+faster std::from_chars and std::to_chars. The continuous integration builds
+with GCC 11 and 13 on Linux (x86-64 and arm64), AppleClang on macOS 15 (the
+binaries run on macOS 12 and later) and Visual Studio 2022 on Windows; its
+job with GCC 9 does not block yet.
+For a profile or a coverage report, pass the compiler's flag, e.g.
+`-DCMAKE_CXX_FLAGS=-pg` (gprof) or `-DCMAKE_CXX_FLAGS=--coverage` (gcov);
+there are no separate CMake options for them.
+Results can differ in a printed digit between platforms, since compilers and
+math libraries round differently; the Build workflow lists the differences
+(job platform-differences).
+
+A Python wheel that holds only the percolator and qvality executables is
+built with `python -m build --wheel` (pyproject.toml), and for all
+platforms by the Wheels workflow. Its name on PyPI is not decided yet, and
+nothing is uploaded there.
+
 The cleanest way to build is to use the vagrant virtual machine
 system, which can be setup using the script: admin/vagrant/manager.sh

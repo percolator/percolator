@@ -24,25 +24,39 @@ using namespace std;
 
 #include <stdarg.h>
 #include <cstring>
+#include "BlasLevel1.h"
 #include "Timer.h"
-
-extern "C" {
-  extern double ddot_(int *, double *, int *, double *, int *); // compute the dot product of two vectors
-  extern int daxpy_(int *, double *, double *, int *, double *, int *); // compute y := alpha * x + y
-  extern int dscal_(int *, double *, double *, int *); // Compute y := alpha * y
-}
 
 #define VERBOSE 1
 #define LOG2(x) 1.4426950408889634*log(x)
 // for compatibility issues, not using log2
 
-/* Buffers of one L2_SVM_MFN solve, sized for all m examples and reused by
-   all its CGLS calls and line searches. */
-SolverWorkspace::SolverWorkspace(int m, int n)
-    : z(static_cast<size_t>(m)), q(static_cast<size_t>(m)),
-      r(static_cast<size_t>(n)), p(static_cast<size_t>(n)),
-      deltas(static_cast<size_t>(m)),
-      gram(static_cast<size_t>(n) * static_cast<size_t>(n)) {}
+/* Makes buffer hold at least size elements, without keeping its contents:
+   a smaller buffer is released before the new one is allocated. */
+template <typename T>
+static void growBuffer(std::vector<T>& buffer, int size) {
+  const size_t needed = static_cast<size_t>(size);
+  if (buffer.size() < needed) {
+    std::vector<T>().swap(buffer);
+    buffer.resize(needed);
+  }
+}
+
+/* The buffers are sized for all m examples and reused by all CGLS calls and
+   line searches of a solve, and by the later solves with this workspace. */
+void SolverWorkspace::prepare(int m, int n, bool cgls) {
+  if (cgls) {
+    growBuffer(z, m);
+    growBuffer(q, m);
+  }
+  growBuffer(r, n);
+  growBuffer(p, n);
+  growBuffer(deltas, m);
+  growBuffer(gram, n * n);
+  growBuffer(activeSubset, m);
+  growBuffer(weightsBar, n);
+  growBuffer(outputsBar, m);
+}
 
 /* q[i] = x_{J[i]}' p for the active rows (length n, intercept included).
    Gives the same result as the reference BLAS dgemv with trans='T', alpha=1
@@ -54,6 +68,9 @@ static void activeRowsTimesVector(int active, const int* J, const AlgIn& data,
   const int n = data.n;
   int i = 0;
   for (; i + 4 <= active; i += 4) {
+    if (i + 16 <= active) {
+      for (int j = i + 12; j < i + 16; j++) prefetchRow(data.row(J[j]), n);
+    }
     const double* x0 = data.row(J[i]);
     const double* x1 = data.row(J[i + 1]);
     const double* x2 = data.row(J[i + 2]);
@@ -115,6 +132,9 @@ void cglsFun2(int active, const int* J, const double* Y,
   // Rows are added to r four at a time, in the same order per element as
   // one daxpy per row, so that r is loaded and stored once per four rows.
   for (; i + 4 <= active; i += 4) {
+    if (i + 16 <= active) {
+      for (int j = i + 12; j < i + 16; j++) prefetchRow(data.row(J[j]), n);
+    }
     for (int j = i; j < i + 4; j++) {
       o[J[j]] += q[j];
       z[j] -= ((Y[J[j]]==1)? cpos : cneg) * q[j];
@@ -162,6 +182,11 @@ static void scoreRows(const int* rows, int numRows, const AlgIn& data, int n0,
                       const double* w, double* o) {
   int i = 0;
   for (; i + 4 <= numRows; i += 4) {
+    if (i + 16 <= numRows) {
+      for (int j = i + 12; j < i + 16; j++) {
+        prefetchRow(data.row(rows[j]), data.n);
+      }
+    }
     const double* x0 = data.row(rows[i]);
     const double* x1 = data.row(rows[i + 1]);
     const double* x2 = data.row(rows[i + 2]);
@@ -200,22 +225,67 @@ static void scoreRows(const int* rows, int numRows, const AlgIn& data, int n0,
 }
 #undef DDOT_BLOCK
 
-/* Solves the same least squares problem as CGLS exactly, by Cholesky
-   factorisation of the normal equations
-     (lambda I + sum_i C_i x_i x_i') beta = sum_i C_i Y_i x_i
-   over the active examples. The n x n system (n = number of features plus
-   one) is built in a single pass over the active rows, whereas CGLS needs
-   two passes per iteration. Updates the outputs of the active examples. */
-int directLeastSquares(const AlgIn& data, const double lambda, const int* J,
-                       int active, double* beta, double* o, double cpos,
-                       double cneg, SolverWorkspace& workspace) {
+/* The pointers of the kernel below do not alias: the Gram matrix belongs to
+   the solver's workspace and the rows to the training set. */
+#if defined(__GNUC__) || defined(__clang__) || defined(_MSC_VER)
+#define SSL_RESTRICT __restrict
+#else
+#define SSL_RESTRICT
+#endif
+
+/* Builds the normal equations of the active examples, see
+   directLeastSquares: G = sum_i C_i x_i x_i' (upper triangle, row-major,
+   n x n) and b = sum_i C_i Y_i x_i.
+
+   Four rows are added per pass over G. Each element of G and b still
+   receives the terms of the rows in their order, so the sums are, bit for
+   bit, those of adding one row per pass; but the element is loaded and
+   stored once for four rows, and G, which the rows' passes otherwise
+   stream through, is read and written a quarter as often. */
+void accumulateNormalEquations(const AlgIn& data, const int* J, int active,
+                               double cpos, double cneg, double* G,
+                               double* b) {
   const int n = data.n;
   const double* Y = data.Y.data();
-  double* G = workspace.gram.data();  // upper triangle, row-major
-  double* b = workspace.r.data();
   std::fill(G, G + static_cast<size_t>(n) * n, 0.0);
   std::fill(b, b + n, 0.0);
-  for (int i = 0; i < active; i++) {
+  int i = 0;
+  for (; i + 4 <= active; i += 4) {
+    if (i + 12 <= active) {
+      for (int q = i + 8; q < i + 12; q++) prefetchRow(data.row(J[q]), n);
+    }
+    const int i0 = J[i], i1 = J[i + 1], i2 = J[i + 2], i3 = J[i + 3];
+    const double* SSL_RESTRICT x0 = data.row(i0);
+    const double* SSL_RESTRICT x1 = data.row(i1);
+    const double* SSL_RESTRICT x2 = data.row(i2);
+    const double* SSL_RESTRICT x3 = data.row(i3);
+    const double c0 = (Y[i0] == 1) ? cpos : cneg;
+    const double c1 = (Y[i1] == 1) ? cpos : cneg;
+    const double c2 = (Y[i2] == 1) ? cpos : cneg;
+    const double c3 = (Y[i3] == 1) ? cpos : cneg;
+    const double y0 = Y[i0], y1 = Y[i1], y2 = Y[i2], y3 = Y[i3];
+    for (int j = 0; j < n; j++) {
+      const double cx0 = c0 * x0[j], cx1 = c1 * x1[j], cx2 = c2 * x2[j],
+                   cx3 = c3 * x3[j];
+      double t = b[j];
+      t += cx0 * y0;
+      t += cx1 * y1;
+      t += cx2 * y2;
+      t += cx3 * y3;
+      b[j] = t;
+      double* SSL_RESTRICT Gj = G + static_cast<size_t>(j) * n;
+      for (int k = j; k < n; k++) {
+        double g = Gj[k];
+        g += cx0 * x0[k];
+        g += cx1 * x1[k];
+        g += cx2 * x2[k];
+        g += cx3 * x3[k];
+        Gj[k] = g;
+      }
+    }
+  }
+  // the last one to three rows
+  for (; i < active; i++) {
     const int ii = J[i];
     const double* x = data.row(ii);
     const double c = (Y[ii] == 1) ? cpos : cneg;
@@ -228,6 +298,22 @@ int directLeastSquares(const AlgIn& data, const double lambda, const int* J,
       }
     }
   }
+}
+#undef SSL_RESTRICT
+
+/* Solves the same least squares problem as CGLS exactly, by Cholesky
+   factorisation of the normal equations
+     (lambda I + sum_i C_i x_i x_i') beta = sum_i C_i Y_i x_i
+   over the active examples. The n x n system (n = number of features plus
+   one) is built in a single pass over the active rows, whereas CGLS needs
+   two passes per iteration. Updates the outputs of the active examples. */
+int directLeastSquares(const AlgIn& data, const double lambda, const int* J,
+                       int active, double* beta, double* o, double cpos,
+                       double cneg, SolverWorkspace& workspace) {
+  const int n = data.n;
+  double* G = workspace.gram.data();  // upper triangle, row-major
+  double* b = workspace.r.data();
+  accumulateNormalEquations(data, J, active, cpos, cneg, G, b);
   // Cholesky factorisation G = L L', with L stored in the lower triangle
   for (int j = 0; j < n; j++) {
     G[static_cast<size_t>(j) * n + j] += lambda;
@@ -263,6 +349,7 @@ int directLeastSquares(const AlgIn& data, const double lambda, const int* J,
   }
   for (int i = 0; i < active; i++) {
     const int ii = J[i];
+    if (i + 8 < active) prefetchRow(data.row(J[i + 8]), n);
     const double* x = data.row(ii);
     double t = 0.0;
     for (int k = 0; k < n; k++) t += x[k] * beta[k];
@@ -287,9 +374,6 @@ int CGLS(const AlgIn& data, const double lambda, const int cgitermax,
   double* q = workspace.q.data();
   int ii = 0;
   int i;
-  int n0 = n-1;
-  int inc = 1;
-  double one = 1;
   double negLambda = -lambda;
   double* r = workspace.r.data();
   for (i = n; i--;) {
@@ -297,13 +381,14 @@ int CGLS(const AlgIn& data, const double lambda, const int cgitermax,
   }
   for (i = 0; i < active; i++) {
     ii = J[i];
+    if (i + 8 < active) prefetchRow(data.row(J[i + 8]), n);
     z[i] = ((Y[ii]==1)? cpos : cneg) * (Y[ii] - o[ii]);
     addScaledRow(z[i], data.row(ii), n, r);
   }
   double* p = workspace.p.data();
-  daxpy_(&n, &negLambda, beta, &inc, r, &inc);
+  blas::axpy(n, negLambda, beta, r);
   memcpy(p, r, sizeof(double)*static_cast<std::size_t>(n));
-  double omega1 = ddot_(&n, r, &inc, r, &inc);
+  double omega1 = blas::dot(n, r, r);
   double omega_p = omega1;
   double omega_q = 0.0;
   double inv_omega2 = 1 / omega1;
@@ -321,15 +406,15 @@ int CGLS(const AlgIn& data, const double lambda, const int cgitermax,
     inv_omega2 = 1 / omega1;
 
     memcpy(r, beta, sizeof(double)*static_cast<std::size_t>(n));
-    dscal_(&n, &negLambda, r, &inc);
+    blas::scal(n, negLambda, r);
 
-    daxpy_(&n, &gamma, p, &inc, beta, &inc);
-    dscal_(&active, &gamma, q, &inc);
+    blas::axpy(n, gamma, p, beta);
+    blas::scal(active, gamma, q);
 
     cglsFun2(active, J, Y, data, q, o, z, r, cpos, cneg);
 
-    omega_z = ddot_(&active, z, &inc, z, &inc);
-    omega1 = ddot_(&n, r, &inc, r, &inc);
+    omega_z = blas::dot(active, z, z);
+    omega1 = blas::dot(n, r, r);
 
     if (VERBOSE_CGLS) {
       cout << "..." << cgiter << " ( " << omega1 << " )";
@@ -341,9 +426,9 @@ int CGLS(const AlgIn& data, const double lambda, const int cgitermax,
     }
 
     scale = omega1 * inv_omega2;
-    dscal_(&n, &scale, p, &inc);
-    daxpy_(&n, &one, r, &inc, p, &inc);
-    omega_p = ddot_(&n, p, &inc, p, &inc);
+    blas::scal(n, scale, p);
+    blas::axpy(n, 1.0, r, p);
+    omega_p = blas::dot(n, p, p);
   }
   if (VERBOSE_CGLS) {
     cout << "...Done." << endl;
@@ -359,11 +444,26 @@ int CGLS(const AlgIn& data, const double lambda, const int cgitermax,
 int L2_SVM_MFN(const AlgIn& data, const options& Options,
                std::vector<double>& Weights,
                std::vector<double>& Outputs, double cpos, double cneg) {
+  SolverWorkspace workspace;
+  return L2_SVM_MFN(data, Options, Weights, Outputs, cpos, cneg, workspace);
+}
+
+int L2_SVM_MFN(const AlgIn& data, const options& Options,
+               std::vector<double>& Weights,
+               std::vector<double>& Outputs, double cpos, double cneg,
+               SolverWorkspace& workspace) {
   /* Disassemble the structures */
   Timer tictoc;
   const double* Y = data.Y.data();
   int n = static_cast<int>(Weights.size());
   const int m = data.m;
+  if (m == 0) {
+    // Without examples the objective 0.5 * lambda * |w|^2 is smallest at
+    // w = 0, which the iterations below also reach, but only after
+    // passing the null data pointers of the empty buffers to memcpy.
+    std::fill(Weights.begin(), Weights.end(), 0.0);
+    return 1;
+  }
   double lambda = Options.lambda;
   double epsilon = BIG_EPSILON;
   int cgitermax = SMALL_CGITERMAX;
@@ -374,12 +474,11 @@ int L2_SVM_MFN(const AlgIn& data, const options& Options,
   double diff = 0.0;
   int ini = 0;
   int n0 = n-1;
-  int inc = 1;
+  workspace.prepare(m, n, !Options.directSolve);
   // active examples first, inactive ones from the back
-  std::vector<int> activeSubset(static_cast<size_t>(m));
-  int* activeSet = activeSubset.data();
+  int* activeSet = workspace.activeSubset.data();
   // initialize
-  F = 0.5 * lambda * ddot_(&n, w, &inc, w, &inc);
+  F = 0.5 * lambda * blas::dot(n, w, w);
   int active = 0;
   int inactive = m - 1; // l-1
   for (int i = 0; i < m; i++) {
@@ -397,13 +496,10 @@ int L2_SVM_MFN(const AlgIn& data, const options& Options,
   int iter = 0;
   int opt = 0;
   int opt2 = 0;
-  std::vector<double> weightsBar(static_cast<size_t>(n));
-  std::vector<double> outputsBar(static_cast<size_t>(m));
-  double* w_bar = weightsBar.data();
-  double* o_bar = outputsBar.data();
+  double* w_bar = workspace.weightsBar.data();
+  double* o_bar = workspace.outputsBar.data();
   double delta = 0.0;
   int ii = 0;
-  SolverWorkspace workspace(m, n);
   while (iter < Options.mfnitermax) {
     iter++;
     if (VERB > 4) {
@@ -461,9 +557,9 @@ int L2_SVM_MFN(const AlgIn& data, const options& Options,
                         workspace.deltas.data());
     F_old = F;
     double delta2 = 1-delta;
-    dscal_(&n, &delta2, w, &inc);
-    daxpy_(&n, &delta, w_bar, &inc, w, &inc);
-    F = 0.5 * lambda * ddot_(&n, w, &inc, w, &inc);
+    blas::scal(n, delta2, w);
+    blas::axpy(n, delta, w_bar, w);
+    F = 0.5 * lambda * blas::dot(n, w, w);
     active = 0;
     inactive = m - 1;
     for (int i = 0; i < m; i++) {
@@ -513,30 +609,45 @@ double line_search(double* w, double* w_bar, double lambda, double* o,
       R += (o_bar[i] - Y[i]) * d2;
       if (diff > 0) {
         deltas[p].delta = (1 - Y[i] * o[i]) / diff;
-        deltas[p].index = i;
-        deltas[p].s = -1;
+        deltas[p].index = i;  // active, leaves the active set
         p++;
       }
     } else {
       if (diff < 0) {
         deltas[p].delta = (1 - Y[i] * o[i]) / diff;
-        deltas[p].index = i;
-        deltas[p].s = 1;
+        deltas[p].index = i;  // inactive, enters the active set
         p++;
       }
     }
   }
-  sort(deltas, deltas + p);
+  // The breakpoints are visited in increasing order until the derivative
+  // is no longer negative, usually after a small part of them. They are
+  // therefore sorted chunk by chunk, each chunk holding the smallest of the
+  // remaining breakpoints, and the chunks double in size. operator< of
+  // Delta is a total order, so the visits are the same as after a full
+  // sort. Runs on the calling thread, inside the parallel training loop.
   double delta_prime = 0.0;
-  for (i = 0; i < p; i++) {
-    delta_prime = L + deltas[i].delta * (R - L);
-    if (delta_prime >= 0) {
-      break;
+  int start = 0, chunk = std::max(p / 16, 256);
+  while (start < p) {
+    const int end = (chunk < p - start) ? start + chunk : p;
+    if (end < p) {
+      std::nth_element(deltas + start, deltas + end - 1, deltas + p);
     }
-    ii = deltas[i].index;
-    diff = (deltas[i].s) * ((Y[ii]==1)? cpos : cneg) * (o_bar[ii] - o[ii]);
-    L += diff * (o[ii] - Y[ii]);
-    R += diff * (o_bar[ii] - Y[ii]);
+    std::sort(deltas + start, deltas + end);
+    for (i = start; i < end; i++) {
+      delta_prime = L + deltas[i].delta * (R - L);
+      if (delta_prime >= 0) {
+        return (-L / (R - L));
+      }
+      ii = deltas[i].index;
+      // -1 for an example that leaves the active set, 1 for one that enters
+      const int sign = (Y[ii] * o[ii] < 1) ? -1 : 1;
+      diff = sign * ((Y[ii]==1)? cpos : cneg) * (o_bar[ii] - o[ii]);
+      L += diff * (o[ii] - Y[ii]);
+      R += diff * (o_bar[ii] - Y[ii]);
+    }
+    start = end;
+    chunk = (chunk <= p / 2) ? 2 * chunk : p;
   }
   return (-L / (R - L));
 }

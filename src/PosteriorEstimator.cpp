@@ -38,16 +38,23 @@ using namespace std;
 #include "Transform.h"
 #include "Globals.h"
 #include "IsotonicPEP.h"
+#include "FdrWalk.h"
 
-static int noIntervals = 500;
+static const int kDefaultNoIntervals = 500;
+static int noIntervals = kDefaultNoIntervals;
 static unsigned int numLambda = 100;
 static double maxLambda = 0.5;
 
-bool PosteriorEstimator::reversed = false;
 bool PosteriorEstimator::pvalInput = false;
 bool PosteriorEstimator::competition = false;
-bool PosteriorEstimator::includeNegativesInResult = false;
 bool PosteriorEstimator::usePi0_ = true;
+
+void PosteriorEstimator::resetToDefaults() {
+  pvalInput = false;
+  competition = false;
+  usePi0_ = true;
+  noIntervals = kDefaultNoIntervals;
+}
 
 pair<double, bool> make_my_pair(double d, bool b) {
   return make_pair(d, b);
@@ -82,10 +89,11 @@ double mymin(double a, double b) {
 }
 
 void PosteriorEstimator::estimatePEP(vector<pair<double, bool> >& combined,
-    bool usePi0, double pi0, vector<double>& peps, bool include_negative) {
+    bool usePi0, double pi0, vector<double>& peps, bool include_negative,
+    double oddsFactor, bool reversed) {
   // Logistic regression on the data
   LogisticRegression lr;
-  estimate(combined, lr, usePi0, pi0);
+  estimate(combined, lr, usePi0, pi0, reversed);
   vector<double> xvals(0);
   vector<pair<double, bool> >::const_iterator elem = combined.begin();
   for (; elem != combined.end(); ++elem) {
@@ -104,7 +112,8 @@ void PosteriorEstimator::estimatePEP(vector<pair<double, bool> >& combined,
 #endif
   if (peps.size() == 0) return;
   
-  double top = min(1.0, exp(*max_element(peps.begin(), peps.end())));
+  double top =
+      min(1.0, oddsFactor * exp(*max_element(peps.begin(), peps.end())));
   vector<double>::iterator pep = peps.begin();
   bool crap = false;
   for (; pep != peps.end(); ++pep) {
@@ -112,7 +121,7 @@ void PosteriorEstimator::estimatePEP(vector<pair<double, bool> >& combined,
       *pep = top;
       continue;
     }
-    *pep = exp(*pep);
+    *pep = oddsFactor * exp(*pep);
     if (*pep >= top) {
       *pep = top;
       crap = true;
@@ -122,7 +131,7 @@ void PosteriorEstimator::estimatePEP(vector<pair<double, bool> >& combined,
 }
 
 void PosteriorEstimator::estimate(vector<pair<double, bool> >& combined,
-    LogisticRegression& lr, bool usePi0, double pi0) {
+    LogisticRegression& lr, bool usePi0, double pi0, bool reversed) {
   // switch sorting order if we do not use mix-max
   if (!reversed && !usePi0) {
     reverse(combined.begin(), combined.end());
@@ -200,37 +209,43 @@ void PosteriorEstimator::finishStandalone(
   vector<double> q(0), xvals(0);
   if (pvalInput) {
     getQValuesFromP(pi0, p, q);
+    if (includeNegativesInResult_) {
+      // one q value per line, as for score input: the decoys are printed too
+      q = getAllQValuesFromP(pi0, p, q, combined);
+    }
   } else {
-    getQValues(pi0, combined, q);
+    getQValues(pi0, combined, q, false, 0.5, includeNegativesInResult_);
   }
   vector<pair<double, bool> >::const_iterator elem = combined.begin();
   for (; elem != combined.end(); ++elem)
   {
-    if (!includeNegativesInResult && elem->second)
+    if (!includeNegativesInResult_ && elem->second)
     {
       xvals.push_back(elem->first);
     }
-    else if(includeNegativesInResult)
+    else if(includeNegativesInResult_)
     {
       xvals.push_back(elem->first);
     }
   }
   vector<double>::iterator xval = xvals.begin();
   vector<double>::const_iterator qv = q.begin(), pep = peps.begin();
+  // '\n' instead of endl: a flush per line costs one write() call per line
   if (resultFileName.empty()) {
-    cout << "Score\tPEP\tq-value" << endl;
+    cout << "Score\tPEP\tq-value\n";
     for (; xval != xvals.end(); ++xval, ++pep, ++qv)
     {
-      cout << *xval << "\t" << *pep << "\t" << *qv << endl;
+      cout << *xval << "\t" << *pep << "\t" << *qv << '\n';
     }
+    flushStandardOutput();
   } else {
     ofstream resultstream(resultFileName.c_str());
-    resultstream << "Score\tPEP\tq-value" << endl;
+    resultstream << "Score\tPEP\tq-value\n";
     for (; xval != xvals.end(); ++xval, ++pep, ++qv)
     {
-      resultstream << *xval << "\t" << *pep << "\t" << *qv << endl;
+      resultstream << *xval << "\t" << *pep << "\t" << *qv << '\n';
     }
-    resultstream.close();
+    closeOutputFile(resultstream, resultFileName);
   }
 }
 
@@ -305,7 +320,8 @@ void PosteriorEstimator::binData(const vector<pair<double, bool> >& combined,
 }
 
 /**
- * Assumes that scores are sorted in descending order
+ * The mix-max counts of binData. Assumes that scores are sorted in
+ * descending order
  */
 void PosteriorEstimator::getMixMaxCounts(const vector<pair<double, bool> >& combined,
     std::vector<double>& h_w_le_z, std::vector<double>& h_z_le_z) {
@@ -331,69 +347,31 @@ void PosteriorEstimator::getMixMaxCounts(const vector<pair<double, bool> >& comb
 }
 
 /**
- * This is a reimplementation of 
- *   Crux/src/app/AssignConfidenceApplication.cpp::compute_decoy_qvalues_mixmax 
- * Which itself was a reimplementation of Uri Keich's code written in R.
- *
- * Assumes that scores are sorted in descending order
- * 
- * If pi0 == 1.0 this is equal to the "traditional" q-value calculation
+ * The q values of the entries of combined, which have to be sorted with the
+ * best score first: one per target, or one per entry with includeNegatives.
+ * The FDR estimates are those of walkFdrEstimates; with pi0 == 1.0 this is
+ * the "traditional" q-value calculation.
  */
-void PosteriorEstimator::getQValues(double pi0, 
+void PosteriorEstimator::getQValues(double pi0,
     const vector<pair<double, bool> >& combined, vector<double>& q,
-    bool skipDecoysPlusOne, double nullTargetWinProb) {
+    bool skipDecoysPlusOne, double nullTargetWinProb, bool includeNegatives) {
   double decoyFactor = nullTargetWinProb / (1.0 - nullTargetWinProb);
-
-  std::vector<double> h_w_le_z, h_z_le_z; // N_{w<=z} and N_{z<=z}
-  if (pi0 < 1.0) {
-    getMixMaxCounts(combined, h_w_le_z, h_z_le_z);
-  }
-
-  double estPx_lt_zj = 0.0;
-  double E_f1_mod_run_tot = 0.0;
-  double fdr = 0.0;
-
-  int n_z_ge_w = 1, n_w_ge_w = 0; // N_{z>=w} and N_{w>=w}
-  if (skipDecoysPlusOne) n_z_ge_w = 0;
-  
-  std::vector<pair<double, bool> >::const_iterator myPair = combined.begin();
-  int decoyQueue = 0, targetQueue = 0; // handles ties
-  for ( ; myPair != combined.end(); ++myPair) {
-    if (myPair->second) { 
-      ++n_w_ge_w; // target PSM
-      ++targetQueue;
-    } else {
-      ++n_z_ge_w; // decoy PSM
-      ++decoyQueue;
-    }
-    
-    // handles ties
-    if (myPair+1 == combined.end() || myPair->first != (myPair+1)->first) {
-      if (pi0 < 1.0 && decoyQueue > 0) {
-        int j = static_cast<int>(h_w_le_z.size()) - (n_z_ge_w - 1);
-        int cnt_w = static_cast<int>(h_w_le_z.at(static_cast<std::size_t>(j)));
-        int cnt_z = static_cast<int>(h_z_le_z.at(static_cast<std::size_t>(j)));
-        estPx_lt_zj = (double)(cnt_w - pi0*cnt_z) / ((1.0 - pi0)*cnt_z);
-        estPx_lt_zj = estPx_lt_zj > 1 ? 1 : estPx_lt_zj;
-        estPx_lt_zj = estPx_lt_zj < 0 ? 0 : estPx_lt_zj;
-        E_f1_mod_run_tot += decoyQueue * estPx_lt_zj * (1.0 - pi0);
-        if (VERB > 4) {
-          std::cerr << "Mix-max num negatives correction: "
-            << (1.0-pi0) * n_z_ge_w << " vs. " << E_f1_mod_run_tot << std::endl;
+  walkFdrEstimates(
+      combined.size(),
+      [&combined](std::size_t ix) { return combined[ix].second; },
+      [&combined](std::size_t ix) {
+        return combined[ix].first == combined[ix + 1].first;
+      },
+      pi0, decoyFactor, skipDecoysPlusOne,
+      [&q, includeNegatives](std::size_t begin, std::size_t end,
+                             int numGroupTargets, int, double fdr) {
+        const std::size_t numValues =
+            includeNegatives ? end - begin
+                             : static_cast<std::size_t>(numGroupTargets);
+        for (std::size_t i = 0; i < numValues; ++i) {
+          q.push_back((std::min)(fdr, 1.0));
         }
-      }
-      
-      if (includeNegativesInResult) {
-        targetQueue += decoyQueue;
-      }
-      fdr = (n_z_ge_w * pi0 + E_f1_mod_run_tot) / (double)((std::max)(1, n_w_ge_w)) * decoyFactor;
-      for (int i = 0; i < targetQueue; ++i) {
-        q.push_back((std::min)(fdr, 1.0));
-      }
-      decoyQueue = 0;
-      targetQueue = 0;
-    }
-  }
+      });
   // Convert the FDRs into q-values.
   partial_sum(q.rbegin(), q.rend(), q.rbegin(), mymin);
 }
@@ -407,6 +385,42 @@ void PosteriorEstimator::getQValuesFromP(double pi0,
 		q.push_back((*myP * m * pi0) / (double)nP);
 	}
 	partial_sum(q.rbegin(), q.rend(), q.rbegin(), mymin);
+}
+
+/**
+ * The q values of all entries of combined for p value input, where the
+ * targets are the p values and the decoys are the quantiles of the uniform
+ * distribution that run() adds. A target keeps its value of
+ * getQValuesFromP (targetQ). A decoy gets the same estimate at its own p
+ * value d, pi0 * m * d / #{p <= d}, limited by the q value of the next
+ * target, so that the values do not decrease along the list. Both p and
+ * combined have to be sorted in ascending order.
+ */
+vector<double> PosteriorEstimator::getAllQValuesFromP(double pi0,
+    const vector<double>& p, const vector<double>& targetQ,
+    const vector<pair<double, bool> >& combined) {
+  const double m = static_cast<double>(p.size());
+  vector<double> q;
+  q.reserve(combined.size());
+  size_t numTargets = 0;  // targets written so far
+  size_t numLe = 0;       // p values <= the current decoy
+  for (const auto& elem : combined) {
+    if (elem.second) {
+      // a target of combined is a p value, so targetQ has a value for it
+      q.push_back(targetQ.at(numTargets++));
+      continue;
+    }
+    while (numLe < p.size() && p[numLe] <= elem.first) {
+      ++numLe;
+    }
+    double fdr = pi0 * m * elem.first /
+                 static_cast<double>((std::max)(numLe, static_cast<size_t>(1)));
+    if (numLe < targetQ.size()) {
+      fdr = (std::min)(fdr, targetQ[numLe]);
+    }
+    q.push_back(fdr);
+  }
+  return q;
 }
 
 // assumes pep are sorted in ascending order
@@ -522,26 +536,65 @@ double PosteriorEstimator::estimatePi0(vector<double>& p,
   return pi0;
 }
 
+void PosteriorEstimator::readScores(const std::string& fileName,
+                                    const char* role,
+                                    std::vector<double>& scores) {
+  ifstream in(fileName.c_str(), ios::in);
+  if (!in.is_open()) {
+    throw MyException("ERROR: Could not open the " + std::string(role) +
+                      " file " + fileName + ".\n");
+  }
+  // strtod on each whitespace-separated token gives the same values as
+  // operator>>, which also converts with strtod, but reports the token at
+  // which reading stops instead of ending the list there
+  std::string token;
+  while (in >> token) {
+    char* end = nullptr;
+    double value = std::strtod(token.c_str(), &end);
+    if (end == token.c_str() || *end != '\0' || !std::isfinite(value)) {
+      ostringstream oss;
+      oss << "ERROR: Value " << scores.size() + 1 << " of the " << role
+          << " file " << fileName << " is not a finite number: \"" << token
+          << "\"." << std::endl;
+      throw MyException(oss.str());
+    }
+    scores.push_back(value);
+  }
+  if (in.bad()) {
+    throw MyException("ERROR: Could not read the " + std::string(role) +
+                      " file " + fileName + ".\n");
+  }
+  if (scores.empty()) {
+    throw MyException("ERROR: The " + std::string(role) + " file " +
+                      fileName + " contains no values.\n");
+  }
+}
+
 int PosteriorEstimator::run() {
-  ifstream target(targetFile.c_str(), ios::in), decoy(decoyFile.c_str(),
-                                                      ios::in);
-  istream_iterator<double> tarIt(target), decIt(decoy), tarEnd, decEnd;
+  if (nothingToRun_) {
+    return true;  // parseOptions printed the version or the help
+  }
   // Merge a labeled version of the two lists into a combined list
   vector<pair<double, bool> > combined;
   vector<double> pvals;
   if (!pvalInput) {
-      std::transform(tarIt, tarEnd, std::back_inserter(combined),
-                       [](double value) { return make_my_pair(value, true); });
+      vector<double> targetScores, decoyScores;
+      readScores(targetFile, "target score", targetScores);
+      readScores(decoyFile, "null score", decoyScores);
+      std::transform(targetScores.begin(), targetScores.end(),
+                     std::back_inserter(combined),
+                     [](double value) { return make_my_pair(value, true); });
       size_t targetSize = combined.size();
-      std::transform(decIt, decEnd, std::back_inserter(combined),
-                       [](double value) { return make_my_pair(value, false); });
+      std::transform(decoyScores.begin(), decoyScores.end(),
+                     std::back_inserter(combined),
+                     [](double value) { return make_my_pair(value, false); });
 
       if (VERB > 0) {
             std::cerr << "Read " << targetSize << " target scores and "
                       << (combined.size() - targetSize) << " decoy scores" << std::endl;
       }
   } else {
-      std::copy(tarIt, tarEnd, std::back_inserter(pvals));
+      readScores(targetFile, "p value", pvals);
       std::sort(pvals.begin(), pvals.end());
       std::transform(pvals.begin(), pvals.end(), std::back_inserter(combined),
                        [](double value) { return make_my_pair(value, true); });
@@ -551,18 +604,21 @@ int PosteriorEstimator::run() {
       for (size_t ix = 0; ix < nDec; ++ix) {
           combined.push_back(make_my_pair(step * static_cast<double>(1 + 2 * ix), false));
       }
-      reversed = true;
+      reversed_ = true;
 
       if (VERB > 0) {
             std::cerr << "Read " << pvals.size() << " statistics" << std::endl;
       }
   }
-  if (reversed) {
+  if (reversed_) {
     if (VERB > 0) {
       cerr << "Reversing all scores" << endl;
     }
   }
-  if (reversed) // sorting in ascending order
+  // std::sort here and above, not parallelSort: -0 and 0 in the input compare
+  // equal but print differently, and only a sort on one thread puts them in
+  // an order that does not depend on the number of threads.
+  if (reversed_) // sorting in ascending order
   {
     sort(combined.begin(), combined.end());
   }
@@ -588,7 +644,8 @@ int PosteriorEstimator::run() {
   
   if (irlsPep_) {
     // Logistic regression on the data
-    estimatePEP(combined, usePi0_, pi0, peps,includeNegativesInResult);
+    estimatePEP(combined, usePi0_, pi0, peps, includeNegativesInResult_, 1.0,
+                reversed_);
   } else {
     estimateMonotonePEP(combined, pvals, pi0, peps);
   }
@@ -601,7 +658,7 @@ void PosteriorEstimator::estimateMonotonePEP(
     const vector<pair<double, bool> >& combined, const vector<double>& p,
     double pi0, vector<double>& peps) const {
   // combined is sorted best first; the regressions expect larger x = better
-  const double sign = reversed ? -1.0 : 1.0;
+  const double sign = reversed_ ? -1.0 : 1.0;
   InferPEP reg(!pavaPep_);
   peps.clear();
   if (tdcPep_ && !pvalInput) {
@@ -619,7 +676,7 @@ void PosteriorEstimator::estimateMonotonePEP(
     vector<double> all = rankPep_ ? reg.tdc_to_pep(isDecoy, {}, oddsFactor)
                                   : reg.tdc_to_pep(isDecoy, x, oddsFactor);
     for (size_t ix = 0; ix < combined.size(); ++ix) {
-      if (combined[ix].second || includeNegativesInResult) {
+      if (combined[ix].second || includeNegativesInResult_) {
         peps.push_back(all[ix]);
       }
     }
@@ -634,11 +691,14 @@ void PosteriorEstimator::estimateMonotonePEP(
   vector<double> q, targetQ, targetX;
   if (pvalInput) {
     getQValuesFromP(pi0, p, q);
+    if (includeNegativesInResult_) {
+      q = getAllQValuesFromP(pi0, p, q, combined);
+    }
   } else {
-    getQValues(pi0, combined, q);
+    getQValues(pi0, combined, q, false, 0.5, includeNegativesInResult_);
   }
-  // q holds one value per target, or per entry with includeNegativesInResult
-  const bool allEntries = !pvalInput && includeNegativesInResult;
+  // q holds one value per target, or per entry with includeNegativesInResult_
+  const bool allEntries = includeNegativesInResult_;
   for (size_t ix = 0, iq = 0; ix < combined.size(); ++ix) {
     if (!combined[ix].second && !allEntries) continue;
     if (combined[ix].second && iq < q.size()) {
@@ -649,7 +709,7 @@ void PosteriorEstimator::estimateMonotonePEP(
   }
   vector<double> targetPep = rankPep_ ? reg.q_to_pep(targetQ)
                                       : reg.qns_to_pep(targetQ, targetX);
-  if (!includeNegativesInResult) {
+  if (!includeNegativesInResult_) {
     peps = targetPep;
     return;
   }
@@ -769,7 +829,22 @@ bool PosteriorEstimator::parseOptions(int argc, char** argv) {
                    "",
                    TRUE_IF_SET);
 
+  cmd.defineOption(Option::NO_SHORT_OPT,
+                   "version",
+                   "Print the version of qvality on standard output and exit.",
+                   "",
+                   TRUE_IF_SET);
+
   cmd.parseArgs(argc, argv);
+  if (cmd.helpRequested()) {
+    nothingToRun_ = true;  // the parser printed the help
+    return true;
+  }
+  if (cmd.isOptionSet("version")) {
+    std::cout << "qvality version " << VERSION << std::endl;
+    nothingToRun_ = true;
+    return true;
+  }
   if (cmd.isOptionSet("verbose")) {
     Globals::getInstance()->setVerbose(cmd.getInt("verbose", 0, 10));
   }
@@ -786,13 +861,13 @@ bool PosteriorEstimator::parseOptions(int argc, char** argv) {
     resultFileName = cmd.options["output-file"];
   }
   if (cmd.isOptionSet("reverse")) {
-    PosteriorEstimator::setReversed(true);
+    reversed_ = true;
   }
   if (cmd.isOptionSet("tdc-input")) {
     PosteriorEstimator::setUsePi0(false);
   }
   if (cmd.isOptionSet("include-negative")) {
-    PosteriorEstimator::setNegative(true);
+    includeNegativesInResult_ = true;
   }
   irlsPep_ = cmd.isOptionSet("irls-pep");
   pavaPep_ = cmd.isOptionSet("pava-pep");
@@ -803,18 +878,23 @@ bool PosteriorEstimator::parseOptions(int argc, char** argv) {
          << "with --irls-pep." << endl;
   }
   if (cmd.arguments.size() > 2) {
+    // ends with the help and exit status 0, as when help() ended the process
     cerr << "Too many arguments given" << endl;
     cmd.help();
+    nothingToRun_ = true;
+    return true;
   }
   if (cmd.arguments.size() == 0) {
     cerr << "No arguments given" << endl;
     cmd.help();
+    nothingToRun_ = true;
+    return true;
   }
   targetFile = cmd.arguments[0];
   if (cmd.arguments.size() == 2) {
     decoyFile = cmd.arguments[1];
   } else {
-    PosteriorEstimator::setReversed(true);
+    reversed_ = true;
     pvalInput = true;
   }
   return true;

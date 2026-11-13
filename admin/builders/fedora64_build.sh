@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # managing input arguments
-while getopts “s:b:r:t:” OPTION; do
+while getopts "s:b:r:t:" OPTION; do
   case $OPTION in
     s) src_dir=${OPTARG};;
     t) branch=${OPTARG};;
@@ -31,7 +31,6 @@ echo "The Builder $0 is building the Percolator packages with src=${src_dir} and
 whoami;
 
 sudo dnf install -y gcc gcc-c++ make cmake wget rpm-build
-sudo dnf install -y zlib-devel bzip2-devel
 
 cd ${src_dir}
 

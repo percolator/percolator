@@ -22,6 +22,9 @@ struct MonotoneParams {
   bool include_intercept = true;
   int intercept_col = 0; // if include_intercept, usually 0
   std::vector<double> knots; // knot policy fills this
+  // iteration limit of the active-set solver; 0 for its default,
+  // 10 * (number of coefficients) + 100
+  int max_solver_iters = 0;
 };
 
 class MonotoneRegressor {

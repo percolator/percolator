@@ -1,7 +1,11 @@
-# Find a suitable Python interpreter
-find_package(Python3 COMPONENTS Interpreter REQUIRED)
+# Find a suitable Python interpreter; without one there are no system tests
+find_package(Python3 COMPONENTS Interpreter)
+if(NOT Python3_Interpreter_FOUND)
+  message(STATUS "Python 3 not found: the system tests are not available")
+  return()
+endif()
 
-# SETTING VARIBALES THAT WILL BE OF USE IN THE TEST SCRIPTS
+# SETTING VARIABLES THAT WILL BE OF USE IN THE TEST SCRIPTS
 set(pathToBinaries ${CMAKE_INSTALL_PREFIX}/bin)
 set(pathToData ${CMAKE_SOURCE_DIR}/data)
 set(pathToOutputData ${CMAKE_BINARY_DIR}/data)
@@ -30,3 +34,29 @@ foreach(current_system_test ${tests})
               COMMAND  ${Python3_EXECUTABLE} ${system_tests_dir}/${current_system_test}.py)
 endforeach(current_system_test)
 add_custom_target(test-install ${system_tests_commands} VERBATIM)
+
+# The same scripts also run with ctest, on the binaries in the build tree,
+# so that no installation (and no sudo) is needed: SYSTEM_TEST_BIN_DIR
+# replaces pathToBinaries. The performance tests read the output of the
+# correctness tests, so they run after them.
+foreach(current_system_test ${tests})
+  if(current_system_test MATCHES "Qvality")
+    set(binary qvality)
+  else()
+    set(binary percolator)
+  endif()
+  if(TARGET ${binary})
+    add_test(NAME ${current_system_test}
+             COMMAND ${CMAKE_COMMAND} -E env
+                     "SYSTEM_TEST_BIN_DIR=$<TARGET_FILE_DIR:${binary}>"
+                     "OMP_WAIT_POLICY=passive"
+                     ${Python3_EXECUTABLE}
+                     ${system_tests_dir}/${current_system_test}.py)
+  endif()
+endforeach()
+if(TARGET percolator)
+  set_tests_properties(SystemTest_Percolator_Performance PROPERTIES
+                       DEPENDS SystemTest_Percolator_Correctness)
+endif()
+set_tests_properties(SystemTest_Qvality_Performance PROPERTIES
+                     DEPENDS SystemTest_Qvality_Correctness)

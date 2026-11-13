@@ -35,7 +35,6 @@ whoami
 ${SUDO} dnf clean all
 ${SUDO} dnf -y distro-sync
 ${SUDO} dnf -y install gcc gcc-c++ wget rpm-build cmake git
-${SUDO} dnf -y install zlib-devel bzip2-devel
 ${SUDO} dnf -y install epel-release
 ${SUDO} dnf -y install gtest-devel
 
@@ -49,7 +48,7 @@ echo "cmake percolator ....."
 mkdir -p ${build_dir}/percolator
 cd ${build_dir}/percolator
 (set -x; \
-cmake -DTARGET_ARCH=x86_64 -DCMAKE_BUILD_TYPE=Release -DGOOGLE_TEST=1 -DCMAKE_INSTALL_PREFIX=/usr ${src_dir}/percolator; \
+cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr ${src_dir}/percolator; \
 )
 make -j 4
 make test

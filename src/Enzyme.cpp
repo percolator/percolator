@@ -17,91 +17,102 @@
 
 #include "Enzyme.h"
 
-std::unique_ptr<Enzyme> Enzyme::createEnzyme(EnzymeType enz) {
-  Enzyme* theEnzyme;
-  switch (enz) {
-    case TRYPSINP:
-      theEnzyme = new TrypsinP();
-      break;
-    case CHYMOTRYPSIN:
-      theEnzyme = new Chymotrypsin();
-      break;
-    case THERMOLYSIN:
-      theEnzyme = new Thermolysin();
-      break;
-    case PROTEINASEK:
-      theEnzyme = new Proteinasek();
-      break;
-    case PEPSIN:
-      theEnzyme = new Pepsin();
-      break;
-    case ELASTASE:
-      theEnzyme = new Elastase();
-      break;
-    case LYSN:
-      theEnzyme = new LysN();
-      break;
-    case LYSC:
-      theEnzyme = new LysC();
-      break;
-    case ARGC:
-      theEnzyme = new ArgC();
-      break;
-    case ASPN:
-      theEnzyme = new AspN();
-      break;
-    case GLUC:
-      theEnzyme = new GluC();
-      break;
-    case NO_ENZYME:
-      theEnzyme = new NoEnzyme();
-      break;
-    case TRYPSIN:
-    default:
-      theEnzyme = new Trypsin();
-      break;
+#include <algorithm>
+#include <cctype>
+#include <sstream>
+
+#include "MyException.h"
+
+struct Enzyme::Rule {
+  EnzymeType type;
+  const char* name;
+  // whether the enzyme cleaves between the residues n and c inside a protein
+  bool (*cleaves)(char n, char c);
+};
+
+namespace {
+
+inline bool isOneOf(char residue, const char* residues) {
+  for (; *residues != '\0'; ++residues) {
+    if (residue == *residues) return true;
   }
-  return std::unique_ptr<Enzyme>(theEnzyme);
+  return false;
+}
+
+// One row per enzyme, in the order of EnzymeType.
+const Enzyme::Rule kRules[] = {
+  {Enzyme::NO_ENZYME, "no_enzyme",
+   [](char, char) { return true; }},
+  {Enzyme::TRYPSIN, "trypsin",
+   [](char n, char c) { return isOneOf(n, "KR") && c != 'P'; }},
+  {Enzyme::TRYPSINP, "trypsinp",
+   [](char n, char) { return isOneOf(n, "KR"); }},
+  {Enzyme::CHYMOTRYPSIN, "chymotrypsin",
+   [](char n, char c) { return isOneOf(n, "FWYL") && c != 'P'; }},
+  {Enzyme::THERMOLYSIN, "thermolysin",
+   [](char n, char c) {
+     return (isOneOf(c, "AFILMV") || (n == 'R' && c == 'G')) &&
+            n != 'D' && n != 'E';
+   }},
+  {Enzyme::PROTEINASEK, "proteinasek",
+   [](char n, char) { return isOneOf(n, "AEFILTVWY"); }},
+  {Enzyme::PEPSIN, "pepsin",
+   [](char n, char c) {
+     return (isOneOf(c, "FLWY") || isOneOf(n, "FLWY")) && n != 'R';
+   }},
+  {Enzyme::ELASTASE, "elastase",
+   [](char n, char c) { return isOneOf(n, "ALIV") && c != 'P'; }},
+  {Enzyme::LYSN, "lys-n",
+   [](char, char c) { return c == 'K'; }},
+  {Enzyme::LYSC, "lys-c",
+   [](char n, char c) { return n == 'K' && c != 'P'; }},
+  {Enzyme::ARGC, "arg-c",
+   [](char n, char c) { return n == 'R' && c != 'P'; }},
+  {Enzyme::ASPN, "asp-n",
+   [](char, char c) { return c == 'D'; }},
+  {Enzyme::GLUC, "glu-c",
+   [](char n, char c) { return isOneOf(n, "DE") && c != 'P'; }},
+};
+
+const Enzyme::Rule* findRule(Enzyme::EnzymeType enz) {
+  for (const Enzyme::Rule& rule : kRules) {
+    if (rule.type == enz) return &rule;
+  }
+  return &kRules[Enzyme::TRYPSIN];
+}
+
+}  // namespace
+
+std::unique_ptr<Enzyme> Enzyme::createEnzyme(EnzymeType enz) {
+  return std::unique_ptr<Enzyme>(new Enzyme(findRule(enz)));
 }
 
 std::unique_ptr<Enzyme> Enzyme::createEnzyme(std::string enzyme) {
-  Enzyme* theEnzyme;
-  
   std::transform(enzyme.begin(), enzyme.end(), enzyme.begin(), ::tolower);
-  if (enzyme == Chymotrypsin::getString()) {
-    theEnzyme = new Chymotrypsin();
-  } else if (enzyme == Thermolysin::getString()) {
-    theEnzyme = new Thermolysin();
-  } else if (enzyme == Proteinasek::getString()) {
-    theEnzyme = new Proteinasek();
-  } else if (enzyme == Pepsin::getString()) {
-    theEnzyme = new Pepsin();
-  } else if (enzyme == Elastase::getString()) {
-    theEnzyme = new Elastase();
-  } else if (enzyme == LysN::getString()) {
-    theEnzyme = new LysN();
-  } else if (enzyme == LysC::getString()) {
-    theEnzyme = new LysC();
-  } else if (enzyme == ArgC::getString()) {
-    theEnzyme = new ArgC();
-  } else if (enzyme == AspN::getString()) {
-    theEnzyme = new AspN();
-  } else if (enzyme == GluC::getString()) {
-    theEnzyme = new GluC();
-  } else if (enzyme == NoEnzyme::getString()) {
-    theEnzyme = new NoEnzyme();
-  } else if (enzyme == TrypsinP::getString()) {
-    theEnzyme = new TrypsinP();
-  } else if (enzyme == Trypsin::getString()) {
-    theEnzyme = new Trypsin();
+  for (const Rule& rule : kRules) {
+    if (enzyme == rule.name) {
+      return std::unique_ptr<Enzyme>(new Enzyme(&rule));
+    }
   }
-  else {
-    ostringstream temp;
-    temp << "The selected enzyme \"" << enzyme << "\" has no corresponding class" << std::endl;
-    throw MyException(temp.str());
-  }
-  
-  return std::unique_ptr<Enzyme>(theEnzyme);
+  std::ostringstream temp;
+  temp << "The selected enzyme \"" << enzyme << "\" has no corresponding class" << std::endl;
+  throw MyException(temp.str());
+}
+
+std::string Enzyme::getString(EnzymeType enz) {
+  return findRule(enz)->name;
+}
+
+Enzyme::EnzymeType Enzyme::getEnzymeType() const {
+  return rule_->type;
+}
+
+std::string Enzyme::getStringEnzyme() const {
+  return rule_->name;
+}
+
+bool Enzyme::isEnzymatic(const char& n, const char& c) const {
+  return rule_->cleaves(n, c) || n == '-' || c == '-';
 }
 
 size_t Enzyme::countEnzymatic(std::string& peptide) const {

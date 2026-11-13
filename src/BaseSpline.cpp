@@ -293,7 +293,7 @@ void BaseSpline::solveInPlace(PackedMatrix& mat, PackedVector& res) {
     int maxRow(-1), maxRowPos(-1);
     for (rowPos = nonEmpty.numberEntries(); rowPos--;) {
       double val = nonEmpty[rowPos];
-      assert(isfinite(val));
+      assert(std::isfinite(val));
       if (fabs(val) > fabs(maxVal)) {
         maxVal = val;
         maxRow = nonEmpty.index(rowPos);

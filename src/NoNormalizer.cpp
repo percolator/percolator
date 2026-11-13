@@ -15,10 +15,6 @@
 
  *******************************************************************************/
 #include <iostream>
-#ifdef WIN32
-#include <float.h>
-#define isfinite _finite
-#endif
 #include <cmath>
 #include <vector>
 #include <string>
@@ -58,16 +54,6 @@ void NoNormalizer::setSet(std::vector<double*>& /* featuresV */,
   numRetentionFeatures = nrf;
   sub.resize(nf + nrf, 0.0);
   div.resize(nf + nrf, 0.0);
-  size_t ix;
-  for (ix = 0; ix < numFeatures; ++ix) {
-    sub[ix] = 0.;
-    div[ix] = 1.0;
-  }
-}
-
-
-void NoNormalizer::updateSet(vector<double*> & /* featuresV */, size_t /* offset */,
-                               size_t numFeatures) {
   size_t ix;
   for (ix = 0; ix < numFeatures; ++ix) {
     sub[ix] = 0.;

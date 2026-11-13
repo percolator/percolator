@@ -87,7 +87,9 @@ class CommandLineParser {
 
   /* Parse the command-line options. Upon return, the options can be
    * queried via options and/or isOptionSet(). The remaining cmdline
-   * arguments will be stored in arguments.
+   * arguments will be stored in arguments. -h, --help and --html print
+   * the help text and end the parsing: what follows them is not read, and
+   * helpRequested() is true.
    */
   void parseArgs(int argc, char** argv);
 
@@ -111,11 +113,15 @@ class CommandLineParser {
   int getInt(std::string dest, int lower, int upper);
   unsigned int getUInt(std::string dest, int lower, int upper);
 
-  /* Output the help text and exit. */
+  /* Output the help text on standard error. The caller decides how to
+   * end: the parser does not end the process. */
   void help();
 
-  /* Output the help text as an HTML document and exit. */
+  /* Output the help text as an HTML document on standard error. */
   void htmlHelp();
+
+  /* True once the help text has been printed. */
+  bool helpRequested() const { return helpRequested_; }
 
   /* After parsing, use these to look up the options and arguments
    * present on the cmdline. (Boolean options will have "0" or "1" as
@@ -128,7 +134,9 @@ class CommandLineParser {
   size_t optMaxLen;
   const static unsigned int lineLen = 80;
   std::string header, endnote;
+  std::string programName = "percolator";  // argv[0], for error messages
   std::vector<Option> opts;
+  bool helpRequested_ = false;
   void findOption(char** argv, int& index, int argc);
   static inline std::string &rtrim(std::string &s);
 };

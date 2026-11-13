@@ -1,6 +1,7 @@
 #include "TmpDir.h"
 
 #include <filesystem>
+#include <iomanip>
 #include <iostream>
 #include <random>
 #include <sstream>
@@ -15,7 +16,9 @@ TmpDir::TmpDir() {
     fs::path dir;
     do {
       std::ostringstream name;
-      name << "percolator-" << std::hex << generator();
+      // always 16 hex digits, also where the number has leading zeros
+      name << "percolator-" << std::hex << std::setw(16) << std::setfill('0')
+           << generator();
       dir = fs::temp_directory_path() / name.str();
     } while (!fs::create_directory(dir));
     path_ = dir.string();

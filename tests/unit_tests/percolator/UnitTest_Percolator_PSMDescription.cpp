@@ -21,6 +21,7 @@
 
 #include <gtest/gtest.h>
 #include "PSMDescription.h"
+#include "PsmStore.h"
 
 TEST(PSMDescriptionTest, CheckRemovePTMs)
 {
@@ -44,4 +45,27 @@ TEST(PSMDescriptionTest, CheckRemovePTMsWithModifications)
     ASSERT_EQ("A.nBCD.E", PSMDescription::removePTMs("A.nBCD.E"));
     ASSERT_EQ("A.BCcD.E", PSMDescription::removePTMs("A.BCc[2]D.E"));
     ASSERT_EQ("A.cBCDn.E", PSMDescription::removePTMs("A.c[1]BCDn[2].E"));
+}
+
+// The flanks of X.PEPTIDE.Y are removed; a peptide in any other form, even
+// an empty or a one-letter one, is used as it is instead of throwing.
+TEST(PSMDescriptionTest, CheckPeptideSequenceView)
+{
+    const char* flanked[][2] = {{"K.PEPTIDE.R", "PEPTIDE"}, {"-.A.-", "A"},
+                                {"K.M[16]DEK.-", "M[16]DEK"}};
+    PsmStore store;  // holds the peptides of the PSMs
+    for (auto& pair : flanked) {
+        PSMDescription psm;
+        store.storeStrings(psm, "", pair[0], {});
+        EXPECT_TRUE(PSMDescription::hasFlanks(pair[0])) << pair[0];
+        EXPECT_EQ(pair[1], psm.getPeptideSequenceView()) << pair[0];
+        EXPECT_EQ(pair[1], psm.getPeptideSequence()) << pair[0];
+    }
+    for (const char* other : {"", "A", "AB", "K.R", "K..R", "PEPTIDE",
+                              "K.PEPTIDE", "PEPTIDE.R", ".PEPTIDE."}) {
+        PSMDescription psm;
+        store.storeStrings(psm, "", other, {});
+        EXPECT_FALSE(PSMDescription::hasFlanks(other)) << other;
+        EXPECT_EQ(other, psm.getPeptideSequenceView()) << other;
+    }
 }

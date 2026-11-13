@@ -15,7 +15,9 @@
 
  *******************************************************************************/
 #include <assert.h>
+#include <cmath>
 #include <iostream>
+#include <sstream>
 #include <vector>
 #include <set>
 #include <string>
@@ -24,8 +26,10 @@ using namespace std;
 #include "StdvNormalizer.h"
 #include "UniNormalizer.h"
 #include "NoNormalizer.h"
+#include "DataSet.h"
 #include "FeatureNames.h"
 #include "Globals.h"
+#include "MyException.h"
 
 Normalizer::Normalizer() {
 }
@@ -53,6 +57,22 @@ void Normalizer::normalize(const double* in, double* out, size_t offset,
                            size_t numFeatures) {
   for (unsigned int ix = 0; ix < numFeatures; ++ix) {
     out[ix] = (in[ix] - sub[offset + ix]) / div[offset + ix];
+  }
+}
+
+void Normalizer::checkFactorsFinite(size_t begin, size_t end,
+                                    const char* subName,
+                                    const char* divName) const {
+  for (size_t ix = begin; ix < end; ++ix) {
+    if (std::isfinite(sub[ix]) && std::isfinite(div[ix])) continue;
+    ostringstream oss;
+    oss << "ERROR: Cannot normalize feature "
+        << DataSet::getFeatureNames().describeFeature(ix) << ": its "
+        << subName << " is " << sub[ix] << " and its " << divName << " is "
+        << div[ix] << ", because some of its values are too large in "
+        << "magnitude. Check the input, or rescale this feature, e.g. by "
+        << "taking its logarithm." << std::endl;
+    throw MyException(oss.str());
   }
 }
 

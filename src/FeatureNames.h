@@ -34,6 +34,11 @@ class FeatureNames {
     virtual ~FeatureNames();
     std::string getFeatureNames();
     inline std::string getFeatureName(unsigned int index) { return featureNames.at(index); }
+    // for messages: the name of a feature, or its number if it has no name
+    std::string describeFeature(size_t index) const {
+      if (index < featureNames.size()) return featureNames[index];
+      return "number " + std::to_string(index + 1);
+    }
     static inline size_t getNumFeatures() {
       return numFeatures;
     }
@@ -55,42 +60,9 @@ class FeatureNames {
 
     int getFeatureNumber(const string& featureName);
 
-    int getMinCharge() {
-      return minCharge;
-    }
-    int getMaxCharge() {
-      return maxCharge;
-    }
-    int getChargeFeatNum() {
-      assert(1==0);
-      return chargeFeatNum;
-    }
-    int getEnzFeatNum() {
-      assert(1==0);
-      return enzFeatNum;
-    }
-    int getNumSPFeatNum() {
-      assert(1==0);
-      return numSPFeatNum;
-    }
-    int getPtmFeatNum() {
-      assert(1==0);
-      return ptmFeatNum;
-    }
-    int getIntraSetFeatNum() {
-      assert(1==0);
-      return intraSetFeatNum;
-    }
-    int getQuadraticFeatNum() {
-      assert(1==0);
-      return quadraticFeatNum;
-    }
   protected:
     vector<string> featureNames;
     static size_t numFeatures;
-    int minCharge, maxCharge;
-    int chargeFeatNum, enzFeatNum, numSPFeatNum, ptmFeatNum,
-        intraSetFeatNum, quadraticFeatNum;
 };
 
 #endif /*FEATURENAMES_H_*/

@@ -36,7 +36,7 @@ struct CandidateCposCfrac {
   unsigned int set;
   int nestedSet;
   vector<double> ww;
-  int tp;
+  int tp;  // validation count; 0 for the only trained pair of a fold
 };
 
 class CrossValidation {
@@ -53,7 +53,6 @@ class CrossValidation {
                   unsigned int nestedXvalBins,
                   bool trainBestPositive,
                   unsigned int numThreads,
-                  bool skipNormalizeScores,
                   double decoyFractionTraining,
                   unsigned int numFolds);
 
@@ -68,6 +67,16 @@ class CrossValidation {
   void printAllWeights(ostream& weightStream, const Normalizer* pNorm);
 
   void getAvgWeights(std::vector<double>& weights, const Normalizer* pNorm);
+  // the weights of each fold for unnormalized features, as getAvgWeights
+  void getRawFoldWeights(std::vector<std::vector<double> >& weights,
+                         const Normalizer* pNorm);
+  // (input line, fold) of every PSM in the test sets, sorted by line, as
+  // recorded by postIterationProcessing when setRecordTestFolds(true) was
+  // called; the test sets themselves are emptied by the merge. Empty if
+  // the direction check failed, after a reset and with --override, since
+  // all PSMs are then scored with the averaged weights. Moves the list out.
+  void getTestFolds(
+      std::vector<std::pair<unsigned int, unsigned int> >& lineFolds);
 
   void inline setSelectedCpos(double cpos) { selectedCpos_ = cpos; }
   double inline getSelectedCpos() { return selectedCpos_; }
@@ -86,9 +95,68 @@ class CrossValidation {
   }
   // train as Percolator 3.09 did, see Caller's --classic-training
   void inline setClassicTraining(bool on) { classicTraining_ = on; }
+  // train the SVM on the feature rows in place instead of on copies (see
+  // AlgIn), which needs rows that end with the intercept 1.0, as those of a
+  // FeatureMemoryPool for which canTrainInPlace(numFeatures) holds; set
+  // before preIterationSetup
+  void inline setSvmRowsInPlace(bool on) { svmRowsInPlace_ = on; }
+  // The number of folds whose training sets are held as copies of the
+  // feature rows at once (see AlgIn): the SVMs of these folds are trained
+  // in parallel, then the buffers are reused for the next folds. The
+  // results do not depend on it. 0, the default, holds all folds at once
+  // for up to kMaxFoldsAllAtOnce folds and one fold with more; a larger
+  // number than there are folds means all. No effect with
+  // setSvmRowsInPlace, which makes no copies. Set before preIterationSetup.
+  void inline setFoldsAtOnce(unsigned int n) { foldsAtOnce_ = n; }
+  static constexpr unsigned int kMaxFoldsAllAtOnce = 3u;
+  // the number of folds held at once for the setting foldsAtOnce and
+  // numFolds folds
+  static unsigned int foldsHeldAtOnce(unsigned int foldsAtOnce,
+                                      unsigned int numFolds);
+  // With fewer folds held at once than there are, the passes in which each
+  // training set serves a single solve (after the grid search is fixed, with
+  // a single candidate pair, and the solve on a whole fold of nested cross
+  // validation) would run their solves one after the other. With this
+  // setting they train all folds in parallel on the rows in place instead,
+  // which needs rows as for setSvmRowsInPlace.
+  void inline setSingleSolvesInPlace(bool on) { singleSolvesInPlace_ = on; }
+  // let postIterationProcessing list the input line and fold of every test
+  // PSM for getTestFolds, before the merge empties the test sets (-N); after
+  // a failed direction check under test, a reset or --override, it then
+  // scores every test bin with the first fold's vector, since -N scores all
+  // PSMs with the averaged weights
+  void inline setRecordTestFolds(bool on) { recordTestFolds_ = on; }
+  // How the scores of the test bins are put on a common scale before they
+  // are merged, see MergePlan and Caller's --merge-normalization. The plan's
+  // fdr is set here, to the selection FDR of the training.
+  void setMergePlan(const MergePlan& plan) {
+    mergePlan_ = plan;
+    mergePlan_.fdr = selectionFdr_;
+    usedMergeNormalization_ = mergePlan_.usedScheme(false);
+  }
+  const MergePlan& mergePlan() const { return mergePlan_; }
+  // What the direction check of postIterationProcessing decided, and the
+  // scheme it then merged with (MergePlan::usedScheme): the plan's scheme,
+  // or its secondChanceScheme when the second chance kept the trained SVMs;
+  // always test when the scores are not rescaled (--static)
+  SanityCheck::DirectionOutcome directionOutcome() const {
+    return directionOutcome_;
+  }
+  MergeNormalization usedMergeNormalization() const {
+    return usedMergeNormalization_;
+  }
+  // The scheme for numFolds folds when none is chosen: test up to three
+  // folds, the default, whose test bins hold a third of the PSMs or more;
+  // train-decoys with more folds, since the q = fdr anchor of test is noisy
+  // in smaller test bins (see Caller's --num-folds).
+  static MergeNormalization defaultMergeNormalization(unsigned int numFolds);
 
  protected:
+  // the training sets of the folds held at once, one per nested fold
   std::vector<AlgIn> svmInputs_;
+  // the training sets of all folds as row pointers, see
+  // setSingleSolvesInPlace
+  std::vector<AlgIn> svmRowLists_;
   std::vector<std::vector<double> > weights_;  // svm weights for each fold
   std::vector<CandidateCposCfrac>
       classWeightsPerFold_;  // cpos, cneg pairs to train for each nested CV
@@ -96,6 +164,11 @@ class CrossValidation {
 
   bool quickValidation_;
   bool classicTraining_ = false;
+  bool svmRowsInPlace_ = false;
+  unsigned int foldsAtOnce_ = 0u;
+  bool singleSolvesInPlace_ = false;
+  bool recordTestFolds_ = false;
+  std::vector<std::pair<unsigned int, unsigned int> > testFolds_;
   bool usePi0_;
   bool reportPerformanceEachIteration_;
 
@@ -112,7 +185,10 @@ class CrossValidation {
   unsigned int nestedXvalBins_;
 
   bool trainBestPositive_;
-  bool skipNormalizeScores_;
+  MergePlan mergePlan_;
+  SanityCheck::DirectionOutcome directionOutcome_ =
+      SanityCheck::DirectionOutcome::KEPT;
+  MergeNormalization usedMergeNormalization_ = MergeNormalization::TEST;
 
   double decoyFractionTraining_;
 
@@ -136,10 +212,27 @@ class CrossValidation {
   bool trainScoresCurrent_ = false;
   std::vector<double> candidatesCpos_, candidatesCfrac_;
 
+  // buffers of the SVM solves of one thread, reused for its pairs
+  struct SvmTrainingBuffers {
+    SolverWorkspace solver;
+    std::vector<double> outputs;
+  };
+
+  // the number of folds whose training sets are held at once
+  unsigned int foldsAtOnce() const {
+    return foldsHeldAtOnce(foldsAtOnce_, numFolds_);
+  }
+  // The training sets to fill for a pass over the folds and the number of
+  // folds per group of that pass: the set of nested fold b of the i-th fold
+  // of a group is element i * nestedXvalBins_ + b. singleSolves: each
+  // training set serves one solve.
+  std::vector<AlgIn>& svmInputsOfPass(bool singleSolves,
+                                      unsigned int& foldsPerPass);
   void initializeGridSearch(double targetDecoySizeRatio);
   void trainCpCnPair(CandidateCposCfrac& cpCnFold,
                      const options& pOptions,
-                     const AlgIn& svmInput);
+                     const AlgIn& svmInput,
+                     SvmTrainingBuffers& buffers);
 
   int mergeCpCnPairs(double selectionFdr,
                      const options& pOptions,
@@ -147,6 +240,10 @@ class CrossValidation {
                      const vector<double>& cpos_vec,
                      const vector<double>& cfrac_vec);
   int doStep(const Normalizer* pNorm, double selectionFdr);
+  // throws, or warns with --no-terminate, if a weight of a fold is not finite
+  void checkWeightsFinite() const;
+  // lists the input line and fold of every test PSM in testFolds_
+  void recordTestFolds();
 
   void printSetWeights(ostream& weightStream, unsigned int set);
   void printRawSetWeights(ostream& weightStream,

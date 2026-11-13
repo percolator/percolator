@@ -17,6 +17,10 @@
 
 #include "TabFileValidator.h"
 
+#include <cmath>
+#include <cstring>
+#include <string_view>
+
 bool TabFileValidator::isTabFile(std::string fileName) {
   std::ifstream file(fileName.c_str());
   
@@ -55,12 +59,11 @@ bool TabFileValidator::isTabFiles(std::vector<std::string> fileNames) {
 }
 
 std::string TabFileValidator::getDecoyPrefix(std::vector<std::string> fileNames) {
-  std::string decoyPrefix;
-  for (const string &fileName : fileNames) {
-      decoyPrefix = detectDecoyPrefix(fileName);
-      break;
-  };
-  return decoyPrefix;
+  // the prefix is detected in the first file only
+  if (fileNames.empty()) {
+    return std::string();
+  }
+  return detectDecoyPrefix(fileNames.front());
 }
 
 void TabFileValidator::getProteinAndLabelColumnIndices(std::string fileName, int &proteinIndex, int &labelIndex) {
@@ -106,7 +109,7 @@ std::string TabFileValidator::getLongestCommonPrefix(std::vector<std::string> st
   for (int j = referenceStringLength; j > 0; --j) {
     string stem = referenceString.substr(0, j);
     bool foundStem = true;
-    for (int k = 1; k < numStrings; ++k) {
+    for (size_t k = 1; k < numStrings; ++k) {
       if (strings.at(k).find(stem) != 0) {
         foundStem = false;
         break;
@@ -119,6 +122,27 @@ std::string TabFileValidator::getLongestCommonPrefix(std::vector<std::string> st
   return "";
 }
 
+/*
+ * Moves p to the start of the column skip columns further on in a row.
+ * Returns false if the row ends before. Like TabReader, a row ends at its
+ * first NUL character.
+ */
+static bool skipColumns(const char*& p, int skip) {
+  for (; skip > 0; --skip) {
+    p = strchr(p, '\t');
+    if (p == NULL) return false;
+    ++p;
+  }
+  return true;
+}
+
+// the column that starts at p
+static std::string_view column(const char* p) {
+  const char* end = strchr(p, '\t');
+  return end == NULL ? std::string_view(p)
+                     : std::string_view(p, static_cast<size_t>(end - p));
+}
+
 std::string TabFileValidator::findDecoyPrefix(std::string fileName, int proteinIndex, int labelIndex) {
   std::ifstream file(fileName.c_str());
 
@@ -128,30 +152,49 @@ std::string TabFileValidator::findDecoyPrefix(std::string fileName, int proteinI
   std::string nextRow;
   getline(file, nextRow);
 
-  std::vector<std::string> proteinNames;
-  while (getline(file, nextRow)) {
-    TabReader readerRow(nextRow);
-    int col = 0;
-    bool isDecoy = false;
-    while (!readerRow.error()) {
-      std::string value = readerRow.readString();
-      if (col == labelIndex && value == "-1") {
-        isDecoy = true;
+  // The protein column of the rows with the label -1, one after the other in
+  // a single buffer: decoy i is decoyProteins[starts[i], starts[i + 1]).
+  // A row only counts as a decoy if its label column comes first.
+  std::string decoyProteins;
+  std::vector<size_t> starts(1, 0u);
+  if (labelIndex < proteinIndex) {
+    while (getline(file, nextRow)) {
+      const char* p = nextRow.c_str();
+      if (!skipColumns(p, labelIndex) || column(p) != "-1" ||
+          !skipColumns(p, proteinIndex - labelIndex)) {
+        continue;
       }
-      if (col == proteinIndex && isDecoy) {
-        proteinNames.push_back(value);
-      }
-      col++;
+      decoyProteins.append(column(p));
+      starts.push_back(decoyProteins.size());
     }
   }
+  const size_t numDecoys = starts.size() - 1;
 
-  /* Randomly sample 10% of the protein identifiers */
-  auto rng = std::default_random_engine {};
-  std::shuffle(std::begin(proteinNames), std::end(proteinNames), rng);
-  int numElements = ceil(0.1 * proteinNames.size());
-  proteinNames.resize(numElements);
-  
-  std::string prefix = getLongestCommonPrefix(proteinNames);
+  /* Sample 10% of the protein identifiers: every tenth decoy, from the
+     first one on. The sample used to be the first tenth of a std::shuffle
+     with a default-constructed std::default_random_engine; both are
+     implementation-defined, so the sample, and with decoys of several
+     prefixes the detected prefix, could differ between standard libraries. */
+  const size_t numElements = (numDecoys + 9) / 10;
+  std::vector<size_t> order(numElements);
+  for (size_t i = 0; i < numElements; ++i) order[i] = 10 * i;
+
+  // the longest common prefix of the sampled protein names
+  std::string prefix;
+  if (numElements > 0) {
+    const std::string_view reference(decoyProteins.data() + starts[order[0]],
+                                     starts[order[0] + 1] - starts[order[0]]);
+    size_t length = reference.size();
+    for (size_t i = 1; i < numElements && length > 0; ++i) {
+      const std::string_view name(decoyProteins.data() + starts[order[i]],
+                                  starts[order[i] + 1] - starts[order[i]]);
+      size_t common = 0;
+      const size_t maxCommon = std::min(length, name.size());
+      while (common < maxCommon && name[common] == reference[common]) ++common;
+      length = common;
+    }
+    prefix = std::string(reference.substr(0, length));
+  }
   size_t loc = prefix.find("_");
   if (loc != std::string::npos) {
     prefix = prefix.substr(0, loc + 1);

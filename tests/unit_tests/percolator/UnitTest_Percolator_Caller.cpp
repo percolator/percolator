@@ -1,0 +1,370 @@
+/*******************************************************************************
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+ http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+ *******************************************************************************/
+
+/*
+ * Runs Percolator several times in one process, as Crux does, and checks
+ * that a run gives the same result after another run as on its own.
+ */
+
+#include <gtest/gtest.h>
+
+#include <filesystem>
+#include <fstream>
+#include <iterator>
+#include <random>
+#include <sstream>
+#include <string>
+#include <vector>
+
+#include "Caller.h"
+#include "TmpDir.h"
+#include "Globals.h"
+
+namespace {
+
+namespace fs = std::filesystem;
+
+// a concatenated search of 2,000 spectra with one PSM each; two thirds of
+// the targets score higher in two of the four features, so that the SVM
+// improves on the best single feature
+void writeInput(const std::string& fileName) {
+  std::mt19937 rng(17);
+  std::normal_distribution<double> noise(0.0, 1.0);
+  std::ofstream out(fileName);
+  out << "SpecId\tLabel\tScanNr\tExpMass\tf1\tf2\tf3\tf4\tPeptide\tProteins\n";
+  const char* residues = "ACDEFGHIKLMNPQRSTVWY";
+  for (int i = 0; i < 2000; ++i) {
+    const bool isTarget = rng() % 2 == 0;
+    const double shift = isTarget && rng() % 3 != 0 ? 2.0 : 0.0;
+    std::string peptide = "K.";
+    for (int k = i + 10000; k > 0; k /= 20) peptide += residues[k % 20];
+    peptide += "K.A";  // tryptic, as the protein inference expects
+    out << (isTarget ? "target_" : "decoy_") << i << '\t'
+        << (isTarget ? 1 : -1) << '\t' << i + 1 << '\t'
+        << 1000.0 + i * 0.5 << '\t' << noise(rng) + shift << '\t'
+        << noise(rng) + shift << '\t' << noise(rng) << '\t'
+        << noise(rng) << '\t' << peptide << '\t'
+        << (isTarget ? "prot_" : "decoy_prot_") << i % 400 << '\n';
+  }
+}
+
+void runPercolator(std::vector<std::string> args) {
+  args.insert(args.begin(), {"percolator", "-v", "0"});
+  std::vector<char*> argv;
+  for (std::string& arg : args) argv.push_back(&arg[0]);
+  argv.push_back(nullptr);
+  Caller caller;
+  ASSERT_TRUE(caller.parseOptions(static_cast<int>(args.size()), argv.data()));
+  ASSERT_TRUE(caller.run());
+}
+
+std::string readFile(const std::string& fileName) {
+  std::ifstream in(fileName);
+  return std::string(std::istreambuf_iterator<char>(in),
+                     std::istreambuf_iterator<char>());
+}
+
+}  // namespace
+
+// A run with protein inference used to leave process-wide settings behind:
+// a later plain run drew other random numbers for the cross validation
+// split, estimated its PEPs on a list taken as reversed, and then crashed
+// on the missing protein estimator.
+TEST(CallerTest, RunsGiveTheSameResultsAfterOtherRuns) {
+  TmpDir tmpDir;  // removed with its content at the end
+  fs::path dir = tmpDir.getPath();
+  const std::string pin = (dir / "input.pin").string();
+  writeInput(pin);
+  auto file = [&](const std::string& name) { return (dir / name).string(); };
+  auto plainRun = [&](const std::string& tag) {
+    runPercolator({"--irls-pep", "-m", file(tag + "_psms.txt"), "-r",
+                   file(tag + "_peptides.txt"), pin});
+  };
+  auto proteinRun = [&](const std::string& tag) {
+    runPercolator({"-f", "auto", "-P", "decoy_", "-m",
+                   file(tag + "_psms.txt"), "-r", file(tag + "_peptides.txt"),
+                   "-l", file(tag + "_proteins.txt"), pin});
+  };
+
+  plainRun("plain1");
+  proteinRun("protein1");
+  plainRun("plain2");
+  proteinRun("protein2");
+
+  for (const char* suffix : {"_psms.txt", "_peptides.txt"}) {
+    const std::string first = readFile(file(std::string("plain1") + suffix));
+    EXPECT_FALSE(first.empty()) << suffix;
+    EXPECT_EQ(first, readFile(file(std::string("plain2") + suffix))) << suffix;
+  }
+  for (const char* suffix : {"_psms.txt", "_peptides.txt", "_proteins.txt"}) {
+    const std::string first = readFile(file(std::string("protein1") + suffix));
+    EXPECT_FALSE(first.empty()) << suffix;
+    EXPECT_EQ(first, readFile(file(std::string("protein2") + suffix)))
+        << suffix;
+  }
+}
+
+// The settings a test leaves behind do not reach the next test: the main
+// file of the unit tests resets them before each test. The first test here
+// leaves what a run with -f, -v 0 and --no-terminate leaves, and what made
+// DataSetTest and SetHandlerTest fail when they ran after such a run with
+// --gtest_shuffle; the second runs after it in the default order.
+TEST(ProcessSettingsTest, ATestLeavesSettingsBehind) {
+  Globals::getInstance()->setVerbose(0);
+  Globals::getInstance()->setNoTerminate(true);
+  ProteinProbEstimator::setCalcProteinLevelProb(true);
+  PSMDescription::setProteinNameSeparator(";");
+}
+
+TEST(ProcessSettingsTest, TheNextTestStartsFromTheInitialSettings) {
+  EXPECT_EQ(2, Globals::getInstance()->getVerbose());
+  EXPECT_FALSE(Globals::getInstance()->getNoTerminate());
+  EXPECT_FALSE(ProteinProbEstimator::getCalcProteinLevelProb());
+  EXPECT_EQ("\t", PSMDescription::getProteinNameSeparator());
+}
+
+TEST(ProcessSettingsTest, ResetProcessSettings) {
+  Globals::getInstance()->setVerbose(5);
+  Globals::getInstance()->setNoTerminate(true);
+  ProteinProbEstimator::setCalcProteinLevelProb(true);
+  PSMDescription::setProteinNameSeparator(";");
+  Caller::resetProcessSettings();
+  EXPECT_EQ(2, Globals::getInstance()->getVerbose());
+  EXPECT_FALSE(Globals::getInstance()->getNoTerminate());
+  EXPECT_FALSE(ProteinProbEstimator::getCalcProteinLevelProb());
+  EXPECT_EQ("\t", PSMDescription::getProteinNameSeparator());
+}
+
+// -v and --no-terminate of one run used to stay set for every later run of
+// the process: only main() restored them.
+TEST(CallerTest, VerbosityAndNoTerminateDoNotCarryOver) {
+  Globals::clean();  // earlier tests leave their verbosity behind
+  const int defaultVerbosity = Globals::getInstance()->getVerbose();
+  ASSERT_NE(0, defaultVerbosity);
+  ASSERT_FALSE(Globals::getInstance()->getNoTerminate());
+  {
+    std::vector<std::string> args = {"percolator", "-v", "0", "--no-terminate",
+                                     "missing.pin"};
+    std::vector<char*> argv;
+    for (std::string& arg : args) argv.push_back(&arg[0]);
+    Caller caller;
+    ASSERT_TRUE(caller.parseOptions(static_cast<int>(args.size()), argv.data()));
+    EXPECT_EQ(0, Globals::getInstance()->getVerbose());
+    EXPECT_TRUE(Globals::getInstance()->getNoTerminate());
+  }
+  {
+    Caller caller;
+    EXPECT_EQ(defaultVerbosity, Globals::getInstance()->getVerbose());
+    EXPECT_FALSE(Globals::getInstance()->getNoTerminate());
+  }
+  Globals::clean();
+}
+
+// --help used to end the process inside the option parser. parseOptions now
+// returns true and run does nothing, as for --version, so that main ends
+// with status 0 as before and a library user keeps its process.
+TEST(CallerTest, HelpReturnsWithoutEndingTheProcess) {
+  for (const char* flag : {"--help", "-h", "--html"}) {
+    // the options after the help are not read, not even invalid ones
+    std::vector<std::string> args = {"percolator", flag, "--no-such-option",
+                                     "missing.pin"};
+    std::vector<char*> argv;
+    for (std::string& arg : args) argv.push_back(&arg[0]);
+    Caller caller;
+    testing::internal::CaptureStderr();
+    bool parsed = false;
+    EXPECT_NO_THROW(parsed = caller.parseOptions(static_cast<int>(args.size()),
+                                                 argv.data()));
+    int ran = 0;
+    EXPECT_NO_THROW(ran = caller.run());
+    const std::string help = testing::internal::GetCapturedStderr();
+    EXPECT_TRUE(parsed) << flag;
+    EXPECT_EQ(1, ran) << flag;
+    EXPECT_NE(std::string::npos, help.find("Options:")) << flag;
+    EXPECT_NE(std::string::npos, help.find("--no-terminate")) << flag;
+  }
+  Globals::clean();
+}
+
+namespace {
+
+// separate searches of 1,500 spectra: a target PSM for every spectrum and
+// a decoy PSM for one spectrum in every decoyEvery; with fewerTargets a
+// decoy PSM for every spectrum and a target PSM for one in every decoyEvery
+void writeSeparateInput(const std::string& fileName, int decoyEvery,
+                        bool fewerTargets = false) {
+  std::mt19937 rng(23);
+  std::normal_distribution<double> noise(0.0, 1.0);
+  std::ofstream out(fileName);
+  out << "SpecId\tLabel\tScanNr\tExpMass\tf1\tf2\tf3\tPeptide\tProteins\n";
+  const char* residues = "ACDEFGHIKLMNPQRSTVWY";
+  int row = 0;
+  auto write = [&](int scan, bool isTarget, double shift) {
+    std::string peptide = "K.";
+    for (int k = ++row + 10000; k > 0; k /= 20) peptide += residues[k % 20];
+    peptide += "K.A";
+    out << (isTarget ? "target_" : "decoy_") << scan << '\t'
+        << (isTarget ? 1 : -1) << '\t' << scan << '\t' << 1000.0 + scan * 0.5
+        << '\t' << noise(rng) + shift << '\t' << noise(rng) + shift << '\t'
+        << noise(rng) << '\t' << peptide << '\t'
+        << (isTarget ? "prot_" : "decoy_prot_") << scan % 300 << '\n';
+  };
+  for (int scan = 1; scan <= 1500; ++scan) {
+    const double shift = rng() % 2 == 0 ? 2.5 : 0.0;
+    const bool both = scan % decoyEvery == 0;
+    if (both || !fewerTargets) write(scan, true, shift);
+    if (both || fewerTargets) write(scan, false, 0.0);
+  }
+}
+
+// parses the options and runs; returns what run() returns and the stderr
+int runAndCapture(std::vector<std::string> args, std::string& err) {
+  args.insert(args.begin(), "percolator");
+  std::vector<char*> argv;
+  for (std::string& arg : args) argv.push_back(&arg[0]);
+  argv.push_back(nullptr);
+  testing::internal::CaptureStderr();
+  int ran = -1;
+  {
+    Caller caller;
+    if (caller.parseOptions(static_cast<int>(args.size()), argv.data())) {
+      ran = caller.run();
+    }
+  }
+  err = testing::internal::GetCapturedStderr();
+  Globals::clean();
+  return ran;
+}
+
+}  // namespace
+
+// Mix-max does not scale by the numbers of targets and decoys. Numbers that
+// differ by more than 10% get a warning that names both and says which way
+// the q values can be wrong; the run goes on, since the numbers alone do not
+// tell whether they are (it was an error for five commits). Target-decoy
+// competition (-Y), equal numbers and -v 0 print no warning.
+TEST(CallerTest, MixMaxWithUnequalTargetsAndDecoysIsAWarning) {
+  TmpDir tmpDir;
+  fs::path dir = tmpDir.getPath();
+  const std::string equal = (dir / "equal.pin").string();
+  const std::string half = (dir / "half.pin").string();
+  const std::string psms = (dir / "psms.txt").string();
+  const std::string peptides = (dir / "peptides.txt").string();
+  writeSeparateInput(equal, 1);
+  writeSeparateInput(half, 2);
+  const std::string message = "Warning: the mix-max method takes each decoy";
+  std::string err;
+
+  EXPECT_EQ(1, runAndCapture({"-m", psms, "-r", peptides, equal}, err));
+  EXPECT_NE(std::string::npos, err.find("using mix-max method")) << err;
+  EXPECT_EQ(std::string::npos, err.find(message)) << err;
+
+  // fewer decoys than targets
+  fs::remove(psms);
+  EXPECT_EQ(1, runAndCapture({"-m", psms, "-r", peptides, half}, err));
+  EXPECT_NE(std::string::npos, err.find(message)) << err;
+  EXPECT_NE(std::string::npos, err.find("1500 target and 750 decoy PSMs"))
+      << err;
+  EXPECT_NE(std::string::npos, err.find("are too low")) << err;
+  EXPECT_EQ(std::string::npos, err.find("are too high")) << err;
+  EXPECT_EQ(std::string::npos, err.find("Error")) << err;
+  EXPECT_FALSE(readFile(psms).empty());
+  const std::string withWarning = readFile(psms);
+
+  // --no-terminate and -v 0 change nothing but the messages
+  EXPECT_EQ(1, runAndCapture(
+                   {"--no-terminate", "-m", psms, "-r", peptides, half}, err));
+  EXPECT_NE(std::string::npos, err.find(message)) << err;
+  EXPECT_EQ(std::string::npos, err.find("No-terminate flag set")) << err;
+  EXPECT_EQ(withWarning, readFile(psms));
+  EXPECT_EQ(1,
+            runAndCapture({"-v", "0", "-m", psms, "-r", peptides, half}, err));
+  EXPECT_EQ(std::string::npos, err.find(message)) << err;
+  EXPECT_EQ(withWarning, readFile(psms));
+
+  // fewer targets than decoys: the labels exchanged
+  const std::string flipped = (dir / "flipped.pin").string();
+  writeSeparateInput(flipped, 2, true);
+  EXPECT_EQ(1, runAndCapture({"-m", psms, "-r", peptides, flipped}, err));
+  EXPECT_NE(std::string::npos, err.find(message)) << err;
+  EXPECT_NE(std::string::npos, err.find("750 target and 1500 decoy PSMs"))
+      << err;
+  EXPECT_NE(std::string::npos, err.find("are too high")) << err;
+  EXPECT_EQ(std::string::npos, err.find("are too low")) << err;
+
+  fs::remove(psms);
+  EXPECT_EQ(1, runAndCapture({"-Y", "-m", psms, "-r", peptides, half}, err));
+  EXPECT_EQ(std::string::npos, err.find(message)) << err;
+  EXPECT_FALSE(readFile(psms).empty());
+}
+
+// RESET does not use mix-max, so the numbers of target and decoy PSMs of
+// separate searches are nothing to report: the run gave the mix-max message
+// (and status 1 while that was an error), and the files of -I concatenated.
+TEST(CallerTest, ResetIsNotStoppedByTheMixMaxCheck) {
+  TmpDir tmpDir;
+  fs::path dir = tmpDir.getPath();
+  const std::string half = (dir / "half.pin").string();
+  const std::string peptides = (dir / "peptides.txt").string();
+  const std::string concatenated = (dir / "concatenated.txt").string();
+  writeSeparateInput(half, 2);
+  std::string err;
+
+  EXPECT_EQ(1, runAndCapture({"--reset-algorithm", "-r", peptides, half}, err));
+  EXPECT_NE(std::string::npos, err.find("Percolator-RESET")) << err;
+  EXPECT_EQ(std::string::npos, err.find("mix-max method takes")) << err;
+  EXPECT_FALSE(readFile(peptides).empty());
+
+  EXPECT_EQ(1, runAndCapture({"--reset-algorithm", "-I", "concatenated", "-r",
+                              concatenated, half},
+                             err));
+  EXPECT_EQ(readFile(peptides), readFile(concatenated));
+}
+
+namespace {
+
+bool parseOnly(std::vector<std::string> args) {
+  args.insert(args.begin(), {"percolator", "-v", "0"});
+  std::vector<char*> argv;
+  for (std::string& arg : args) argv.push_back(&arg[0]);
+  argv.push_back(nullptr);
+  Caller caller;
+  return caller.parseOptions(static_cast<int>(args.size()), argv.data());
+}
+
+}  // namespace
+
+// "-m x.pin x.pin" used to empty the input while the options were parsed.
+TEST(CallerTest, RejectsOutputsThatOverwriteInputsOrEachOther) {
+  TmpDir tmpDir;
+  fs::path dir = tmpDir.getPath();
+  const std::string pin = (dir / "input.pin").string();
+  writeInput(pin);
+  const std::string content = readFile(pin);
+  const std::string out = (dir / "out.txt").string();
+  const std::string sameOut = (dir / "." / "out.txt").string();
+
+  EXPECT_THROW(parseOnly({"-m", pin, pin}), MyException);
+  EXPECT_THROW(parseOnly({"-J", pin, "-m", out, pin}), MyException);
+  EXPECT_THROW(parseOnly({"-w", pin, pin}), MyException);
+  EXPECT_EQ(content, readFile(pin));
+
+  EXPECT_THROW(parseOnly({"-m", out, "-r", sameOut, pin}), MyException);
+  EXPECT_THROW(parseOnly({"-M", out, "-w", out, pin}), MyException);
+  EXPECT_TRUE(parseOnly({"-m", out, "-r", (dir / "pep.txt").string(), pin}));
+#ifndef _WIN32
+  // devices may be shared
+  EXPECT_TRUE(parseOnly({"-m", "/dev/null", "-r", "/dev/null", pin}));
+#endif
+}

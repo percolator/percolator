@@ -22,6 +22,7 @@
 #endif
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <filesystem>
 #include <iomanip>
 #include <set>
 
@@ -35,12 +36,13 @@
 #include "MyException.h"
 #include "Option.h"
 #include "PickedProteinInterface.h"
+#include "PosteriorEstimator.h"
+#include "PseudoRandom.h"
 #include "ValidateTabFile.h"
 using namespace std;
 
 Caller::Caller()
-    : tabInput_(true),
-      readStdIn_(false),
+    : readStdIn_(false),
       inputFN_(""),
       inputFNs_(),
       protEstimatorDecoyPrefix_("auto"),
@@ -52,9 +54,6 @@ Caller::Caller()
       decoyPsmResultFN_(""),
       decoyPeptideResultFN_(""),
       decoyProteinResultFN_(""),
-      analytics_(true),
-      useResetAlgorithm_(false),
-      useCompositionMatch_(false),
       reportUniquePeptides_(true),
       targetDecoyCompetition_(false),
       useMixMax_(false),
@@ -65,16 +64,37 @@ Caller::Caller()
       numIterations_(10),
       maxPSMs_(0u),
       nestedXvalBins_(1u),
+      numThreads_(3u),
       selectedCpos_(0.0),
       selectedCneg_(0.0),
       reportEachIteration_(false),
       quickValidation_(false),
       trainBestPositive_(false),
-      numThreads_(3u), 
+      useResetAlgorithm_(false),
+      useCompositionMatch_(false),
       useIrlsPep_(false),
       useInterpolatingPep_(true),
       usePavaPep_(false),
-      useTdcPep_(false) {}
+      useTdcPep_(false) {
+  // A process can run Percolator more than once (Crux, the unit tests).
+  // The process-wide settings are changed by the options and by the steps
+  // of a run, so they are set back to their initial values here, and every
+  // run gives the same results as in a new process. This holds for the
+  // verbosity and --no-terminate too: a setting made before the Caller is
+  // constructed does not reach its run.
+  resetProcessSettings();
+}
+
+void Caller::resetProcessSettings() {
+  Globals::clean();
+  PseudoRandom::setSeed(1u);
+  PosteriorEstimator::resetToDefaults();
+  ProteinProbEstimator::setCalcProteinLevelProb(false);
+  PSMDescription::setProteinNameSeparator("\t");
+  PSMDescription::resetSpectrumFileNames();
+  DataSet::resetFeatureNames();
+  DataSet::resetWarnings();
+}
 
 Caller::~Caller() {}
 
@@ -164,12 +184,59 @@ bool Caller::parseOptions(int argc, char** argv) {
   cmd.defineOption("x", "quick-validation",
                    "Quicker execution by reduced internal cross-validation.",
                    "", TRUE_IF_SET);
+  cmd.defineOption(
+      Option::NO_SHORT_OPT, "num-folds",
+      "Number of folds N of the cross-validation: the PSMs are split by "
+      "spectrum into N parts, and each part is scored by SVMs trained on the "
+      "other N-1 parts. Training time and memory grow with N. With N = 1 the "
+      "SVM is trained and evaluated on the same PSMs, so the reported q "
+      "values and PEPs are optimistic: on synthetic data, 1-2% of the target "
+      "PSMs with q < 0.01 were incorrect for inputs of 10,000 PSMs with many "
+      "features, 4-19% per input for 1,000-5,000 PSMs or weakly separating "
+      "inputs, and all of them for inputs without signal. N = 1 is meant for "
+      "inputs too small to "
+      "split and is never switched on automatically. With N > 3 the test "
+      "bins are smaller than with the default, too small for anchors taken "
+      "from each bin, so they are put on a common scale by the decoys of "
+      "each fold's training set (--merge-normalization train-decoys) unless "
+      "a scheme is given. Default = 3.",
+      "number");
+  cmd.defineOption(
+      Option::NO_SHORT_OPT, "folds-in-memory",
+      "The SVMs are trained on copies of the feature rows of each fold's "
+      "training set, which the solver reads faster than the rows themselves. "
+      "This is the number of folds whose copies are held at once: the SVMs of "
+      "these folds are trained in parallel, then the memory is used for the "
+      "next folds. The results are the same for any number. With 1, the peak "
+      "memory is 20 to 25% lower with 3 folds, and less than half with 10 "
+      "folds, than with all folds at once. The search for Cpos and Cneg "
+      "keeps up to 9 threads busy with one fold, which trains 9 SVMs there; "
+      "where a fold trains a single SVM, as it does after that search, all "
+      "folds are trained in parallel on the rows in place (see "
+      "--in-place-training), so the run takes about as long. A number "
+      "between 1 and the number of folds is of use with more threads than a "
+      "fold has SVMs to train. Default = all folds with up to 3 folds "
+      "(--num-folds), 1 with more. No effect with --in-place-training.",
+      "number");
   cmd.defineOption("", "classic-training",
                    "Train the SVMs as Percolator 3.09 did: every SVM is "
                    "solved from zero weights with conjugate gradients, Cpos "
                    "and Cneg are selected in every iteration and all "
                    "iterations are run, which takes longer but reproduces "
                    "earlier results.",
+                   "", TRUE_IF_SET);
+  cmd.defineOption("", "in-place-training",
+                   "Train the SVMs on the feature rows of the PSMs in place "
+                   "instead of on copies of them. The results are the same. "
+                   "With 3 folds and 30 features this lowers the peak memory "
+                   "by about a third (31 to 34% for 1M to 10M PSMs), and by "
+                   "more with more folds. The solver then reads rows that "
+                   "are scattered over memory, which costs more the larger "
+                   "the input: the SVM training took 20% more CPU time for "
+                   "1M PSMs and about 40% more for 4M and 10M, the whole "
+                   "run 1%, 10% and 15% more, and 10M PSMs took 6 to 18% "
+                   "longer on 3 threads. --folds-in-memory 1 saves less "
+                   "memory, 20 to 25% with 3 folds, without that cost.",
                    "", TRUE_IF_SET);
   cmd.defineOption("J", "tab-out",
                    "Output computed features to the specified file in "
@@ -191,7 +258,30 @@ bool Caller::parseOptions(int argc, char** argv) {
       "Read the unnormalized initial weights from the third line of the given "
       "file. This can be the output of the --weights option from a previous "
       "Percolator analysis. Note that the weights must be in the same order as "
-      "the features in the PSM input file(s).",
+      "the features in the PSM input file(s), and that not all feature "
+      "weights may be 0. Where the trained SVMs fail the check against the "
+      "initial direction, each cross-validation fold falls back to these "
+      "weights or to the default direction chosen on its training set, "
+      "whichever gives more targets with q < --trainFDR (or "
+      "--train-fdr-initial) on that training set, these weights on ties, "
+      "unless --override is given; one line names the choice of each fold. "
+      "--static keeps these weights. Weights trained on the same PSMs, such "
+      "as the --weights output of an earlier run on this input, have seen "
+      "the test bins and are kept in almost every fold, so such a fallback "
+      "reports optimistic q values, the more so the smaller the input: on "
+      "synthetic sets of 2,000 to 10,000 PSMs (an earlier run on 1,000 kept "
+      "no trained weights) the check failed in 97-98% of these runs, and "
+      "the mean false discovery proportion at q < 0.01 of the runs that "
+      "fell back was, at 3 folds, 6.3%, 5.8%, 3.8% and 1.8% at 2,000, "
+      "3,000, 5,000 and 10,000 PSMs for concatenated searches and 4.5%, "
+      "4.0%, 3.2% and 1.7% for separate searches, and 1.6-2.9% at 10 "
+      "folds, against 0.9-1.3% for the earlier run; about half of the "
+      "concatenated runs of 2,000 and 3,000 PSMs at 3 folds were above 5%. "
+      "With weights from other PSMs the fallback gave 0.8-1.2% by search "
+      "and folds and by size, the worst at 1,000 to 2,000 PSMs, concatenated "
+      "searches, 3 folds. "
+      "Weights with wrong signs gave way to the default direction in 65-69% "
+      "of the folds.",
       "filename");
   cmd.defineOption(Option::NO_SHORT_OPT, "static",
                    "Use the provided initial weights as a static model. If "
@@ -218,7 +308,11 @@ bool Caller::parseOptions(int argc, char** argv) {
                    TRUE_IF_SET);
   cmd.defineOption("O", "override",
                    "Override error check and do not fall back on default score "
-                   "vector in case of suspect score vector from SVM.",
+                   "vector (or the weights of --init-weights) in case of "
+                   "suspect score vector from SVM. Each test bin is then "
+                   "scored with its own fold's SVM. With -N all PSMs are then "
+                   "scored with the averaged weights of the folds, as after "
+                   "a fallback.",
                    "", TRUE_IF_SET);
   cmd.defineOption("S", "seed",
                    "Set seed of the random number generator. Default = 1.",
@@ -246,7 +340,9 @@ bool Caller::parseOptions(int argc, char** argv) {
       "y", "post-processing-mix-max",
       "Use the mix-max method to assign q-values and PEPs. Note that this "
       "option only has an effect if the input PSMs are from separate target "
-      "and decoy searches. This is the default setting.",
+      "and decoy searches. This is the default setting. Mix-max takes each "
+      "decoy PSM for one incorrect target PSM: a warning is printed if the "
+      "numbers of target and decoy PSMs differ by more than 10%.",
       "", TRUE_IF_SET);
   cmd.defineOption(
       "Y", "post-processing-tdc",
@@ -330,7 +426,7 @@ bool Caller::parseOptions(int argc, char** argv) {
    * change and behavior */
   cmd.defineOption(Option::EXPERIMENTAL_FEATURE, "num-threads",
                    "Number of total parallel threads for SVM training during "
-                   "cross validation. Default (one thread per CV fold) = 3.",
+                   "cross validation. Default = 3.",
                    "value");
   cmd.defineOption(Option::EXPERIMENTAL_FEATURE, "nested-xval-bins",
                    "Number of nested cross validation bins within each cross "
@@ -367,6 +463,78 @@ bool Caller::parseOptions(int argc, char** argv) {
                    "Run an implementation of the Percolator-RESET Algorithm.",
                    "", TRUE_IF_SET);
   cmd.defineOption(
+      Option::EXPERIMENTAL_FEATURE, "merge-normalization",
+      "How the SVM scores of the cross-validation bins are put on a common "
+      "scale before they are merged. 'test': the score at q = --trainFDR "
+      "and the median decoy of each test bin become 0 and -1. 'train': the "
+      "same two scores are taken from the fold's training set, scored with "
+      "the fold's final weights, which is less noisy for small test bins. "
+      "'train-decoys': the decoys of the fold's training set get mean 0 and "
+      "standard deviation 1. 'none': the raw SVM scores. The weights written "
+      "with -w describe the rescaled scores. With -N the folds' weights are "
+      "rescaled in this way before they are averaged, and only 'test' "
+      "rescales the scores of all PSMs once more. With one fold, as with "
+      "--reset-algorithm, the order of the PSMs is the same with every "
+      "scheme. With one fold the training set holds the PSMs of the test "
+      "bin, so 'train' takes the anchors of 'test' and, without -N, gives "
+      "its results; 'train-decoys' and 'none' change the scale of the "
+      "reported scores and, for separate searches, can change the pi0 "
+      "estimate, and with it the q values and PEPs, too, as only 'test' and "
+      "'train' estimate the pi0 of the bin's PSMs before the merge, which "
+      "draws random numbers. --reset-algorithm estimates no pi0, so there "
+      "only the scale changes. No effect with --static. Default = test with "
+      "up to 3 folds; train-decoys with more folds (--num-folds), with "
+      "--direction-check pooled, and in a run whose trained SVMs the second "
+      "chance of --direction-check keeps.",
+      "scheme");
+  cmd.defineOption(
+      Option::EXPERIMENTAL_FEATURE, "direction-check",
+      "How the trained SVMs are checked against the initial direction. "
+      "'bins': the targets with q < --testFDR are counted within each test "
+      "bin, with the bin's own q values, so a bin needs about 1/testFDR "
+      "targets above its best decoy. 'pooled': each test bin is scored with "
+      "its fold's SVM, the bins are rescaled and merged as for the final "
+      "list (see --merge-normalization), and the targets with q < --testFDR "
+      "are counted in the merged out-of-fold list. If there are none, or "
+      "fewer than for the initial direction counted in the same way, or the "
+      "list cannot be used (a bin cannot be rescaled, or targets and decoys "
+      "separate too well in it, in its best PSM per spectrum with -Y, in its "
+      "best PSM per peptide or, with --static, in a test bin, which would end "
+      "the run; under --no-terminate such a list is treated as unusable as "
+      "well), each fold falls "
+      "back to the default direction chosen on its training set, or to the "
+      "weights of --init-weights where they separate that training set "
+      "better (see there), unless --override is given. "
+      "'second-chance': 'bins', and only where "
+      "that would fall back, the trained SVMs are counted as 'pooled' counts "
+      "them, with train-decoys, and kept if their list can be used and "
+      "gives targets and no fewer than the fallback would report: the "
+      "folds' default directions, or under --init-weights the vectors that "
+      "a fallback chooses, merged as the run merges (test up to 3 folds). "
+      "Small test bins alone "
+      "then do not discard the trained SVMs; a run that keeps them is "
+      "merged with train-decoys, or with the scheme of "
+      "--merge-normalization, whose list has to be usable as well. "
+      "Runs that pass 'bins' are not changed. On synthetic sets of 1,000 to "
+      "10,000 PSMs with --init-weights, the runs whose trained SVMs the "
+      "second chance kept had a mean false discovery proportion at q < "
+      "0.01, by search and folds, of "
+      "1.0-1.4% with the weights of an earlier run on the same PSMs, "
+      "0.9-1.5% with weights from other PSMs (2.3% at 1,000 to 2,000 PSMs, "
+      "concatenated searches, 10 folds, the worst by size) and 0.8-1.0% "
+      "with wrong or partly wrong weights, against 0.9-1.1% for runs "
+      "without --init-weights that pass 'bins'; a fallback to weights "
+      "trained on the same PSMs is optimistic with every check (see "
+      "--init-weights). With one fold, as with "
+      "--reset-algorithm, all three are the same. With -N the check uses "
+      "the PSMs trained on, and with --static "
+      "the merged raw scores of the given weights. 'pooled' merges with "
+      "--merge-normalization train-decoys unless a scheme is given, also "
+      "with one fold (see there for what that changes), and "
+      "cannot be combined with 'test', whose anchors are taken from each "
+      "test bin. Default = bins.",
+      "check");
+  cmd.defineOption(
       Option::EXPERIMENTAL_FEATURE, "composition-match",
       "Run an implementation of the Percolator-RESET psmsAndPeptides with "
       "target-decoy matching based on composition.",
@@ -394,9 +562,22 @@ bool Caller::parseOptions(int argc, char** argv) {
       "searches the odds are multiplied by pi0 and the ratio of targets to "
       "decoys. By default PEPs are derived from the q values of the targets.",
       "", TRUE_IF_SET);
+  cmd.defineOption(Option::NO_SHORT_OPT, "version",
+      "Print the version of Percolator on standard output and exit.",
+      "", TRUE_IF_SET);
 
   // finally parse and handle return codes (display help etc...)
   cmd.parseArgs(argc, argv);
+
+  if (cmd.helpRequested()) {
+    nothingToRun_ = true;  // the parser printed the help
+    return true;
+  }
+  if (cmd.isOptionSet("version")) {
+    std::cout << "Percolator version " << VERSION << std::endl;
+    nothingToRun_ = true;
+    return true;
+  }
 
   if (cmd.isOptionSet("output-retention-time")) {
     outputRT_ = true;
@@ -404,6 +585,10 @@ bool Caller::parseOptions(int argc, char** argv) {
 
   if (cmd.isOptionSet("parameter-file")) {
     cmd.parseArgsParamFile(cmd.options["parameter-file"]);
+    if (cmd.helpRequested()) {
+      nothingToRun_ = true;
+      return true;
+    }
   }
 
   if (cmd.isOptionSet("verbose")) {
@@ -490,9 +675,6 @@ bool Caller::parseOptions(int argc, char** argv) {
   } else {
     enzyme_ = Enzyme::createEnzyme(Enzyme::TRYPSIN);
   }
-  if (cmd.isOptionSet("no-analytics")) {
-    analytics_ = false;
-  }
   if (cmd.isOptionSet("reset-algorithm")) {
     useResetAlgorithm_ = true;
   }
@@ -517,13 +699,11 @@ bool Caller::parseOptions(int argc, char** argv) {
   }
 
   if (cmd.isOptionSet("tab-in")) {
-    tabInput_ = true;
     inputFN_ = cmd.options["tab-in"];
   }
 
   if (cmd.isOptionSet("stdinput-tab")) {
     readStdIn_ = true;
-    tabInput_ = true;
   }
 
   if (cmd.isOptionSet("Cpos")) {
@@ -568,6 +748,12 @@ bool Caller::parseOptions(int argc, char** argv) {
   }
   if (cmd.isOptionSet("classic-training")) {
     classicTraining_ = true;
+  }
+  if (cmd.isOptionSet("in-place-training")) {
+    inPlaceTraining_ = true;
+  }
+  if (cmd.isOptionSet("folds-in-memory")) {
+    foldsInMemory_ = cmd.getUInt("folds-in-memory", 1, 1000);
   }
   if (cmd.isOptionSet("train-best-positive")) {
     trainBestPositive_ = true;
@@ -622,6 +808,13 @@ bool Caller::parseOptions(int argc, char** argv) {
             << "option." << std::endl;
         return 0;
       }
+      if (targetDecoyCompetition_) {
+        std::cerr << "Warning: -I concatenated turns off target-decoy "
+                  << "competition, so -Y/--post-processing-tdc is ignored. "
+                  << "Without -I concatenated, -Y applies target-decoy "
+                  << "competition to the Percolator scores of any input."
+                  << std::endl;
+      }
       targetDecoyCompetition_ = false;
       useMixMax_ = false;
     } else if (inputSearchType_ == "separate") {
@@ -641,7 +834,7 @@ bool Caller::parseOptions(int argc, char** argv) {
     numIterations_ = 0;
     selectedCpos_ = 0.5;
     selectedCneg_ = 0.5;
-    skipNormalizeScores_ = true;
+    mergePlan_.skipNormalizeScores = true;
     normalizerType_ = Normalizer::NONORM;
     if (!cmd.isOptionSet("init-weights")) {
       std::cerr << "Error: the --static option requires the --init-weights "
@@ -649,11 +842,79 @@ bool Caller::parseOptions(int argc, char** argv) {
       return 0;
     }
   } else {
-    skipNormalizeScores_ = false;
+    mergePlan_.skipNormalizeScores = false;
+  }
+
+  if (cmd.isOptionSet("merge-normalization")) {
+    mergeNormalizationSet_ = true;
+    const std::string scheme = cmd.options["merge-normalization"];
+    if (scheme == "test") {
+      mergePlan_.scheme = MergeNormalization::TEST;
+    } else if (scheme == "train") {
+      mergePlan_.scheme = MergeNormalization::TRAIN;
+    } else if (scheme == "train-decoys") {
+      mergePlan_.scheme = MergeNormalization::TRAIN_DECOYS;
+    } else if (scheme == "none") {
+      mergePlan_.scheme = MergeNormalization::NONE;
+    } else {
+      std::cerr << "Error: --merge-normalization has to be one out of "
+                << "\"test\", \"train\", \"train-decoys\" or \"none\"."
+                << std::endl;
+      return 0;
+    }
+    if (cmd.isOptionSet("static") &&
+        mergePlan_.scheme != MergeNormalization::TEST) {
+      std::cerr << "Warning: --merge-normalization has no effect with "
+                << "--static, whose scores are not rescaled." << std::endl;
+    }
+  }
+
+  if (cmd.isOptionSet("direction-check")) {
+    const std::string directionCheck = cmd.options["direction-check"];
+    if (directionCheck == "bins") {
+      check_.setDirectionCheck(SanityCheck::DirectionCheck::BINS);
+    } else if (directionCheck == "second-chance") {
+      check_.setDirectionCheck(SanityCheck::DirectionCheck::SECOND_CHANCE);
+    } else if (directionCheck == "pooled") {
+      check_.setDirectionCheck(SanityCheck::DirectionCheck::POOLED);
+    } else {
+      std::cerr << "Error: --direction-check has to be one out of \"bins\", "
+                << "\"second-chance\" or \"pooled\"." << std::endl;
+      return 0;
+    }
+  }
+  // The second chance counts with train-decoys and merges with it when it
+  // keeps the trained SVMs; an explicit scheme is used in that case too, and
+  // the second chance then keeps them only if their list merged with that
+  // scheme can be used as well.
+  if (cmd.isOptionSet("merge-normalization")) {
+    mergePlan_.secondChanceScheme = mergePlan_.scheme;
+  }
+  // The pooled check merges the test bins as the final list is merged. Its
+  // scheme takes the anchors from the training sets, which also exist for
+  // the small test bins that the pooled check is meant for.
+  if (check_.directionCheck() == SanityCheck::DirectionCheck::POOLED) {
+    if (!cmd.isOptionSet("merge-normalization")) {
+      mergePlan_.scheme = MergeNormalization::TRAIN_DECOYS;
+      mergeNormalizationSet_ = true;
+    } else if (mergePlan_.scheme == MergeNormalization::TEST) {
+      std::cerr << "Error: --direction-check pooled cannot be combined with "
+                << "--merge-normalization test, whose anchors are taken from "
+                << "each test bin and do not exist for small bins. Use "
+                << "train-decoys (the default with pooled), train or none."
+                << std::endl;
+      return 0;
+    }
   }
 
   if (cmd.isOptionSet("nested-xval-bins")) {
     nestedXvalBins_ = cmd.getUInt("nested-xval-bins", 1, 1000);
+  }
+  // the number of spectra, which bounds the number of folds, is checked in
+  // run()
+  if (cmd.isOptionSet("num-folds")) {
+    numFolds_ = cmd.getUInt("num-folds", 1, 1000);
+    numFoldsSet_ = true;
   }
   // if there are no arguments left...
   if (cmd.arguments.size() == 0) {
@@ -668,7 +929,6 @@ bool Caller::parseOptions(int argc, char** argv) {
 
   // if there is at least one argument left...
   if (cmd.arguments.size() >= 1) {
-    tabInput_ = true;
     inputFNs_ = cmd.arguments;  // then it's the pin input
     if (cmd.isOptionSet("tab-in")) {  // and if the tab input is also present
       cerr << "Error: use tab-delimited input format.";
@@ -714,7 +974,6 @@ bool Caller::parseOptions(int argc, char** argv) {
       std::string fastaDatabase = cmd.options["picked-protein"];
 
       // default options
-      double pickedProteinPvalueCutoff = 1.0;
       bool pickedProteinReportFragmentProteins = false;
       bool pickedProteinReportDuplicateProteins = false;
       if (cmd.isOptionSet("protein-report-fragments"))
@@ -723,13 +982,32 @@ bool Caller::parseOptions(int argc, char** argv) {
         pickedProteinReportDuplicateProteins = true;
 
       protEstimator_.reset(new PickedProteinInterface(
-          fastaDatabase, pickedProteinPvalueCutoff,
-          pickedProteinReportFragmentProteins,
+          fastaDatabase, pickedProteinReportFragmentProteins,
           pickedProteinReportDuplicateProteins, protEstimatorTrivialGrouping,
           protEstimatorAbsenceRatio, protEstimatorOutputEmpirQVal,
           protEstimatorDecoyPrefix_, protEstimatorPeptideQvalThreshold));
     }
   }
+
+  // the files that are read, to check that no output overwrites one
+  std::vector<std::pair<std::string, std::string> > inputFiles;
+  for (const std::string& fileName : inputFNs_) {
+    inputFiles.emplace_back("input file", fileName);
+  }
+  if (cmd.isOptionSet("tab-in")) {
+    inputFiles.emplace_back("input file", cmd.options["tab-in"]);
+  }
+  if (cmd.isOptionSet("init-weights")) {
+    inputFiles.emplace_back("weights file (-W)", cmd.options["init-weights"]);
+  }
+  if (cmd.isOptionSet("picked-protein") &&
+      cmd.options["picked-protein"] != "auto") {
+    inputFiles.emplace_back("FASTA file (-f)", cmd.options["picked-protein"]);
+  }
+  if (cmd.isOptionSet("parameter-file")) {
+    inputFiles.emplace_back("parameter file", cmd.options["parameter-file"]);
+  }
+  checkOutputFiles(inputFiles);
 
   return true;
 }
@@ -750,9 +1028,10 @@ void Caller::calculatePSMProb(Scores& allScores, bool isUniquePeptideRun) {
          << endl;
   }
 
-  StageTimer stageTimer(isUniquePeptideRun ? "peptide-level statistics"
-                                            : "PSM-level statistics");
+  // The weed-out, the statistics and the writing of the results are timed
+  // apart: the stages do not overlap, so their times add up.
   if (isUniquePeptideRun) {
+    StageTimer stageTimer("peptide weed-out");
     if (ProteinProbEstimator::getCalcProteinLevelProb()) {
       allScores.weedOutRedundant(protEstimator_->getPeptideSpecCounts(),
                                  protEstimator_->getSpecCountQvalThreshold());
@@ -760,6 +1039,7 @@ void Caller::calculatePSMProb(Scores& allScores, bool isUniquePeptideRun) {
       allScores.weedOutRedundant();
     }
   } else if (targetDecoyCompetition_) {
+    StageTimer stageTimer("PSM weed-out (target-decoy competition)");
     allScores.weedOutRedundantTDC();
     if (VERB > 0) {
       std::cerr << "Selected best-scoring PSM per file+scan+expMass"
@@ -776,6 +1056,8 @@ void Caller::calculatePSMProb(Scores& allScores, bool isUniquePeptideRun) {
     std::cerr << "Calculating q values." << std::endl;
   }
 
+  auto stageTimer = std::make_unique<StageTimer>(
+      isUniquePeptideRun ? "peptide-level statistics" : "PSM-level statistics");
   int foundPSMs = allScores.calcQvals(testFdr_);
 
   if (VERB > 0 && writeOutput) {
@@ -798,6 +1080,9 @@ void Caller::calculatePSMProb(Scores& allScores, bool isUniquePeptideRun) {
     allScores.calcPep(useIrlsPep_, useInterpolatingPep_, usePavaPep_,
                       useTdcPep_);
   }
+  stageTimer.reset();
+  StageTimer writeTimer(isUniquePeptideRun ? "write peptide results"
+                                           : "write PSM results");
   writeResults(allScores, isUniquePeptideRun, writeOutput);
 }
 
@@ -822,12 +1107,15 @@ void Caller::writeResults(Scores& allScores,
   if (!targetFN.empty()) {
     ofstream targetStream(targetFN.c_str(), ios::out);
     allScores.print(LabelType::TARGET, targetStream);
+    closeOutputFile(targetStream, targetFN);
   } else if (writeOutput) {
     allScores.print(LabelType::TARGET);
+    flushStandardOutput();
   }
   if (!decoyFN.empty()) {
     ofstream decoyStream(decoyFN.c_str(), ios::out);
     allScores.print(LabelType::DECOY, decoyStream);
+    closeOutputFile(decoyStream, decoyFN);
   }
 }
 
@@ -882,8 +1170,72 @@ void Caller::calculateProteinProbabilities(Scores& allScores) {
   protEstimator_->printOut(proteinResultFN_, decoyProteinResultFN_);
 }
 
+namespace {
+
+// Whether two paths name the same regular file, or are the same path of a
+// file that does not exist yet. Devices such as /dev/null and pipes can be
+// shared by several outputs.
+bool isSameFile(const std::string& a, const std::string& b) {
+  namespace fs = std::filesystem;
+  std::error_code ec;
+  const fs::file_status statusA = fs::status(a, ec);
+  const fs::file_status statusB = fs::status(b, ec);
+  if (fs::exists(statusA) && fs::exists(statusB)) {
+    return fs::is_regular_file(statusA) && fs::equivalent(a, b, ec);
+  }
+  if (fs::exists(statusA) || fs::exists(statusB)) return false;
+  const fs::path canonicalA = fs::weakly_canonical(a, ec);
+  if (ec) return false;
+  const fs::path canonicalB = fs::weakly_canonical(b, ec);
+  return !ec && canonicalA == canonicalB;
+}
+
+}  // namespace
+
+/**
+ * Throws if an output file is one of the input files, which writing the
+ * results would destroy (with -N the input is even read again after
+ * training), or if two outputs go to the same file, so that the second
+ * replaces the first.
+ */
+void Caller::checkOutputFiles(
+    const std::vector<std::pair<std::string, std::string> >& inputFiles)
+    const {
+  const std::pair<const char*, const std::string*> outputs[] = {
+      {"PSM results", &psmResultFN_},
+      {"decoy PSM results", &decoyPsmResultFN_},
+      {"peptide results", &peptideResultFN_},
+      {"decoy peptide results", &decoyPeptideResultFN_},
+      {"protein results", &proteinResultFN_},
+      {"decoy protein results", &decoyProteinResultFN_},
+      {"tab-delimited output (-J)", &tabOutputFN_},
+      {"weights (-w)", &weightOutputFN_}};
+  const size_t numOutputs = sizeof(outputs) / sizeof(outputs[0]);
+  for (size_t i = 0; i < numOutputs; ++i) {
+    const std::string& output = *outputs[i].second;
+    if (output.empty()) continue;
+    for (const auto& input : inputFiles) {
+      if (isSameFile(output, input.second)) {
+        throw MyException("ERROR: The " + std::string(outputs[i].first) +
+                          " would be written to " + output + ", which is the " +
+                          input.first + " " + input.second + ".\n");
+      }
+    }
+    for (size_t j = 0; j < i; ++j) {
+      if (!outputs[j].second->empty() &&
+          isSameFile(output, *outputs[j].second)) {
+        throw MyException("ERROR: The " + std::string(outputs[j].first) +
+                          " and the " + outputs[i].first +
+                          " would both be written to " + output + ".\n");
+      }
+    }
+  }
+}
+
 void Caller::checkIsWritable(const std::string& filePath) {
-  std::ofstream ofs(filePath.c_str());
+  // appends nothing, but unlike the default mode it does not truncate an
+  // existing file, which might also be an input (see checkOutputFiles)
+  std::ofstream ofs(filePath.c_str(), std::ios::app);
   if (!ofs.is_open()) {
     ostringstream temp;
     temp << "ERROR: Could not open the file " << filePath << " for writing. "
@@ -895,8 +1247,6 @@ void Caller::checkIsWritable(const std::string& filePath) {
 
 std::istream& Caller::getDataInStream(std::ifstream& fileStream) {
   if (!readStdIn_) {
-    if (!tabInput_)
-      fileStream.exceptions(ifstream::badbit | ifstream::failbit);
     fileStream.open(inputFN_.c_str(), ios::in);
   } else if (maxPSMs_ > 0u) {
     maxPSMs_ = 0u;
@@ -906,17 +1256,54 @@ std::istream& Caller::getDataInStream(std::ifstream& fileStream) {
   return readStdIn_ ? std::cin : fileStream;
 }
 
+/**
+ * A concatenated target-decoy search that reports several candidates per
+ * spectrum gives spectra with both target and decoy PSMs, so it is detected
+ * as separate searches, and mix-max then keeps all candidates. Separate
+ * searches give one target and one decoy PSM per spectrum, so many spectra
+ * with a repeated label point to such input.
+ */
+void Caller::warnAboutSeveralCandidates(const SetHandler& setHandler) const {
+  const size_t sampled = setHandler.getSampledSpectra();
+  const size_t repeated = setHandler.getSampledSpectraWithRepeatedLabel();
+  if (VERB > 0 && sampled > 0 && repeated * 10 > sampled) {
+    std::cerr << "Warning: " << repeated << " of the " << sampled
+              << " spectra (ScanNr and ExpMass) of the first "
+              << setHandler.getSampledLines() << " PSMs have more than one "
+              << "target or more than one decoy PSM. Mix-max assumes one "
+              << "target and one decoy PSM per spectrum. If the input comes "
+              << "from a concatenated target-decoy search that reports "
+              << "several candidates per spectrum, use -Y/"
+              << "--post-processing-tdc, which keeps the best-scoring PSM "
+              << "of each spectrum." << std::endl;
+  }
+}
+
 bool Caller::loadAndNormalizeData(std::istream& dataStream,
                                   SetHandler& setHandler,
                                   Scores& allScores) {
   bool success;
   if (VERB > 1) {
-    std::cerr << "Reading tab-delimited input from datafile " << inputFN_
+    if (inputFNs_.size() > 1) {
+      std::cerr << "Reading tab-delimited input from the " << inputFNs_.size()
+                << " input files" << std::endl;
+    } else {
+      std::cerr << "Reading tab-delimited input from datafile " << inputFN_
                 << std::endl;
+    }
   }
+  InputSummary inputSummary;
   {
     StageTimer stageTimer("read input");
-    success = setHandler.readTab(dataStream, check_);
+    success = setHandler.readTab(dataStream, inputSummary);
+  }
+  if (success) {
+    // the feature of --default-direction is known once the header is read
+    check_.checkAndSetDefaultDir();
+    if (!inputSummary.defaultWeights.empty()) {
+      check_.addDefaultWeights(inputSummary.defaultWeights);
+    }
+    check_.setConcatenatedSearch(inputSummary.concatenatedSearch);
   }
 
   // Reading input files (pin or temporary file)
@@ -985,6 +1372,7 @@ bool Caller::loadAndNormalizeData(std::istream& dataStream,
           std::cerr << "Separate target and decoy search inputs detected, "
                     << "using mix-max method." << std::endl;
         }
+        warnAboutSeveralCandidates(setHandler);
       }
     }
   } else if (check_.concatenatedSearch() && inputSearchType_ == "separate") {
@@ -1009,12 +1397,33 @@ bool Caller::loadAndNormalizeData(std::istream& dataStream,
     allScores.populateWithPSMs(setHandler);
   }
 
-  if (VERB > 0 && useMixMax_ &&
-      abs(1.0 - allScores.getTargetDecoySizeRatio()) > 0.1) {
-    std::cerr << "Warning: The mix-max procedure is not well behaved when "
-              << "# targets (" << allScores.posSize() << ") != "
-              << "# decoys (" << allScores.negSize() << "). "
-              << "Consider using target-decoy competition (-Y flag)."
+  // Mix-max takes each decoy PSM for one incorrect target PSM and does not
+  // scale by the numbers of targets and decoys. Decoy PSMs that are missing
+  // at random make its q values and PEPs too low, missing target PSMs make
+  // them too high. The two numbers alone do not tell: PSMs that both
+  // searches dropped below a score threshold leave more targets than decoys
+  // and q values that are not too low, so this is a warning and not an
+  // error. RESET does not use mix-max: it competes the peptides and takes
+  // its q values from the decoys it held out, whichever search type was
+  // detected.
+  if (VERB > 0 && useMixMax_ && !useResetAlgorithm_ &&
+      std::abs(1.0 - allScores.getTargetDecoySizeRatio()) > 0.1) {
+    std::cerr << "Warning: the mix-max method takes each decoy PSM for one "
+              << "incorrect target PSM, but the input has "
+              << allScores.posSize() << " target and " << allScores.negSize()
+              << " decoy PSMs, which differ by more than 10%. ";
+    if (allScores.posSize() > allScores.negSize()) {
+      std::cerr << "If decoy PSMs are missing for some of the spectra, the "
+                << "q values and PEPs are too low, by up to the ratio of "
+                << "the two numbers; they are not if both searches left "
+                << "out the PSMs below a score threshold. ";
+    } else {
+      std::cerr << "With fewer target than decoy PSMs the q values and PEPs "
+                << "are too high, and identifications are lost. ";
+    }
+    std::cerr << "If the input comes from a concatenated target-decoy "
+              << "search, use -Y/--post-processing-tdc or -I concatenated, "
+              << "and neither -y/--post-processing-mix-max nor -I separate."
               << std::endl;
   }
   return success;
@@ -1029,6 +1438,9 @@ bool Caller::loadAndNormalizeData(std::istream& dataStream,
  * 5. (optional) calculate protein probabilities
  */
 int Caller::run() {
+  if (nothingToRun_) {
+    return 1;  // parseOptions printed the version or the help
+  }
   timer.reset();
   PSMDescription::resetSpectrumFileNames();
 
@@ -1057,30 +1469,46 @@ int Caller::run() {
     }
   }
 
+  // Several input files are read in turn, as one input.
+  std::unique_ptr<ConcatenatedPinStream> severalFiles;
   if (inputFNs_.size() == 1) {
     inputFN_ = inputFNs_.at(0);
   } else if (inputFNs_.size() > 1) {
-    tabInput_ = true;
-    tmpDir_ = std::make_unique<TmpDir>();
-    ValidateTabFile validateTab;
-    inputFN_ = validateTab.concatenateMultiplePINs(inputFNs_, tmpDir_->getPath());
+    StageTimer stageTimer("validate input files");
+    severalFiles = std::make_unique<ConcatenatedPinStream>(inputFNs_);
   }
 
   int success = 0;
   std::ifstream fileStream;
   SetHandler setHandler(maxPSMs_);
   setHandler.setDecoyPrefix(protEstimatorDecoyPrefix_);
+  if (severalFiles) {
+    // grows as the files are reached
+    setHandler.setInputSegments(&severalFiles->segments());
+  }
+  // Rows that the SVM can train on in place: with --in-place-training, and
+  // where the copies of fewer folds than there are are held at once
+  // (--folds-in-memory), whose single solves then run in place.
+  const bool singleSolvesInPlace =
+      !useResetAlgorithm_ &&  // which trains on one fold
+      CrossValidation::foldsHeldAtOnce(foldsInMemory_, numFolds_) < numFolds_;
+  setHandler.getFeaturePool().setSvmRowsInPlace(inPlaceTraining_ ||
+                                                singleSolvesInPlace);
   Scores allScores(useMixMax_);
   allScores.setOutputRT(outputRT_);
 
-  // returning instead of exiting lets the destructor remove tmpDir_
-  if (!loadAndNormalizeData(getDataInStream(fileStream),
-                            setHandler, allScores)) {
+  // the stream that is read again by the second pass of -N
+  std::istream& inputStream =
+      severalFiles ? static_cast<std::istream&>(*severalFiles) : fileStream;
+  if (!loadAndNormalizeData(
+          severalFiles && !readStdIn_ ? inputStream
+                                      : getDataInStream(fileStream),
+          setHandler, allScores)) {
     return 0;
   }
 
   double decoyFractionTraining = 1.0;
-  unsigned int numFolds = 3u;
+  unsigned int numFolds = numFolds_;
   if (useResetAlgorithm_) {
     if (VERB > 0) {
       std::cerr << "Running the Percolator-RESET algorithm." << std::endl;
@@ -1090,58 +1518,134 @@ int Caller::run() {
     if (VERB > 1) {
       std::cerr << "Selecting best separating single variable." << std::endl;
     }
-    SanityCheck sc(check_);
-    std::vector<std::vector<double>> ww(
-        1, std::vector<double>(DataSet::getNumFeatures() + 1, 0.0));
-    std::vector<Scores> tmpScoreVector;
-    tmpScoreVector.push_back(std::move(allScores));
-    sc.getInitDirection(tmpScoreVector, tmpScoreVector, pNorm_.get(), ww,
-                        selectionFdr_, initialSelectionFdr_);
-    allScores = std::move(tmpScoreVector.at(0));
-
-    Scores winnerPeptides(false);
-    unsigned int decoysPerTarget = 1;
-    CompositionSorter::retainRepresentatives(allScores, winnerPeptides,
-                                             selectionFdr_, decoysPerTarget,
-                                             useCompositionMatch_);
-    allScores = std::move(winnerPeptides);
-
-    bool useSingleFold = true;
-    decoyFractionTraining = 0.5;
-    if (useSingleFold) {
-      // From Algorithm S3 of the percolator-RESET supplementary material
-      // decoyFractionTraining - the probability of assigning a decoy to the
-      // training set
-      // A plain loop: GCC's parallel mode would run std::for_each on
-      // several threads, which then draw from the random number generator
-      // concurrently and make the result differ between runs.
-      for (ScoreHolder& sh : allScores) {
-        if (sh.isDecoy() &&
-            PseudoRandom::lcg_uniform_rand() > decoyFractionTraining) {
-          sh.label = LabelType::PSEUDO_TARGET;
-        }
-      }
-
-      // we do not necessarily need multiple folds with RESET because the pseudo
-      // targets take care of the overfitting.
-      numFolds = 1u;
-      nestedXvalBins_ = 3u;
+    {
+      StageTimer stageTimer("RESET initial direction");
+      SanityCheck sc(check_);
+      std::vector<std::vector<double>> ww(
+          1, std::vector<double>(DataSet::getNumFeatures() + 1, 0.0));
+      std::vector<Scores> tmpScoreVector;
+      tmpScoreVector.push_back(std::move(allScores));
+      sc.getInitDirection(tmpScoreVector, tmpScoreVector, pNorm_.get(), ww,
+                          selectionFdr_, initialSelectionFdr_);
+      allScores = std::move(tmpScoreVector.at(0));
     }
 
-    // TODO:
-    // - apply decoy factor in PosteriorEstimator::estimatePEP
+    {
+      StageTimer stageTimer("RESET peptide selection");
+      Scores winnerPeptides(false);
+      unsigned int decoysPerTarget = 1;
+      CompositionSorter::retainRepresentatives(allScores, winnerPeptides,
+                                               selectionFdr_, decoysPerTarget,
+                                               useCompositionMatch_);
+      allScores = std::move(winnerPeptides);
+    }
+
+    decoyFractionTraining = 0.5;
+    // From Algorithm S3 of the percolator-RESET supplementary material
+    // decoyFractionTraining - the probability of assigning a decoy to the
+    // training set
+    // A plain loop in a fixed order, so that the random numbers go to
+    // the same PSMs in every run; do not parallelise it.
+    for (ScoreHolder& sh : allScores) {
+      if (sh.isDecoy() &&
+          PseudoRandom::lcg_uniform_rand() > decoyFractionTraining) {
+        sh.label = LabelType::PSEUDO_TARGET;
+      }
+    }
+
+    // RESET trains on a single fold: the pseudo targets take care of the
+    // overfitting.
+    if (numFoldsSet_ && numFolds_ != 1u) {
+      std::cerr << "Warning: --num-folds " << numFolds_ << " is ignored "
+                << "with --reset-algorithm, which trains on a single fold."
+                << std::endl;
+    }
+    numFolds = 1u;
+    nestedXvalBins_ = 3u;
   }
+
+  // an explicit --num-folds 3 behaves like the default, which has never
+  // been checked against the number of spectra
+  if (numFoldsSet_ && numFolds > 1u && numFolds != kDefaultNumFolds) {
+    const std::size_t numSpectra = allScores.getNumSpectra();
+    if (numFolds > numSpectra) {
+      if (NO_TERMINATE) {
+        // at least two folds, since one fold is only used when asked for; with
+        // a single spectrum, one of them stays empty
+        const unsigned int cappedFolds =
+            static_cast<unsigned int>(std::max<std::size_t>(numSpectra, 2u));
+        std::cerr << "Warning: --num-folds " << numFolds << " is larger than "
+                  << "the number of spectra (" << numSpectra << "). "
+                  << "No-terminate flag set: ";
+        if (cappedFolds < numFolds) {
+          std::cerr << "using " << cappedFolds << " folds." << std::endl;
+        } else {
+          std::cerr << "keeping " << cappedFolds << " folds, so at least one "
+                    << "of them stays empty." << std::endl;
+        }
+        numFolds = cappedFolds;
+      } else {
+        std::cerr << "Error: --num-folds " << numFolds << " is larger than the "
+                  << "number of spectra (" << numSpectra << "), and each fold "
+                  << "needs at least one spectrum." << std::endl;
+        return 0;
+      }
+    }
+  }
+
+  // The test scheme anchors each test bin at its own score at q = --trainFDR.
+  // With more folds than the default the bins are smaller and that anchor
+  // noisy, so without a given scheme they are merged by their training-set
+  // decoys. --static never rescales and keeps test, which decides how -N
+  // scores all PSMs.
+  MergePlan mergePlan = mergePlan_;
+  if (!mergeNormalizationSet_ && !mergePlan.skipNormalizeScores) {
+    mergePlan.scheme = CrossValidation::defaultMergeNormalization(numFolds);
+    if (mergePlan.scheme != mergePlan_.scheme && VERB > 1) {
+      std::cerr << "Merging the " << numFolds << " cross-validation bins "
+                << "with --merge-normalization "
+                << mergeNormalizationName(mergePlan.scheme)
+                << ", the default with more than " << kDefaultNumFolds
+                << " folds." << std::endl;
+    }
+  }
+  // The merged counts of the direction check find a list unusable where
+  // the run would end with "too good separation": also where the lists
+  // that calculatePSMProb makes from the merged one separate too well.
+  mergePlan.lists.bestPsmPerSpectrum = targetDecoyCompetition_;
+  mergePlan.lists.bestPsmPerPeptide =
+      reportUniquePeptides_ || ProteinProbEstimator::getCalcProteinLevelProb();
 
   // The cross-validation sets and SVM inputs are only needed for training,
   // the scope releases them before the post-processing steps.
   std::vector<double> rawWeights;
+  // with -N: the weights of each fold, and the input line and fold of each
+  // PSM of the training subset
+  std::vector<std::vector<double> > rawFoldWeights;
+  std::vector<std::pair<unsigned int, unsigned int> > subsetFolds;
+  // the scheme of the merge, which the second chance of the direction check
+  // can change
+  MergeNormalization usedMergeNormalization = mergePlan.scheme;
   {
     CrossValidation crossValidation(
         quickValidation_, reportEachIteration_, testFdr_, selectionFdr_,
         initialSelectionFdr_, selectedCpos_, selectedCneg_, numIterations_,
         useMixMax_, nestedXvalBins_, trainBestPositive_, numThreads_,
-        skipNormalizeScores_, decoyFractionTraining, numFolds);
+        decoyFractionTraining, numFolds);
     crossValidation.setClassicTraining(classicTraining_);
+    // in place only on rows that end with the intercept, which the pool
+    // gives unless the input has no features
+    crossValidation.setSvmRowsInPlace(
+        inPlaceTraining_ && setHandler.getFeaturePool().canTrainInPlace(
+                                DataSet::getNumFeatures()));
+    crossValidation.setFoldsAtOnce(foldsInMemory_);
+    crossValidation.setSingleSolvesInPlace(
+        singleSolvesInPlace && setHandler.getFeaturePool().canTrainInPlace(
+                                   DataSet::getNumFeatures()));
+    // with -N, the test fold of each subset PSM, for getTestFolds below
+    crossValidation.setRecordTestFolds(setHandler.getMaxPSMs() > 0u &&
+                                       numFolds > 1u);
+    crossValidation.setMergePlan(mergePlan);
 
     int firstNumberOfPositives =
         crossValidation.preIterationSetup(allScores, check_, pNorm_.get());
@@ -1160,7 +1664,7 @@ int Caller::run() {
     timer.reset();
 
     if (tabOutputFN_.length() > 0) {
-      setHandler.writeTab(tabOutputFN_, check_);
+      setHandler.writeTab(tabOutputFN_, check_.getDefaultWeights());
     }
 
     // Do the SVM training
@@ -1173,16 +1677,33 @@ int Caller::run() {
     {
       StageTimer stageTimer("post-iteration processing");
       crossValidation.postIterationProcessing(allScores, check_);
+      usedMergeNormalization = crossValidation.usedMergeNormalization();
     }
 
     if (weightOutputFN_.size() > 0) {
       ofstream weightStream(weightOutputFN_.c_str(), ios::out);
       crossValidation.printAllWeights(weightStream, pNorm_.get());
-      weightStream.close();
+      closeOutputFile(weightStream, weightOutputFN_);
     }
 
     if (setHandler.getMaxPSMs() > 0u) {
       crossValidation.getAvgWeights(rawWeights, pNorm_.get());
+      // Each PSM of the subset was a test PSM of one fold and a training
+      // PSM of the others, so the averaged weights would score it
+      // in-sample: training decoys would score too low and training
+      // positives too high, and the decoys would no longer model the
+      // incorrect targets. These PSMs keep the score of their test fold,
+      // as without -N, where the direction check passed or its second
+      // chance kept the trained SVMs. After a failed check, a reset or
+      // --override, the list of test folds is empty and all PSMs are scored
+      // with the averaged weights. Unless score normalization is switched
+      // off, merge() has rescaled the weights of each fold to the common
+      // scale of the merge scheme (with test: q = fdr at 0, median decoy at
+      // -1), which their average shares.
+      if (numFolds > 1u) {
+        crossValidation.getRawFoldWeights(rawFoldWeights, pNorm_.get());
+        crossValidation.getTestFolds(subsetFolds);
+      }
     }
   }
   setHandler.releaseFeatures();
@@ -1195,10 +1716,11 @@ int Caller::run() {
     allScores.reserve(setHandler.getNumPsmLines());
     setHandler.reset();
 
-    fileStream.clear();
-    fileStream.seekg(0, ios::beg);
-    success = setHandler.readAndScoreTab(fileStream, rawWeights, allScores,
-                                         check_);
+    inputStream.clear();
+    inputStream.seekg(0, ios::beg);
+    success = setHandler.readAndScoreTab(inputStream, rawWeights, allScores,
+                                         rawFoldWeights, subsetFolds);
+    std::vector<std::pair<unsigned int, unsigned int> >().swap(subsetFolds);
     // Reading input files (pin or temporary file)
     if (!success) {
       ostringstream temp;
@@ -1218,8 +1740,15 @@ int Caller::run() {
     }
 
     allScores.postMergeStep();
-    allScores.calcQvals(selectionFdr_);
-    allScores.normalizeScores(selectionFdr_, rawWeights);
+    // Only the test scheme rescales the scores of all PSMs once more, by
+    // their own anchors. With the other schemes the averaged weights, which
+    // were rescaled per fold in the merge, already give scores on the common
+    // scale of the training sets, or raw scores with "none".
+    if (usedMergeNormalization == MergeNormalization::TEST) {
+      allScores.calcQvals(selectionFdr_);
+      // with one fold, the scores of all PSMs come from a single bin
+      allScores.normalizeScores(selectionFdr_, rawWeights, numFolds == 1u);
+    }
   }
 
   calcAndOutputResult(allScores);

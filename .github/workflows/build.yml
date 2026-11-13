@@ -1,6 +1,36 @@
 name: Build
 
-on: [push, pull_request]
+# Runs for pull requests and for pushes to master. A branch without a pull
+# request is built with "Run workflow" (workflow_dispatch). A new push to a
+# pull request cancels the run of the previous one.
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+# Compilers: the minimum is GCC 9 (std::filesystem without an extra
+# library; CMakeLists.txt refuses older ones), and GCC 11 for the fast
+# number conversions (std::to_chars and std::from_chars for double). The
+# jobs build with GCC 13 (ubuntu-latest), GCC 11 (almalinux:9), GCC 9
+# (minimum-compiler), AppleClang (macos-15) and Visual Studio 2022.
+#
+# Platforms: the jobs that end with the steps option_matrix,
+# matrix_hashes and the two uploads (Linux x86-64 and arm64, macOS arm64,
+# Windows) run tests/ci/option_matrix.sh and upload the hashes of its
+# outputs (matrix-hashes-<platform>, tests/ci/matrix_hashes.py) and, for
+# five days, the outputs (matrix-outputs-<platform>). The job
+# platform-differences prints what differs from Linux x86-64.
+
+# Idle OpenMP threads sleep instead of spinning: the runners have few cores,
+# and spinning threads slow the tests down several times when the cores are
+# shared. The results do not depend on it.
+env:
+  OMP_WAIT_POLICY: passive
 
 jobs:
   build-ubuntu:
@@ -8,15 +38,104 @@ jobs:
     steps:
     - uses: actions/checkout@v6
     - name: preinstall
-      run: sudo apt-get update 
+      run: sudo apt-get update
     - name: create_dirs
       run: mkdir -p ${{ github.workspace }}/release ${{ github.workspace }}/build
     - name: configure_and_make
       run: ./admin/builders/ubuntu64_build.sh -s ${{ github.workspace }}/.. -r ${{ github.workspace }}/release -b ${{ github.workspace }}/build
-    - name: unit_tests
-      run: cd ${{ github.workspace }}/build/percolator && make test
-    - name: system_test  
-      run: cd ${{ github.workspace }}/build/percolator && sudo make install && make test-install
+    - name: tests
+      # unit tests and system tests, on the binaries of the build tree
+      run: cd ${{ github.workspace }}/build/percolator && ctest --output-on-failure
+    - name: golden_hashes
+      # every output file of the option matrix must be byte for byte what
+      # the manifest tests/ci/option_matrix.sha256 records; a commit that
+      # changes results on purpose writes the manifest again with
+      # tests/ci/check_golden.sh --update (see tests/ci/README.md)
+      run: bash tests/ci/check_golden.sh --strict ${{ github.workspace }}/build/percolator ${{ github.workspace }}/build/golden
+    - name: exit_status
+      # exit status 1 and a message on bad input and on write errors
+      run: bash tests/ci/exit_status.sh ${{ github.workspace }}/build/percolator ${{ github.workspace }}/build/exit_status
+    - name: check_package
+      # the .deb must declare its library dependencies and hold no test binary
+      run: |
+        deb=$(ls ${{ github.workspace }}/release/*.deb)
+        dpkg-deb -f "$deb"
+        contents=$(dpkg-deb -c "$deb")
+        echo "$contents"
+        depends=$(dpkg-deb -f "$deb" Depends)
+        grep -q libgomp1 <<< "$depends"
+        if grep -q gtest_unit <<< "$contents"; then exit 1; fi
+    - name: option_matrix
+      run: bash tests/ci/option_matrix.sh build/percolator matrix
+    - name: matrix_hashes
+      run: python3 tests/ci/matrix_hashes.py hash matrix > matrix/hashes.txt
+    - name: upload_matrix_hashes
+      uses: actions/upload-artifact@v4
+      with:
+        name: matrix-hashes-linux-x86_64
+        path: matrix/hashes.txt
+    - name: upload_matrix_outputs
+      uses: actions/upload-artifact@v4
+      with:
+        name: matrix-outputs-linux-x86_64
+        path: |
+          matrix
+          !matrix/inputs/**
+        retention-days: 5
+
+  # arm64 Linux, built and tested on an arm64 runner. GCC contracts a*b+c
+  # into a fused multiply-add there, so a printed digit can differ from
+  # x86-64 (see platform-differences).
+  build-ubuntu-arm64:
+    runs-on: ubuntu-24.04-arm
+    steps:
+    - uses: actions/checkout@v6
+    - name: configure
+      run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+    - name: build
+      run: cmake --build build -j 4
+    - name: tests
+      run: cd build && ctest --output-on-failure
+    - name: option_matrix
+      run: bash tests/ci/option_matrix.sh build matrix
+    - name: matrix_hashes
+      run: python3 tests/ci/matrix_hashes.py hash matrix > matrix/hashes.txt
+    - name: upload_matrix_hashes
+      uses: actions/upload-artifact@v4
+      with:
+        name: matrix-hashes-linux-arm64
+        path: matrix/hashes.txt
+    - name: upload_matrix_outputs
+      uses: actions/upload-artifact@v4
+      with:
+        name: matrix-outputs-linux-arm64
+        path: |
+          matrix
+          !matrix/inputs/**
+        retention-days: 5
+
+  # The oldest supported compiler: GCC 9 on Ubuntu 20.04, where
+  # std::to_chars and std::from_chars for double are missing and the slower
+  # number conversions are used. Not blocking until it has passed once: no
+  # GCC 9 was at hand when the job was written.
+  minimum-compiler:
+    runs-on: ubuntu-latest
+    container: 'ubuntu:20.04'
+    continue-on-error: true
+    env:
+      DEBIAN_FRONTEND: noninteractive
+    steps:
+    - name: preinstall
+      run: apt-get update && apt-get install -y g++ cmake make git python3
+    - uses: actions/checkout@v6
+    - name: configure
+      run: g++ --version && cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+    - name: build
+      run: cmake --build build -j 4
+    - name: tests
+      run: cd build && ctest --output-on-failure
+    - name: option_matrix
+      run: bash tests/ci/option_matrix.sh build matrix
 
   build-almalinux:
     runs-on: ubuntu-latest
@@ -27,8 +146,19 @@ jobs:
       run: mkdir -p ../my_rel ../my_build
     - name: configure_and_make
       run: ./admin/builders/centos64_build.sh -s `pwd`/.. -r `pwd`/../my_rel -b `pwd`/../my_build
-    - name: unit_tests
-      run: cd ../my_build/percolator && make test
+    - name: tests
+      run: cd ../my_build/percolator && ctest --output-on-failure
+    - name: golden_hashes
+      # another compiler and C library than the manifest was made with:
+      # differences are listed, and the hashes uploaded, without failing
+      run: bash tests/ci/check_golden.sh --report ../my_build/percolator golden
+    - name: upload_hashes
+      uses: actions/upload-artifact@v4
+      with:
+        name: golden-hashes-almalinux
+        path: golden/hashes.sha256
+    - name: exit_status
+      run: bash tests/ci/exit_status.sh ../my_build/percolator exit_status
 
   build-osx:
     runs-on: macos-15
@@ -38,10 +168,46 @@ jobs:
       run: mkdir -p ${{ github.workspace }}/release ${{ github.workspace }}/build
     - name: configure_and_make
       run: admin/builders/osx64_build.sh  -s ${{ github.workspace }}/.. -r ${{ github.workspace }}/release -b ${{ github.workspace }}/build
-    - name: unit_tests
-      run: cd ${{ github.workspace }}/build/percolator && make test
-    - name: system_test  
-      run: cd ${{ github.workspace }}/build/percolator && sudo make install && make test-install
+    - name: tests
+      run: cd ${{ github.workspace }}/build/percolator && ctest --output-on-failure
+    - name: golden_hashes
+      # the manifest was made on x86-64 Linux: differences are listed, and
+      # the hashes uploaded, without failing
+      run: bash tests/ci/check_golden.sh --report ${{ github.workspace }}/build/percolator ${{ github.workspace }}/build/golden
+    - name: upload_hashes
+      uses: actions/upload-artifact@v4
+      with:
+        name: golden-hashes-osx
+        path: ${{ github.workspace }}/build/golden/hashes.sha256
+    - name: exit_status
+      run: bash tests/ci/exit_status.sh ${{ github.workspace }}/build/percolator ${{ github.workspace }}/build/exit_status
+    - name: check_binary
+      # minos must be 12.0 (CMAKE_OSX_DEPLOYMENT_TARGET); libomp should be
+      # linked statically, so that the binary runs without Homebrew
+      run: |
+        bin=${{ github.workspace }}/build/percolator/src/percolator
+        lipo -info "$bin"
+        otool -l "$bin" | grep -A4 LC_BUILD_VERSION
+        otool -L "$bin"
+        minos=$(otool -l "$bin" | awk '/LC_BUILD_VERSION/ {f = 1} f && $1 == "minos" && !done {print $2; done = 1}')
+        test "$minos" = "12.0"
+    - name: option_matrix
+      run: bash tests/ci/option_matrix.sh build/percolator matrix
+    - name: matrix_hashes
+      run: python3 tests/ci/matrix_hashes.py hash matrix > matrix/hashes.txt
+    - name: upload_matrix_hashes
+      uses: actions/upload-artifact@v4
+      with:
+        name: matrix-hashes-macos-arm64
+        path: matrix/hashes.txt
+    - name: upload_matrix_outputs
+      uses: actions/upload-artifact@v4
+      with:
+        name: matrix-outputs-macos-arm64
+        path: |
+          matrix
+          !matrix/inputs/**
+        retention-days: 5
 
   build-windows:
     runs-on: windows-2022
@@ -57,7 +223,143 @@ jobs:
       run: |
         echo %GITHUB_WORKSPACE%
         call "%GITHUB_WORKSPACE%\admin\builders\nativew64_build.bat" -s "%GITHUB_WORKSPACE%\.." -r "%GITHUB_WORKSPACE%\rel" -b "%GITHUB_WORKSPACE%\build"
-#    - name: unit_tests
-#      run: |
-#        CD my_build\percolator
-#        make test
+    - name: tests
+      # unit tests and system tests, on the binaries of the build tree
+      run: |
+        cd /D "%GITHUB_WORKSPACE%\build\percolator"
+        for /f "tokens=2 delims==" %%i in ('findstr /b "CMAKE_CTEST_COMMAND:INTERNAL=" CMakeCache.txt') do set "CTEST=%%i"
+        "%CTEST%" -C Release --output-on-failure
+    - name: check_runtime_dlls
+      # with the static C++ runtime, percolator.exe must not need the
+      # Visual C++ Redistributable (only vcomp140.dll and system DLLs)
+      run: |
+        for /f "usebackq tokens=*" %%i in (`"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath`) do set "VSDIR=%%i"
+        call "%VSDIR%\VC\Auxiliary\Build\vcvars64.bat" > nul || exit /b 1
+        dumpbin /dependents "%GITHUB_WORKSPACE%\build\percolator\src\Release\percolator.exe" > deps.txt || exit /b 1
+        type deps.txt
+        findstr /i "msvcp140 vcruntime140" deps.txt > nul && (echo percolator.exe needs the Visual C++ runtime DLLs& exit /b 1)
+        exit /b 0
+    - name: option_matrix
+      # with Git Bash, on build/percolator/src/Release/percolator.exe
+      shell: bash
+      env:
+        PYTHON: python
+      run: bash tests/ci/option_matrix.sh build/percolator matrix
+    - name: matrix_hashes
+      shell: bash
+      run: python tests/ci/matrix_hashes.py hash matrix > matrix/hashes.txt
+    - name: upload_matrix_hashes
+      uses: actions/upload-artifact@v4
+      with:
+        name: matrix-hashes-windows-x86_64
+        path: matrix/hashes.txt
+    - name: upload_matrix_outputs
+      uses: actions/upload-artifact@v4
+      with:
+        name: matrix-outputs-windows-x86_64
+        path: |
+          matrix
+          !matrix/inputs/**
+        retention-days: 5
+
+  # Prints the output files of the option matrix that differ between the
+  # platforms, with their first differing lines. A report, not a check:
+  # compilers and math libraries round differently (fused multiply-add on
+  # arm64), which changes a printed digit now and then.
+  platform-differences:
+    needs: [build-ubuntu, build-ubuntu-arm64, build-osx, build-windows]
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v6
+    - uses: actions/download-artifact@v4
+      with:
+        pattern: matrix-outputs-*
+        path: platforms
+    - name: compare
+      shell: bash
+      run: |
+        mkdir -p platforms && cd platforms
+        reference=matrix-outputs-linux-x86_64
+        if [ ! -d "$reference" ]; then
+          echo "no outputs of Linux x86-64 to compare with"
+          exit 0
+        fi
+        others=$(ls -d matrix-outputs-* | grep -v -x "$reference" || true)
+        python3 ../tests/ci/matrix_hashes.py compare "$reference" $others | tee report.txt
+        { echo '```'; cat report.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+
+  # ASan and UBSan over the unit tests, the system tests and a matrix of
+  # option combinations (tests/ci/option_matrix.sh); any report fails the job.
+  # The build keeps the assertions: CMake's RelWithDebInfo flags are
+  # "-O2 -g -DNDEBUG", which the job replaces by "-O2 -g".
+  sanitizers:
+    runs-on: ubuntu-latest
+    env:
+      ASAN_OPTIONS: detect_leaks=1
+      UBSAN_OPTIONS: print_stacktrace=1
+    steps:
+    - uses: actions/checkout@v6
+    - name: preinstall
+      # GCC 13's ASan fails at startup with the runners' high ASLR entropy
+      run: sudo sysctl -w vm.mmap_rnd_bits=28
+    - name: configure
+      run: >
+        cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo
+        -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-sanitize-recover=all -fno-omit-frame-pointer"
+        -DCMAKE_C_FLAGS="-fsanitize=address,undefined -fno-sanitize-recover=all -fno-omit-frame-pointer"
+        -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined"
+        -DCMAKE_CXX_FLAGS_RELWITHDEBINFO="-O2 -g"
+        -DCMAKE_C_FLAGS_RELWITHDEBINFO="-O2 -g"
+    - name: build
+      run: cmake --build build -j 4
+    - name: tests
+      run: cd build && ctest --output-on-failure
+    - name: option_matrix
+      run: bash tests/ci/option_matrix.sh build build/option_matrix
+    - name: exit_status
+      # the error paths: bad input and write errors, without a report
+      run: bash tests/ci/exit_status.sh build build/exit_status
+
+  # Results must not depend on the number of threads: the option matrix
+  # with 1 and 4 threads must give byte-identical outputs. The job also
+  # checks that configuring works without network access when GoogleTest
+  # is installed.
+  determinism:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v6
+    - name: preinstall
+      run: sudo apt-get update && sudo apt-get install -y libgtest-dev
+    - name: configure_offline
+      run: >
+        HTTPS_PROXY=http://127.0.0.1:9 HTTP_PROXY=http://127.0.0.1:9
+        https_proxy=http://127.0.0.1:9 http_proxy=http://127.0.0.1:9
+        cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+        -DFETCHCONTENT_FULLY_DISCONNECTED=ON
+    - name: build
+      run: cmake --build build -j 4
+    - name: tests
+      run: cd build && ctest --output-on-failure
+    - name: thread_independence
+      run: bash tests/ci/check_determinism.sh build build/determinism
+
+  # Blocking: percolator, qvality and the unit tests compile without a
+  # warning of -Wall -Wextra. GoogleTest comes from the system, so its own
+  # sources are not compiled here. A warning that cannot be fixed at once
+  # may be allowed for a while by raising WARNING_BUDGET.
+  warnings:
+    runs-on: ubuntu-latest
+    env:
+      WARNING_BUDGET: 0
+    steps:
+    - uses: actions/checkout@v6
+    - name: preinstall
+      run: sudo apt-get update && sudo apt-get install -y libgtest-dev
+    - name: build
+      run: |
+        set -o pipefail
+        cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-Wall -Wextra"
+        cmake --build build -j 4 2>&1 | tee build.log
+    - name: count
+      run: bash tests/ci/count_warnings.sh build.log "$WARNING_BUDGET"

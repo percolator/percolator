@@ -35,21 +35,39 @@ macro(load_config_files location)
   endforeach()
 endmacro()
 
-# useful macro
-function(get_arch TARGET_ARCH)
-  # Detect machine architecture, on UNIX:
-  if(UNIX AND NOT APPLE AND NOT DEFINED ${TARGET_ARCH})
-	execute_process(COMMAND dpkg --print-architecture
-			 OUTPUT_VARIABLE TARGET_ARCH
-			 OUTPUT_STRIP_TRAILING_WHITESPACE)
-	message(STATUS "Architecture: ${TARGET_ARCH}")
-  endif(UNIX AND NOT APPLE AND NOT DEFINED ${TARGET_ARCH})
-  if(APPLE AND NOT DEFINED ${TARGET_ARCH})
-	execute_process(COMMAND uname -m
-			 OUTPUT_VARIABLE TARGET_ARCH
-			 OUTPUT_STRIP_TRAILING_WHITESPACE)
-	message(STATUS "Architecture: ${TARGET_ARCH}")
-  endif(APPLE AND NOT DEFINED ${TARGET_ARCH})
+# Sets TARGET_ARCH, the architecture in the package names, in the calling
+# scope unless it was given (-DTARGET_ARCH=...): on Linux the Debian
+# architecture (e.g. amd64) where dpkg is available, otherwise the processor
+# (e.g. x86_64); on macOS the architecture in CMAKE_OSX_ARCHITECTURES, or
+# "universal" for several, or the processor of the build machine.
+function(get_arch)
+  if(NOT "${TARGET_ARCH}" STREQUAL "")
+    return()
+  endif()
+  set(arch "")
+  if(APPLE)
+    list(LENGTH CMAKE_OSX_ARCHITECTURES num_archs)
+    if(num_archs GREATER 1)
+      set(arch "universal")
+    elseif(num_archs EQUAL 1)
+      set(arch "${CMAKE_OSX_ARCHITECTURES}")
+    endif()
+  elseif(UNIX)
+    find_program(DPKG_EXECUTABLE dpkg)
+    mark_as_advanced(DPKG_EXECUTABLE)
+    if(DPKG_EXECUTABLE)
+      execute_process(COMMAND ${DPKG_EXECUTABLE} --print-architecture
+                      OUTPUT_VARIABLE arch
+                      OUTPUT_STRIP_TRAILING_WHITESPACE)
+    endif()
+  endif()
+  if(UNIX AND arch STREQUAL "")
+    execute_process(COMMAND uname -m
+                    OUTPUT_VARIABLE arch
+                    OUTPUT_STRIP_TRAILING_WHITESPACE)
+  endif()
+  message(STATUS "Architecture: ${arch}")
+  set(TARGET_ARCH "${arch}" PARENT_SCOPE)
 endfunction()
 
 ###############################################################################
@@ -118,20 +136,8 @@ set (CMAKE_CXX_STANDARD 17)
 set (CMAKE_CXX_STANDARD_REQUIRED YES)
 set (CMAKE_CXX_EXTENSIONS OFF)
 
-IF(APPLE)
-  add_definitions(-Dxdr_uint16_t=xdr_u_int16_t -Dxdr_uint32_t=xdr_u_int32_t -Dxdr_uint64_t=xdr_u_int64_t)
-ENDIF(APPLE)
-
 if(UNIX OR APPLE OR MINGW)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated-declarations -D_GLIBCXX_PARALLEL")
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-deprecated-declarations -D_GLIBCXX_PARALLEL")
   set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -DNDEBUG")
-  set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O3 -DNDEBUG")
   set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -g")
-  set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -O0 -g")
-endif()
-
-if(PROFILING AND UNIX)
-  set(PROFILING_COMMON_FLAGS -Wno-unused-result -Wno-overflow -Wall -g -pg -fprofile-arcs -ftest-coverage)
 endif()
 

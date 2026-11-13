@@ -13,20 +13,37 @@ set(COMMON_LIBRARIES "")
 find_package(OpenMP)
 # Help AppleClang find Homebrew's libomp if not auto-detected
 if(APPLE AND NOT OpenMP_CXX_FOUND)
-  # Common Homebrew prefix on Apple Silicon
-  set(_HOMEBREW_OMP_ROOT "/opt/homebrew/opt/libomp")
-  if (EXISTS "${_HOMEBREW_OMP_ROOT}/include" AND EXISTS "${_HOMEBREW_OMP_ROOT}/lib")
-    # Hint include/lib to CMake's OpenMP finder
-    set(OpenMP_CXX_FLAGS "-Xpreprocessor -fopenmp" CACHE STRING "" FORCE)
-    set(OpenMP_CXX_LIB_NAMES "omp" CACHE STRING "" FORCE)
-    set(OpenMP_omp_LIBRARY "${_HOMEBREW_OMP_ROOT}/lib/libomp.dylib" CACHE FILEPATH "" FORCE)
-    include_directories("${_HOMEBREW_OMP_ROOT}/include")
-    # Retry discovery
-    find_package(OpenMP)
-  endif()
+  # Homebrew prefixes on Apple silicon and on Intel
+  foreach(_HOMEBREW_OMP_ROOT "/opt/homebrew/opt/libomp" "/usr/local/opt/libomp")
+    if (EXISTS "${_HOMEBREW_OMP_ROOT}/include" AND EXISTS "${_HOMEBREW_OMP_ROOT}/lib")
+      # Link the static library where there is one, so that the binary
+      # runs without Homebrew
+      set(_HOMEBREW_OMP_LIBRARY "${_HOMEBREW_OMP_ROOT}/lib/libomp.a")
+      if (NOT EXISTS "${_HOMEBREW_OMP_LIBRARY}")
+        set(_HOMEBREW_OMP_LIBRARY "${_HOMEBREW_OMP_ROOT}/lib/libomp.dylib")
+      endif()
+      # Hint include/lib to CMake's OpenMP finder
+      set(OpenMP_CXX_FLAGS "-Xpreprocessor -fopenmp" CACHE STRING "" FORCE)
+      set(OpenMP_CXX_LIB_NAMES "omp" CACHE STRING "" FORCE)
+      set(OpenMP_omp_LIBRARY "${_HOMEBREW_OMP_LIBRARY}" CACHE FILEPATH "" FORCE)
+      include_directories("${_HOMEBREW_OMP_ROOT}/include")
+      # Retry discovery
+      find_package(OpenMP)
+      break()
+    endif()
+  endforeach()
 endif()
 if (OpenMP_CXX_FOUND)
     list(APPEND COMMON_LIBRARIES OpenMP::OpenMP_CXX)
+    # With STATIC on Linux, FindOpenMP takes libgomp.a, which calls dlopen
+    # and dlsym. Before glibc 2.34 they are in libdl, not in libc (the
+    # manylinux_2_28 wheels and the portable build), so libdl follows it.
+    if(UNIX AND NOT APPLE AND STATIC)
+      list(APPEND COMMON_LIBRARIES ${CMAKE_DL_LIBS})
+    endif()
+else()
+  message(WARNING "OpenMP was not found, so percolator will run on one "
+                  "thread only. On macOS, install libomp (brew install libomp).")
 endif()
 
 
@@ -50,25 +67,7 @@ endif()
 if(MSVC)
   add_definitions (/MP /D _CRT_SECURE_NO_WARNINGS /D _CRT_NONSTDC_NO_DEPRECATE)
 endif(MSVC)
-option(USE_MSVC_STATIC_RUNTIME "Link MSVC runtime statically (/MT)" ON)
-if (MSVC AND USE_MSVC_STATIC_RUNTIME)
-  foreach(flag_var CMAKE_C_FLAGS CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE
-                   CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE)
-    if(${flag_var} MATCHES "/MD")
-      string(REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
-    endif()
-  endforeach()
-endif()
 
-find_package(Threads REQUIRED)
-list(APPEND COMMON_LIBRARIES Threads::Threads)
-
-
-#########################################
-# COMPILE BLAS
-#########################################
-add_subdirectory(dblas)
-set (DBLAS_LIBRARIES ${DBLAS_LIBRARIES} dblas)
 
 if (MSVC)
   add_compile_definitions(
@@ -78,6 +77,41 @@ if (MSVC)
   )
 endif()
 
+#########################################
+# STANDARD LIBRARY FEATURES
+#########################################
+# std::to_chars and std::from_chars for double are missing from older
+# standard libraries (GCC before 11), and libc++ provides them on macOS only
+# from some deployment targets on, without announcing them with
+# __cpp_lib_to_chars. The code falls back to slower equivalents without them.
+include(CheckCXXSourceCompiles)
+check_cxx_source_compiles("
+#include <charconv>
+int main() {
+  char buf[32];
+  double value = 0.5;
+  return std::to_chars(buf, buf + sizeof(buf), value,
+                       std::chars_format::general, 6).ec == std::errc() ? 0 : 1;
+}" PERCOLATOR_HAVE_TO_CHARS_DOUBLE)
+check_cxx_source_compiles("
+#include <charconv>
+int main() {
+  const char text[] = \"0.5\";
+  double value = 0.0;
+  return std::from_chars(text, text + 3, value).ec == std::errc() ? 0 : 1;
+}" PERCOLATOR_HAVE_FROM_CHARS_DOUBLE)
+set(PERCOLATOR_CHARCONV_DEFINITIONS "")
+foreach(conversion TO_CHARS FROM_CHARS)
+  if(PERCOLATOR_HAVE_${conversion}_DOUBLE)
+    list(APPEND PERCOLATOR_CHARCONV_DEFINITIONS PERCOLATOR_${conversion}_DOUBLE=1)
+  else()
+    list(APPEND PERCOLATOR_CHARCONV_DEFINITIONS PERCOLATOR_${conversion}_DOUBLE=0)
+  endif()
+endforeach()
+# for every target in this directory and below; perclibrary passes them on
+# to the targets that link it, such as the unit tests
+add_compile_definitions(${PERCOLATOR_CHARCONV_DEFINITIONS})
+
 #############################################################################
 # COMPILE PERCOLATOR
 ###############################################################################
@@ -86,25 +120,28 @@ add_library(perclibrary STATIC BaseSpline.cpp MassHandler.cpp PSMDescription.cpp
 								  SetHandler.cpp StdvNormalizer.cpp Caller.cpp CompositionSorter.cpp CrossValidation.cpp Enzyme.cpp Globals.cpp NoNormalizer.cpp Normalizer.cpp
 								  SanityCheck.cpp UniNormalizer.cpp DataSet.cpp TabFileValidator.cpp FeatureNames.cpp LogisticRegression.cpp Numerical.cpp Option.cpp PosteriorEstimator.cpp
 								  ProteinProbEstimator.cpp Scores.cpp PseudoRandom.cpp Set.cpp ssl.cpp PackedVector.cpp
-								  PackedMatrix.cpp MyException.cpp ProteinScoreHolder.cpp PickedProteinInterface.cpp FeatureMemoryPool.cpp Timer.cpp TmpDir.cpp ValidateTabFile.cpp Vector.cpp)
+								  PackedMatrix.cpp MyException.cpp ProteinScoreHolder.cpp PickedProteinInterface.cpp FeatureMemoryPool.cpp Timer.cpp TmpDir.cpp ValidateTabFile.cpp Vector.cpp
+								  picked_protein/PickedProteinCaller.cpp picked_protein/ProteinDigest.cpp)
 
 if(OpenMP_CXX_FOUND)
   target_link_libraries(perclibrary PUBLIC ${COMMON_LIBRARIES} OpenMP::OpenMP_CXX)
 else()
   target_link_libraries(perclibrary PUBLIC ${COMMON_LIBRARIES})
 endif()
+target_compile_definitions(perclibrary INTERFACE ${PERCOLATOR_CHARCONV_DEFINITIONS})
 
-###############################################################################
-# COMPILE INTERNAL LIBRARIES
-###############################################################################
-
-#COMPILE PICKED PROTEIN
-add_subdirectory(picked_protein)
+# The picked-protein sources (src/picked_protein) are part of perclibrary:
+# they and PickedProteinInterface.cpp use each other, so two static
+# libraries had to be linked in one order. The target picked_protein remains
+# as a name for targets that link "perclibrary picked_protein"; it builds no
+# library file.
+add_library(picked_protein INTERFACE)
+target_link_libraries(picked_protein INTERFACE perclibrary)
 
 #INCLUDE PERCOLATOR HEADERS
 include_directories(.)
 
-#INCLUDE PICKED PROTEIN HEADERS FOR PERCLIBRARY
+#INCLUDE PICKED PROTEIN HEADERS
 include_directories(picked_protein)
 
 ################################################################################
@@ -116,29 +153,10 @@ if(CRUX)
 ELSE(CRUX)
   add_executable(percolator main.cpp)
 
-  if(PROFILING AND UNIX)
-    set_target_properties(percolator PROPERTIES COMPILE_FLAGS -pg LINK_FLAGS -pg)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 ${PROFILING_COMMON_FLAGS}")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3 ${PROFILING_COMMON_FLAGS}")
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 ${PROFILING_COMMON_FLAGS}")
-    set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O3 ${PROFILING_COMMON_FLAGS}")
-    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -g -DNDEBUG ${PROFILING_COMMON_FLAGS}")
-    set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -O0 -g -DNDEBUG ${PROFILING_COMMON_FLAGS}")
-  endif()
-
   # SET LIBRARIES FOR PERCOLATOR
-  list(APPEND COMMON_LIBRARIES perclibrary ${DBLAS_LIBRARIES} picked_protein ${CURL_LIBRARIES} ${RPC_LIBRARIES})
-  if(NOT MSVC)
-    if(NOT APPLE)
-      list(APPEND COMMON_LIBRARIES stdc++)
-    endif(NOT APPLE)
-  endif(NOT MSVC)
+  list(APPEND COMMON_LIBRARIES perclibrary picked_protein)
 
-  if(COVERAGE)
-    target_link_libraries(percolator PRIVATE -fprofile-arcs ${COMMON_LIBRARIES})
-  else(COVERAGE)
-    target_link_libraries(percolator PRIVATE ${COMMON_LIBRARIES})
-  endif(COVERAGE)
+  target_link_libraries(percolator PRIVATE ${COMMON_LIBRARIES})
 
   # INSTALL PERCOLATOR
   install(TARGETS percolator EXPORT PERCOLATOR DESTINATION bin) # Important to use relative path here (used by CPack)!

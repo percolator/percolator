@@ -28,3 +28,12 @@ Globals* Globals::getInstance() {
 void Globals::clean() {
   *getInstance() = Globals();
 }
+
+void Globals::failUnlessNoTerminate(const std::string& error,
+                                    const char* recovery,
+                                    const char* thrownSuffix) {
+  if (!getInstance()->getNoTerminate()) {
+    throw MyException(error + thrownSuffix);
+  }
+  std::cerr << error << recovery << std::endl;
+}

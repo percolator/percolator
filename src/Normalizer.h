@@ -29,9 +29,7 @@ class Normalizer {
   virtual void setSet(vector<double*>& /* featuresV */,
                       vector<double*>& /* rtFeaturesV */, size_t /* numFeatures */,
                       size_t /* numRetentionFeatures*/ ) {}
-  virtual void updateSet(vector<double*>& /* featuresV */, size_t /* offset */,
-                         size_t /* numFeatures */) {}
-  
+
   void normalizeSet(vector<double*>& featuresV,
                     vector<double*>& rtFeaturesV);
   void normalizeSet(vector<double*>& featuresV,
@@ -98,6 +96,12 @@ class Normalizer {
   vector<double> GetVDiv() const { return div; }
  protected:
   Normalizer();
+  // Throws if sub or div of a feature in [begin, end) is not finite, e.g.
+  // when the values of a feature are so large that their sum or the sum of
+  // their squared deviations overflows. Every normalised value of such a
+  // feature would be NaN or 0.
+  void checkFactorsFinite(size_t begin, size_t end, const char* subName,
+                          const char* divName) const;
   size_t numFeatures = 0, numRetentionFeatures = 0;
   vector<double> sub;
   vector<double> div;

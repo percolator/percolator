@@ -79,10 +79,27 @@ TEST_F(DataSetTest, CheckPsmParsingWithFeatures)
     optionalFields.push_back(CALCMASS);
     DataSet::readPsm("Id\t1\t1\tPEPTIDE\tProteinList",
             1, optionalFields, true, myPsm, featurePool, psmStore, decoyPrefix);
+    // the number of features comes from the first PSM line of the input
+    FeatureNames::setNumFeatures(2);
+    featurePool.destroyPool();
+    featurePool.createPool(2u);
     DataSet::readPsm("Id\t1\t1\t2\t3\tPEPTIDE\tProteinList",
             1, optionalFields, true, myPsm, featurePool, psmStore, decoyPrefix);
+    EXPECT_EQ(3.0, myPsm->features[1]);
+    FeatureNames::resetNumFeatures();
+    FeatureNames::setNumFeatures(5);
+    featurePool.destroyPool();
+    featurePool.createPool(5u);
     DataSet::readPsm("Id\t1\t0.0\t1.1\t2.2\t3.3\t4.4\t5.5\tPEPTIDE\tProteinList",
             1, optionalFields, true, myPsm, featurePool, psmStore, decoyPrefix);
+    EXPECT_EQ(5.5, myPsm->features[4]);
+    ASSERT_EQ("PEPTIDE", myPsm->getFullPeptide());
+    // a line with one feature column more than the first one
+    EXPECT_THROW(DataSet::readPsm(
+            "Id\t1\t0.0\t1.1\t2.2\t3.3\t4.4\t5.5\t6.6\tPEPTIDE\tProteinList",
+            1, optionalFields, true, myPsm, featurePool, psmStore, decoyPrefix),
+            MyException);
+    FeatureNames::resetNumFeatures();
 }
 
 // Verify that only integer values are accepted for the label.
@@ -140,6 +157,37 @@ TEST_F(DataSetTest, CheckExpMassIsFinite)
     }
 }
 
+// A peptide without flanks is used as it is, a number in the peptide column
+// (a line with an extra feature column) is an error, and protein inference
+// needs the flanks.
+TEST_F(DataSetTest, CheckPeptideFormat)
+{
+    DataSet::readPsm("Id\t1\tK.PEPTIDE.R\tP", 3, optionalFields, true, myPsm,
+            featurePool, psmStore, decoyPrefix);
+    ASSERT_EQ("PEPTIDE", myPsm->getPeptideSequenceView());
+    for (const char* peptide : {"PEPTIDE", "A", "NAN", "INF"}) {
+        std::string line = std::string("Id\t1\t") + peptide + "\tP";
+        DataSet::readPsm(line, 3, optionalFields, true, myPsm, featurePool,
+                psmStore, decoyPrefix);
+        EXPECT_EQ(peptide, myPsm->getPeptideSequenceView()) << peptide;
+    }
+    for (const char* number : {"0.5", "1", "-2e3"}) {
+        std::string line = std::string("Id\t1\t") + number + "\tP";
+        EXPECT_THROW(DataSet::readPsm(line, 3, optionalFields, true, myPsm,
+                featurePool, psmStore, decoyPrefix), MyException) << number;
+    }
+    ProteinProbEstimator::setCalcProteinLevelProb(true);
+    for (const char* peptide : {"PEPTIDE", "K.PEPTIDE", "PEPTIDE.R", "K..R"}) {
+        std::string line = std::string("Id\t1\t") + peptide + "\tP";
+        EXPECT_THROW(DataSet::readPsm(line, 3, optionalFields, true, myPsm,
+                featurePool, psmStore, decoyPrefix), MyException) << peptide;
+    }
+    DataSet::readPsm("Id\t1\t-.PEPTIDE.R\tP", 3, optionalFields, true, myPsm,
+            featurePool, psmStore, decoyPrefix);
+    ProteinProbEstimator::setCalcProteinLevelProb(false);
+    DataSet::resetWarnings();
+}
+
 // The feature pool can be destroyed and created again with another row
 // width, and then hands out distinct, writable rows.
 TEST(FeatureMemoryPoolTest, ReuseAfterDestroy)
@@ -163,4 +211,55 @@ TEST(FeatureMemoryPoolTest, ReuseAfterDestroy)
     for (size_t i = 0; i < numRows; ++i) {
         for (size_t j = 0; j < width; ++j) ASSERT_EQ(static_cast<double>(i), rows[i][j]);
     }
+}
+
+// The id, peptide and proteins of a PSM come back from its record for short,
+// empty and long strings (lengths of 255 and more use a longer length
+// field), protein lists of any length, and records longer than a block.
+TEST(PsmStoreTest, StringRecords)
+{
+    PsmStore psmStore;
+    EXPECT_EQ("", PSMDescription().getId());
+    EXPECT_EQ("", PSMDescription().getFullPeptide());
+    EXPECT_TRUE(PSMDescription().proteins().empty());
+    const size_t lengths[] = {0, 1, 7, 254, 255, 256, 70000, 300000};
+    std::vector<PSMDescription*> psms;
+    std::vector<std::string> ids, peptides;
+    std::vector<std::vector<std::string> > proteinLists;
+    for (size_t i = 0; i < 64; ++i) {
+        ids.push_back(std::string(lengths[i % 8], static_cast<char>('a' + i % 26)));
+        peptides.push_back(std::string(lengths[(i / 8) % 8], 'P') + std::to_string(i));
+        std::vector<std::string> proteins;
+        for (size_t k = 0; k < (i * 7) % 11; ++k) {
+            proteins.push_back("prot_" + std::to_string((i + k) % 5));
+        }
+        proteinLists.push_back(proteins);
+        std::vector<std::string_view> views(proteins.begin(), proteins.end());
+        PSMDescription* psm = psmStore.add(PSMDescription());
+        psm->scan = static_cast<unsigned int>(i);
+        psmStore.storeStrings(*psm, ids.back(), peptides.back(), views);
+        psms.push_back(psm);
+    }
+    for (size_t i = 0; i < psms.size(); ++i) {
+        EXPECT_EQ(ids[i], psms[i]->getId()) << i;
+        EXPECT_EQ(peptides[i], psms[i]->getFullPeptide()) << i;
+        EXPECT_EQ(i, psms[i]->scan);
+        PSMDescription::ProteinList proteins = psms[i]->proteins();
+        ASSERT_EQ(proteinLists[i].size(), proteins.size()) << i;
+        size_t k = 0;
+        for (const std::string& protein : proteins) {
+            EXPECT_EQ(proteinLists[i][k], protein);
+            EXPECT_EQ(proteinLists[i][k], proteins[k]);
+            ++k;
+        }
+        if (k > 1) {  // each protein name is stored once
+            EXPECT_EQ(&proteins[0], &psms[i]->proteins()[0]);
+        }
+    }
+    std::ostringstream out;
+    psms[5]->printProteins(out);
+    std::string appended;
+    psms[5]->appendProteins(appended);
+    EXPECT_EQ(out.str(), appended);
+    EXPECT_EQ("prot_0\tprot_1", appended);
 }

@@ -21,364 +21,46 @@
 #include <algorithm>
 #include <cstdlib>
 #include <iostream>
-#include <cstring> // needed for stricmp()
 #include <memory>
 #include <string>
 #include <assert.h>
 
 #include "MyException.h"
 
+/* A protease: its name as --protein-enzyme takes it, and its cleavage rule.
+ * The enzymes and their rules are the rows of one table in Enzyme.cpp. */
 class Enzyme {
   public:
     enum EnzymeType {
       NO_ENZYME, TRYPSIN, TRYPSINP, CHYMOTRYPSIN, THERMOLYSIN, PROTEINASEK, PEPSIN, ELASTASE, 
       LYSN, LYSC, ARGC, ASPN, GLUC
     };
-    Enzyme() {}
-    virtual ~Enzyme() {}
-    
+
+    // a value that is not an EnzymeType gives trypsin
     static std::unique_ptr<Enzyme> createEnzyme(EnzymeType enz);
+    // by name, in any case; throws MyException for an unknown name
     static std::unique_ptr<Enzyme> createEnzyme(std::string enzyme);
-    
-    EnzymeType getEnzymeType() const {
-      return getET();
-    }
+    // the name of an enzyme, e.g. "trypsinp" or "lys-c"
+    static std::string getString(EnzymeType enz);
+
+    EnzymeType getEnzymeType() const;
+    std::string getStringEnzyme() const;
+
     size_t countEnzymatic(std::string& peptide) const;
-    bool isEnzymatic(const char& n, const char& c) const {
-      return isEnz(n, c);
-    }
+    // whether the enzyme cleaves between the residues n and c; '-' on either
+    // side is the end of the protein, where every enzyme "cleaves"
+    bool isEnzymatic(const char& n, const char& c) const;
+    // for a peptide with flanks, e.g. "K.AEPTIDER.A": both ends are cleaved
     bool isEnzymatic(std::string peptide) const {
-      return (isEnz(peptide[0], peptide[2])
-          && isEnz(peptide[peptide.length() - 3],
-                                peptide[peptide.length() - 1]));
+      return (isEnzymatic(peptide[0], peptide[2])
+          && isEnzymatic(peptide[peptide.length() - 3],
+                         peptide[peptide.length() - 1]));
     }
-    
-    std::string getStringEnzyme() const {
-      return toString();
-    };
-    
-  protected:
-    virtual bool isEnz(const char& n, const char& c) const = 0;
-    virtual std::string toString() const = 0;
-    virtual EnzymeType getET() const = 0;
-    
+
+    struct Rule;  // a row of the table
   private:
-    
-    inline int stricmp (const std::string &s1,const std::string &s2)
-    {
-      return stricmp (s1.c_str(), s2.c_str()); // C's stricmp
-    }
-};
-
-class NoEnzyme : public Enzyme {
-  public:
-    virtual ~NoEnzyme() {
-      ;
-    }
-    NoEnzyme() {
-      ;
-    }
-    static std::string getString() {
-      return "no_enzyme";
-    }
-  protected:
-    virtual std::string toString() const {
-      return getString();
-    }
-    virtual bool isEnz(const char& n, const char& c) const {
-      (void)n;
-      (void)c;
-      return true;
-    }
-    virtual EnzymeType getET() const {
-      return NO_ENZYME;
-    }
-};
-
-class Trypsin : public Enzyme {
-  public:
-    virtual ~Trypsin() {
-      ;
-    }
-    Trypsin() {
-      ;
-    }
-    static std::string getString() {
-      return "trypsin";
-    }
-  protected:
-    virtual std::string toString() const {
-      return getString();
-    }
-    virtual bool isEnz(const char& n, const char& c) const {
-      return (((n == 'K' || n == 'R') && c != 'P') || n == '-' || c == '-');
-    }
-    virtual EnzymeType getET() const {
-      return TRYPSIN;
-    }
-};
-
-class TrypsinP : public Enzyme {
-  public:
-    virtual ~TrypsinP() {
-      ;
-    }
-    TrypsinP() {
-      ;
-    }
-    static std::string getString() {
-      return "trypsinp";
-    }
-  protected:
-    virtual std::string toString() const {
-      return getString();
-    }
-    virtual bool isEnz(const char& n, const char& c) const {
-      return ((n == 'K' || n == 'R') || n == '-' || c == '-');
-    }
-    virtual EnzymeType getET() const {
-      return TRYPSINP;
-    }
-};
-
-class Chymotrypsin : public Enzyme {
-  public:
-    virtual ~Chymotrypsin() {
-      ;
-    }
-    Chymotrypsin() {
-      ;
-    }
-    static std::string getString() {
-      return "chymotrypsin";
-    }
-  protected:
-    virtual std::string toString() const {
-      return getString();
-    }
-    virtual bool isEnz(const char& n, const char& c) const {
-      return (((n == 'F' || n == 'W' || n == 'Y' || n == 'L' )
-        && c != 'P') || n == '-' || c == '-');
-    }
-    virtual EnzymeType getET() const {
-      return CHYMOTRYPSIN;
-    }
-};
-
-class Thermolysin : public Enzyme {
-  public:
-    virtual ~Thermolysin() {
-      ;
-    }
-    Thermolysin() {
-      ;
-    }
-    static std::string getString() {
-      return "thermolysin";
-    }
-  protected:
-    virtual std::string toString() const {
-      return getString();
-    }
-    virtual bool isEnz(const char& n, const char& c) const {
-      return (((c == 'A' || c == 'F' || c == 'I' || c == 'L' || c == 'M'
-          || c == 'V' || (n == 'R' && c == 'G')) && n != 'D' && n != 'E') || n == '-' || c == '-');
-    }
-    virtual EnzymeType getET() const {
-      return THERMOLYSIN;
-    }
-};
-
-class Proteinasek : public Enzyme {
-  public:
-    virtual ~Proteinasek() {
-      ;
-    }
-    Proteinasek() {
-      ;
-    }
-    static std::string getString() {
-      return "proteinasek";
-    }
-  protected:
-    virtual std::string toString() const {
-      return getString();
-    }
-    virtual bool isEnz(const char& n, const char& c) const {
-      return ((n == 'A' || n == 'E' || n == 'F' || n == 'I' || n == 'L'
-          || n == 'T' || n == 'V' || n == 'W' || n == 'Y' ) || n == '-' || c == '-');
-    }
-    virtual EnzymeType getET() const {
-      return PROTEINASEK;
-    }
-};
-
-class Pepsin : public Enzyme {
-  public:
-    virtual ~Pepsin() {
-      ;
-    }
-    Pepsin() {
-      ;
-    }
-    static std::string getString() {
-      return "pepsin";
-    }
-  protected:
-    virtual std::string toString() const {
-      return getString();
-    }
-    virtual bool isEnz(const char& n, const char& c) const {
-      return (((c == 'F' || c == 'L' || c == 'W' || c == 'Y' || n == 'F'
-          || n == 'L' || n == 'W' || n == 'Y') && n != 'R') || n == '-' || c == '-');
-    }
-    virtual EnzymeType getET() const {
-      return PEPSIN;
-    }
-};
-
-class Elastase : public Enzyme {
-  public:
-    virtual ~Elastase() {
-      ;
-    }
-    Elastase() {
-      ;
-    }
-    static std::string getString() {
-      return "elastase";
-    }
-  protected:
-    virtual std::string toString() const {
-      return getString();
-    }
-    virtual bool isEnz(const char& n, const char& c) const {
-      return (((n == 'L' || n == 'V' || n == 'A' || n == 'G') && c != 'P')
-          || n == '-' || c == '-');
-    }
-    virtual EnzymeType getET() const {
-      return ELASTASE;
-    }
-};
-
-class LysN : public Enzyme {
-  public:
-    virtual ~LysN() {
-      ;
-    }
-    LysN() {
-      ;
-    }
-    static std::string getString() {
-      return "lys-n";
-    }
-  protected:
-    virtual std::string toString() const {
-      return getString();
-    }
-    virtual bool isEnz(const char& n, const char& c) const {
-      return ((c == 'K')
-          || n == '-' || c == '-');
-    }
-    virtual EnzymeType getET() const {
-      return LYSN;
-    }
-};
-
-class LysC : public Enzyme {
-  public:
-    virtual ~LysC() {
-      ;
-    }
-    LysC() {
-      ;
-    }
-    static std::string getString() {
-      return "lys-c";
-    }
-  protected:
-    virtual std::string toString() const {
-      return getString();
-    }
-    virtual bool isEnz(const char& n, const char& c) const {
-      return (((n == 'K') && c != 'P')
-          || n == '-' || c == '-');
-    }
-    virtual EnzymeType getET() const {
-      return LYSC;
-    }
-};
-
-class ArgC : public Enzyme {
-  public:
-    virtual ~ArgC() {
-      ;
-    }
-    ArgC() {
-      ;
-    }
-    static std::string getString() {
-      return "arg-c";
-    }
-  protected:
-    virtual std::string toString() const {
-      return getString();
-    }
-    virtual bool isEnz(const char& n, const char& c) const {
-      return (((n == 'R') && c != 'P')
-          || n == '-' || c == '-');
-    }
-    virtual EnzymeType getET() const {
-      return ARGC;
-    }
-};
-
-class AspN : public Enzyme {
-  public:
-    virtual ~AspN() {
-      ;
-    }
-    AspN() {
-      ;
-    }
-    static std::string getString() {
-      return "asp-n";
-    }
-  protected:
-    virtual std::string toString() const {
-      return getString();
-    }
-    virtual bool isEnz(const char& n, const char& c) const {
-      return ((c == 'D')
-          || n == '-' || c == '-');
-    }
-    virtual EnzymeType getET() const {
-      return ASPN;
-    }
-};
-
-class GluC : public Enzyme {
-  public:
-    virtual ~GluC() {
-      ;
-    }
-    GluC() {
-      ;
-    }
-    static std::string getString() {
-      return "glu-c";
-    }
-  protected:
-    virtual std::string toString() const {
-      return getString();
-    }
-    virtual bool isEnz(const char& n, const char& c) const {
-      return (((n == 'E') && (c != 'P'))
-          || n == '-' || c == '-');
-    }
-    virtual EnzymeType getET() const {
-      return GLUC;
-    }
+    explicit Enzyme(const Rule* rule) : rule_(rule) {}
+    const Rule* rule_;
 };
 
 #endif /* ENZYME_H_ */

@@ -3,7 +3,7 @@
 
 #include "Set.h"
 
-void Set::add(int el) {
+void Set::add(const int& el) {
   #ifdef SAFE_ARRAYS
   if (!isEmpty() && el <= back()) {
     throw UnsortedOrderException();
@@ -142,7 +142,7 @@ Set operator |(const Set lhs, const Set & rhs) {
 }
 
 bool Set::verify() const {
-  for (int k=0; k<size()-1; k++) {
+  for (std::size_t k=0; k+1<size(); k++) {
     if ( (*this)[k] >= (*this)[k+1] )
       throw UnsortedOrderException();
   }

@@ -98,13 +98,16 @@ unsigned int CommandLineParser::getUInt(std::string dest, int lower, int upper){
 void CommandLineParser::defineOption(std::string shortOpt, std::string longOpt,
                                      std::string help, std::string helpType,
                                      OptionOption typ, std::string dfault) {
+  // An empty short name would become the option "-", so that a lone "-" on
+  // the command line would select the last option defined without one.
+  if (shortOpt.empty()) shortOpt = Option::NO_SHORT_OPT;
   //NOTE brute force to check if the option is already defined
   for(std::vector<Option>::const_iterator it = opts.begin();
       it != opts.end(); it++) {
 	  if((shortOpt != Option::NO_SHORT_OPT && 
 	      shortOpt != Option::EXPERIMENTAL_FEATURE && 
-	      (*it).shortOpt == shortOpt) 
-	     || (*it).longOpt == longOpt) {
+	      (*it).shortOpt == "-" + shortOpt) 
+	     || (*it).longOpt == "--" + longOpt) {
 	    std::ostringstream temp;
 	    temp << "ERROR : option " << shortOpt << "," << longOpt << " is already defined " << std::endl;
 	    throw MyException(temp.str());
@@ -124,8 +127,13 @@ void CommandLineParser::defineOption(std::string shortOpt, std::string longOpt,
 }
 
 void CommandLineParser::parseArgs(int argc, char** argv) {
-  for (int i = 1; i < argc; i++) {
-    if (argv[i][0] == '-') {
+  if (argc > 0 && argv[0] != NULL && argv[0][0] != '\0') {
+    programName = argv[0];
+  }
+  // the help ends the parsing, as when it ended the process
+  for (int i = 1; i < argc && !helpRequested_; i++) {
+    // a lone "-" is an argument, as in other command line tools
+    if (argv[i][0] == '-' && argv[i][1] != '\0') {
       findOption(argv, i, argc);
     } else {
       arguments.insert(arguments.end(), argv[i]);
@@ -173,7 +181,7 @@ void CommandLineParser::parseArgsParamFile(const std::string paramFile) {
 
 void CommandLineParser::error(std::string msg) {
   std::ostringstream temp;
-  temp << header << endl << msg << endl;
+  temp << msg << endl;
   throw MyException(temp.str());
 }
 
@@ -213,7 +221,7 @@ void CommandLineParser::help() {
     }
   }
   std::cerr << endl << endnote << endl;
-  exit(0);
+  helpRequested_ = true;
 }
 
 void CommandLineParser::htmlHelp() {
@@ -249,15 +257,17 @@ void CommandLineParser::htmlHelp() {
   searchandreplace(htmlEnd, "\n", "<br>");
   std::cerr << "<br/>" << endl << htmlEnd << "<br/>" << endl;
   std::cerr << "</blockquote></body></html>" << endl;
-  exit(0);
+  helpRequested_ = true;
 }
 
 void CommandLineParser::findOption(char** argv, int& index, int argc) {
   if ((std::string)argv[index] == "-html" || (std::string)argv[index] == "--html") {
     htmlHelp();
+    return;
   }
   if ((std::string)argv[index] == "-h" || (std::string)argv[index] == "--help") {
     help();
+    return;
   }
   std::string optstr = (std::string)argv[index];
   std::string valstr("");
@@ -303,8 +313,8 @@ void CommandLineParser::findOption(char** argv, int& index, int argc) {
       return;
     }
   }
-  error("ERROR: the option " + optstr + " is invalid.\n" +
-        "Please run \"command --help.\"");
+  error("ERROR: the option " + optstr + " is invalid. Run \"" + programName +
+        " --help\" for the list of options.");
 }
 
 std::string& CommandLineParser::rtrim(std::string &s) {

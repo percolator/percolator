@@ -39,9 +39,10 @@
 #include "Scores.h"
 #include "Globals.h"
 #include "PSMDescription.h"
-#include "SanityCheck.h"
 #include "PseudoRandom.h"
 #include "FeatureMemoryPool.h"
+#include "ScanIdTable.h"
+#include "ValidateTabFile.h"
 
 struct PSMDescriptionPriority {
   PSMDescription* psm;
@@ -58,12 +59,18 @@ struct PSMDescriptionPriority {
 */
 typedef std::pair<int, double> ScanId;
 
-struct ScanIdHash {
-  // noexcept lets the hash table skip storing the hash code in every node
-  size_t operator()(const ScanId& scanId) const noexcept {
-    return std::hash<int>()(scanId.first) ^
-           (std::hash<double>()(scanId.second) << 1);
-  }
+/*
+* What reading the input found, besides the PSMs, for the caller to pass on
+* (to the SanityCheck of the run).
+*/
+struct InputSummary {
+  // No spectrum (scan number and experimental mass) has both a target and a
+  // decoy PSM: the input comes from a concatenated search rather than from
+  // separate target and decoy searches.
+  bool concatenatedSearch = true;
+  // the initial direction of the DefaultDirection line; empty if the input
+  // has none or if it is all 0
+  std::vector<double> defaultWeights;
 };
 
 /*
@@ -88,19 +95,28 @@ class SetHandler {
   // number of PSM lines in the input, counted by the last full read
   size_t getNumPsmLines() const { return numPsmLines_; }
   
-  // Reads in tab delimited stream and returns a SanityCheck object based on
-  // the presence of default weights. Returns 0 on error, 1 on success.
-  int readTab(std::istream& dataStream, SanityCheck& check);
-  int readAndScoreTab(std::istream& dataStream, 
-    std::vector<double>& rawWeights, Scores& allScores, SanityCheck& check);
+  // Reads the PSMs of a tab delimited stream into the target and the decoy
+  // set and describes the input in summary. Returns 0 on error, without
+  // changing summary, and 1 on success.
+  int readTab(std::istream& dataStream, InputSummary& summary);
+  // The second pass of -N: scores every PSM of the stream with rawWeights
+  // and adds it to allScores; a PSM whose input line is listed in lineFolds
+  // (sorted by line) is scored with foldWeights[fold] instead.
+  int readAndScoreTab(std::istream& dataStream,
+    std::vector<double>& rawWeights, Scores& allScores,
+    const std::vector<std::vector<double> >& foldWeights = {},
+    const std::vector<std::pair<unsigned int, unsigned int> >& lineFolds = {});
   void addQueueToSets(std::priority_queue<PSMDescriptionPriority>& subsetPSMs,
     DataSet* targetSet, DataSet* decoySet);
   
-  void writeTab(const std::string& dataFN, const SanityCheck& check);
+  // defaultWeights: the initial direction to write as the DefaultDirection
+  // line, if not empty
+  void writeTab(const std::string& dataFN,
+                const std::vector<double>& defaultWeights);
   void populateScoresWithPSMs(std::vector<ScoreHolder> &scores, LabelType label);
   void normalizeFeatures(Normalizer& norm);
   
-  LabelType const getLabel(int setPos);
+  LabelType getLabel(int setPos);
   inline int getSizeFromLabel(LabelType label) {
     return static_cast<int>(subsets_[getSubsetIndexFromLabel(label)]->getSize());
   }
@@ -111,6 +127,32 @@ class SetHandler {
   }
   
   FeatureMemoryPool& getFeaturePool() { return featurePool_; }
+
+  // For an input concatenated from several files: where the lines of each
+  // file are, so that messages can name the file and line of a PSM.
+  void setInputSegments(std::vector<InputSegment> segments) {
+    ownSegments_ = std::move(segments);
+    inputSegments_ = &ownSegments_;
+  }
+  // The same for a list that the reader of the files extends while the
+  // lines are read (ConcatenatedPins::segments); it has to outlive the
+  // reading.
+  void setInputSegments(const std::vector<InputSegment>* segments) {
+    inputSegments_ = segments;
+  }
+  // "line <lineNr>", or "line <n> of <file>" for a concatenated input
+  std::string describeLine(unsigned int lineNr) const;
+
+  // Among the spectra (ScanNr and ExpMass) of the first kRepeatSampleLines
+  // PSM lines of the last read: their number, and the number with more
+  // than one PSM of the same label, as in a search that reports several
+  // candidates per spectrum.
+  size_t getSampledLines() const { return sampledLines_; }
+  size_t getSampledSpectra() const { return sampledSpectra_; }
+  size_t getSampledSpectraWithRepeatedLabel() const {
+    return sampledSpectraWithRepeatedLabel_;
+  }
+  static constexpr size_t kRepeatSampleLines = 100000u;
   
   void reset();
   void releaseFeatures();
@@ -122,7 +164,41 @@ class SetHandler {
   std::vector<std::unique_ptr<DataSet> > subsets_;
   FeatureMemoryPool featurePool_;
   std::string decoyPrefix_; // Used to determine if a psm is a decoy
+  // empty for a single input file
+  std::vector<InputSegment> ownSegments_;
+  const std::vector<InputSegment>* inputSegments_ = &ownSegments_;
+  size_t sampledLines_ = 0u, sampledSpectra_ = 0u,
+         sampledSpectraWithRepeatedLabel_ = 0u;
+  // labels seen per spectrum while reading: target (any label but -1),
+  // decoy, and whether one of them was seen twice
+  static constexpr unsigned char kSeenTarget = 1u, kSeenDecoy = 2u,
+                                 kSeenTwice = 4u;
+  static unsigned char labelBit(bool isDecoy) {
+    return isDecoy ? kSeenDecoy : kSeenTarget;
+  }
+  // adds a label to those seen for a spectrum, counts a repeated label
+  // while sampling, and returns false if the spectrum now has both labels
+  bool addLabel(unsigned char& seen, bool isDecoy, bool sampling);
+  // warnings about labels other than 1 and -1 printed per line, then counted
+  static constexpr unsigned int kMaxLabelWarnings = 1000u;
   
+  // rethrows e, with the file and line of a PSM line of a concatenated input
+  [[noreturn]] void rethrowWithSource(const MyException& e,
+                                      unsigned int lineNr) const;
+  // Moves on to the next input line. Line numbers, and with them the
+  // default scan numbers and the PSM counts, are kept in 32-bit integers,
+  // also signed ones, so an input with more than INT_MAX lines is an error.
+  static void incrementLineNr(unsigned int& lineNr);
+  void warnIgnoredLabel(unsigned int lineNr, unsigned int& numIgnored) const;
+  void warnIgnoredLabelTotal(unsigned int numIgnored) const;
+  
+  // readTab (summary given, no weights) and readAndScoreTab
+  int readOrScoreTab(std::istream& dataStream,
+    std::vector<double>& rawWeights, Scores& allScores,
+    const std::vector<std::vector<double> >& foldWeights,
+    const std::vector<std::pair<unsigned int, unsigned int> >& lineFolds,
+    InputSummary* summary);
+
   unsigned int getSubsetIndexFromLabel(LabelType label);
   static inline std::string &rtrim(std::string &s);
   
@@ -132,17 +208,32 @@ class SetHandler {
   int getNumFeatures(const std::string& line, int optionalFieldCount);
   void getFeatureNames(const std::string& headerLine, int numFeatures, 
     int optionalFieldCount, FeatureNames& featureNames);
+  void checkPeptideColumn(const std::string& headerLine, int numFeatures,
+    int optionalFieldCount, unsigned int firstPsmLineNr) const;
   bool getInitValues(const std::string& defaultDirectionLine, 
     int optionalFieldCount, std::vector<double>& init_values);
   ScanId getScanId(const std::string& psmLine, int& label,
     std::vector<OptionalField>& optionalFields, unsigned int lineNr);
+  bool readScanIdAndLabel(const std::string& psmLine, unsigned int lineNr,
+    std::vector<OptionalField>& optionalFields, TabReader& reader,
+    PsmHeader& header, ScanId& scanId, int& label);
     
+  // the loop over the PSM lines and the reader of one line (SetHandler.cpp)
+  template <class PerLine>
+  unsigned int forEachPsmLine(std::istream& dataStream, std::string& psmLine,
+    unsigned int firstLineNr, const char* progressVerb, PerLine perLine);
+  class PsmLineReader;
+
   void readPSMs(std::istream& dataStream, std::string& psmLine,
     bool hasInitialValueRow, bool& separateSearches,
     std::vector<OptionalField>& optionalFields);
+  static void rescaleFoldScores(Scores& allScores,
+    const std::vector<std::pair<size_t, unsigned int> >& rows, size_t numFolds);
   void readAndScorePSMs(std::istream& dataStream, std::string& psmLine,
-    bool hasInitialValueRow, std::vector<OptionalField>& optionalFields, 
-    std::vector<double>& rawWeights, Scores& allScores);
+    bool hasInitialValueRow, std::vector<OptionalField>& optionalFields,
+    std::vector<double>& rawWeights, Scores& allScores,
+    const std::vector<std::vector<double> >& foldWeights,
+    const std::vector<std::pair<unsigned int, unsigned int> >& lineFolds);
 };
 
 #endif /*SETHANDLER_H_*/

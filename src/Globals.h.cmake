@@ -33,41 +33,12 @@ limitations under the License.
   #define POUT_VERSION_MINOR "@POUT_VERSION_MINOR@"
 #endif
 
-#ifndef PERCOLATOR_IN_NAMESPACE
-  #define PERCOLATOR_IN_NAMESPACE "@percolator-in-namespace@"
-#endif
-
-#ifndef PERCOLATOR_OUT_NAMESPACE
-  #define PERCOLATOR_OUT_NAMESPACE "@percolator-out-namespace@"
-#endif
-
-#ifndef WRITABLE_DIR
-  #define WRITABLE_DIR "@WRITABLE_DIR@"
-#endif
-
-#ifndef PIN_SCHEMA_LOCATION
-  #define PIN_SCHEMA_LOCATION "@PIN_SCHEMA_LOCATION@"
-#endif
-
-#ifndef POUT_SCHEMA_LOCATION
-  #define POUT_SCHEMA_LOCATION "@POUT_SCHEMA_LOCATION@"
-#endif
-
-#ifndef ELUDE_MODELS_PATH
-  #define ELUDE_MODELS_PATH "@ELUDE_MODELS_PATH@"
-#endif
-
 #ifndef M_PI // for some reason Windows removed the Pi constant from math.h
   #define M_PI 3.14159265358979323846
 #endif
 
 #ifdef WIN32
-  #define C_DARRAY(name,nelem) double *name = (double *) _malloca((nelem) * sizeof(double));
-  #define D_DARRAY(name) _freea(name);
   #include <float.h>
-#else
-  #define C_DARRAY(name,nelem) double name[nelem];
-  #define D_DARRAY(name)
 #endif
 
 #ifdef _WIN32
@@ -82,14 +53,6 @@ limitations under the License.
 #ifdef _MSC_VER
   #ifndef NOMINMAX
     #define NOMINMAX
-  #endif  #define NOMINMAX
-  #include <float.h>
-  #define _finite(x) _finite(x)
-#endif
-
-#ifdef _MSC_VER
-  #ifndef isfinite
-    #define isfinite _finite
   #endif
 #endif
 
@@ -140,6 +103,13 @@ class Globals {
     bool getNoTerminate() {
       return noTerminate_;
     }
+    // For an error that --no-terminate lets the run survive. Without the
+    // flag, throws MyException(error + thrownSuffix). With it, prints error
+    // and recovery ("No-terminate flag set: ...") to stderr and returns; the
+    // caller then does what the recovery text says.
+    static void failUnlessNoTerminate(const std::string& error,
+                                      const char* recovery,
+                                      const char* thrownSuffix = "");
   private:
     Globals() = default;
     int verbose = 2;

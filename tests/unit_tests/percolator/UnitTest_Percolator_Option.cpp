@@ -101,6 +101,43 @@ TEST_F(OptionTest, CheckThrowOnRangeExceeded)
     EXPECT_THROW(parser.getInt("integerOption", 50, 60), MyException);
 }
 
+// An option defined with an empty short name used to get the short name
+// "-", so that a lone "-" selected it (in Percolator, --tdc-pep).
+TEST_F(OptionTest, CheckLoneDashIsAnArgument)
+{
+    parser.defineOption("", "noShortName", "No short name.", "", TRUE_IF_SET);
+    char const *argv[] = {"prog", "-", "file", NULL};
+    parseArgv(argv);
+    EXPECT_FALSE(parser.isOptionSet("noShortName"));
+    EXPECT_FALSE(parser.isOptionSet("aShortOption"));
+    ASSERT_EQ(2, parser.arguments.size());
+    EXPECT_EQ("-", parser.arguments[0]);
+    EXPECT_EQ("file", parser.arguments[1]);
+}
+
+TEST_F(OptionTest, CheckThrowOnDuplicateDefinition)
+{
+    EXPECT_THROW(parser.defineOption("a", "otherName", "Same short name."),
+                 MyException);
+    EXPECT_THROW(parser.defineOption("", "longOption", "Same long name."),
+                 MyException);
+    EXPECT_NO_THROW(parser.defineOption("", "first", "No short name."));
+    EXPECT_NO_THROW(parser.defineOption("", "second", "No short name."));
+}
+
+TEST_F(OptionTest, CheckInvalidOptionMessageNamesTheProgram)
+{
+    char const *argv[] = {"myprog", "--unknownOption", NULL};
+    try {
+        parseArgv(argv);
+        FAIL() << "no exception";
+    } catch (const MyException& e) {
+        EXPECT_EQ("ERROR: the option --unknownOption is invalid. Run "
+                  "\"myprog --help\" for the list of options.\n",
+                  std::string(e.what()));
+    }
+}
+
 TEST_F(OptionTest, CheckSeparationOfOptionsAndArguments)
 {
     char const *argv[] = {
@@ -114,4 +151,35 @@ TEST_F(OptionTest, CheckSeparationOfOptionsAndArguments)
     EXPECT_EQ("a2", parser.arguments[1]);
     EXPECT_EQ("a3", parser.arguments[2]);
     EXPECT_EQ("a4", parser.arguments[3]);
+}
+
+// -h, --help and --html used to call exit(0) inside the parser, which ended
+// the process of a program that uses Percolator as a library.
+TEST_F(OptionTest, CheckHelpReturnsToTheCaller)
+{
+    EXPECT_FALSE(parser.helpRequested());
+    // what follows the help is not read, as when the help ended the process
+    char const *argv[] = {
+        "prog", "-a", "a1", "--help", "--unknownOption", "a2", NULL
+    };
+    testing::internal::CaptureStderr();
+    EXPECT_NO_THROW(parseArgv(argv));
+    const std::string help = testing::internal::GetCapturedStderr();
+
+    EXPECT_TRUE(parser.helpRequested());
+    EXPECT_NE(std::string::npos, help.find("Options:"));
+    EXPECT_NE(std::string::npos, help.find("This takes a real number."));
+    EXPECT_TRUE(parser.isOptionSet("aShortOption"));
+    ASSERT_EQ(1u, parser.arguments.size());
+    EXPECT_EQ("a1", parser.arguments[0]);
+
+    for (const char* flag : {"-h", "--html", "-html"}) {
+        CommandLineParser other;
+        char const *otherArgv[] = {"prog", flag, "--unknownOption", NULL};
+        testing::internal::CaptureStderr();
+        EXPECT_NO_THROW(other.parseArgs(3, const_cast<char**>(otherArgv)));
+        const std::string text = testing::internal::GetCapturedStderr();
+        EXPECT_TRUE(other.helpRequested()) << flag;
+        EXPECT_NE(std::string::npos, text.find("Options:")) << flag;
+    }
 }

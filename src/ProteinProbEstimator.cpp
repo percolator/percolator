@@ -23,14 +23,15 @@ bool ProteinProbEstimator::calcProteinLevelProb = false;
 ProteinProbEstimator::ProteinProbEstimator(bool trivialGrouping, double absenceRatio, 
 					     bool outputEmpirQVal, std::string decoyPattern, 
 					     double specCountQvalThreshold) : 
-	  trivialGrouping_(trivialGrouping), absenceRatio_(absenceRatio), pi0_(1.0),
-	  numberDecoyProteins_(0u), numberTargetProteins_(0u), usePi0_(true), 
-	  outputEmpirQVal_(outputEmpirQVal), decoyPattern_(decoyPattern), fdr_(1.0),
-	  peptideSpecCounts_(), specCountQvalThreshold_(specCountQvalThreshold) {}
+	  trivialGrouping_(trivialGrouping), usePi0_(true), pi0_(1.0),
+	  absenceRatio_(absenceRatio), outputEmpirQVal_(outputEmpirQVal), fdr_(1.0),
+	  numberDecoyProteins_(0u), numberTargetProteins_(0u),
+	  decoyPattern_(decoyPattern), peptideSpecCounts_(),
+	  specCountQvalThreshold_(specCountQvalThreshold) {}
 
 ProteinProbEstimator::~ProteinProbEstimator() {}
 
-bool ProteinProbEstimator::initialize(Scores& peptideScores, const Enzyme* enzyme, std::string& protEstimatorDecoyPrefix) {
+bool ProteinProbEstimator::initialize(Scores& peptideScores, const Enzyme* /*enzyme*/, std::string& protEstimatorDecoyPrefix) {
   decoyPattern_ = protEstimatorDecoyPrefix;
   setTargetandDecoysNames(peptideScores);
   return true;
@@ -70,15 +71,16 @@ void ProteinProbEstimator::printOut(const std::string &proteinFN,
     if (!proteinFN.empty()) {
       ofstream proteinOut(proteinFN.data(), ios::out);
       print(proteinOut,false);
-      proteinOut.close();	
+      closeOutputFile(proteinOut, proteinFN);
     }
     if (!proteinDecoyFN.empty()) {
       ofstream proteinOut(proteinDecoyFN.data(), ios::out);
       print(proteinOut,true);
-      proteinOut.close();
+      closeOutputFile(proteinOut, proteinDecoyFN);
     }
   } else {
     print(std::cout);
+    flushStandardOutput();
   }
 }
 
@@ -105,6 +107,15 @@ void ProteinProbEstimator::estimatePValues() {
   PosteriorEstimator::getPValues(combined, pvalues);
   
   std::vector<ProteinScoreHolder>::iterator protIt = proteins_.begin();
+  if (pvalues.empty()) {
+    // getPValues gives one p value per target protein (group). An input
+    // with decoys only gets this far with --no-terminate; its proteins,
+    // all decoys, get the p value 1.
+    for (; protIt != proteins_.end(); ++protIt) {
+      protIt->setP(1.0);
+    }
+    return;
+  }
   std::vector<double>::const_iterator pIt = pvalues.begin();
   bool isTarget = false;
   for (; protIt != proteins_.end(); ++protIt) {
@@ -117,7 +128,7 @@ void ProteinProbEstimator::estimatePValues() {
   }
 }
 
-double ProteinProbEstimator::estimatePi0(const unsigned int numBoot) {
+double ProteinProbEstimator::estimatePi0(const unsigned int /*numBoot*/) {
   std::vector<double> pvalues;
   std::transform(proteins_.begin(), proteins_.end(), 
     std::back_inserter(pvalues), std::mem_fn(&ProteinScoreHolder::getP));
@@ -198,8 +209,8 @@ void ProteinProbEstimator::estimateQValuesEmp() {
   getCombinedList(combined);
   
   std::vector<double> qvaluesEmp;
-  PosteriorEstimator::setNegative(true); // also get q-values for decoys
-  PosteriorEstimator::getQValues(pi0_, combined, qvaluesEmp);
+  // also get q-values for decoys
+  PosteriorEstimator::getQValues(pi0_, combined, qvaluesEmp, false, 0.5, true);
   
   std::vector<ProteinScoreHolder>::iterator protIt = proteins_.begin();
   std::vector<double>::const_iterator qIt = qvaluesEmp.begin();
@@ -281,42 +292,6 @@ void ProteinProbEstimator::addSpectralCounts(Scores& peptideScores) {
   }
 }
 
-unsigned ProteinProbEstimator::countTargets(
-    const std::vector<std::string>& proteinList) {
-  unsigned count = 0;
-  std::vector<std::string>::const_iterator it = proteinList.begin();
-  for (; it != proteinList.end(); it++) {
-    if (useDecoyPrefix) {
-      if ((*it).find(decoyPattern_) == std::string::npos) {
-      	count++;
-      }
-    } else {
-      if (truePosSet_.count(*it) != 0) {
-      	count++;
-      }
-    }
-  }
-  return count;
-}
-
-unsigned ProteinProbEstimator::countDecoys(
-    const std::vector<std::string>& proteinList) {
-  unsigned count = 0;
-  std::vector<std::string>::const_iterator it = proteinList.begin();
-  for (; it != proteinList.end(); it++) {
-    if (useDecoyPrefix) {
-      if((*it).find(decoyPattern_) != std::string::npos) {
-      	count++;
-      }
-    } else {
-      if(falsePosSet_.count(*it) != 0) {
-      	count++;
-      }
-    }
-  }
-  return count;
-}
-
 bool ProteinProbEstimator::isDecoy(const std::string& proteinName) {
   //NOTE faster with decoyPrefix but we have to assume that the label that 
   // identifies decoys is in decoyPattern_
@@ -324,14 +299,6 @@ bool ProteinProbEstimator::isDecoy(const std::string& proteinName) {
 	    != std::string::npos : falsePosSet_.count(proteinName) != 0);
 }
     
-bool ProteinProbEstimator::isTarget(const std::string& proteinName) {
-  //NOTE faster with decoyPrefix but we have to assume that the label that 
-  // identifies decoys is in decoyPattern_
-  return (bool)(useDecoyPrefix ? proteinName.find(decoyPattern_) 
-		  == std::string::npos : truePosSet_.count(proteinName) != 0);
-}
-
-
 void ProteinProbEstimator::print(ostream& myout, bool decoy) {  
   myout << "ProteinId\tProteinGroupId\tq-value\tposterior_error_prob\t";
   if (specCountQvalThreshold_ > 0.0) {
