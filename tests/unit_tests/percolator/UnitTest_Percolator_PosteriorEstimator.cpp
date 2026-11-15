@@ -19,8 +19,11 @@
 
 #include <gtest/gtest.h>
 
+#include <algorithm>
+#include <cmath>
 #include <filesystem>
 #include <fstream>
+#include <random>
 #include <string>
 #include <utility>
 #include <vector>
@@ -112,6 +115,51 @@ TEST(PosteriorEstimatorTest, QValuesFromPWithDecoys) {
   EXPECT_NEAR(0.475, q2[1], 1e-12);  // limited by the targets, 0.5 * 0.95
   EXPECT_NEAR(0.475, q2[2], 1e-12);
   EXPECT_NEAR(0.475, q2[3], 1e-12);
+}
+
+// The P-IRLS PEP fit (protein PEPs, --irls-pep) on fewer than 500 entries,
+// one per bin, with two scores 3e-6 apart. In double precision the error of
+// the linear solve in each Newton step was as large as the tolerance on the
+// step size (1e-8), so the number of steps and the PEPs depended on
+// rounding: moving one score by 1 ulp changed the PEPs by 2.3e-7 relative.
+// With the step in double-double they do not change.
+TEST(PosteriorEstimatorTest, IrlsPepStableUnderOneUlpChange) {
+  PosteriorEstimator::resetToDefaults();
+  std::mt19937_64 rng(7);
+  auto uniform = [&rng]() { return static_cast<double>(rng() >> 11) * 0x1p-53; };
+  const int n = 240;
+  std::vector<std::pair<double, bool> > combined;
+  for (int i = 0; i < n; ++i) {
+    combined.emplace_back(-2.0 + 4.0 * uniform(), true);
+  }
+  combined.emplace_back(combined[7].first + 3e-6, true);
+  std::sort(combined.begin(), combined.end());
+  // lower scores are better; decoys become more frequent towards the top
+  for (auto& entry : combined) {
+    double pDecoy = 0.45 * std::min(1.0, std::max(0.0, (entry.first + 1.0) / 3.0));
+    entry.second = !(uniform() < pDecoy);
+  }
+  std::vector<std::pair<double, bool> > moved = combined;
+  const std::size_t ix = combined.size() / 2;
+  moved[ix].first = std::nextafter(moved[ix].first, 10.0);
+  ASSERT_LT(moved[ix].first, moved[ix + 1].first);
+
+  std::vector<double> peps, pepsMoved;
+  PosteriorEstimator::estimatePEP(combined, false, 1.0, peps, true, 1.0, true);
+  PosteriorEstimator::estimatePEP(moved, false, 1.0, pepsMoved, true, 1.0,
+                                  true);
+  ASSERT_EQ(combined.size(), peps.size());
+  ASSERT_EQ(peps.size(), pepsMoved.size());
+  double maxRel = 0.0;
+  for (std::size_t i = 0; i < peps.size(); ++i) {
+    ASSERT_GT(peps[i], 0.0) << i;
+    ASSERT_LE(peps[i], 1.0) << i;
+    if (i > 0) {
+      EXPECT_LE(peps[i - 1], peps[i]) << i;
+    }
+    maxRel = std::max(maxRel, std::fabs(peps[i] - pepsMoved[i]) / peps[i]);
+  }
+  EXPECT_LT(maxRel, 1e-10);
 }
 
 TEST(PosteriorEstimatorTest, HelpReturnsWithoutEndingTheProcess) {

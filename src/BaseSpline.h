@@ -21,7 +21,6 @@
 #include <assert.h>
 #include "Transform.h"
 #include "PackedVector.h"
-#include "PackedMatrix.h"
 
 class BaseSpline {
   public:
@@ -33,13 +32,15 @@ class BaseSpline {
     static double weightSlope;
     static double scaleAlpha;
     void roughnessPenaltyIRLS();
-    void iterativeReweightedLeastSquares(double alpha);
+    // Penalized IRLS fit for a given alpha, from the current gnew. Returns
+    // false if the step size was still above stepEpsilon after 20 steps, or
+    // not a number.
+    bool iterativeReweightedLeastSquares(double alpha);
     void predict(const vector<double>& x, vector<double>& predict);
     void setData(const vector<double>& x);
     double predict(double xx) {
       return splineEval(xx);
     }
-    static void solveInPlace(PackedMatrix& mat, PackedVector& res);
   protected:
     virtual void calcPZW() {}
     virtual void initg() {
@@ -52,15 +53,16 @@ class BaseSpline {
     }
     virtual void limitg() {}
     virtual void limitgamma() {}
-    void initiateQR();
+    // One step of the Reinsch algorithm: solves
+    // (R + Q' alpha W^-1 Q) gamma = Q' z and sets gnew = z - alpha W^-1 Q gamma
+    void reinschStep(double alpha);
     double evaluateSlope(double alpha);
     double alphaLinearSearchBA(double min_p, double max_p,
                                double p1, double p2,
                                double cv1, double cv2);
     Transform transf;
 
-    PackedMatrix Q, Qt, R;
-    PackedVector gnew, w, z, dx;
+    PackedVector gnew, w, z;
     PackedVector g, gamma;
     vector<double> x;
 };
