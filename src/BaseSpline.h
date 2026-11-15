@@ -34,7 +34,7 @@ class BaseSpline {
     void roughnessPenaltyIRLS();
     // Penalized IRLS fit for a given alpha, from the current gnew. Returns
     // false if the step size was still above stepEpsilon after 20 steps, or
-    // not a number.
+    // if a step failed (see reinschStep); g is then the last iterate.
     bool iterativeReweightedLeastSquares(double alpha);
     void predict(const vector<double>& x, vector<double>& predict);
     void setData(const vector<double>& x);
@@ -54,8 +54,10 @@ class BaseSpline {
     virtual void limitg() {}
     virtual void limitgamma() {}
     // One step of the Reinsch algorithm: solves
-    // (R + Q' alpha W^-1 Q) gamma = Q' z and sets gnew = z - alpha W^-1 Q gamma
-    void reinschStep(double alpha);
+    // (R + Q' alpha W^-1 Q) gamma = Q' z and sets gnew = z - alpha W^-1 Q gamma.
+    // Returns false, and changes nothing, if two knots are equal or a result
+    // is not finite.
+    bool reinschStep(double alpha);
     double evaluateSlope(double alpha);
     double alphaLinearSearchBA(double min_p, double max_p,
                                double p1, double p2,

@@ -146,15 +146,21 @@ inline DD operator/(const DD& a, const DD& b) {
 // steps, and g depended on the last bits of exp and log. In double-double
 // the error stays below the rounding of g, and Newton's method converges in
 // a few steps.
-void BaseSpline::reinschStep(double alpha) {
+bool BaseSpline::reinschStep(double alpha) {
   const int n = static_cast<int>(x.size());
   const int k = n - 2;
-  // the intervals h_j = x[j + 1] - x[j], exact in double-double
+  // the intervals h_j = x[j + 1] - x[j], exact in double-double; equal
+  // knots give no step
   std::vector<DD> h(n - 1), inv(n - 1);
   for (int j = 0; j < n - 1; ++j) {
     h[j] = twoSum(x[j + 1], -x[j]);
-    assert(h[j].hi > 0.0);
+    if (!(h[j].hi > 0.0)) {
+      return false;
+    }
     inv[j] = DD(1.0) / h[j];
+    if (!std::isfinite(inv[j].hi)) {
+      return false;
+    }
   }
   std::vector<DD> aw(n);  // alpha / w_i
   for (int i = 0; i < n; ++i) {
@@ -215,13 +221,15 @@ void BaseSpline::reinschStep(double alpha) {
       gam[i] = gam[i] - l2[i + 2] * gam[i + 2];
     }
   }
-  gamma = PackedVector(k);
-  for (int j = 0; j < k; ++j) {
-    gamma.packedReplace(j, gam[j].hi);
-  }
   // gnew = z - alpha W^-1 Q gamma; row i of Q has entries in the columns
   // i - 2, i - 1 and i
-  gnew = PackedVector(n);
+  std::vector<double> gammaNew(k), gNew(n);
+  for (int j = 0; j < k; ++j) {
+    gammaNew[j] = gam[j].hi;
+    if (!std::isfinite(gammaNew[j])) {
+      return false;
+    }
+  }
   for (int i = 0; i < n; ++i) {
     DD qg;
     if (i < k) {
@@ -233,8 +241,20 @@ void BaseSpline::reinschStep(double alpha) {
     if (i >= 2) {
       qg = qg + inv[i - 1] * gam[i - 2];
     }
-    gnew.packedReplace(i, (DD(z[i]) - aw[i] * qg).hi);
+    gNew[i] = (DD(z[i]) - aw[i] * qg).hi;
+    if (!std::isfinite(gNew[i])) {
+      return false;
+    }
   }
+  gamma = PackedVector(k);
+  for (int j = 0; j < k; ++j) {
+    gamma.packedReplace(j, gammaNew[j]);
+  }
+  gnew = PackedVector(n);
+  for (int i = 0; i < n; ++i) {
+    gnew.packedReplace(i, gNew[i]);
+  }
+  return true;
 }
 
 void BaseSpline::roughnessPenaltyIRLS() {
@@ -253,9 +273,8 @@ void BaseSpline::roughnessPenaltyIRLS() {
     cerr << "Alpha selected to be " << alpha << endl;
   }
   if (!iterativeReweightedLeastSquares(alpha) && VERB > 0) {
-    cerr << "Warning: the P-IRLS fit of the PEPs did not converge (20 "
-         << "iterations, " << x.size() << " bins); the PEPs may be "
-         << "inaccurate." << endl;
+    cerr << "Warning: the P-IRLS fit of the PEPs did not converge ("
+         << x.size() << " bins); the PEPs may be inaccurate." << endl;
   }
 }
 
@@ -266,7 +285,11 @@ bool BaseSpline::iterativeReweightedLeastSquares(double alpha) {
   do {
     g = gnew;
     calcPZW();
-    reinschStep(alpha);
+    if (!reinschStep(alpha)) {
+      // no step: keep g (limitg would turn a NaN into -35)
+      gnew = g;
+      return false;
+    }
     limitg();
     PackedVector difference = g.packedSubtract(gnew);
     step = packedNorm(difference) / n;

@@ -28,6 +28,8 @@
 #include <utility>
 #include <vector>
 
+#include "Globals.h"
+#include "LogisticRegression.h"
 #include "MyException.h"
 #include "PosteriorEstimator.h"
 #include "TmpDir.h"
@@ -45,6 +47,26 @@ std::string writeFile(const TmpDir& dir, const std::string& text) {
   std::ofstream(path.string()) << text;
   return path.string();
 }
+
+// Sets the verbosity and the no-terminate flag, and restores them at the end
+// of the test.
+class GlobalFlags {
+ public:
+  GlobalFlags(int verbose, bool noTerminate)
+      : verbose_(Globals::getInstance()->getVerbose()),
+        noTerminate_(Globals::getInstance()->getNoTerminate()) {
+    Globals::getInstance()->setVerbose(verbose);
+    Globals::getInstance()->setNoTerminate(noTerminate);
+  }
+  ~GlobalFlags() {
+    Globals::getInstance()->setVerbose(verbose_);
+    Globals::getInstance()->setNoTerminate(noTerminate_);
+  }
+
+ private:
+  int verbose_;
+  bool noTerminate_;
+};
 
 }  // namespace
 
@@ -160,6 +182,73 @@ TEST(PosteriorEstimatorTest, IrlsPepStableUnderOneUlpChange) {
     maxRel = std::max(maxRel, std::fabs(peps[i] - pepsMoved[i]) / peps[i]);
   }
   EXPECT_LT(maxRel, 1e-10);
+}
+
+// Two equal knots give an interval of length 0, and the step of the P-IRLS
+// fit was not a number. The bound on g turned it into -35, the next step was
+// 0 and the fit was taken as converged: every PEP was exp(-35) = 6.3e-16,
+// without a warning. Now the step fails, g keeps its start values, and the
+// warning is printed.
+TEST(PosteriorEstimatorTest, IrlsFitFailsAtEqualKnots) {
+  GlobalFlags flags(1, false);
+  const std::vector<double> x = {-1.0, 0.0, 0.0, 1.0};
+  const std::vector<double> y = {2.0, 1.0, 1.0, 0.0};
+  const std::vector<double> m = {2.0, 2.0, 2.0, 2.0};
+  LogisticRegression lr;
+  lr.setData(x, y, m);
+  testing::internal::CaptureStderr();
+  lr.roughnessPenaltyIRLS();
+  const std::string warning = testing::internal::GetCapturedStderr();
+  EXPECT_EQ("Warning: the P-IRLS fit of the PEPs did not converge (4 bins); "
+            "the PEPs may be inaccurate.\n",
+            warning);
+  EXPECT_FALSE(lr.iterativeReweightedLeastSquares(1.0));
+  std::vector<double> g;
+  lr.predict(x, g);
+  ASSERT_EQ(x.size(), g.size());
+  for (std::size_t i = 0; i < x.size(); ++i) {
+    // the start value of LogisticRegression::initg
+    EXPECT_NEAR(std::log((y[i] + 0.05) / (m[i] - y[i] + 0.05)), g[i], 1e-12)
+        << i;
+  }
+}
+
+// With --no-terminate, fewer than 4 bins are padded to 4. The padded bins
+// had the score of the last bin (the offset of 1e-20 was lost unless the
+// score was close to 0), the fit failed as above, and every PEP was 6.3e-16,
+// also for a list of decoys only. Tied scores, a single bin, were given
+// noise of the same size, with the same result. Now the padded bins have
+// distinct scores; a single bin gives every score the same PEP, and the
+// scores are not changed.
+TEST(PosteriorEstimatorTest, NoTerminatePadsWithDistinctScores) {
+  GlobalFlags flags(0, true);
+  // sorted by increasing score, the best first, as protein scores
+  std::vector<std::pair<double, bool> > decoys(12, std::make_pair(1.0, false));
+  std::vector<double> peps;
+  PosteriorEstimator::estimatePEP(decoys, false, 1.0, peps, true, 1.0, true);
+  ASSERT_EQ(12u, peps.size());
+  for (std::size_t i = 0; i < peps.size(); ++i) {
+    EXPECT_EQ(1.0, peps[i]) << i;
+    EXPECT_EQ(1.0, decoys[i].first) << i;
+  }
+
+  // 3 decoys and 9 targets with the same score: the odds 3 / 9
+  std::vector<std::pair<double, bool> > tied(3, std::make_pair(2.5, false));
+  tied.resize(12, std::make_pair(2.5, true));
+  PosteriorEstimator::estimatePEP(tied, false, 1.0, peps, true, 1.0, true);
+  ASSERT_EQ(12u, peps.size());
+  for (std::size_t i = 0; i < peps.size(); ++i) {
+    EXPECT_NEAR(1.0 / 3.0, peps[i], 1e-6) << i;
+  }
+
+  // three bins, two targets and a decoy with a worse score
+  std::vector<std::pair<double, bool> > three = {
+      {1.0, true}, {2.0, true}, {3.0, false}};
+  PosteriorEstimator::estimatePEP(three, false, 1.0, peps, true, 1.0, true);
+  ASSERT_EQ(3u, peps.size());
+  EXPECT_GT(peps[1], peps[0]);
+  EXPECT_LT(peps[1], 1e-6);
+  EXPECT_EQ(1.0, peps[2]);
 }
 
 TEST(PosteriorEstimatorTest, HelpReturnsWithoutEndingTheProcess) {
