@@ -52,7 +52,6 @@ class BaseSpline {
       gamma = PackedVector(n-2);
     }
     virtual void limitg() {}
-    virtual void limitgamma() {}
     // One step of the Reinsch algorithm: solves
     // (R + Q' alpha W^-1 Q) gamma = Q' z and sets gnew = z - alpha W^-1 Q gamma.
     // Returns false, and changes nothing, if two knots are equal or a result

@@ -50,13 +50,6 @@ void LogisticRegression::limitg() {
   }
 }
 
-void LogisticRegression::limitgamma() {
-  for (int ix = gamma.numberEntries(); ix--;) {
-    gamma.packedReplace(ix, min(gRange, max(-gRange, gamma[ix])));
-    assert(std::isfinite(gamma[ix]));
-  }
-}
-
 void LogisticRegression::calcPZW() {
 
   for (std::size_t ix = static_cast<std::size_t>(z.numberEntries()); ix--;) {

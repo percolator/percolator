@@ -40,7 +40,6 @@ class LogisticRegression : public BaseSpline {
     virtual void calcPZW();
     virtual void initg();
     virtual void limitg();
-    virtual void limitgamma();
     std::vector<double> y, m;
     static const double gRange;
     Array<double> p;

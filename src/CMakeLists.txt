@@ -120,7 +120,7 @@ add_library(perclibrary STATIC BaseSpline.cpp MassHandler.cpp PSMDescription.cpp
 								  SetHandler.cpp StdvNormalizer.cpp Caller.cpp CompositionSorter.cpp CrossValidation.cpp Enzyme.cpp Globals.cpp NoNormalizer.cpp Normalizer.cpp
 								  SanityCheck.cpp UniNormalizer.cpp DataSet.cpp TabFileValidator.cpp FeatureNames.cpp LogisticRegression.cpp Numerical.cpp Option.cpp PosteriorEstimator.cpp
 								  ProteinProbEstimator.cpp Scores.cpp PseudoRandom.cpp Set.cpp ssl.cpp PackedVector.cpp
-								  PackedMatrix.cpp MyException.cpp ProteinScoreHolder.cpp PickedProteinInterface.cpp FeatureMemoryPool.cpp Timer.cpp TmpDir.cpp ValidateTabFile.cpp Vector.cpp
+								  MyException.cpp ProteinScoreHolder.cpp PickedProteinInterface.cpp FeatureMemoryPool.cpp Timer.cpp TmpDir.cpp ValidateTabFile.cpp Vector.cpp
 								  picked_protein/PickedProteinCaller.cpp picked_protein/ProteinDigest.cpp)
 # BaseSpline.cpp computes in double-double arithmetic, which needs every
 # product and sum rounded on its own: no contraction into fused multiply-adds
