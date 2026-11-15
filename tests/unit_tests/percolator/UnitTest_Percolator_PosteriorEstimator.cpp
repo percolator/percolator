@@ -23,6 +23,7 @@
 #include <cmath>
 #include <filesystem>
 #include <fstream>
+#include <functional>
 #include <random>
 #include <string>
 #include <utility>
@@ -40,6 +41,37 @@ class ScoreReader : public PosteriorEstimator {
  public:
   using PosteriorEstimator::readScores;
 };
+
+class Estimator : public PosteriorEstimator {
+ public:
+  using PosteriorEstimator::estimate;
+};
+
+// the knots of a P-IRLS fit after LogisticRegression::setData
+class Knots : public LogisticRegression {
+ public:
+  std::size_t size() const { return x.size(); }
+};
+
+class KnotMerger : public LogisticRegression {
+ public:
+  using LogisticRegression::countNearTies;
+  using LogisticRegression::mergeEqualKnots;
+};
+
+// the knots that are left after mergeEqualKnots
+std::vector<double> mergedKnots(std::vector<double> x) {
+  std::vector<double> y(x.size(), 1.0), m(x.size(), 2.0);
+  KnotMerger::mergeEqualKnots(x, y, m);
+  EXPECT_EQ(x.size(), y.size());
+  EXPECT_EQ(x.size(), m.size());
+  return x;
+}
+
+// uniform in [0, 1), from 53 bits of the generator
+double uniform53(std::mt19937_64& rng) {
+  return static_cast<double>(rng() >> 11) * 0x1p-53;
+}
 
 std::string writeFile(const TmpDir& dir, const std::string& text) {
   std::filesystem::path path =
@@ -249,6 +281,198 @@ TEST(PosteriorEstimatorTest, NoTerminatePadsWithDistinctScores) {
   EXPECT_GT(peps[1], peps[0]);
   EXPECT_LT(peps[1], 1e-6);
   EXPECT_EQ(1.0, peps[2]);
+}
+
+// Equal knots are merged, with their y and m summed. Knots that are only
+// close together are not, and nothing is merged if fewer than 4 knots would
+// remain.
+TEST(PosteriorEstimatorTest, MergeEqualKnots) {
+  std::vector<double> x = {-1.0, 0.0, 0.0, 1.0, 2.0, 2.0, 2.0};
+  std::vector<double> y = {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0};
+  std::vector<double> m = {10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0};
+  KnotMerger::mergeEqualKnots(x, y, m);
+  EXPECT_EQ((std::vector<double>{-1.0, 0.0, 1.0, 2.0}), x);
+  EXPECT_EQ((std::vector<double>{1.0, 5.0, 4.0, 18.0}), y);
+  EXPECT_EQ((std::vector<double>{10.0, 50.0, 40.0, 180.0}), m);
+
+  const std::vector<double> oneUlp = {-1.0, 0.0, 1.0,
+                                      std::nextafter(1.0, 2.0), 2.0};
+  EXPECT_EQ(oneUlp, mergedKnots(oneUlp));
+  const std::vector<double> distinct = {-1.0, 0.0, 1.0, 2.0};
+  EXPECT_EQ(distinct, mergedKnots(distinct));
+  const std::vector<double> tiedOfFour = {0.0, 1.0, 1.0, 2.0};
+  EXPECT_EQ(tiedOfFour, mergedKnots(tiedOfFour));
+  const std::vector<double> tiedOfFive = {0.0, 1.0, 1.0, 1.0, 2.0};
+  EXPECT_EQ(tiedOfFive, mergedKnots(tiedOfFive));
+}
+
+// Two scores near 1e9 one ulp apart are two bins, and the log transform of
+// BaseSpline::setData gives them the same knot. The fit could take no step
+// and ended with the warning and the start values of g. The knots are now
+// merged after the transform: the fit converges, and the PEPs are those of
+// the same entries with the two scores equal, which share one bin.
+TEST(PosteriorEstimatorTest, IrlsPepWithEqualKnotsAfterTheLog) {
+  PosteriorEstimator::resetToDefaults();
+  GlobalFlags flags(1, false);
+  std::mt19937_64 rng(3);
+  // lower scores are better; decoys become more frequent towards the top
+  std::vector<std::pair<double, bool> > combined;
+  for (int i = 0; i < 400; ++i) {
+    combined.emplace_back(1e9 + 1000.0 * (i + 0.4 * uniform53(rng)),
+                          !(uniform53(rng) < 0.45 * i / 400.0));
+  }
+  // a score whose next double has the same log, on this platform
+  double s = combined[200].first;
+  while (std::log(s) != std::log(std::nextafter(s, 2e9))) {
+    s = std::nextafter(s, 2e9);
+  }
+  combined[200].first = s;
+  std::vector<std::pair<double, bool> > tied = combined;
+  combined[201].first = std::nextafter(s, 2e9);
+  tied[201].first = s;
+  ASSERT_LT(combined[201].first, combined[202].first);
+
+  Knots knots, tiedKnots;
+  Estimator::estimate(combined, knots, false, 1.0, true);
+  Estimator::estimate(tied, tiedKnots, false, 1.0, true);
+  EXPECT_EQ(399u, knots.size());
+  EXPECT_EQ(399u, tiedKnots.size());
+
+  std::vector<double> peps, pepsTied;
+  testing::internal::CaptureStderr();
+  PosteriorEstimator::estimatePEP(combined, false, 1.0, peps, true, 1.0, true);
+  PosteriorEstimator::estimatePEP(tied, false, 1.0, pepsTied, true, 1.0,
+                                  true);
+  const std::string warning = testing::internal::GetCapturedStderr();
+  EXPECT_EQ(std::string::npos, warning.find("did not converge")) << warning;
+  ASSERT_EQ(combined.size(), peps.size());
+  EXPECT_EQ(pepsTied, peps);
+}
+
+// Pairs of knots less than 1e-9 times the median of the gaps around them
+// apart are counted as nearly equal.
+TEST(PosteriorEstimatorTest, CountNearTies) {
+  // -2 to 2, 0.01 apart
+  std::vector<double> x;
+  for (int i = 0; i <= 400; ++i) {
+    x.push_back((i - 200) / 100.0);
+  }
+  EXPECT_EQ(0u, KnotMerger::countNearTies(x));
+  for (double offset : {1e-12, 1e-10}) {
+    std::vector<double> pair = x;
+    pair.insert(pair.begin() + 301, pair[300] + offset);
+    EXPECT_EQ(offset < 1e-11 ? 1u : 0u, KnotMerger::countNearTies(pair))
+        << offset;
+  }
+  // 0 and 1e-20
+  std::vector<double> nearZero = x;
+  nearZero.insert(nearZero.begin() + 201, 1e-20);
+  EXPECT_EQ(1u, KnotMerger::countNearTies(nearZero));
+  // 24 knots 1 ulp apart from 1.5 count at both ends of the run, also
+  // where they are more than half of the knots
+  std::vector<double> run(x.begin(), x.begin() + 351);
+  for (int j = 1; j < 24; ++j) {
+    run.push_back(std::nextafter(run.back(), 2.0));
+  }
+  run.insert(run.end(), x.begin() + 351, x.end());
+  EXPECT_EQ(2u, KnotMerger::countNearTies(run));
+  std::vector<double> mostly(run.begin() + 340, run.begin() + 384);
+  ASSERT_EQ(1.4, mostly.front());
+  EXPECT_EQ(2u, KnotMerger::countNearTies(mostly));
+  // all knots in runs 1 ulp apart from 1, 1.04, ..., 4.96: in runs of 2
+  // every pair counts; in runs of 3 or 4 the gaps around each pair are small
+  // too, and none does
+  for (int length : {2, 3, 4}) {
+    std::vector<double> runs;
+    for (int i = 0; i < 100; ++i) {
+      runs.push_back(1.0 + i / 25.0);
+      for (int j = 1; j < length; ++j) {
+        runs.push_back(std::nextafter(runs.back(), 10.0));
+      }
+    }
+    EXPECT_EQ(length == 2 ? 100u : 0u, KnotMerger::countNearTies(runs))
+        << length;
+  }
+}
+
+// Two of 240 scores 1e-12 apart (5.6e-11 times the median gap around them)
+// are nearly equal, and the warning is printed once, before the fit; 1e-8
+// apart they are not. Only this warning is checked: with the two scores
+// 1e-13 apart, the fit converged or reached its limit depending on the
+// rounding of exp and log.
+TEST(PosteriorEstimatorTest, IrlsPepWarnsOfNearlyEqualScores) {
+  PosteriorEstimator::resetToDefaults();
+  GlobalFlags flags(1, false);
+  std::mt19937_64 rng(7);
+  // lower scores are better; decoys become more frequent towards the top
+  std::vector<std::pair<double, bool> > combined;
+  for (int i = 0; i < 240; ++i) {
+    combined.emplace_back(-2.0 + 4.0 * uniform53(rng), true);
+  }
+  std::sort(combined.begin(), combined.end());
+  for (auto& entry : combined) {
+    const double pDecoy =
+        0.45 * std::min(1.0, std::max(0.0, (entry.first + 1.0) / 3.0));
+    entry.second = !(uniform53(rng) < pDecoy);
+  }
+  const std::string warning =
+      "Warning: 1 pairs of scores in the PEP fit are nearly equal; the "
+      "PEPs may be inaccurate.\n";
+  for (double offset : {1e-12, 1e-8}) {
+    std::vector<std::pair<double, bool> > entries = combined;
+    entries[121].first = entries[120].first + offset;
+    ASSERT_LT(entries[121].first, entries[122].first);
+    std::vector<double> peps;
+    testing::internal::CaptureStderr();
+    PosteriorEstimator::estimatePEP(entries, false, 1.0, peps, true, 1.0,
+                                    true);
+    const std::string err = testing::internal::GetCapturedStderr();
+    if (offset < 1e-10) {
+      EXPECT_EQ(0u, err.find(warning)) << err;
+      EXPECT_EQ(std::string::npos, err.find("nearly equal", warning.size()))
+          << err;
+    } else {
+      EXPECT_EQ(std::string::npos, err.find("nearly equal")) << err;
+    }
+  }
+}
+
+// Probabilities with ties at 1.0 and one score 1e-12 below. The logit
+// transform is chosen from all scores, before equal knots are merged, and
+// has an offset at 1, so that 1.0 has a finite knot: no PEP is 0 or above
+// 1, and fewer than half of them are 1.
+TEST(PosteriorEstimatorTest, IrlsPepWithTiesAtOne) {
+  PosteriorEstimator::resetToDefaults();
+  std::mt19937_64 rng(5);
+  std::vector<std::pair<double, bool> > combined;
+  for (int i = 0; i < 190; ++i) {
+    const double u = uniform53(rng);
+    combined.emplace_back(1.0 - 0.9 * u * u * u, true);
+  }
+  combined[0].first = 1.0 - 1e-12;
+  combined.resize(200, std::make_pair(1.0, true));
+  for (int i = 0; i < 200; ++i) {
+    combined.emplace_back(0.95 * uniform53(rng), false);
+  }
+  for (int decoysAtOne : {0, 6}) {
+    std::vector<std::pair<double, bool> > entries = combined;
+    entries.resize(400 + decoysAtOne, std::make_pair(1.0, false));
+    // higher scores are better
+    std::sort(entries.begin(), entries.end(),
+              std::greater<std::pair<double, bool> >());
+    std::vector<double> peps;
+    PosteriorEstimator::estimatePEP(entries, false, 1.0, peps, false, 1.0,
+                                    false);
+    ASSERT_EQ(200u, peps.size());
+    int outside = 0, ones = 0;
+    for (double pep : peps) {
+      outside += !(pep > 0.0 && pep <= 1.0);
+      ones += pep == 1.0;
+    }
+    EXPECT_EQ(0, outside) << decoysAtOne;
+    EXPECT_LT(ones, 100) << decoysAtOne;
+    EXPECT_LT(peps[0], decoysAtOne == 0 ? 1e-6 : 0.01) << decoysAtOne;
+  }
 }
 
 TEST(PosteriorEstimatorTest, HelpReturnsWithoutEndingTheProcess) {
