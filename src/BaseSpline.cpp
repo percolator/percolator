@@ -79,8 +79,187 @@ double BaseSpline::splineEval(double xx) {
 
 static double tao = 2 / (1 + sqrt(5.0)); // inverse of golden section
 
+namespace {
+
+// Double-double arithmetic: a value is the unevaluated sum hi + lo with
+// |lo| <= ulp(hi) / 2, about 32 significant digits (Dekker 1971; Hida, Li
+// and Bailey 2001). The error-free transforms assume IEEE 754 double
+// arithmetic rounded to nearest, without extended precision and without
+// contraction of a * b + c into a fused multiply-add: this file is compiled
+// with -ffp-contract=off, and must not be compiled with -ffast-math.
+// std::fma gives the exact error of a product on every platform.
+struct DD {
+  double hi, lo;
+  DD(double h = 0.0, double l = 0.0) : hi(h), lo(l) {}
+};
+
+// s + e == a + b exactly, if |a| >= |b|
+inline DD fastTwoSum(double a, double b) {
+  double s = a + b;
+  return DD(s, b - (s - a));
+}
+
+// s + e == a + b exactly
+inline DD twoSum(double a, double b) {
+  double s = a + b;
+  double bb = s - a;
+  return DD(s, (a - (s - bb)) + (b - bb));
+}
+
+inline DD operator+(const DD& a, const DD& b) {
+  DD s = twoSum(a.hi, b.hi);
+  DD t = twoSum(a.lo, b.lo);
+  s.lo += t.hi;
+  s = fastTwoSum(s.hi, s.lo);
+  s.lo += t.lo;
+  return fastTwoSum(s.hi, s.lo);
+}
+
+inline DD operator-(const DD& a) { return DD(-a.hi, -a.lo); }
+
+inline DD operator-(const DD& a, const DD& b) { return a + (-b); }
+
+inline DD operator*(const DD& a, const DD& b) {
+  double p = a.hi * b.hi;
+  double e = std::fma(a.hi, b.hi, -p);
+  e += a.hi * b.lo + a.lo * b.hi;
+  return fastTwoSum(p, e);
+}
+
+inline DD operator/(const DD& a, const DD& b) {
+  double q1 = a.hi / b.hi;
+  DD r = a - DD(q1) * b;
+  double q2 = r.hi / b.hi;
+  r = r - DD(q2) * b;
+  double q3 = r.hi / b.hi;
+  return fastTwoSum(q1, q2) + DD(q3);
+}
+
+}  // namespace
+
+// The step is computed in double-double. Two knots close together (1e-7 to
+// 1e-5 apart on a score range of a few units, as when each entry is its own
+// bin) give M = R + Q' alpha W^-1 Q a condition number of 1e10 or more,
+// also after diagonal scaling. In double precision the error of the solve
+// (median 2e-4 in g on a synthetic set, 7e-2 in the worst one) was then
+// larger than the tolerance on the step: the iteration ran to the cap of 20
+// steps, and g depended on the last bits of exp and log. In double-double
+// the error stays below the rounding of g, and Newton's method converges in
+// a few steps.
+bool BaseSpline::reinschStep(double alpha) {
+  const int n = static_cast<int>(x.size());
+  const int k = n - 2;
+  // the intervals h_j = x[j + 1] - x[j], exact in double-double; equal
+  // knots give no step
+  std::vector<DD> h(n - 1), inv(n - 1);
+  for (int j = 0; j < n - 1; ++j) {
+    h[j] = twoSum(x[j + 1], -x[j]);
+    if (!(h[j].hi > 0.0)) {
+      return false;
+    }
+    inv[j] = DD(1.0) / h[j];
+    if (!std::isfinite(inv[j].hi)) {
+      return false;
+    }
+  }
+  std::vector<DD> aw(n);  // alpha / w_i
+  for (int i = 0; i < n; ++i) {
+    aw[i] = DD(alpha) / DD(w[i]);
+  }
+  // Column j of Q holds 1/h_j, -1/h_j - 1/h_(j+1) and 1/h_(j+1) in the
+  // rows j, j + 1 and j + 2. M is symmetric and pentadiagonal: m0 holds its
+  // diagonal, m1 and m2 the first and second superdiagonals. gam starts as
+  // Q' z.
+  std::vector<DD> m0(k), m1(k), m2(k), gam(k);
+  for (int j = 0; j < k; ++j) {
+    const DD& a = inv[j];
+    const DD& c = inv[j + 1];
+    DD b = -(a + c);
+    m0[j] = (h[j] + h[j + 1]) / DD(3.0) + aw[j] * a * a + aw[j + 1] * b * b
+        + aw[j + 2] * c * c;
+    if (j + 1 < k) {
+      DD bNext = -(inv[j + 1] + inv[j + 2]);
+      m1[j] = h[j + 1] / DD(6.0) + aw[j + 1] * b * inv[j + 1]
+          + aw[j + 2] * c * bNext;
+    }
+    if (j + 2 < k) {
+      m2[j] = aw[j + 2] * c * inv[j + 2];
+    }
+    gam[j] = a * DD(z[j]) + b * DD(z[j + 1]) + c * DD(z[j + 2]);
+  }
+  // M = L D L' with unit lower triangular L of bandwidth 2, without
+  // pivoting, as M is positive definite; l1[i] = L(i, i-1), l2[i] = L(i, i-2)
+  std::vector<DD> d(k), l1(k), l2(k);
+  for (int i = 0; i < k; ++i) {
+    DD di = m0[i];
+    if (i >= 2) {
+      l2[i] = m2[i - 2] / d[i - 2];
+      di = di - l2[i] * l2[i] * d[i - 2];
+    }
+    if (i >= 1) {
+      DD s = m1[i - 1];
+      if (i >= 2) {
+        s = s - l2[i] * d[i - 2] * l1[i - 1];
+      }
+      l1[i] = s / d[i - 1];
+      di = di - l1[i] * l1[i] * d[i - 1];
+    }
+    d[i] = di;
+  }
+  for (int i = 1; i < k; ++i) {
+    gam[i] = gam[i] - l1[i] * gam[i - 1];
+    if (i >= 2) {
+      gam[i] = gam[i] - l2[i] * gam[i - 2];
+    }
+  }
+  for (int i = 0; i < k; ++i) {
+    gam[i] = gam[i] / d[i];
+  }
+  for (int i = k - 2; i >= 0; --i) {
+    gam[i] = gam[i] - l1[i + 1] * gam[i + 1];
+    if (i + 2 < k) {
+      gam[i] = gam[i] - l2[i + 2] * gam[i + 2];
+    }
+  }
+  // gnew = z - alpha W^-1 Q gamma; row i of Q has entries in the columns
+  // i - 2, i - 1 and i
+  std::vector<double> gammaNew(k), gNew(n);
+  for (int j = 0; j < k; ++j) {
+    gammaNew[j] = gam[j].hi;
+    if (!std::isfinite(gammaNew[j])) {
+      return false;
+    }
+  }
+  for (int i = 0; i < n; ++i) {
+    DD qg;
+    if (i < k) {
+      qg = qg + inv[i] * gam[i];
+    }
+    if (i >= 1 && i - 1 < k) {
+      qg = qg - (inv[i - 1] + inv[i]) * gam[i - 1];
+    }
+    if (i >= 2) {
+      qg = qg + inv[i - 1] * gam[i - 2];
+    }
+    gNew[i] = (DD(z[i]) - aw[i] * qg).hi;
+    if (!std::isfinite(gNew[i])) {
+      return false;
+    }
+  }
+  gamma = PackedVector(k);
+  for (int j = 0; j < k; ++j) {
+    gamma.packedReplace(j, gammaNew[j]);
+  }
+  gnew = PackedVector(n);
+  for (int i = 0; i < n; ++i) {
+    gnew.packedReplace(i, gNew[i]);
+  }
+  return true;
+}
+
 void BaseSpline::roughnessPenaltyIRLS() {
-  initiateQR();
+  // at least 4 points are needed for the cubic smoothing spline
+  assert(x.size() >= 4);
   initg();
   double p1 = 1 - tao;
   double p2 = tao;
@@ -93,22 +272,24 @@ void BaseSpline::roughnessPenaltyIRLS() {
   if (VERB > 2) {
     cerr << "Alpha selected to be " << alpha << endl;
   }
-  iterativeReweightedLeastSquares(alpha);
+  if (!iterativeReweightedLeastSquares(alpha) && VERB > 0) {
+    cerr << "Warning: the P-IRLS fit of the PEPs did not converge ("
+         << x.size() << " bins); the PEPs may be inaccurate." << endl;
+  }
 }
 
-void BaseSpline::iterativeReweightedLeastSquares(double alpha) {
+bool BaseSpline::iterativeReweightedLeastSquares(double alpha) {
   double step = 0.0;
   int iter = 0;
   unsigned int n = static_cast<unsigned int>(x.size());
   do {
     g = gnew;
     calcPZW();
-    PackedMatrix diag = PackedMatrix::packedDiagonalMatrix(PackedVector(static_cast<int>(n), 1) / w).packedMultiply(alpha);
-    PackedMatrix aWiQ = (diag).packedMultiply(Q);
-    PackedMatrix M = R.packedAdd(Qt.packedMultiply(aWiQ));
-    gamma = Qt.packedMultiply(z);
-    solveInPlace(M,gamma);
-    gnew = z.packedSubtract(aWiQ.packedMultiply(gamma));
+    if (!reinschStep(alpha)) {
+      // no step: keep g (limitg would turn a NaN into -35)
+      gnew = g;
+      return false;
+    }
     limitg();
     PackedVector difference = g.packedSubtract(gnew);
     step = packedNorm(difference) / n;
@@ -117,6 +298,8 @@ void BaseSpline::iterativeReweightedLeastSquares(double alpha) {
     }
   } while ((step > stepEpsilon || step < 0.0) && (++iter < 20));
   g = gnew;
+  // false also for a step that is not a number
+  return step >= 0.0 && step <= stepEpsilon;
 }
 
 double BaseSpline::alphaLinearSearchBA(double min_p,
@@ -153,40 +336,6 @@ double BaseSpline::alphaLinearSearchBA(double min_p,
     return (cv1 < cv2 ? -scaleAlpha*log(p1) : -scaleAlpha*log(p2));
   }
   return alphaLinearSearchBA(min_p, max_p, p1, p2, cv1, cv2);
-}
-
-void BaseSpline::initiateQR() {
-  // NOTE: at least 4 data points are needed to construct a quadratic spline!
-  assert(x.size() >= 4);
-  int n = static_cast<int>(x.size());
-  dx.resize(n-1);
-  for (std::size_t ix = 0; static_cast<int>(ix) < n - 1; ix++) {
-    dx.addElement(static_cast<int>(ix), x[ix + 1] - x[ix]);
-    assert(dx[ix] > 0);
-  }
-  Q = PackedMatrix(n,n-2);
-  R = PackedMatrix(n-2, n-2);
-  //Fill Q
-  Q[0].packedAddElement(0, 1 / dx[0]);
-  Q[1].packedAddElement(0, -1 / dx[0] - 1 / dx[1]);
-  Q[1].packedAddElement(1, 1 / dx[1]);
-  for (int j = 2; j < n - 2; j++) {
-    Q[j].packedAddElement(j-2, 1 / dx[j - 1]);
-    Q[j].packedAddElement(j-1, -1 / dx[j - 1] - 1 / dx[j]);
-    Q[j].packedAddElement(j, 1 / dx[j]);
-  }
-  Q[n - 2].packedAddElement(n-4, 1 / dx[n - 3]);
-  Q[n - 2].packedAddElement(n - 3, -1 / dx[n - 3] - 1 / dx[n - 2]);
-  Q[n - 1].packedAddElement(n - 3,  1 / dx[n - 2]);
-  //Fill R
-  for (int i = 0; i < n - 3; i++) {
-    R[i].packedAddElement(i, (dx[i] + dx[i + 1]) / 3);
-    R[i].packedAddElement(i + 1, dx[i + 1] / 6);
-    R[i + 1].packedAddElement(i, dx[i + 1] / 6);
-  }
-  R[n - 3].packedAddElement(n - 3, (dx[n - 3] + dx[n - 2]) / 3);
-  Qt = PackedMatrix(n-2,n);
-  Qt = PackedMatrix::packedTranspose(Q);
 }
 
 double BaseSpline::evaluateSlope(double alpha) {
@@ -251,140 +400,3 @@ void BaseSpline::setData(const vector<double>& xx) {
   }
   transform(xx.begin(), xx.end(), back_inserter(x), transf);
 }
-
-void BaseSpline::solveInPlace(PackedMatrix& mat, PackedVector& res) {
-  res = res.makeSparse();
-  // Current implementation requires a quadratic mat
-  int nCol = mat.numCols();
-  PackedVector nonEmpty;
-  int col, row, rowPos;
-  for (col = 0; col < nCol; col++) {
-    //int stop = 1;
-    //if(col==stop-1){
-//      cout << "*********************"<<endl;
-//      cout << col << endl;
-//      cout << "*********************"<<endl;
-//      mat.displayMatrix();
-//      cout << "RES: " <<res.values<<endl;
-    //}
-
-    // find the non-null elements in this column (below row "col")
-    nonEmpty = PackedVector();
-    int pivotPos(-1);
-    for (row = col; row < mat.numRows(); row++) {
-      int rowEntries = mat[row].numberEntries();
-      for (rowPos = rowEntries; rowPos--;) {
-        int entryIndex = mat[row].index(rowPos);
-        if (entryIndex == col) {
-          nonEmpty.packedAddElement(row, mat[row][rowPos]);
-          if (row == col) {
-            pivotPos = nonEmpty.numberEntries()-1;
-          }
-        }
-      }
-    }
-//    if(col==stop-1){
-//      cout<<"nonEmpty " << nonEmpty.values<< endl;
-//      cout<<"pivot " << pivotPos<< endl<<endl;
-//    }
-
-    //find most significant row
-    double maxVal(0.0);
-    int maxRow(-1), maxRowPos(-1);
-    for (rowPos = nonEmpty.numberEntries(); rowPos--;) {
-      double val = nonEmpty[rowPos];
-      assert(std::isfinite(val));
-      if (fabs(val) > fabs(maxVal)) {
-        maxVal = val;
-        maxRow = nonEmpty.index(rowPos);
-        maxRowPos = rowPos;
-      }
-    }
-    //int imaxRow = maxRow;
-    //int imaxRowPos = maxRowPos;
-//    if(col==stop-1){
-//      cout << "imaxRow " << imaxRow << endl;
-//      cout << "imaxRowPos " << imaxRowPos << endl<<endl;
-//    }
-
-    // Put the most significant row at row "col"
-    if (maxVal != 0.0) {
-      if (maxRow != col) {
-        swap(mat[col], mat[maxRow]);
-        res.swapElements(col, maxRow);
-
-        if (pivotPos >= 0) {
-          nonEmpty.swapElements(maxRowPos, pivotPos);
-        }
-      }
-//      if(col==stop-1){
-//        cout << "SWAP\n";
-//        mat.displayMatrix();
-//      }
-
-      // Divide the row with maxVal
-      mat[col].packedDiv(maxVal);
-      double value = res[col] / maxVal;
-      res.packedReplace(col,value);
-//      if(col==stop-1){
-//        cout << "\nDIVIDE ROW\n";
-//        mat.displayMatrix();
-//        cout << "res " << res.values<<endl;
-//        cout << "nonEmpty " << nonEmpty.values<<endl;
-//        cout << "\n\n";
-//      }
-    }
-    // subtract the row from other rows
-    for (rowPos = nonEmpty.numberEntries(); rowPos--;) {
-      row = nonEmpty.index(rowPos);
-      if (row == col) {
-        continue;
-      }
-      // If the pivotRow was empty (prior to swap) at col=row do not process this row
-      if (pivotPos < 0 && row == maxRow) {
-        continue;
-      }
-      double val = nonEmpty[rowPos];
-      PackedVector prodVector = mat[col];
-      mat[row] = mat[row].packedSubtract(prodVector.packedProd(val));
-      double value = res[row] - (val * res[col]);
-      res.packedReplace(row, value);
-
-//      if(col==stop-1){
-//        cout << "SUBTRACT ROW\n";
-//        mat.displayMatrix();
-//        cout << "res " << res.values<<endl;
-//        cout << "nonEmpty " << nonEmpty.values<<endl;
-//        cout << "\n\n";
-//      }
-    }
-  }
-  // Go bottom up and clear upper halfmatrix
-//  mat.displayMatrix();
-//  res.displayVector();
-//  nonEmpty.displayVector();
-//  cout << "\n\n\n\n";
-  for (col = mat.numCols(); col--;) {
-    nonEmpty = PackedVector();
-    for (row = 0; row < col; row++) {
-      for (rowPos = mat[row].numberEntries(); rowPos--;) {
-        if (mat[row].index(rowPos) == col) {
-          nonEmpty.packedAddElement(row, mat[row][rowPos]);
-        }
-      }
-    }
-//    cout << nonEmpty.values<<endl;
-    // subtract the row from other rows
-    for (rowPos = nonEmpty.numberEntries(); rowPos--;) {
-      row = nonEmpty.index(rowPos);
-      double val = nonEmpty[rowPos];
-      mat[row] = mat[row].packedSubtract(mat[col].packedProd(val));
-      double value = res[row] - (val * res[col]);
-      res.packedReplace(row, value);
-    }
-//    cout << res.values<<endl;
-  }
-  return;
-}
-
-

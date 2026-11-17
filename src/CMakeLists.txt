@@ -120,8 +120,16 @@ add_library(perclibrary STATIC BaseSpline.cpp MassHandler.cpp PSMDescription.cpp
 								  SetHandler.cpp StdvNormalizer.cpp Caller.cpp CompositionSorter.cpp CrossValidation.cpp Enzyme.cpp Globals.cpp NoNormalizer.cpp Normalizer.cpp
 								  SanityCheck.cpp UniNormalizer.cpp DataSet.cpp TabFileValidator.cpp FeatureNames.cpp LogisticRegression.cpp Numerical.cpp Option.cpp PosteriorEstimator.cpp
 								  ProteinProbEstimator.cpp Scores.cpp PseudoRandom.cpp Set.cpp ssl.cpp PackedVector.cpp
-								  PackedMatrix.cpp MyException.cpp ProteinScoreHolder.cpp PickedProteinInterface.cpp FeatureMemoryPool.cpp Timer.cpp TmpDir.cpp ValidateTabFile.cpp Vector.cpp
+								  MyException.cpp ProteinScoreHolder.cpp PickedProteinInterface.cpp FeatureMemoryPool.cpp Timer.cpp TmpDir.cpp ValidateTabFile.cpp Vector.cpp
 								  picked_protein/PickedProteinCaller.cpp picked_protein/ProteinDigest.cpp)
+# BaseSpline.cpp computes in double-double arithmetic, which needs every
+# product and sum rounded on its own: no contraction into fused multiply-adds
+# (GCC contracts by default where the processor has them, Clang within an
+# expression). MSVC 2022 contracts only with /fp:fast or /fp:contract.
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+  set_source_files_properties(BaseSpline.cpp PROPERTIES COMPILE_OPTIONS
+                              "-ffp-contract=off")
+endif()
 
 if(OpenMP_CXX_FOUND)
   target_link_libraries(perclibrary PUBLIC ${COMMON_LIBRARIES} OpenMP::OpenMP_CXX)
