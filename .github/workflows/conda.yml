@@ -4,11 +4,14 @@ name: Conda build
 # compilers and pinnings, as bioconda does, before a release is submitted
 # to bioconda.
 #
-# Runs for pull requests and for pushes to master, as build.yml does. A new
-# push to a pull request cancels the run of the previous one.
+# Runs for pull requests and for pushes to master, as build.yml does, and
+# also for pushes of release branches (branch-*) and release tags (rel-*),
+# so that the commit submitted to bioconda is built. A new push to a pull
+# request cancels the run of the previous one.
 on:
   push:
-    branches: [master]
+    branches: [master, 'branch-*']
+    tags: ['rel-*']
   pull_request:
   workflow_dispatch:
 
