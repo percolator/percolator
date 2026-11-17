@@ -11,8 +11,10 @@ MESSAGE( STATUS "Checking packages:" )
 
 set(COMMON_LIBRARIES "")
 find_package(OpenMP)
-# Help AppleClang find Homebrew's libomp if not auto-detected
-if(APPLE AND NOT OpenMP_CXX_FOUND)
+# Help AppleClang find Homebrew's libomp if not auto-detected. Conda builds
+# turn this off, so that they never link to a library outside the environment.
+option(HOMEBREW_LIBOMP "On macOS, fall back to Homebrew's libomp if OpenMP is not found" ON)
+if(APPLE AND NOT OpenMP_CXX_FOUND AND HOMEBREW_LIBOMP)
   # Homebrew prefixes on Apple silicon and on Intel
   foreach(_HOMEBREW_OMP_ROOT "/opt/homebrew/opt/libomp" "/usr/local/opt/libomp")
     if (EXISTS "${_HOMEBREW_OMP_ROOT}/include" AND EXISTS "${_HOMEBREW_OMP_ROOT}/lib")

@@ -60,8 +60,8 @@ sdist.exclude = [".github", "admin/vagrant", "data", "doc", "docs", "tests"]
 [tool.scikit-build.cmake.define]
 # no unit or system tests in the wheel build (no GoogleTest download)
 NO_TESTS = "ON"
-# Linux: link libgomp statically where libgomp.a exists; macOS and Windows
-# default to ON
+# prefer static libraries (on Linux libgomp.a, where it exists); STATIC
+# defaults to ON on Windows only
 STATIC = "ON"
 
 [tool.cibuildwheel]
