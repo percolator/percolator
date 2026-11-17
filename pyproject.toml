@@ -11,11 +11,10 @@ requires = ["scikit-build-core>=0.11"]
 build-backend = "scikit_build_core.build"
 
 [project]
-# PLACEHOLDER, to be decided before the first upload: "percolator" on PyPI
-# belongs to an unrelated project. This line is the only place that holds
-# the distribution name; the import package (percolator_launcher) and the
-# commands do not depend on it.
-name = "percolator-bin"
+# The distribution name on PyPI ("percolator" there belongs to an unrelated
+# project). This line is the only place that holds it; the import package
+# (percolator_launcher) and the commands do not depend on it.
+name = "percolator-cpp"
 dynamic = ["version"]
 description = "Percolator and qvality: semi-supervised learning for peptide identification from shotgun proteomics data (command line programs)"
 readme = "ReadMe.md"

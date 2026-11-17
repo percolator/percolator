@@ -2,14 +2,23 @@ name: Wheels
 
 # Builds the binaries-only Python wheels (pyproject.toml) with cibuildwheel
 # and the source distribution, tests each wheel (admin/wheels/check_wheel.py)
-# and uploads them as artifacts. Nothing is published: the name on PyPI is
-# still to be decided (see pyproject.toml).
+# and uploads them as artifacts.
 #
-# The Linux wheel was built and compared with the CMake build when this was
-# written, without cibuildwheel's container. The macOS and Windows jobs have
-# not run yet.
+# Uploads to PyPI are started by hand, as the container image is: Actions,
+# Wheels, Run workflow, "Use workflow from" a release tag (e.g. rel-3-10),
+# publish ticked; or gh workflow run wheels.yml --ref rel-3-10 -f publish=true.
+# The job publish then uploads the five wheels and the source distribution to
+# PyPI as percolator-cpp (pyproject.toml), if their version is that of the
+# tag. A run uses the workflow file of its tag, so the tag must be on a commit
+# that has this file and, in CommonCMake.txt, the tag's version; the tags up
+# to rel-3-09-01 have neither.
 on:
   workflow_dispatch:
+    inputs:
+      publish:
+        description: Upload to PyPI (only from a tag rel-X-YY or rel-X-YY-ZZ whose version is that of CommonCMake.txt)
+        type: boolean
+        default: false
   pull_request:
     paths:
       - pyproject.toml
@@ -84,3 +93,52 @@ jobs:
       with:
         name: sdist
         path: dist/*.tar.gz
+
+  # Uploads the five wheels and the source distribution to PyPI when the
+  # workflow is run by hand with publish ticked. PyPI accepts the upload by
+  # trusted publishing (OpenID Connect): the project percolator-cpp names this
+  # repository and this workflow as its publisher, so no token is stored. The
+  # version comes from CommonCMake.txt ("3.09.0" becomes 3.9.0) and must be
+  # that of the tag the workflow runs on (rel-3-09-01 is 3.9.1). PyPI refuses
+  # a version it already holds, so the version is raised before a release.
+  publish:
+    if: github.event_name == 'workflow_dispatch' && inputs.publish && github.repository == 'percolator/percolator'
+    needs: [wheel, sdist]
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/project/percolator-cpp/
+    permissions:
+      id-token: write
+    steps:
+    # both actions of this job are pinned to a commit, since the job can
+    # obtain a PyPI token
+    - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+      with:
+        path: dist
+        merge-multiple: true
+    - name: check
+      # a tag rel-X-YY or rel-X-YY-ZZ, and five wheels and one source
+      # distribution of its version and nothing else, or nothing is uploaded
+      shell: bash
+      run: |
+        ls -l dist
+        if [[ ! "$GITHUB_REF" =~ ^refs/tags/rel-([0-9]{1,9})-([0-9]{1,9})(-([0-9]{1,9}))?$ ]]; then
+          echo "::error::publish runs on a tag rel-X-YY or rel-X-YY-ZZ, not on $GITHUB_REF"
+          exit 1
+        fi
+        version=$((10#${BASH_REMATCH[1]})).$((10#${BASH_REMATCH[2]})).$((10#${BASH_REMATCH[4]:-0}))
+        wheels=0
+        sdists=0
+        for f in dist/*; do
+          case "${f#dist/}" in
+            "percolator_cpp-$version-py3-none-"*.whl) wheels=$((wheels + 1)) ;;
+            "percolator_cpp-$version.tar.gz") sdists=$((sdists + 1)) ;;
+            *) echo "::error::${f#dist/} is not a file of version $version (tag ${GITHUB_REF#refs/tags/})"; exit 1 ;;
+          esac
+        done
+        if [ "$wheels" -ne 5 ] || [ "$sdists" -ne 1 ]; then
+          echo "::error::$wheels wheels and $sdists source distributions of version $version; expected 5 and 1"
+          exit 1
+        fi
+    - uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
