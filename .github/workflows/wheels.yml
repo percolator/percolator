@@ -5,8 +5,8 @@ name: Wheels
 # and uploads them as artifacts.
 #
 # Uploads to PyPI are started by hand, as the container image is: Actions,
-# Wheels, Run workflow, "Use workflow from" a release tag (e.g. rel-3-10),
-# publish ticked; or gh workflow run wheels.yml --ref rel-3-10 -f publish=true.
+# Wheels, Run workflow, "Use workflow from" a release tag (e.g. rel-4-00),
+# publish ticked; or gh workflow run wheels.yml --ref rel-4-00 -f publish=true.
 # The job publish then uploads the five wheels and the source distribution to
 # PyPI as percolator-cpp (pyproject.toml), if their version is that of the
 # tag. A run uses the workflow file of its tag, so the tag must be on a commit

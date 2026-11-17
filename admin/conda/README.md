@@ -22,16 +22,16 @@ the output of `xcrun --show-sdk-path`, as the workflow does.
 ## Updating bioconda after a release
 
 1. Check that the conda workflow passes on the release commit.
-2. Tag the release (`rel-<major>-<minor>[-<patch>]`, e.g. `rel-3-09-01`) and
+2. Tag the release (`rel-<major>-<minor>[-<patch>]`, e.g. `rel-4-00`) and
    create the GitHub release.
 3. Compute the checksum of the source archive that bioconda downloads:
 
    ```bash
-   curl -sL https://github.com/percolator/percolator/archive/refs/tags/rel-3-09-01.tar.gz | sha256sum
+   curl -sL https://github.com/percolator/percolator/archive/refs/tags/rel-4-00.tar.gz | sha256sum
    ```
 
 4. In a fork of bioconda-recipes, update `recipes/percolator`: the version
-   (`3.9.1` for `rel-3-09-01`), the source URL and sha256, and reset the build
+   (`4.0.0` for `rel-4-00`), the source URL and sha256, and reset the build
    number to 0. Copy `build.sh` from this directory, and keep the
    requirements and tests in step with `meta.yaml` here.
 5. Open a pull request against bioconda-recipes. The bioconda CI builds all
@@ -51,7 +51,7 @@ Compared with the recipe for 3.9:
   exports of `libboost-devel`.
 - Replace `build.sh` with the one in this directory.
 
-### Changes to the bioconda recipe after 3.9.1
+### Changes to the bioconda recipe for 4.0.0
 
 Compared with the recipe for 3.9.1 (apply the changes for 3.9.1 first if
 bioconda still has 3.9):
