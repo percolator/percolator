@@ -208,6 +208,9 @@ TEST(PosteriorEstimatorTest, IrlsPepStableUnderOneUlpChange) {
   for (std::size_t i = 0; i < peps.size(); ++i) {
     ASSERT_GT(peps[i], 0.0) << i;
     ASSERT_LE(peps[i], 1.0) << i;
+    // also fails for NaN, which std::max below would pass over
+    ASSERT_GT(pepsMoved[i], 0.0) << i;
+    ASSERT_LE(pepsMoved[i], 1.0) << i;
     if (i > 0) {
       EXPECT_LE(peps[i - 1], peps[i]) << i;
     }
