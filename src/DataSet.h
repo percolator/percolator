@@ -35,6 +35,7 @@
 #include "Globals.h"
 #include "PSMDescription.h"
 #include "PsmStore.h"
+#include "TabReader.h"
 #include "FeatureNames.h"
 #include "FeatureMemoryPool.h"
 #include "ProteinProbEstimator.h"

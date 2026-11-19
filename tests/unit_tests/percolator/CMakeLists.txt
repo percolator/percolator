@@ -72,6 +72,7 @@ add_executable(gtest_unit
     UnitTest_Percolator_CompositionSorter.cpp
     UnitTest_Percolator_TrainingMemory.cpp
     UnitTest_Percolator_ParallelSort.cpp
+    UnitTest_Percolator_OpenMPHelpers.cpp
     UnitTest_Percolator_ProteinDigest.cpp
 )
 

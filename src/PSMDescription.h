@@ -16,6 +16,7 @@
  *******************************************************************************/
 #ifndef PSMDESCRIPTION_H_
 #define PSMDESCRIPTION_H_
+#include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <cstring>
@@ -247,14 +248,14 @@ class PSMDescription {
     unsigned int numProteins_ = 0u;
     unsigned int lineNr_ = 0u;
     static std::string proteinNameSeparator_;
-    static vector<std::string> spectraFileNames_;
+    static std::vector<std::string> spectraFileNames_;
     static size_t lastSpectrumFileIndex_;
 };
 
 inline std::ostream& operator<<(std::ostream& out, PSMDescription& psm) {
-    out << "Peptide: " << psm.getFullPeptide() << endl;
-    out << "Spectrum scan number: " << psm.scan << endl;
-    out << endl;
+    out << "Peptide: " << psm.getFullPeptide() << std::endl;
+    out << "Spectrum scan number: " << psm.scan << std::endl;
+    out << std::endl;
     return out;
 }
 

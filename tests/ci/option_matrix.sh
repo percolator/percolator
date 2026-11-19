@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Runs percolator and qvality from a build tree over a matrix of option
 # combinations: the example input in data/, synthetic inputs made with
-# tests/benchmark/make_synthetic_pin.py, and the qvality example.
+# tests/benchmark/make_synthetic_pin.py, and the qvality example. Runs
+# that must give the same results are compared (same).
 #
 # The sanitizer CI job runs it on an ASan+UBSan build, where every run must
 # exit with status 0 and print no sanitizer report. check_determinism.sh
@@ -102,6 +103,26 @@ qval() {  # name, then options and input files
   check "$name" $? "$o/stderr.txt"
 }
 
+# checks that two finished runs wrote the same files, stderr aside; counts
+# as a failure otherwise
+same() {  # name, name of the other run
+  local f differ=0
+  for f in "$OUT/$1"/*; do
+    f=${f##*/}
+    [ "$f" = stderr.txt ] && continue
+    if ! cmp -s "$OUT/$1/$f" "$OUT/$2/$f"; then
+      differ=1
+      echo "     $1/$f differs from $2/$f"
+    fi
+  done
+  if [ "$differ" -ne 0 ]; then
+    failures=$((failures + 1))
+    echo "FAIL $1 = $2"
+  else
+    echo "ok   $1 = $2"
+  fi
+}
+
 perc ex_default "$EX"
 perc ex_only_psms -U "$EX"
 perc ex_tdc -Y "$EX"
@@ -156,6 +177,14 @@ perc syn_fasta -f "$IN/concatenated.fasta" -z trypsin -P decoy_ \
   "$IN/concatenated.pin"
 perc syn_stdin --stdinput-tab < "$IN/concatenated.pin"
 perc syn_tab_in -j "$IN/concatenated.pin"
+# --trainFDR 0 means --testFDR, also for the second pass of -N and the
+# initial direction of RESET
+perc syn_reset --reset-algorithm "$IN/concatenated.pin"
+perc syn_reset_train_fdr0 --reset-algorithm -F 0 -t 0.01 \
+  "$IN/concatenated.pin"
+same syn_reset_train_fdr0 syn_reset
+perc ex_subset_train_fdr0 -N 5000 -F 0 -t 0.01 "$EX"
+same ex_subset_train_fdr0 ex_subset
 qval qv_default "$QD/target.xcorr" "$QD/null.xcorr"
 qval qv_irls_pep --irls-pep "$QD/target.xcorr" "$QD/null.xcorr"
 qval qv_pava_pep --pava-pep "$QD/target.xcorr" "$QD/null.xcorr"
