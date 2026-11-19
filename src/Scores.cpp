@@ -42,6 +42,7 @@
 #include "Globals.h"
 #include "MassHandler.h"
 #include "Normalizer.h"
+#include "OpenMPHelpers.h"
 #include "ParallelSort.h"
 #include "PosteriorEstimator.h"
 #include "Scores.h"
@@ -873,7 +874,7 @@ int Scores::calcScores(const std::vector<double>& w) {
   const long numScores = static_cast<long>(scores_.size());
   const int numFeatures = static_cast<int>(FeatureNames::getNumFeatures());
 #pragma omp parallel for schedule(static) \
-    if (numScores > 100000 && !omp_in_parallel())
+    if (numScores > 100000 && !inParallel())
   for (long i = 0; i < numScores; ++i) {
     // The PSM records and their feature rows are scattered in memory, in
     // an order that the processor cannot predict: the record is requested
