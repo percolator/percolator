@@ -69,3 +69,9 @@ bioconda still has 3.9):
   setting of its own. CMake keeps the deployment target that conda sets
   (`MACOSX_DEPLOYMENT_TARGET`); only without one does it build for macOS
   12.0.
+
+### Changes to the bioconda recipe for 4.0.1
+
+None besides the version (`4.0.1` for the tag `rel-4-00-01`), the source
+URL and sha256, and the build number 0: the requirements and `build.sh`
+are those of 4.0.0.

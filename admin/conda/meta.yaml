@@ -1,7 +1,7 @@
 # Test recipe for the conda package. It follows the bioconda recipe
 # (bioconda-recipes/recipes/percolator) but builds the checked-out source.
 # .github/workflows/conda.yml builds it on Linux and macOS; see README.md.
-{% set version = "4.0.0" %}
+{% set version = "4.0.1" %}
 
 package:
   name: percolator
