@@ -1,3 +1,6 @@
+#ifndef COMPOSITIONSORTER_H_
+#define COMPOSITIONSORTER_H_
+
 #include <iostream>
 #include <map>
 #include <string>
@@ -46,3 +49,5 @@ class CompositionSorter {
   };
   std::vector<CompositionPsm> compositionPsms_;
 };
+
+#endif /*COMPOSITIONSORTER_H_*/

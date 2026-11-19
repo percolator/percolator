@@ -375,3 +375,7 @@ jobs:
             -Isrc/picked_protein -Isrc/qvality "$f" || status=1
         done
         exit $status
+    - name: headers
+      # every header of src/ compiles on its own and twice in one unit
+      # (Crux and OpenMS include them in their own order)
+      run: bash tests/ci/check_headers.sh build

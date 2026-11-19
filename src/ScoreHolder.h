@@ -17,6 +17,8 @@
 #ifndef SCORE_HOLDER_H_
 #define SCORE_HOLDER_H_
 
+#include <utility>
+
 #include "LabelType.h"
 #include "PSMDescription.h"
 
@@ -45,7 +47,7 @@ class ScoreHolder {
       : score(s), q(0.0), pep(0.0), pPSM(psm), label(l) {}
 
   std::pair<double, bool> toPair() const {
-    return pair<double, bool>(score, isTarget());
+    return std::pair<double, bool>(score, isTarget());
   }
 
   inline bool isTarget() const {

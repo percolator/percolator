@@ -17,15 +17,22 @@
 #ifndef STDVNORMALIZER_H_
 #define STDVNORMALIZER_H_
 
+#include <cstddef>
+#include <vector>
+
+#include "Normalizer.h"
+
 class StdvNormalizer : public Normalizer { // virtual Normalizer
  public:
   StdvNormalizer();
   virtual ~StdvNormalizer();
-  virtual void setSet(vector<double*> & featuresV,
-                      vector<double*> & rtFeaturesV, size_t numFeatures,
+  virtual void setSet(std::vector<double*> & featuresV,
+                      std::vector<double*> & rtFeaturesV, size_t numFeatures,
                       size_t numRetentionFeatures);
-  void unnormalizeweight(const vector<double>& in, vector<double>& out) const;
-  void normalizeweight(const vector<double>& in, vector<double>& out) const;
+  void unnormalizeweight(const std::vector<double>& in,
+                         std::vector<double>& out) const;
+  void normalizeweight(const std::vector<double>& in,
+                       std::vector<double>& out) const;
 };
 
 #endif /*STDVNORMALIZER_H_*/
