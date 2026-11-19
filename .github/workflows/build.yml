@@ -363,3 +363,19 @@ jobs:
         cmake --build build -j 4 2>&1 | tee build.log
     - name: count
       run: bash tests/ci/count_warnings.sh build.log "$WARNING_BUDGET"
+    - name: clang_openmp_simd
+      # Clang parses the clauses of every OpenMP directive also with
+      # -fopenmp-simd, which does not define _OPENMP, so omp.h is not
+      # included there (packagers and programs that embed Percolator may
+      # build so). The headers that CMake generates are in build/src.
+      run: |
+        status=0
+        for f in src/*.cpp src/picked_protein/*.cpp src/qvality/*.cpp; do
+          clang++ -std=c++17 -fopenmp-simd -fsyntax-only -Ibuild/src -Isrc \
+            -Isrc/picked_protein -Isrc/qvality "$f" || status=1
+        done
+        exit $status
+    - name: headers
+      # every header of src/ compiles on its own and twice in one unit
+      # (Crux and OpenMS include them in their own order)
+      run: bash tests/ci/check_headers.sh build

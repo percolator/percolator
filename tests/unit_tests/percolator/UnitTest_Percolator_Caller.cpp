@@ -21,11 +21,15 @@
 
 #include <filesystem>
 #include <fstream>
+#include <iostream>
 #include <iterator>
 #include <random>
 #include <sstream>
 #include <string>
 #include <vector>
+#ifdef _OPENMP
+#include <omp.h>
+#endif
 
 #include "Caller.h"
 #include "TmpDir.h"
@@ -368,3 +372,112 @@ TEST(CallerTest, RejectsOutputsThatOverwriteInputsOrEachOther) {
   EXPECT_TRUE(parseOnly({"-m", "/dev/null", "-r", "/dev/null", pin}));
 #endif
 }
+
+#ifdef _OPENMP
+namespace {
+
+// Keeps what is written to it and the number of OpenMP threads of the
+// writing thread (omp_get_max_threads) at the last write. In place of the
+// buffer of std::cout it gives that number during a run that writes its
+// results to standard output.
+class ThreadCountProbe : public std::stringbuf {
+ public:
+  int threadsAtLastWrite() const { return threads_; }
+
+ protected:
+  std::streamsize xsputn(const char* s, std::streamsize n) override {
+    threads_ = omp_get_max_threads();
+    return std::stringbuf::xsputn(s, n);
+  }
+  int_type overflow(int_type c) override {
+    threads_ = omp_get_max_threads();
+    return std::stringbuf::overflow(c);
+  }
+
+ private:
+  int threads_ = 0;
+};
+
+// Sets std::cout to write to a buffer while it exists, and the number of
+// OpenMP threads back to its value at construction when it ends.
+class RedirectCoutAndKeepThreads {
+ public:
+  explicit RedirectCoutAndKeepThreads(std::streambuf* buffer)
+      : saved_(std::cout.rdbuf(buffer)), threads_(omp_get_max_threads()) {}
+  ~RedirectCoutAndKeepThreads() {
+    std::cout.rdbuf(saved_);
+    omp_set_num_threads(threads_);
+  }
+
+ private:
+  std::streambuf* saved_;
+  int threads_;
+};
+
+}  // namespace
+
+// Caller::run sets the number of OpenMP threads to --num-threads, at most
+// the number it had, and left it so. In a program that runs Percolator
+// more than once (Crux, OpenMS), a run with --num-threads 3 after one with
+// --num-threads 2 had 2 threads, and so had the program's own parallel
+// regions after them. The number is now set back when run returns, also
+// after an error and after an exception.
+TEST(CallerTest, RunRestoresTheNumberOfThreads) {
+  TmpDir tmpDir;
+  fs::path dir = tmpDir.getPath();
+  const std::string pin = (dir / "input.pin").string();
+  writeInput(pin);
+  ThreadCountProbe probe;
+  RedirectCoutAndKeepThreads redirect(&probe);  // also when a check fails
+  const int programThreads = 3;
+  omp_set_num_threads(programThreads);
+
+  // the peptides are written to standard output, which shows the number
+  // of threads of the run
+  auto threadsOfRun = [&](const std::string& numThreads) {
+    probe.str("");
+    runPercolator({"--num-threads", numThreads, "-m",
+                   (dir / "psms.txt").string(), pin});
+    EXPECT_FALSE(probe.str().empty());
+    return probe.threadsAtLastWrite();
+  };
+  EXPECT_EQ(2, threadsOfRun("2"));
+  EXPECT_EQ(programThreads, omp_get_max_threads());
+  EXPECT_EQ(3, threadsOfRun("3"));
+  EXPECT_EQ(programThreads, omp_get_max_threads());
+  EXPECT_EQ(3, threadsOfRun("4"));  // at most the number of the program
+  EXPECT_EQ(programThreads, omp_get_max_threads());
+
+  // an error: the input file is missing, and run returns 0
+  std::string err;
+  EXPECT_EQ(0, runAndCapture({"--num-threads", "2",
+                              (dir / "missing.pin").string()},
+                             err));
+  EXPECT_EQ(programThreads, omp_get_max_threads());
+
+  // an exception: an input without decoys
+  const std::string targetsOnly = (dir / "targets.pin").string();
+  {
+    std::ifstream in(pin);
+    std::ofstream out(targetsOnly);
+    std::string line;
+    for (int i = 0; std::getline(in, line); ++i) {
+      if (i == 0 || line.find("\t-1\t") == std::string::npos) {
+        out << line << '\n';
+      }
+    }
+  }
+  {
+    std::vector<std::string> args = {"percolator", "-v", "0",
+                                     "--num-threads", "2", targetsOnly};
+    std::vector<char*> argv;
+    for (std::string& arg : args) argv.push_back(&arg[0]);
+    Caller caller;
+    ASSERT_TRUE(caller.parseOptions(static_cast<int>(args.size()),
+                                    argv.data()));
+    EXPECT_THROW(caller.run(), MyException);
+  }
+  EXPECT_EQ(programThreads, omp_get_max_threads());
+  Globals::clean();
+}
+#endif
