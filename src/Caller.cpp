@@ -768,6 +768,15 @@ bool Caller::parseOptions(int argc, char** argv) {
   if (cmd.isOptionSet("testFDR")) {
     testFdr_ = cmd.getDouble("testFDR", 0.0, 1.0);
   }
+  // --trainFDR 0 means --testFDR, and so does --train-fdr-initial 0 with
+  // it, as in the constructor of CrossValidation. Resolved here, since the
+  // initial direction of RESET and the second pass of -N use them too.
+  if (selectionFdr_ <= 0.0) {
+    selectionFdr_ = testFdr_;
+    if (initialSelectionFdr_ <= 0.0) {
+      initialSelectionFdr_ = testFdr_;
+    }
+  }
   if (cmd.isOptionSet("maxiter")) {
     numIterations_ = cmd.getUInt("maxiter", 0, 1000);
   }
