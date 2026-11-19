@@ -41,6 +41,27 @@
 #include "ValidateTabFile.h"
 using namespace std;
 
+#ifdef _OPENMP
+namespace {
+
+// Restores the number of OpenMP threads of the calling thread
+// (omp_get_max_threads) when it goes out of scope. Caller::run sets that
+// number from --num-threads; a program that runs Percolator (Crux, OpenMS)
+// keeps its own for its later runs and parallel regions.
+class RestoreNumThreads {
+ public:
+  RestoreNumThreads() : numThreads_(omp_get_max_threads()) {}
+  ~RestoreNumThreads() { omp_set_num_threads(numThreads_); }
+  RestoreNumThreads(const RestoreNumThreads&) = delete;
+  RestoreNumThreads& operator=(const RestoreNumThreads&) = delete;
+
+ private:
+  int numThreads_;
+};
+
+}  // namespace
+#endif
+
 Caller::Caller()
     : readStdIn_(false),
       inputFN_(""),
@@ -1457,6 +1478,8 @@ int Caller::run() {
     std::cerr << extendedGreeter();
   }
 #ifdef _OPENMP
+  // set back on every return and exception
+  const RestoreNumThreads restoreNumThreads;
   omp_set_num_threads(static_cast<int>(
       std::min((unsigned int)omp_get_max_threads(), numThreads_)));
 #endif
