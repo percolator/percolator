@@ -16,6 +16,8 @@
 #ifndef OPENMP_HELPERS_H_
 #define OPENMP_HELPERS_H_
 
+#include <atomic>
+#include <exception>
 #ifdef _OPENMP
 #include <omp.h>
 #endif
@@ -31,5 +33,58 @@ inline bool inParallel() {
   return false;
 #endif
 }
+
+// An exception that leaves an OpenMP parallel region ends the process
+// (std::terminate), also in a program that calls Percolator as a library
+// and would catch it. Each iteration of a parallel loop therefore catches
+// its own exception and passes it to capture(); the first one is kept,
+// the iterations that start later do nothing, and rethrow() throws the
+// kept exception on the calling thread after the region:
+//
+//   ParallelErrors errors;
+//   #pragma omp parallel for
+//   for (int i = 0; i < n; ++i) {
+//     if (errors.failed()) continue;
+//     try {
+//       ...
+//     } catch (...) {
+//       errors.capture();
+//     }
+//   }
+//   errors.rethrow();
+//
+// Only a critical section is used, so that it works with OpenMP 2.0 (MSVC).
+class ParallelErrors {
+ public:
+  ParallelErrors() : failed_(false) {}
+  ParallelErrors(const ParallelErrors&) = delete;
+  ParallelErrors& operator=(const ParallelErrors&) = delete;
+
+  // whether an iteration has failed; the others may then skip their work
+  bool failed() const { return failed_.load(std::memory_order_relaxed); }
+
+  // to be called in a catch block: keeps the exception being handled if it
+  // is the first
+  void capture() {
+#pragma omp critical(percolator_parallel_errors)
+    {
+      if (!error_) {
+        error_ = std::current_exception();
+      }
+    }
+    failed_.store(true, std::memory_order_relaxed);
+  }
+
+  // after the parallel region: throws the kept exception, if any
+  void rethrow() const {
+    if (error_) {
+      std::rethrow_exception(error_);
+    }
+  }
+
+ private:
+  std::exception_ptr error_;
+  std::atomic<bool> failed_;
+};
 
 #endif  // OPENMP_HELPERS_H_

@@ -16,6 +16,7 @@
  *******************************************************************************/
 
 #include "CrossValidation.h"
+#include "OpenMPHelpers.h"
 #include "PosteriorEstimator.h"
 #include "Timer.h"
 
@@ -491,17 +492,26 @@ int CrossValidation::doStep(const Normalizer* /* pNorm */, double selectionFdr) 
       // the pairs are ordered by fold
       const int firstPair = static_cast<int>(firstSet * pairsPerFold);
       const int endPair = static_cast<int>(endSet * pairsPerFold);
+      ParallelErrors errors;
 #pragma omp parallel for schedule(dynamic, 1)
       for (int pairIdx = firstPair; pairIdx < endPair; pairIdx++) {
-        CandidateCposCfrac* cpCnFold = &classWeightsPerFold_[pairIdx];
-        if (!isSelectedPair(*cpCnFold)) {
+        if (errors.failed()) {
           continue;
         }
-        const AlgIn& svmInput =
-            svmInputs[(cpCnFold->set - firstSet) * nestedXvalBins_ +
-                      static_cast<unsigned int>(cpCnFold->nestedSet)];
-        trainCpCnPair(*cpCnFold, pOptions, svmInput, buffers[threadNum()]);
+        try {
+          CandidateCposCfrac* cpCnFold = &classWeightsPerFold_[pairIdx];
+          if (!isSelectedPair(*cpCnFold)) {
+            continue;
+          }
+          const AlgIn& svmInput =
+              svmInputs[(cpCnFold->set - firstSet) * nestedXvalBins_ +
+                        static_cast<unsigned int>(cpCnFold->nestedSet)];
+          trainCpCnPair(*cpCnFold, pOptions, svmInput, buffers[threadNum()]);
+        } catch (...) {
+          errors.capture();
+        }
       }
+      errors.rethrow();
     }
   }
 
@@ -599,11 +609,21 @@ int CrossValidation::mergeCpCnPairs(
   const int numTestSets =
       needCounts ? static_cast<int>(numFolds_ * nestedXvalBins_) : 0;
   std::vector<Scores::FeatureRows> testRows(numTestSets);
+  // the loops below pass their exceptions on after each region
+  ParallelErrors errors;
 #pragma omp parallel for schedule(dynamic, 1)
   for (int idx = 0; idx < numTestSets; ++idx) {
-    testSet(idx / nestedXvalBins_, idx % nestedXvalBins_)
-        .getFeatureRows(testRows[idx]);
+    if (errors.failed()) {
+      continue;
+    }
+    try {
+      testSet(idx / nestedXvalBins_, idx % nestedXvalBins_)
+          .getFeatureRows(testRows[idx]);
+    } catch (...) {
+      errors.capture();
+    }
   }
+  errors.rethrow();
 
   std::vector<int> truePositives(classWeightsPerFold_.size());
 #pragma omp parallel
@@ -612,24 +632,32 @@ int CrossValidation::mergeCpCnPairs(
 #pragma omp for schedule(dynamic, 1)
     for (int pairIdx = 0;
          pairIdx < static_cast<int>(classWeightsPerFold_.size()); ++pairIdx) {
-      const CandidateCposCfrac& cpCnPair = classWeightsPerFold_[pairIdx];
-      const unsigned int nestedSet =
-          static_cast<unsigned int>(cpCnPair.nestedSet);
-      if (!isSelectedPair(cpCnPair)) {
-        truePositives[pairIdx] = -1;  // not trained in this iteration
+      if (errors.failed()) {
         continue;
       }
-      if (!needCounts) {
-        truePositives[pairIdx] = 0;  // the only trained pair of its fold
-        continue;
+      try {
+        const CandidateCposCfrac& cpCnPair = classWeightsPerFold_[pairIdx];
+        const unsigned int nestedSet =
+            static_cast<unsigned int>(cpCnPair.nestedSet);
+        if (!isSelectedPair(cpCnPair)) {
+          truePositives[pairIdx] = -1;  // not trained in this iteration
+          continue;
+        }
+        if (!needCounts) {
+          truePositives[pairIdx] = 0;  // the only trained pair of its fold
+          continue;
+        }
+        truePositives[pairIdx] =
+            testSet(cpCnPair.set, nestedSet)
+                .countTargetsBelowFdr(
+                    testRows[cpCnPair.set * nestedXvalBins_ + nestedSet],
+                    cpCnPair.ww, testFdr_, skipDecoysPlusOne, buffers);
+      } catch (...) {
+        errors.capture();
       }
-      truePositives[pairIdx] =
-          testSet(cpCnPair.set, nestedSet)
-              .countTargetsBelowFdr(
-                  testRows[cpCnPair.set * nestedXvalBins_ + nestedSet],
-                  cpCnPair.ww, testFdr_, skipDecoysPlusOne, buffers);
     }
   }
+  errors.rethrow();
 
   for (int set = 0; set < static_cast<int>(numFolds_); ++set) {
     unsigned int a = set * numCpCnPairsPerSet;
@@ -684,34 +712,44 @@ int CrossValidation::mergeCpCnPairs(
 #pragma omp parallel for schedule(dynamic, 1)
       for (int set = static_cast<int>(firstSet);
            set < static_cast<int>(endSet); ++set) {
-        AlgIn& svmInput = svmInputs[
-            (static_cast<unsigned int>(set) - firstSet) * nestedXvalBins_];
-        trainScores_[set].reserveTrainingSet(svmInput, selectionFdr);
-        trainScores_[set].generateNegativeTrainingSet(svmInput, 1.0);
-        trainScores_[set].generatePositiveTrainingSet(
-            svmInput, selectionFdr, 1.0, trainBestPositive_);
-
-        // The SVM algorithm (see ssl.cpp) starts from the fold's weights of
-        // the previous iteration, which are close to the new solution, as
-        // the grid solves do; in the first iteration, which holds the
-        // initial direction, and with classic training it starts from zero.
-        std::vector<double> outputs(
-            static_cast<std::size_t>(svmInput.positives + svmInput.negatives),
-            0.0);
-        if (classicTraining_ || iteration_ == 0u) {
-          std::fill(weights_[set].begin(), weights_[set].end(), 0.0);
-        } else {
-          const std::vector<double>& w = weights_[set];
-          for (int i = 0; i < svmInput.m; ++i) {
-            const double* x = svmInput.row(i);
-            double o = 0.0;
-            for (int k = 0; k < svmInput.n; ++k) o += x[k] * w[k];
-            outputs[i] = o;
-          }
+        if (errors.failed()) {
+          continue;
         }
-        L2_SVM_MFN(svmInput, pOptions, weights_[set], outputs,
-                   bestCposes[set], bestCposes[set] * bestCfracs[set]);
+        try {
+          AlgIn& svmInput = svmInputs[
+              (static_cast<unsigned int>(set) - firstSet) * nestedXvalBins_];
+          trainScores_[set].reserveTrainingSet(svmInput, selectionFdr);
+          trainScores_[set].generateNegativeTrainingSet(svmInput, 1.0);
+          trainScores_[set].generatePositiveTrainingSet(
+              svmInput, selectionFdr, 1.0, trainBestPositive_);
+
+          // The SVM algorithm (see ssl.cpp) starts from the fold's weights
+          // of the previous iteration, which are close to the new solution,
+          // as the grid solves do; in the first iteration, which holds the
+          // initial direction, and with classic training it starts from
+          // zero.
+          std::vector<double> outputs(
+              static_cast<std::size_t>(svmInput.positives +
+                                       svmInput.negatives),
+              0.0);
+          if (classicTraining_ || iteration_ == 0u) {
+            std::fill(weights_[set].begin(), weights_[set].end(), 0.0);
+          } else {
+            const std::vector<double>& w = weights_[set];
+            for (int i = 0; i < svmInput.m; ++i) {
+              const double* x = svmInput.row(i);
+              double o = 0.0;
+              for (int k = 0; k < svmInput.n; ++k) o += x[k] * w[k];
+              outputs[i] = o;
+            }
+          }
+          L2_SVM_MFN(svmInput, pOptions, weights_[set], outputs,
+                     bestCposes[set], bestCposes[set] * bestCfracs[set]);
+        } catch (...) {
+          errors.capture();
+        }
       }
+      errors.rethrow();
       if (VERB > 2) {
         for (unsigned int set = firstSet; set < endSet; ++set) {
           const AlgIn& svmInput =
